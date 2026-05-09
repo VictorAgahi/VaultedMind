@@ -5,8 +5,7 @@ metadata:
   namespace: argocd
   annotations:
     argocd-image-updater.argoproj.io/image-list: vault-frontend=ghcr.io/victoragahi/vault-frontend
-    argocd-image-updater.argoproj.io/vault-frontend.update-strategy: semver
-    argocd-image-updater.argoproj.io/vault-frontend.allow-tags: regexp:^[0-9a-f]{40}$
+    argocd-image-updater.argoproj.io/vault-frontend.update-strategy: digest
     argocd-image-updater.argoproj.io/vault-frontend.update-method: kustomize
     argocd-image-updater.argoproj.io/vault-frontend.kustomize-image-name: vault-frontend
 spec:
