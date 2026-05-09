@@ -9,7 +9,10 @@ async function bootstrap() {
 
   // Security
   app.use(helmet());
-  app.enableCors();
+  app.enableCors({
+    origin: ['https://vault-mind.cyrus-ag.com', 'http://localhost:3000'],
+    credentials: true,
+  });
 
   // Trust Cloudflare Proxy
   app.set('trust proxy', 1);

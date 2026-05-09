@@ -13,11 +13,20 @@ spec:
       labels:
         app: vault-frontend
     spec:
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1001
+        fsGroup: 1001
       imagePullSecrets:
         - name: ghcr-login
       containers:
       - name: frontend
         image: ghcr.io/victoragahi/vault-frontend:bcce611ea95da8e69073e324ff71a9505eedcf52
+        securityContext:
+          allowPrivilegeEscalation: false
+          capabilities:
+            drop:
+              - ALL
         imagePullPolicy: IfNotPresent
         env:
         - name: NODE_ENV
