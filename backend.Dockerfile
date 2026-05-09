@@ -29,12 +29,10 @@ WORKDIR /app
 
 ENV NODE_ENV=production
 
-# Install production dependencies only
+# Copy package files and node_modules from builder
 COPY vaultedMind/package.json vaultedMind/yarn.lock ./
 COPY vaultedMind/.yarn ./.yarn
-
-RUN corepack enable && corepack prepare yarn@4.6.0 --activate && \
-    NODE_ENV=production yarn install --immutable
+COPY --from=builder /app/node_modules ./node_modules
 
 # Copy built application from builder stage
 COPY --from=builder /app/dist ./dist
