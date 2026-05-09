@@ -17,7 +17,7 @@ spec:
         - name: ghcr-login
       containers:
       - name: frontend
-        image: ghcr.io/victoragahi/vault-frontend:latest
+        image: ghcr.io/victoragahi/vault-frontend:b1a0e1f0b26dd05bc41dba149dda48ef4121f2ca
         imagePullPolicy: IfNotPresent
         env:
         - name: NODE_ENV
