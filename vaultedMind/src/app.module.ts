@@ -7,10 +7,16 @@ import { SecurityModule } from './common/security/security.module.js';
 import { JwtModule } from '@nestjs/jwt';
 import { UserModule } from './modules/user/infrastructure/user.module.js';
 import { AuthModule } from './modules/auth/infrastructure/auth.module.js';
+import { ThrottlerModule, ThrottlerGuard } from '@nestjs/throttler';
 import { HealthModule } from './modules/health/infrastructure/health.module.js';
+import { APP_GUARD } from '@nestjs/core';
 
 @Module({
   imports: [
+    ThrottlerModule.forRoot([{
+      ttl: 60000,
+      limit: 100,
+    }]),
     ConfigModule.forRoot({
       isGlobal: true,
       load: [databaseConfig],
@@ -37,5 +43,11 @@ import { HealthModule } from './modules/health/infrastructure/health.module.js';
     AuthModule,
     HealthModule,
   ],
+  providers: [
+    {
+      provide: APP_GUARD,
+      useClass: ThrottlerGuard,
+    },
+  ],
 })
-export class AppModule {}
+export class AppModule { }
