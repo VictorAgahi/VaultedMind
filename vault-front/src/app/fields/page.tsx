@@ -140,7 +140,7 @@ export default function FieldsPage() {
       };
       await apiService.patch(`/health/custom-fields/${field.id}`, updateDto);
       setSuccess(`Field ${field.isActive ? "deactivated" : "activated"}!`);
-      fetchFields();
+      refetchFields();
       window.dispatchEvent(new Event("vaultedmind:fields-updated"));
     } catch {
       setError("Failed to update field");
@@ -152,7 +152,7 @@ export default function FieldsPage() {
       try {
         await apiService.delete(`/health/custom-fields/${fieldId}`);
         setSuccess("Field deleted successfully!");
-        fetchFields();
+        refetchFields();
         window.dispatchEvent(new Event("vaultedmind:fields-updated"));
       } catch {
         setError("Failed to delete field");
