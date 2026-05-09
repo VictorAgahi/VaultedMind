@@ -1,0 +1,61 @@
+# Dependencies
+node_modules/
+npm-debug.log
+yarn-error.log
+
+# Build
+dist/
+build/
+.next/
+out/
+coverage/
+
+# Environment
+.env
+.env.local
+.env.*.local
+
+# Git
+.git
+.gitignore
+.github
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Logs
+logs/
+*.log
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Testing
+test/
+.test/
+__tests__/
+*.test.js
+*.test.ts
+jest.config.js
+
+# CI/CD
+.github/
+.gitlab-ci.yml
+.travis.yml
+
+# Docker
+Dockerfile*
+docker-compose*.yml
+.dockerignore
+
+# CI files
+.husky/
+
+# Misc
+README.md
+LICENSE
+.gitattributes

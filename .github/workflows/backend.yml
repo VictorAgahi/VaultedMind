@@ -1,0 +1,78 @@
+name: Backend CI/CD
+
+on:
+  push:
+    branches:
+      - main
+      - develop
+    paths:
+      - 'vaultedMind/**'
+      - '.github/workflows/backend.yml'
+      - 'backend.Dockerfile'
+      - 'docker-compose.yml'
+  pull_request:
+    branches:
+      - main
+      - develop
+    paths:
+      - 'vaultedMind/**'
+      - 'backend.Dockerfile'
+      - 'docker-compose.yml'
+
+jobs:
+  lint-and-build:
+    runs-on: ubuntu-latest
+    name: Lint & Build Backend
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: 'yarn'
+          cache-dependency-path: vaultedMind/yarn.lock
+
+      - name: Install dependencies
+        working-directory: vaultedMind
+        run: yarn install --frozen-lockfile
+
+      - name: Lint
+        working-directory: vaultedMind
+        run: yarn lint
+
+      - name: Build
+        working-directory: vaultedMind
+        run: yarn build
+
+      - name: Run tests
+        working-directory: vaultedMind
+        run: yarn test:unit
+
+  build-docker:
+    needs: lint-and-build
+    runs-on: ubuntu-latest
+    name: Build Docker Image
+    if: github.event_name == 'push'
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build Docker image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: ./backend.Dockerfile
+          push: false
+          tags: vault-backend:${{ github.sha }}
+          cache-from: type=registry,ref=vault-backend:latest
+          cache-to: type=inline
+
+      - name: Verify Docker build
+        run: |
+          echo "Docker image built successfully"
+          echo "Build tag: vault-backend:${{ github.sha }}"

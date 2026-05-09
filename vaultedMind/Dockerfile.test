@@ -1,0 +1,32 @@
+FROM node:24
+
+WORKDIR /app
+
+RUN corepack enable && corepack prepare yarn@4.6.0 --activate
+RUN echo "nodeLinker: node-modules" > .yarnrc.yml
+
+# Copy package files
+COPY package.json yarn.lock .pnp.cjs .pnp.loader.mjs ./
+COPY .yarn ./.yarn
+
+# Install dependencies
+RUN yarn install
+
+# Copy source code
+COPY . .
+
+# Set environment variables for testing (defaults)
+ENV NODE_ENV=test
+ENV DB_HOST=db
+ENV DB_PORT=5432
+ENV DB_USERNAME=postgres
+ENV DB_PASSWORD=postgres
+ENV DB_NAME=vaultedmind_test
+ENV JWT_SECRET=test-secret
+ENV ENCRYPTION_KEY=0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef
+
+# Build the application
+RUN yarn build
+
+# Command to run migrations and tests
+CMD ["sh", "-c", "yarn migration:run && yarn test:e2e"]
