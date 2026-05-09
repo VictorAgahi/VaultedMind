@@ -29,6 +29,8 @@ jobs:
 
     steps:
       - uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GH_PAT }}
 
       - name: Enable Corepack
         run: corepack enable
@@ -50,6 +52,8 @@ jobs:
 
       - name: Build
         working-directory: vault-front
+        env:
+          NEXT_PUBLIC_BACKEND_URL: ${{ secrets.NEXT_PUBLIC_BACKEND_URL }}
         run: npm run build
 
       - name: Set up Docker Buildx
