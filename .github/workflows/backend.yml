@@ -49,6 +49,11 @@ jobs:
         working-directory: vaultedMind
         run: yarn build
 
+      - name: Run unit tests
+        if: always()
+        working-directory: vaultedMind
+        run: yarn test:unit
+
   build-docker:
     needs: lint-and-build
     runs-on: ubuntu-latest
