@@ -55,6 +55,16 @@ export default function FieldsPage() {
   const [page, setPage] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(10);
 
+  const refetchFields = async () => {
+    try {
+      const data = await apiService.get<CustomField[]>("/health/custom-fields");
+      setFields(data);
+      setError(null);
+    } catch {
+      setError("Failed to load fields");
+    }
+  };
+
   useEffect(() => {
     const fetchFields = async () => {
       setLoading(true);
@@ -114,7 +124,7 @@ export default function FieldsPage() {
         setSuccess("Field created successfully!");
       }
       handleCloseDialog();
-      fetchFields();
+      refetchFields();
       window.dispatchEvent(new Event("vaultedmind:fields-updated"));
     } catch {
       setError("Failed to save field");
