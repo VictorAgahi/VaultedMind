@@ -1,11 +1,19 @@
-import { Controller, Post, Body, Get, Request, HttpCode, HttpStatus } from '@nestjs/common';
+import {
+  Controller,
+  Post,
+  Body,
+  Get,
+  Request,
+  HttpCode,
+  HttpStatus,
+} from '@nestjs/common';
 import { AuthService } from '../../application/services/auth.service.js';
 import { LoginDto, RegisterDto } from '../../application/dtos/auth.dto.js';
 import { Public } from '../../../../common/decorators/public.decorator.js';
 
 @Controller('auth')
 export class AuthController {
-  constructor(private readonly authService: AuthService) { }
+  constructor(private readonly authService: AuthService) {}
 
   @Public()
   @Post('register')
@@ -21,7 +29,7 @@ export class AuthController {
   }
 
   @Get('me')
-  async getMe(@Request() req: any) {
-    return req.user;
+  getMe(@Request() req: Record<string, unknown>) {
+    return (req as { user: unknown }).user;
   }
 }

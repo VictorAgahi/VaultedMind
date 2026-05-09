@@ -22,7 +22,7 @@ import { v4 as uuidv4 } from 'uuid';
 
 @Controller('health/daily-logs')
 export class DailyLogController {
-  constructor(private readonly dailyLogService: DailyLogService) { }
+  constructor(private readonly dailyLogService: DailyLogService) {}
 
   @Post()
   async create(

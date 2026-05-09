@@ -8,10 +8,16 @@ export class DailyLogMapper {
       model.id,
       model.userId,
       model.logDate instanceof Date ? model.logDate : new Date(model.logDate),
-      model.createdAt instanceof Date ? model.createdAt : new Date(model.createdAt),
-      model.updatedAt instanceof Date ? model.updatedAt : new Date(model.updatedAt),
+      model.createdAt instanceof Date
+        ? model.createdAt
+        : new Date(model.createdAt),
+      model.updatedAt instanceof Date
+        ? model.updatedAt
+        : new Date(model.updatedAt),
       model.notes,
-      model.fieldValues ? model.fieldValues.map(fv => FieldValueMapper.toDomain(fv)) : undefined,
+      model.fieldValues
+        ? model.fieldValues.map((fv) => FieldValueMapper.toDomain(fv))
+        : undefined,
     );
   }
 

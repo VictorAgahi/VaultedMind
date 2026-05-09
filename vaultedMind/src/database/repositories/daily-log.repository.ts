@@ -23,7 +23,7 @@ export class DailyLogRepository extends AbstractBaseRepository<DailyLogModel> {
   async findByUserId(userId: string): Promise<DailyLog[]> {
     const [models] = await this.repository.findAndCount({
       where: { userId },
-      relations: ['fieldValues']
+      relations: ['fieldValues'],
     });
     return models.map((model) => DailyLogMapper.toDomain(model));
   }

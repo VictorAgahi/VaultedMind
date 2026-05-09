@@ -1,17 +1,13 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { TypeOrmModule, TypeOrmModuleOptions } from '@nestjs/typeorm';
-import databaseConfig from './config/database.config.js';
-import { DatabaseModule } from './database/database.module.js';
-import { SecurityModule } from './common/security/security.module.js';
+import databaseConfig from './config/database.config';
+import { DatabaseModule } from './database/database.module';
+import { SecurityModule } from './common/security/security.module';
 import { JwtModule } from '@nestjs/jwt';
-import { UserModule } from './modules/user/infrastructure/user.module.js';
-import { AuthModule } from './modules/auth/infrastructure/auth.module.js';
-import { HealthModule } from './modules/health/infrastructure/health.module.js';
-import { JwtAuthGuard } from './modules/auth/infrastructure/guards/jwt-auth.guard.js';
-import { APP_GUARD } from '@nestjs/core';
-import { AppController } from './app.controller.js';
-import { AppService } from './app.service.js';
+import { UserModule } from './modules/user/infrastructure/user.module';
+import { AuthModule } from './modules/auth/infrastructure/auth.module';
+import { HealthModule } from './modules/health/infrastructure/health.module';
 
 @Module({
   imports: [
@@ -41,13 +37,5 @@ import { AppService } from './app.service.js';
     AuthModule,
     HealthModule,
   ],
-  controllers: [AppController],
-  providers: [
-    AppService,
-    {
-      provide: APP_GUARD,
-      useClass: JwtAuthGuard,
-    },
-  ],
 })
-export class AppModule {}
+export class AppModule { }

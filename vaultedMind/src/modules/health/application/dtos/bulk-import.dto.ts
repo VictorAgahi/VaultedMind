@@ -1,9 +1,4 @@
-import {
-  IsString,
-  IsObject,
-  IsArray,
-  ValidateNested,
-} from 'class-validator';
+import { IsString, IsObject, IsArray, ValidateNested } from 'class-validator';
 import { Type } from 'class-transformer';
 
 export class BulkRowDto {

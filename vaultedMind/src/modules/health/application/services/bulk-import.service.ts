@@ -147,9 +147,7 @@ export class BulkImportService {
 
           const field = fieldMap.get(fieldName);
           if (!field) {
-            this.logger.warn(
-              `Field ${fieldName} not found for value ${value}`,
-            );
+            this.logger.warn(`Field ${fieldName} not found for value ${value}`);
             continue;
           }
 
@@ -168,10 +166,7 @@ export class BulkImportService {
 
       return { logsCreated, fieldsCreated, valuesCreated };
     } catch (error) {
-      this.logger.error(
-        { error },
-        'Error during bulk import',
-      );
+      this.logger.error({ error }, 'Error during bulk import');
       throw new BadRequestException(
         `Bulk import failed: ${(error as Error).message}`,
       );

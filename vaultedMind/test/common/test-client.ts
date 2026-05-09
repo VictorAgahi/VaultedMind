@@ -17,11 +17,13 @@ export class TestClient {
       imports: [AppModule],
     }).compile();
 
-    const app = moduleFixture.createNestApplication();
+    const app = moduleFixture.createNestApplication<Server>();
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-call
     app.useGlobalPipes(new ValidationPipe({ transform: true }));
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-call
     await app.init();
 
-    return new TestClient(app);
+    return new TestClient(app as INestApplication<Server>);
   }
 
   async close(): Promise<void> {
