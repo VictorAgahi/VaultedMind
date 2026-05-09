@@ -15,6 +15,27 @@ spec:
     spec:
       imagePullSecrets:
         - name: ghcr-login
+      initContainers:
+      - name: migrations
+        image: ghcr.io/victoragahi/vault-backend:b1a0e1f0b26dd05bc41dba149dda48ef4121f2ca
+        command: ['sh', '-c', 'yarn migration:run']
+        env:
+        - name: DB_HOST
+          value: postgres
+        - name: DB_PORT
+          value: "5432"
+        - name: DB_USERNAME
+          valueFrom:
+            secretKeyRef:
+              name: postgres-secret
+              key: username
+        - name: DB_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: postgres-secret
+              key: password
+        - name: DB_NAME
+          value: vaultedmind_db
       containers:
       - name: backend
         image: ghcr.io/victoragahi/vault-backend:b1a0e1f0b26dd05bc41dba149dda48ef4121f2ca

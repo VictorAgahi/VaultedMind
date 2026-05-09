@@ -159,7 +159,7 @@ jobs:
 
       - name: Update manifest image
         run: |
-          sed -i 's|image: ghcr.io/.*/vault-backend:.*|image: ghcr.io/${{ steps.prepare.outputs.owner }}/vault-backend:${{ github.sha }}|g' k8s/services/backend/base/deployment.yaml
+          sed -i 's|ghcr.io/.*/vault-backend:.*|ghcr.io/${{ steps.prepare.outputs.owner }}/vault-backend:${{ github.sha }}|g' k8s/services/backend/base/deployment.yaml
 
       - name: Commit and push updated manifest
         run: |

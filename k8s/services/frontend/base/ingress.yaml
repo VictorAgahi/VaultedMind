@@ -9,10 +9,11 @@ metadata:
 spec:
   tls:
   - hosts:
-    - app.example.com  # CHANGE THIS TO YOUR ACTUAL DOMAIN
-    secretName: vault-frontend-tls
+    - vault-mind.cyrus-ag.com
+    - api.vault-mind.cyrus-ag.com
+    secretName: vault-tls
   rules:
-  - host: app.example.com  # CHANGE THIS TO YOUR ACTUAL DOMAIN
+  - host: vault-mind.cyrus-ag.com
     http:
       paths:
       - path: /
@@ -20,5 +21,15 @@ spec:
         backend:
           service:
             name: vault-frontend
+            port:
+              number: 3000
+  - host: api.vault-mind.cyrus-ag.com
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: vault-backend
             port:
               number: 3000
