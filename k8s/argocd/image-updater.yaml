@@ -90,7 +90,7 @@ spec:
       serviceAccountName: argocd-image-updater
       containers:
       - name: argocd-image-updater
-        image: ghcr.io/argoproj-labs/argocd-image-updater:latest
+        image: docker.io/alinefarias/argocd-image-updater:0.14.4
         imagePullPolicy: Always
         args:
         - argocd-image-updater
