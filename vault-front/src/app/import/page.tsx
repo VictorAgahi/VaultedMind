@@ -227,7 +227,7 @@ export default function ImportPage() {
       const dto: BulkImportDto = { rows: parsedRows };
       console.log("Sending import data:", JSON.stringify(dto, null, 2));
 
-      const result = await apiService.post<BulkImportResponseDto>(
+      const result = await apiService.post<BulkImportResponseDto, BulkImportDto>(
         "/health/import",
         dto
       );
