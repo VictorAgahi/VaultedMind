@@ -70,8 +70,8 @@ jobs:
           file: ./frontend.Dockerfile
           push: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' }}
           tags: |
-            ghcr.io/${{ github.repository }}/vault-frontend:latest
-            ghcr.io/${{ github.repository }}/vault-frontend:${{ github.sha }}
-          cache-from: type=registry,ref=ghcr.io/${{ github.repository }}/vault-frontend:buildcache
-          cache-to: type=registry,ref=ghcr.io/${{ github.repository }}/vault-frontend:buildcache,mode=max
+            ghcr.io/${{ github.repository_owner | lower }}/vault-frontend:latest
+            ghcr.io/${{ github.repository_owner | lower }}/vault-frontend:${{ github.sha }}
+          cache-from: type=registry,ref=ghcr.io/${{ github.repository_owner | lower }}/vault-frontend:buildcache
+          cache-to: type=registry,ref=ghcr.io/${{ github.repository_owner | lower }}/vault-frontend:buildcache,mode=max
 

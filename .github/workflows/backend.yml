@@ -146,7 +146,7 @@ jobs:
           file: ./backend.Dockerfile
           push: true
           tags: |
-            ghcr.io/${{ github.repository }}/vault-backend:latest
-            ghcr.io/${{ github.repository }}/vault-backend:${{ github.sha }}
-          cache-from: type=registry,ref=ghcr.io/${{ github.repository }}/vault-backend:buildcache
-          cache-to: type=registry,ref=ghcr.io/${{ github.repository }}/vault-backend:buildcache,mode=max
+            ghcr.io/${{ github.repository_owner | lower }}/vault-backend:latest
+            ghcr.io/${{ github.repository_owner | lower }}/vault-backend:${{ github.sha }}
+          cache-from: type=registry,ref=ghcr.io/${{ github.repository_owner | lower }}/vault-backend:buildcache
+          cache-to: type=registry,ref=ghcr.io/${{ github.repository_owner | lower }}/vault-backend:buildcache,mode=max
