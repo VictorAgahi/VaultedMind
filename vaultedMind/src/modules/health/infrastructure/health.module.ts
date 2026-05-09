@@ -7,6 +7,7 @@ import { CustomFieldController } from './controllers/custom-field.controller.js'
 import { DailyLogController } from './controllers/daily-log.controller.js';
 import { FieldValueController } from './controllers/field-value.controller.js';
 import { BulkImportController } from './controllers/bulk-import.controller.js';
+import { HealthCheckController } from './controllers/health-check.controller.js';
 
 @Module({
   providers: [
@@ -16,6 +17,7 @@ import { BulkImportController } from './controllers/bulk-import.controller.js';
     BulkImportService,
   ],
   controllers: [
+    HealthCheckController,
     CustomFieldController,
     DailyLogController,
     FieldValueController,

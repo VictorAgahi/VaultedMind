@@ -30,7 +30,7 @@ WORKDIR /app
 ENV NODE_ENV=production
 
 # Install production dependencies only
-COPY vaultedMind/package.json vaultedMind/yarn.lock vaultedMind/.pnp.cjs vaultedMind/.pnp.loader.mjs ./
+COPY vaultedMind/package.json vaultedMind/yarn.lock ./
 COPY vaultedMind/.yarn ./.yarn
 
 RUN corepack enable && corepack prepare yarn@4.6.0 --activate && \
