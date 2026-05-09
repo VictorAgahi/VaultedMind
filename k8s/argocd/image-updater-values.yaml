@@ -1,0 +1,52 @@
+# Argo CD Image Updater Helm Values
+replicaCount: 1
+
+image:
+  registry: quay.io
+  repository: argoproj-labs/argocd-image-updater
+  tag: v0.12.3
+  pullPolicy: IfNotPresent
+
+serviceAccount:
+  create: true
+  name: argocd-image-updater
+
+rbac:
+  enabled: true
+
+config:
+  argocd:
+    serverAddress: argocd-server.argocd
+    insecure: false
+    plaintext: false
+
+  registries:
+  - name: ghcr
+    api_url: https://ghcr.io
+    ping: yes
+    insecure: no
+    credentials: secret:argocd-image-updater/ghcr-credentials#username:password
+
+  log:
+    level: info
+
+extraArgs:
+  - --argocd-server-addr=argocd-server.argocd
+  - --interval=2m
+
+# Pour ajouter les credentials GHCR
+extraEnv: []
+
+# Ressources
+resources:
+  requests:
+    cpu: 100m
+    memory: 128Mi
+  limits:
+    cpu: 500m
+    memory: 512Mi
+
+# NodeSelector, tolerations, affinity (optional)
+nodeSelector: {}
+tolerations: []
+affinity: {}
