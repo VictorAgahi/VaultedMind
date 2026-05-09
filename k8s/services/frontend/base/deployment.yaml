@@ -13,6 +13,8 @@ spec:
       labels:
         app: vault-frontend
     spec:
+      imagePullSecrets:
+        - name: ghcr-login
       containers:
       - name: frontend
         image: ghcr.io/victoragahi/vault-frontend:latest

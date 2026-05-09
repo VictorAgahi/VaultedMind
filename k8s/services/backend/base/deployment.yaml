@@ -13,6 +13,8 @@ spec:
       labels:
         app: vault-backend
     spec:
+      imagePullSecrets:
+        - name: ghcr-login
       containers:
       - name: backend
         image: ghcr.io/victoragahi/vault-backend:3c71908ec4b611eec7fc0135d40e30b4291f6a87

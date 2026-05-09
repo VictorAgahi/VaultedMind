@@ -94,5 +94,5 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git add k8s/services/frontend/base/deployment.yaml
-          git diff --quiet && git diff --staged --quiet || (git commit -m "chore(k8s): update frontend image to ${{ github.sha }}" && git push origin main)
+          git diff --quiet && git diff --staged --quiet || (git commit -m "chore(k8s): update frontend image to ${{ github.sha }}" && git pull --rebase origin main && git push origin main)
 
