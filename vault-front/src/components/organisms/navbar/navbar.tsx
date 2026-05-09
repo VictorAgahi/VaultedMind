@@ -10,6 +10,8 @@ import SettingsIcon from "@mui/icons-material/Settings";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 
+import Image from "next/image";
+
 export const Navbar: React.FC = () => {
   const { user, logout } = useAuth();
   const pathname = usePathname();
@@ -18,9 +20,12 @@ export const Navbar: React.FC = () => {
     <AppBar position="static" color="inherit" elevation={1}>
       <Toolbar sx={{ justifyContent: "space-between", px: { xs: 2, md: 8 } }}>
         <Box sx={{ display: "flex", alignItems: "center", gap: 4 }}>
-          <Typography variant="h5" sx={{ fontWeight: 800, color: "primary.main", textDecoration: "none" }} component={Link} href="/dashboard">
-            VaultedMind
-          </Typography>
+          <Box component={Link} href="/dashboard" sx={{ display: "flex", alignItems: "center", gap: 1.5, textDecoration: "none" }}>
+            <Image src="/assets/logo.png" alt="VaultedMind Logo" width={40} height={40} priority />
+            <Typography variant="h6" sx={{ fontWeight: 800, color: "primary.main", letterSpacing: "-0.02em" }}>
+              VaultedMind
+            </Typography>
+          </Box>
 
           <Box sx={{ display: { xs: "none", md: "flex" }, gap: 1 }}>
             <Button

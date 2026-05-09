@@ -5,15 +5,23 @@ import { AuthProvider } from "@/context/auth-context";
 import { AppRouterCacheProvider } from "@mui/material-nextjs/v13-appRouter";
 import { ThemeProvider } from "@mui/material/styles";
 import CssBaseline from "@mui/material/CssBaseline";
+import Box from "@mui/material/Box";
 import { theme } from "@/theme/theme";
 import { BottomNav } from "@/components/organisms/bottom-nav/bottom-nav";
 
 const inter = Inter({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
-  title: "VaultedMind | Secure Your Thoughts",
-  description: "A robust and secure vault for your mental well-being and data.",
+  title: "VaultedMind | Secure Your Mental Well-being",
+  description: "VaultedMind is a high-security platform designed to track your mental health, daily logs, and personal insights with absolute privacy and encryption.",
+  openGraph: {
+    title: "VaultedMind | Secure Your Mental Well-being",
+    description: "Your mental health data, protected in a modern digital vault.",
+    images: ["/assets/logo.png"],
+  },
 };
+
+import { Footer } from "@/components/organisms/footer/footer";
 
 export default function RootLayout({
   children,
@@ -27,8 +35,13 @@ export default function RootLayout({
           <ThemeProvider theme={theme}>
             <CssBaseline />
             <AuthProvider>
-              {children}
-              <BottomNav />
+              <Box sx={{ display: "flex", flexDirection: "column", minHeight: "100vh" }}>
+                <Box component="main" sx={{ flexGrow: 1 }}>
+                  {children}
+                </Box>
+                <Footer />
+                <BottomNav />
+              </Box>
             </AuthProvider>
           </ThemeProvider>
         </AppRouterCacheProvider>
