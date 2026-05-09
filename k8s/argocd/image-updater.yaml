@@ -90,8 +90,8 @@ spec:
       serviceAccountName: argocd-image-updater
       containers:
       - name: argocd-image-updater
-        image: quay.io/argoproj-labs/argocd-image-updater:v0.14.4
-        imagePullPolicy: IfNotPresent
+        image: ghcr.io/argoproj-labs/argocd-image-updater:latest
+        imagePullPolicy: Always
         args:
         - argocd-image-updater
         - --interval=2m
