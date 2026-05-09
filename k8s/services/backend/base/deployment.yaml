@@ -17,7 +17,7 @@ spec:
         - name: ghcr-login
       initContainers:
       - name: migrations
-        image: ghcr.io/victoragahi/vault-backend:b1a0e1f0b26dd05bc41dba149dda48ef4121f2ca
+        image: ghcr.io/victoragahi/vault-backend:81286d090031e1730f1fc1b89f8c85b3f4125b99
         command: ['sh', '-c', 'yarn migration:run']
         env:
         - name: DB_HOST
@@ -38,7 +38,7 @@ spec:
           value: vaultedmind_db
       containers:
       - name: backend
-        image: ghcr.io/victoragahi/vault-backend:b1a0e1f0b26dd05bc41dba149dda48ef4121f2ca
+        image: ghcr.io/victoragahi/vault-backend:81286d090031e1730f1fc1b89f8c85b3f4125b99
         imagePullPolicy: IfNotPresent
         env:
         - name: DB_HOST
