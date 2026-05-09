@@ -63,6 +63,10 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
+      - name: Lowercase repository owner
+        id: prepare
+        run: echo "owner=${GITHUB_REPOSITORY_OWNER,,}" >> $GITHUB_OUTPUT
+
       - name: Build and push Docker image
         uses: docker/build-push-action@v5
         with:
@@ -70,8 +74,8 @@ jobs:
           file: ./frontend.Dockerfile
           push: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' }}
           tags: |
-            ghcr.io/${{ github.repository_owner | lower }}/vault-frontend:latest
-            ghcr.io/${{ github.repository_owner | lower }}/vault-frontend:${{ github.sha }}
-          cache-from: type=registry,ref=ghcr.io/${{ github.repository_owner | lower }}/vault-frontend:buildcache
-          cache-to: type=registry,ref=ghcr.io/${{ github.repository_owner | lower }}/vault-frontend:buildcache,mode=max
+            ghcr.io/${{ steps.prepare.outputs.owner }}/vault-frontend:latest
+            ghcr.io/${{ steps.prepare.outputs.owner }}/vault-frontend:${{ github.sha }}
+          cache-from: type=registry,ref=ghcr.io/${{ steps.prepare.outputs.owner }}/vault-frontend:buildcache
+          cache-to: type=registry,ref=ghcr.io/${{ steps.prepare.outputs.owner }}/vault-frontend:buildcache,mode=max
 

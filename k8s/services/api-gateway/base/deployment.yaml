@@ -1,0 +1,141 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: api-gateway
+  labels:
+    app: api-gateway
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: api-gateway
+  template:
+    metadata:
+      labels:
+        app: api-gateway
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "3000"
+        prometheus.io/path: "/metrics"
+    spec:
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+        fsGroup: 1000
+      containers:
+        - name: api-gateway
+          image: victorcra/masterquizz-api-gateway:1.0.0
+          securityContext:
+            readOnlyRootFilesystem: true
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop:
+                - ALL
+          resources:
+            requests:
+              cpu: "100m"
+              memory: "128Mi"
+            limits:
+              cpu: "500m"
+              memory: "256Mi"
+          command: ["/bin/sh", "-c"]
+          args:
+            - "node packages/api-gateway/src/index.js"
+          livenessProbe:
+            httpGet:
+              path: /metrics
+              port: 3000
+            initialDelaySeconds: 15
+            periodSeconds: 20
+          readinessProbe:
+            httpGet:
+              path: /metrics
+              port: 3000
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          ports:
+            - containerPort: 3000
+          envFrom:
+            - configMapRef:
+                name: global-config
+          env:
+            - name: PORT
+              value: "3000"
+            - name: LOG_LEVEL
+              value: "info"
+            - name: FRONTEND_URL
+              value: "http://front-office,https://nightquizz.com,https://quizz-master.cyrus-ag.com,http://localhost:3000,http://localhost:3005,http://127.0.0.1:3000,http://127.0.0.1:3005"
+            - name: USER_SERVICE_URL
+              value: "http://ms-user"
+            - name: QUIZZ_SERVICE_URL
+              value: "http://ms-quizz-management"
+            - name: SESSION_SERVICE_URL
+              value: "http://ms-session"
+            - name: RESPONSE_SERVICE_URL
+              value: "http://ms-response"
+            - name: WEBSOCKET_SERVICE_URL
+              value: "http://ws-service:3000"
+            - name: VALKEY_ENABLED
+              value: "true"
+            - name: YARN_CACHE_FOLDER
+              value: "/tmp/yarn-cache"
+            - name: AUTH_ACCESS_PRIVATE_KEY_PATH
+              value: "/app/keys/access-private.pem"
+            - name: AUTH_ACCESS_PUBLIC_KEY_PATH
+              value: "/app/keys/access-public.pem"
+            - name: AUTH_REFRESH_PRIVATE_KEY_PATH
+              value: "/app/keys/refresh-private.pem"
+            - name: AUTH_REFRESH_PUBLIC_KEY_PATH
+              value: "/app/keys/refresh-public.pem"
+            - name: AUTH_INTERNAL_PRIVATE_KEY_PATH
+              value: "/app/keys/internal-private.pem"
+            - name: AUTH_INTERNAL_PUBLIC_KEY_PATH
+              value: "/app/keys/internal-public.pem"
+            - name: AUTH_GAME_PRIVATE_KEY_PATH
+              value: "/app/keys/game-private.pem"
+            - name: AUTH_GAME_PUBLIC_KEY_PATH
+              value: "/app/keys/game-public.pem"
+            - name: OTEL_SERVICE_NAME
+              value: "api-gateway"
+          volumeMounts:
+            - name: auth-keys
+              mountPath: "/app/keys"
+              readOnly: true
+            - name: tmp
+              mountPath: /tmp
+      volumes:
+        - name: auth-keys
+          secret:
+            secretName: masterquizz-auth-keys
+            items:
+              - key: access_private.pem
+                path: access-private.pem
+              - key: access_public.pem
+                path: access-public.pem
+              - key: refresh_private.pem
+                path: refresh-private.pem
+              - key: refresh_public.pem
+                path: refresh-public.pem
+              - key: internal_private.pem
+                path: internal-private.pem
+              - key: internal_public.pem
+                path: internal-public.pem
+              - key: game_private.pem
+                path: game-private.pem
+              - key: game_public.pem
+                path: game-public.pem
+        - name: tmp
+          emptyDir: {}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: api-gateway
+spec:
+  type: NodePort
+  ports:
+    - port: 80
+      targetPort: 3000
+      nodePort: 30001
+  selector:
+    app: api-gateway

@@ -1,0 +1,16 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: grafana-dashboards-config
+data:
+  provider.yaml: |
+    apiVersion: 1
+    providers:
+      - name: 'QuizMaster Dashboards'
+        orgId: 1
+        folder: 'QuizzMaster'
+        type: file
+        disableDeletion: false
+        editable: true
+        options:
+          path: /etc/grafana-dashboards/json

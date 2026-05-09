@@ -1,0 +1,178 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: ms-user
+  labels:
+    app: ms-user
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: ms-user
+  template:
+    metadata:
+      labels:
+        app: ms-user
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "3000"
+        prometheus.io/path: "/metrics"
+    spec:
+      affinity:
+        podAntiAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+            - weight: 100
+              podAffinityTerm:
+                labelSelector:
+                  matchLabels:
+                    app: ms-user
+                topologyKey: kubernetes.io/hostname
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+        fsGroup: 1000
+      initContainers:
+        - name: migrate-ms-user
+          image: victorcra/masterquizz-ms-user:1.0.0
+          securityContext:
+            readOnlyRootFilesystem: true
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop:
+                - ALL
+          resources:
+            requests:
+              cpu: "100m"
+              memory: "256Mi"
+            limits:
+              cpu: "500m"
+              memory: "512Mi"
+          command: ["/bin/sh", "-c"]
+          args:
+            - |
+              node -e "const net = require('net'); const s = () => { const c = net.createConnection(process.env.POSTGRES_PORT, process.env.POSTGRES_HOST).on('connect', () => process.exit(0)).on('error', () => { console.log('waiting for postgres...'); setTimeout(s, 2000); }); }; s();" && node packages/ms-user/src/run-migrations.js
+          envFrom:
+            - configMapRef:
+                name: global-config
+          env:
+            - name: YARN_CACHE_FOLDER
+              value: "/tmp/yarn-cache"
+            - name: POSTGRES_DB
+              value: "ms_user_db"
+            - name: POSTGRES_USER
+              valueFrom:
+                secretKeyRef:
+                  name: masterquizz-db-secrets
+                  key: postgres-user
+            - name: POSTGRES_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: masterquizz-db-secrets
+                  key: postgres-password
+            - name: VALKEY_ENABLED
+              value: "false"
+            - name: KAFKA_ENABLED
+              value: "false"
+          volumeMounts:
+            - name: tmp
+              mountPath: /tmp
+      containers:
+        - name: ms-user
+          image: victorcra/masterquizz-ms-user:1.0.0
+          securityContext:
+            readOnlyRootFilesystem: true
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop:
+                - ALL
+          resources:
+            requests:
+              cpu: "100m"
+              memory: "128Mi"
+            limits:
+              cpu: "500m"
+              memory: "256Mi"
+          command: ["/bin/sh", "-c"]
+          args:
+            - "node packages/ms-user/src/index.js"
+          livenessProbe:
+            httpGet:
+              path: /metrics
+              port: 3000
+            initialDelaySeconds: 15
+            periodSeconds: 20
+          readinessProbe:
+            httpGet:
+              path: /metrics
+              port: 3000
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          ports:
+            - containerPort: 3000
+          envFrom:
+            - configMapRef:
+                name: global-config
+          env:
+            - name: PORT
+              value: "3000"
+            - name: POSTGRES_DB
+              value: "ms_user_db"
+            - name: POSTGRES_USER
+              valueFrom:
+                secretKeyRef:
+                  name: masterquizz-db-secrets
+                  key: postgres-user
+            - name: POSTGRES_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: masterquizz-db-secrets
+                  key: postgres-password
+            - name: VALKEY_ENABLED
+              value: "true"
+            - name: KAFKA_ENABLED
+              value: "true"
+            - name: AUTH_ACCESS_PRIVATE_KEY_PATH
+              value: "/app/keys/access-private.pem"
+            - name: AUTH_ACCESS_PUBLIC_KEY_PATH
+              value: "/app/keys/access-public.pem"
+            - name: YARN_CACHE_FOLDER
+              value: "/tmp/yarn-cache"
+            - name: OTEL_SERVICE_NAME
+              value: "ms-user"
+          volumeMounts:
+            - name: auth-keys
+              mountPath: "/app/keys"
+              readOnly: true
+            - name: tmp
+              mountPath: /tmp
+      volumes:
+        - name: auth-keys
+          secret:
+            secretName: masterquizz-auth-keys
+            items:
+              - key: access_private.pem
+                path: access-private.pem
+              - key: access_public.pem
+                path: access-public.pem
+              - key: refresh_private.pem
+                path: refresh-private.pem
+              - key: refresh_public.pem
+                path: refresh-public.pem
+              - key: internal_private.pem
+                path: internal-private.pem
+              - key: internal_public.pem
+                path: internal-public.pem
+        - name: tmp
+          emptyDir: {}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: ms-user
+spec:
+  type: ClusterIP
+  ports:
+    - port: 80
+      targetPort: 3000
+  selector:
+    app: ms-user

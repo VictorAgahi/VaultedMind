@@ -1,0 +1,36 @@
+apiVersion: argoproj.io/v1alpha1
+kind: ApplicationSet
+metadata:
+  name: vault-services
+  namespace: argocd
+spec:
+  generators:
+    - matrix:
+        generators:
+          - list:
+              elements:
+                - env: prod
+                  namespace: vault-prod
+          - list:
+              elements:
+                - service: postgres
+                - service: backend
+                - service: frontend
+  template:
+    metadata:
+      name: "vault-{{service}}-{{env}}"
+    spec:
+      project: default
+      source:
+        repoURL: git@github.com:VictorAgahi/VaultedBack.git
+        targetRevision: main
+        path: "k8s/services/{{service}}/overlays/{{env}}"
+      destination:
+        server: https://kubernetes.default.svc
+        namespace: "{{namespace}}"
+      syncPolicy:
+        automated:
+          prune: true
+          selfHeal: true
+        syncOptions:
+          - CreateNamespace=true

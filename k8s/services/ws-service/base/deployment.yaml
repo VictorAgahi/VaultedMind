@@ -1,0 +1,103 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: ws-service
+  labels:
+    app: ws-service
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: ws-service
+  template:
+    metadata:
+      labels:
+        app: ws-service
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "3000"
+        prometheus.io/path: "/metrics"
+    spec:
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+        fsGroup: 1000
+      containers:
+        - name: ws-service
+          image: victorcra/masterquizz-ws-service:latest
+          securityContext:
+            readOnlyRootFilesystem: true
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop:
+                - ALL
+          resources:
+            requests:
+              cpu: "100m"
+              memory: "128Mi"
+            limits:
+              cpu: "300m"
+              memory: "256Mi"
+          command: ["/bin/sh", "-c"]
+          args:
+            - "node packages/ws-service/src/index.js"
+          livenessProbe:
+            httpGet:
+              path: /metrics
+              port: 3000
+            initialDelaySeconds: 15
+            periodSeconds: 20
+          readinessProbe:
+            httpGet:
+              path: /metrics
+              port: 3000
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          ports:
+            - containerPort: 3000
+          envFrom:
+            - configMapRef:
+                name: global-config
+          env:
+            - name: PORT
+              value: "3000"
+            - name: OPENSEARCH_INDEX
+              value: "logs-ws-service"
+            - name: AUTH_INTERNAL_PRIVATE_KEY_PATH
+              value: "/app/keys/internal-private.pem"
+            - name: AUTH_INTERNAL_PUBLIC_KEY_PATH
+              value: "/app/keys/internal-public.pem"
+            - name: YARN_CACHE_FOLDER
+              value: "/tmp/yarn-cache"
+            - name: OTEL_SERVICE_NAME
+              value: "ws-service"
+          volumeMounts:
+            - name: auth-keys
+              mountPath: "/app/keys"
+              readOnly: true
+            - name: tmp
+              mountPath: /tmp
+      volumes:
+        - name: auth-keys
+          secret:
+            secretName: masterquizz-auth-keys
+            items:
+              - key: internal_private.pem
+                path: internal-private.pem
+              - key: internal_public.pem
+                path: internal-public.pem
+        - name: tmp
+          emptyDir: {}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: ws-service
+spec:
+  type: ClusterIP
+  ports:
+    - port: 3000
+      targetPort: 3000
+      name: ws
+  selector:
+    app: ws-service

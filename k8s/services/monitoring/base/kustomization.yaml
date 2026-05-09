@@ -1,0 +1,23 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+resources:
+  - prometheus.yaml
+  - grafana.yaml
+  - otel-collector.yaml
+  - opensearch.yaml
+  - opensearch-dashboards.yaml
+  - grafana-datasources.yaml
+  - grafana-dashboards-config.yaml
+  - jaeger.yaml
+  - opensearch-init-job.yaml
+  - rbac.yaml
+
+configMapGenerator:
+  - name: grafana-dashboards-json
+    files:
+      - 1-platform-overview.json=dashboards/1-platform-overview.json
+      - 2-api-gateway.json=dashboards/2-api-gateway.json
+      - 3-microservices.json=dashboards/3-microservices.json
+      - 4-kafka.json=dashboards/4-kafka.json
+      - 5-status-page.json=dashboards/5-status-page.json

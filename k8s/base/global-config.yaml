@@ -1,0 +1,23 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: global-config
+data:
+  NODE_ENV: "production"
+  POSTGRES_HOST: "postgres-service"
+  POSTGRES_PORT: "5432"
+  VALKEY_HOST: "valkey-service"
+  VALKEY_PORT: "6379"
+  KAFKA_BROKERS: '["kafka-service:29092"]'
+  KAFKA_ENABLED: "true"
+  VALKEY_ENABLED: "true"
+  OTEL_ENABLED: "true"
+  OTEL_EXPORTER_OTLP_ENDPOINT: "http://otel-collector-service:4317"
+  METRICS_ENABLED: "true"
+  OPENSEARCH_ENABLED: "true"
+  OPENSEARCH_NODE: "http://opensearch-service:9200"
+  OPENSEARCH_USERNAME: "admin"
+  OPENSEARCH_PASSWORD: "MasterQuizz123!"
+  OPENSEARCH_INDEX: "logs"
+  OPENSEARCH_SSL_REJECT_UNAUTHORIZED: "false"
+  NODE_TLS_REJECT_UNAUTHORIZED: "0"

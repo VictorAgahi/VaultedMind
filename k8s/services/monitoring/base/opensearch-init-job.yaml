@@ -1,0 +1,141 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: opensearch-init-mapping
+spec:
+  backoffLimit: 5
+  template:
+    metadata:
+      labels:
+        app: opensearch-init
+    spec:
+      restartPolicy: OnFailure
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+        fsGroup: 1000
+      initContainers:
+        - name: wait-for-opensearch
+          image: busybox:1.36
+          securityContext:
+            readOnlyRootFilesystem: true
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop:
+                - ALL
+          resources:
+            requests:
+              cpu: "10m"
+              memory: "32Mi"
+            limits:
+              cpu: "10m"
+              memory: "64Mi"
+          command: ['sh', '-c', 'until wget -qO- http://opensearch-service:9200/_cluster/health 2>/dev/null | grep -q "green\|yellow"; do echo "Waiting for OpenSearch..."; sleep 5; done; echo "OpenSearch is ready"']
+      containers:
+        - name: init-mapping
+          image: busybox:1.36
+          securityContext:
+            readOnlyRootFilesystem: true
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop:
+                - ALL
+          resources:
+            requests:
+              cpu: "10m"
+              memory: "32Mi"
+            limits:
+              cpu: "10m"
+              memory: "64Mi"
+          command:
+            - sh
+            - -c
+            - |
+              echo "Creating jaeger-span index template..."
+              wget -qO- --post-data='{
+                "index_patterns": ["jaeger-span*"],
+                "template": {
+                  "settings": {
+                    "number_of_shards": 1,
+                    "number_of_replicas": 0
+                  },
+                  "mappings": {
+                    "properties": {
+                      "traceID": { "type": "keyword" },
+                      "spanID": { "type": "keyword" },
+                      "parentSpanID": { "type": "keyword" },
+                      "operationName": { "type": "keyword" },
+                      "serviceName": { "type": "keyword" },
+                      "startTime": { "type": "long" },
+                      "startTimeMillis": { "type": "date" },
+                      "duration": { "type": "long" },
+                      "flags": { "type": "integer" },
+                      "process": {
+                        "properties": {
+                          "serviceName": { "type": "keyword" },
+                          "tag": {
+                            "type": "nested",
+                            "properties": {
+                              "key": { "type": "keyword" },
+                              "value": { "type": "keyword" }
+                            }
+                          }
+                        }
+                      },
+                      "tag": {
+                        "type": "nested",
+                        "properties": {
+                          "key": { "type": "keyword" },
+                          "value": { "type": "keyword" }
+                        }
+                      },
+                      "logs": {
+                        "type": "nested",
+                        "properties": {
+                          "timestamp": { "type": "long" },
+                          "fields": {
+                            "type": "nested",
+                            "properties": {
+                              "key": { "type": "keyword" },
+                              "value": { "type": "keyword" }
+                            }
+                          }
+                        }
+                      },
+                      "references": {
+                        "type": "nested",
+                        "properties": {
+                          "refType": { "type": "keyword" },
+                          "traceID": { "type": "keyword" },
+                          "spanID": { "type": "keyword" }
+                        }
+                      }
+                    }
+                  }
+                }
+              }' --header='Content-Type: application/json' http://opensearch-service:9200/_index_template/jaeger-span-template 2>&1
+
+              echo ""
+              echo "Creating jaeger-service index template..."
+              wget -qO- --post-data='{
+                "index_patterns": ["jaeger-service-*"],
+                "template": {
+                  "settings": {
+                    "number_of_shards": 1,
+                    "number_of_replicas": 0
+                  },
+                  "mappings": {
+                    "properties": {
+                      "serviceName": { "type": "keyword" },
+                      "operationName": { "type": "keyword" }
+                    }
+                  }
+                }
+              }' --header='Content-Type: application/json' http://opensearch-service:9200/_index_template/jaeger-service-template 2>&1
+
+              echo ""
+              echo "Deleting old jaeger-span index (bad mapping)..."
+              wget -qO- --method=DELETE http://opensearch-service:9200/jaeger-span* 2>&1 || true
+
+              echo ""
+              echo "Index templates created successfully"

@@ -1,0 +1,228 @@
+{
+  "uid": "status-page",
+  "title": "Platform Status Page",
+  "description": "Ready/Alive status of all platform components",
+  "tags": ["quizz-master", "status"],
+  "timezone": "browser",
+  "refresh": "10s",
+  "schemaVersion": 38,
+  "panels": [
+    {
+      "id": 1,
+      "type": "row",
+      "title": "Microservices",
+      "gridPos": { "x": 0, "y": 0, "w": 24, "h": 1 }
+    },
+    {
+      "id": 2,
+      "type": "stat",
+      "title": "API Gateway",
+      "gridPos": { "x": 0, "y": 1, "w": 4, "h": 4 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "fieldConfig": {
+        "defaults": {
+          "mappings": [{ "type": "value", "options": { "0": { "text": "DOWN", "color": "red" }, "1": { "text": "UP", "color": "green" } } }],
+          "thresholds": { "mode": "absolute", "steps": [{ "color": "red", "value": null }, { "color": "green", "value": 1 }] }
+        }
+      },
+      "targets": [{ "expr": "max(service_up{service=\"api-gateway\"}) or up{app=\"api-gateway\"} or vector(0)", "instant": true }]
+    },
+    {
+      "id": 3,
+      "type": "stat",
+      "title": "MS User",
+      "gridPos": { "x": 4, "y": 1, "w": 4, "h": 4 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "fieldConfig": {
+        "defaults": {
+          "mappings": [{ "type": "value", "options": { "0": { "text": "DOWN", "color": "red" }, "1": { "text": "UP", "color": "green" } } }],
+          "thresholds": { "mode": "absolute", "steps": [{ "color": "red", "value": null }, { "color": "green", "value": 1 }] }
+        }
+      },
+      "targets": [{ "expr": "max(service_up{service=\"ms-user\"}) or max(up{app=\"ms-user\"}) or vector(0)", "instant": true }]
+    },
+    {
+      "id": 4,
+      "type": "stat",
+      "title": "MS Quizz",
+      "gridPos": { "x": 8, "y": 1, "w": 4, "h": 4 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "fieldConfig": {
+        "defaults": {
+          "mappings": [{ "type": "value", "options": { "0": { "text": "DOWN", "color": "red" }, "1": { "text": "UP", "color": "green" } } }],
+          "thresholds": { "mode": "absolute", "steps": [{ "color": "red", "value": null }, { "color": "green", "value": 1 }] }
+        }
+      },
+      "targets": [{ "expr": "max(service_up{service=\"ms-quizz-management\"}) or max(up{app=\"ms-quizz-management\"}) or vector(0)", "instant": true }]
+    },
+    {
+      "id": 5,
+      "type": "stat",
+      "title": "MS Session",
+      "gridPos": { "x": 12, "y": 1, "w": 4, "h": 4 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "fieldConfig": {
+        "defaults": {
+          "mappings": [{ "type": "value", "options": { "0": { "text": "DOWN", "color": "red" }, "1": { "text": "UP", "color": "green" } } }],
+          "thresholds": { "mode": "absolute", "steps": [{ "color": "red", "value": null }, { "color": "green", "value": 1 }] }
+        }
+      },
+      "targets": [{ "expr": "max(service_up{service=\"ms-session\"}) or max(up{app=\"ms-session\"}) or vector(0)", "instant": true }]
+    },
+    {
+      "id": 6,
+      "type": "stat",
+      "title": "MS Response",
+      "gridPos": { "x": 16, "y": 1, "w": 4, "h": 4 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "fieldConfig": {
+        "defaults": {
+          "mappings": [{ "type": "value", "options": { "0": { "text": "DOWN", "color": "red" }, "1": { "text": "UP", "color": "green" } } }],
+          "thresholds": { "mode": "absolute", "steps": [{ "color": "red", "value": null }, { "color": "green", "value": 1 }] }
+        }
+      },
+      "targets": [{ "expr": "max(service_up{service=\"ms-response\"}) or max(up{app=\"ms-response\"}) or vector(0)", "instant": true }]
+    },
+    {
+      "id": 8,
+      "type": "stat",
+      "title": "WS Service",
+      "gridPos": { "x": 20, "y": 1, "w": 4, "h": 4 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "fieldConfig": {
+        "defaults": {
+          "mappings": [{ "type": "value", "options": { "0": { "text": "DOWN", "color": "red" }, "1": { "text": "UP", "color": "green" } } }],
+          "thresholds": { "mode": "absolute", "steps": [{ "color": "red", "value": null }, { "color": "green", "value": 1 }] }
+        }
+      },
+      "targets": [{ "expr": "max(service_up{service=\"ws-service\"}) or max(up{app=\"ws-service\"}) or vector(0)", "instant": true }]
+    },
+    {
+      "id": 7,
+      "type": "stat",
+      "title": "Replicas Running",
+      "description": "Total microservice pods being scraped by Prometheus",
+      "gridPos": { "x": 18, "y": 6, "w": 6, "h": 4 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "fieldConfig": {
+        "defaults": {
+          "thresholds": { "mode": "absolute", "steps": [{ "color": "red", "value": null }, { "color": "orange", "value": 5 }, { "color": "green", "value": 12 }] }
+        }
+      },
+      "targets": [{ "expr": "count(up{app=~\"api-gateway|ms-user|ms-quizz-management|ms-session|ms-response|ws-service\"} == 1) or vector(0)", "instant": true }]
+    },
+    {
+      "id": 10,
+      "type": "row",
+      "title": "Core Infrastructure",
+      "gridPos": { "x": 0, "y": 5, "w": 24, "h": 1 }
+    },
+    {
+      "id": 11,
+      "type": "stat",
+      "title": "PostgreSQL",
+      "description": "Inferred from microservice connectivity — Postgres does not expose HTTP metrics",
+      "gridPos": { "x": 0, "y": 6, "w": 8, "h": 4 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "fieldConfig": {
+        "defaults": {
+          "mappings": [{ "type": "value", "options": { "0": { "text": "DOWN", "color": "red" }, "1": { "text": "UP", "color": "green" } } }],
+          "thresholds": { "mode": "absolute", "steps": [{ "color": "red", "value": null }, { "color": "green", "value": 1 }] }
+        }
+      },
+      "targets": [{ "expr": "clamp_max(count(up{app=~\"ms-user|ms-quizz-management|ms-session|ms-response\"} == 1) , 1) or vector(0)", "instant": true }]
+    },
+    {
+      "id": 12,
+      "type": "stat",
+      "title": "Valkey (Cache)",
+      "description": "Inferred from microservice connectivity — Valkey does not expose HTTP metrics",
+      "gridPos": { "x": 8, "y": 6, "w": 5, "h": 4 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "fieldConfig": {
+        "defaults": {
+          "mappings": [{ "type": "value", "options": { "0": { "text": "DOWN", "color": "red" }, "1": { "text": "UP", "color": "green" } } }],
+          "thresholds": { "mode": "absolute", "steps": [{ "color": "red", "value": null }, { "color": "green", "value": 1 }] }
+        }
+      },
+      "targets": [{ "expr": "clamp_max(count(up{app=~\"api-gateway|ms-user|ms-session|ws-service\"} == 1), 1) or vector(0)", "instant": true }]
+    },
+    {
+      "id": 13,
+      "type": "stat",
+      "title": "Kafka (Broker)",
+      "description": "Inferred from microservice connectivity — Kafka does not expose Prometheus metrics natively",
+      "gridPos": { "x": 13, "y": 6, "w": 5, "h": 4 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "fieldConfig": {
+        "defaults": {
+          "mappings": [{ "type": "value", "options": { "0": { "text": "DOWN", "color": "red" }, "1": { "text": "UP", "color": "green" } } }],
+          "thresholds": { "mode": "absolute", "steps": [{ "color": "red", "value": null }, { "color": "green", "value": 1 }] }
+        }
+      },
+      "targets": [{ "expr": "clamp_max(count(up{app=~\"ms-user|ms-session|ms-response|ws-service\"} == 1), 1) or vector(0)", "instant": true }]
+    },
+    {
+      "id": 20,
+      "type": "row",
+      "title": "Observability Stack",
+      "gridPos": { "x": 0, "y": 10, "w": 24, "h": 1 }
+    },
+    {
+      "id": 21,
+      "type": "stat",
+      "title": "OpenSearch",
+      "gridPos": { "x": 0, "y": 11, "w": 6, "h": 4 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "fieldConfig": {
+        "defaults": {
+          "mappings": [{ "type": "value", "options": { "0": { "text": "DOWN", "color": "red" }, "1": { "text": "UP", "color": "green" } } }],
+          "thresholds": { "mode": "absolute", "steps": [{ "color": "red", "value": null }, { "color": "green", "value": 1 }] }
+        }
+      },
+      "targets": [{ "expr": "up{app=\"opensearch\"} or vector(0)", "instant": true }]
+    },
+    {
+      "id": 22,
+      "type": "stat",
+      "title": "Jaeger",
+      "gridPos": { "x": 6, "y": 11, "w": 6, "h": 4 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "fieldConfig": {
+        "defaults": {
+          "mappings": [{ "type": "value", "options": { "0": { "text": "DOWN", "color": "red" }, "1": { "text": "UP", "color": "green" } } }],
+          "thresholds": { "mode": "absolute", "steps": [{ "color": "red", "value": null }, { "color": "green", "value": 1 }] }
+        }
+      },
+      "targets": [{ "expr": "up{app=\"jaeger\"} or vector(0)", "instant": true }]
+    },
+    {
+      "id": 23,
+      "type": "stat",
+      "title": "OTEL Collector",
+      "gridPos": { "x": 12, "y": 11, "w": 6, "h": 4 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "fieldConfig": {
+        "defaults": {
+          "mappings": [{ "type": "value", "options": { "0": { "text": "DOWN", "color": "red" }, "1": { "text": "UP", "color": "green" } } }],
+          "thresholds": { "mode": "absolute", "steps": [{ "color": "red", "value": null }, { "color": "green", "value": 1 }] }
+        }
+      },
+      "targets": [{ "expr": "up{app=\"otel-collector\"} or vector(0)", "instant": true }]
+    },
+    {
+      "id": 24,
+      "type": "stat",
+      "title": "Prometheus",
+      "gridPos": { "x": 18, "y": 11, "w": 6, "h": 4 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "fieldConfig": {
+        "defaults": {
+          "mappings": [{ "type": "value", "options": { "0": { "text": "DOWN", "color": "red" }, "1": { "text": "UP", "color": "green" } } }],
+          "thresholds": { "mode": "absolute", "steps": [{ "color": "red", "value": null }, { "color": "green", "value": 1 }] }
+        }
+      },
+      "targets": [{ "expr": "up{app=\"prometheus\"} or vector(0)", "instant": true }]
+    }
+  ]
+}

@@ -1,0 +1,93 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: opensearch-dashboards
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: opensearch-dashboards
+  template:
+    metadata:
+      labels:
+        app: opensearch-dashboards
+    spec:
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+        fsGroup: 1000
+      initContainers:
+        - name: init-config
+          image: opensearchproject/opensearch-dashboards:2.13.0
+          securityContext:
+            runAsUser: 1000
+            readOnlyRootFilesystem: true
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop:
+                - ALL
+          resources:
+            requests:
+              cpu: "50m"
+              memory: "128Mi"
+            limits:
+              cpu: "50m"
+              memory: "256Mi"
+          command: ['sh', '-c', 'cp -r /usr/share/opensearch-dashboards/config/* /mnt/config/']
+          volumeMounts:
+            - name: config
+              mountPath: /mnt/config
+      containers:
+        - name: opensearch-dashboards
+          image: opensearchproject/opensearch-dashboards:2.13.0
+          securityContext:
+            readOnlyRootFilesystem: true
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop:
+                - ALL
+          resources:
+            requests:
+              cpu: "50m"
+              memory: "256Mi"
+            limits:
+              cpu: "50m"
+              memory: "512Mi"
+          env:
+            - name: OPENSEARCH_HOSTS
+              value: "http://opensearch-service:9200"
+            - name: OPENSEARCH_SSL_VERIFICATIONMODE
+              value: "none"
+            - name: OPENSEARCH_USERNAME
+              value: "admin"
+            - name: OPENSEARCH_PASSWORD
+              value: "MasterQuizz123!"
+          ports:
+            - containerPort: 5601
+          volumeMounts:
+            - name: config
+              mountPath: /usr/share/opensearch-dashboards/config
+            - name: data
+              mountPath: /usr/share/opensearch-dashboards/data
+            - name: tmp
+              mountPath: /tmp
+      volumes:
+        - name: config
+          emptyDir: {}
+        - name: data
+          emptyDir: {}
+        - name: tmp
+          emptyDir: {}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: opensearch-dashboards-service
+spec:
+  type: NodePort
+  selector:
+    app: opensearch-dashboards
+  ports:
+    - port: 5601
+      targetPort: 5601
+      nodePort: 30004

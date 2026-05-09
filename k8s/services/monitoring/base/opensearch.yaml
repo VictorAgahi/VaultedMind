@@ -1,0 +1,109 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: opensearch
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: opensearch
+  template:
+    metadata:
+      labels:
+        app: opensearch
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "9200"
+    spec:
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+        fsGroup: 1000
+      initContainers:
+        - name: init-config
+          image: opensearchproject/opensearch:2.13.0
+          securityContext:
+            runAsUser: 1000
+            readOnlyRootFilesystem: true
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop:
+                - ALL
+          resources:
+            requests:
+              cpu: "50m"
+              memory: "128Mi"
+            limits:
+              cpu: "50m"
+              memory: "256Mi"
+          command: ['sh', '-c', 'cp -r /usr/share/opensearch/config/* /mnt/config/ && rm -rf /mnt/config/opensearch-security && echo "plugins.security.disabled: true" >> /mnt/config/opensearch.yml']
+          volumeMounts:
+            - name: config
+              mountPath: /mnt/config
+      containers:
+        - name: opensearch
+          image: opensearchproject/opensearch:2.13.0
+          securityContext:
+            readOnlyRootFilesystem: true
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop:
+                - ALL
+          resources:
+            requests:
+              cpu: "200m"
+              memory: "1Gi"
+            limits:
+              cpu: "500m"
+              memory: "2Gi"
+          env:
+            - name: cluster.name
+              value: "opensearch-cluster"
+            - name: node.name
+              value: "opensearch-node1"
+            - name: discovery.type
+              value: "single-node"
+            - name: OPENSEARCH_JAVA_OPTS
+              value: "-Xms1g -Xmx1g"
+            - name: plugins.security.disabled
+              value: "true"
+            - name: OPENSEARCH_INITIAL_ADMIN_PASSWORD
+              value: "MasterQuizz123!"
+            - name: DISABLE_INSTALL_DEMO_CONFIG
+              value: "true"
+          ports:
+            - containerPort: 9200
+            - containerPort: 9300
+          volumeMounts:
+            - name: opensearch-storage
+              mountPath: /usr/share/opensearch/data
+            - name: logs
+              mountPath: /usr/share/opensearch/logs
+            - name: tmp
+              mountPath: /tmp
+            - name: config
+              mountPath: /usr/share/opensearch/config
+      volumes:
+        - name: opensearch-storage
+          emptyDir: {}
+        - name: logs
+          emptyDir: {}
+        - name: tmp
+          emptyDir: {}
+        - name: config
+          emptyDir: {}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: opensearch-service
+spec:
+  selector:
+    app: opensearch
+  ports:
+    - name: http
+      port: 9200
+      targetPort: 9200
+    - name: transport
+      port: 9300
+      targetPort: 9300
