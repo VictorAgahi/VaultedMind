@@ -15,6 +15,7 @@ RUN yarn install
 
 # Copy source code
 COPY vaultedMind/src ./src
+COPY vaultedMind/scripts ./scripts
 COPY vaultedMind/tsconfig*.json ./
 COPY vaultedMind/nest-cli.json ./
 COPY vaultedMind/.prettierrc ./
