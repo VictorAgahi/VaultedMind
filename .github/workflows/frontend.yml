@@ -34,6 +34,9 @@ jobs:
           cache: 'npm'
           cache-dependency-path: vault-front/package-lock.json
 
+      - name: Enable Corepack
+        run: corepack enable
+
       - name: Install dependencies
         working-directory: vault-front
         run: npm ci
