@@ -34,7 +34,7 @@ COPY vaultedMind/package.json vaultedMind/yarn.lock ./
 COPY vaultedMind/.yarn ./.yarn
 
 RUN corepack enable && corepack prepare yarn@4.6.0 --activate && \
-    yarn install --production
+    NODE_ENV=production yarn install --immutable
 
 # Copy built application from builder stage
 COPY --from=builder /app/dist ./dist
