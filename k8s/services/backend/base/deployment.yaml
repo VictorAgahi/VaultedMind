@@ -15,7 +15,7 @@ spec:
     spec:
       containers:
       - name: backend
-        image: ghcr.io/victoragahi/vault-backend:latest
+        image: ghcr.io/victoragahi/vault-backend:3c71908ec4b611eec7fc0135d40e30b4291f6a87
         imagePullPolicy: IfNotPresent
         env:
         - name: DB_HOST
