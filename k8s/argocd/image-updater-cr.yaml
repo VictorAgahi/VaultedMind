@@ -1,29 +1,13 @@
 apiVersion: argocd-image-updater.argoproj.io/v1alpha1
 kind: ImageUpdater
 metadata:
-  name: vault-backend
+  name: vault-apps
   namespace: argocd
 spec:
-  image: ghcr.io/victoragahi/vault-backend
-  registries:
-  - name: ghcr
-    api_url: https://ghcr.io
-  template:
-    metadata:
-      name: vault-backend
-      namespace: argocd
----
-apiVersion: argocd-image-updater.argoproj.io/v1alpha1
-kind: ImageUpdater
-metadata:
-  name: vault-frontend
-  namespace: argocd
-spec:
-  image: ghcr.io/victoragahi/vault-frontend
-  registries:
-  - name: ghcr
-    api_url: https://ghcr.io
-  template:
-    metadata:
-      name: vault-frontend
-      namespace: argocd
+  applicationRefs:
+  - namePattern: "vault-*"
+    useAnnotations: true
+  commonUpdateSettings:
+    updateStrategy: digest
+  writeBackConfig:
+    method: argocd
