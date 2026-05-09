@@ -20,7 +20,11 @@ export class DailyLogRepository extends AbstractBaseRepository<DailyLogModel> {
   async findDomainById(id: string): Promise<DailyLog> {
     const model = await this.findById(id);
     if (model.notes) {
-      model.notes = this.encryptionService.decrypt(model.notes);
+      try {
+        model.notes = this.encryptionService.decrypt(model.notes);
+      } catch (e) {
+        Logger.error(e);
+      }
     }
     return DailyLogMapper.toDomain(model);
   }
@@ -37,7 +41,6 @@ export class DailyLogRepository extends AbstractBaseRepository<DailyLogModel> {
           model.notes = this.encryptionService.decrypt(model.notes);
         } catch (e) {
           Logger.error(e);
-          // Fallback if not encrypted yet
         }
       }
     });
@@ -63,7 +66,13 @@ export class DailyLogRepository extends AbstractBaseRepository<DailyLogModel> {
     id: string,
     updates: Partial<Pick<DailyLog, 'logDate' | 'notes'>>,
   ): Promise<DailyLog> {
-    await this.repository.update(id, updates);
+    const encryptedUpdates = { ...updates };
+    if (encryptedUpdates.notes) {
+      encryptedUpdates.notes = this.encryptionService.encrypt(
+        encryptedUpdates.notes,
+      );
+    }
+    await this.repository.update(id, encryptedUpdates);
     return this.findDomainById(id);
   }
 

@@ -20,7 +20,12 @@ export class FieldValueRepository extends AbstractBaseRepository<FieldValueModel
   async findDomainById(id: string): Promise<FieldValue> {
     const model = await this.findById(id);
     if (model.value) {
-      model.value = this.encryptionService.decrypt(model.value);
+      try {
+        model.value = this.encryptionService.decrypt(model.value);
+      } catch (e) {
+        Logger.error(e);
+        // Fallback
+      }
     }
     return FieldValueMapper.toDomain(model);
   }
@@ -56,7 +61,13 @@ export class FieldValueRepository extends AbstractBaseRepository<FieldValueModel
     id: string,
     updates: Partial<Pick<FieldValue, 'value'>>,
   ): Promise<FieldValue> {
-    await this.repository.update(id, updates);
+    const encryptedUpdates = { ...updates };
+    if (encryptedUpdates.value) {
+      encryptedUpdates.value = this.encryptionService.encrypt(
+        encryptedUpdates.value,
+      );
+    }
+    await this.repository.update(id, encryptedUpdates);
     return this.findDomainById(id);
   }
 
