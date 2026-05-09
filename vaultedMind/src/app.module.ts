@@ -1,13 +1,13 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { TypeOrmModule, TypeOrmModuleOptions } from '@nestjs/typeorm';
-import databaseConfig from './config/database.config';
-import { DatabaseModule } from './database/database.module';
-import { SecurityModule } from './common/security/security.module';
+import databaseConfig from './config/database.config.js';
+import { DatabaseModule } from './database/database.module.js';
+import { SecurityModule } from './common/security/security.module.js';
 import { JwtModule } from '@nestjs/jwt';
-import { UserModule } from './modules/user/infrastructure/user.module';
-import { AuthModule } from './modules/auth/infrastructure/auth.module';
-import { HealthModule } from './modules/health/infrastructure/health.module';
+import { UserModule } from './modules/user/infrastructure/user.module.js';
+import { AuthModule } from './modules/auth/infrastructure/auth.module.js';
+import { HealthModule } from './modules/health/infrastructure/health.module.js';
 
 @Module({
   imports: [
