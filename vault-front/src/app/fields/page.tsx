@@ -55,20 +55,20 @@ export default function FieldsPage() {
   const [page, setPage] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(10);
 
-  const fetchFields = async () => {
-    setLoading(true);
-    try {
-      const data = await apiService.get<CustomField[]>("/health/custom-fields");
-      setFields(data);
-      setError(null);
-    } catch {
-      setError("Failed to load fields");
-    } finally {
-      setLoading(false);
-    }
-  };
-
   useEffect(() => {
+    const fetchFields = async () => {
+      setLoading(true);
+      try {
+        const data = await apiService.get<CustomField[]>("/health/custom-fields");
+        setFields(data);
+        setError(null);
+      } catch {
+        setError("Failed to load fields");
+      } finally {
+        setLoading(false);
+      }
+    };
+
     fetchFields();
   }, []);
 

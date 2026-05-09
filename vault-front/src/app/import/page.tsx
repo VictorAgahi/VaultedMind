@@ -245,14 +245,14 @@ export default function ImportPage() {
         })
       );
     } catch (err) {
-      const errorObj = err as any;
+      const errorObj = err as Record<string, unknown>;
       let errorMsg = "Unknown error";
 
       if (errorObj.message) {
         if (Array.isArray(errorObj.message)) {
           errorMsg = errorObj.message.join(", ");
         } else {
-          errorMsg = errorObj.message;
+          errorMsg = String(errorObj.message);
         }
       }
 
@@ -330,8 +330,8 @@ export default function ImportPage() {
                   color="text.secondary"
                   sx={{ textAlign: "center", maxWidth: 400 }}
                 >
-                  Drag and drop your file or click to browse. The file must have a "Date"
-                  column (e.g., "8 mai 2026").
+                  Drag and drop your file or click to browse. The file must have a &quot;Date&quot;
+                  column (e.g., &quot;8 mai 2026&quot;).
                 </Typography>
                 <Button
                   variant="contained"
