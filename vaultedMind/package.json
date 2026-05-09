@@ -25,6 +25,7 @@
     "test:cov": "NODE_OPTIONS='--experimental-vm-modules --no-warnings' jest --coverage",
     "test:debug": "node --inspect-brk -r tsconfig-paths/register -r ts-node/register node_modules/.bin/jest --runInBand",
     "test:e2e": "NODE_OPTIONS='--experimental-vm-modules --no-warnings' jest --config ./test/jest-e2e.json",
+    "test:e2e:ci": "bash scripts/e2e-setup.sh",
     "typeorm": "node scripts/typeorm.js",
     "migration:generate": "yarn typeorm migration:generate -d src/database/data-source.ts",
     "migration:run": "yarn typeorm migration:run -d src/database/data-source.ts",
