@@ -38,6 +38,7 @@ ENV NODE_ENV=production
 
 # Copy package files and node_modules from builder
 COPY vaultedMind/package.json vaultedMind/yarn.lock ./
+COPY --from=builder /app/.yarnrc.yml ./
 COPY vaultedMind/.yarn ./.yarn
 COPY --from=builder /app/node_modules ./node_modules
 
