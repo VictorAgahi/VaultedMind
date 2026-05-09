@@ -9,6 +9,7 @@ import {
   Req,
   HttpCode,
   HttpStatus,
+  UseGuards,
 } from '@nestjs/common';
 import { DailyLogService } from '../../application/services/daily-log.service.js';
 import {
@@ -19,8 +20,10 @@ import {
 import { AuthUser } from '../../../auth/domain/interfaces/auth-user.interface.js';
 import { DailyLog } from '../../domain/entities/daily-log.entity.js';
 import { v4 as uuidv4 } from 'uuid';
+import { JwtAuthGuard } from '../../../auth/infrastructure/guards/jwt-auth.guard.js';
 
 @Controller('health/daily-logs')
+@UseGuards(JwtAuthGuard)
 export class DailyLogController {
   constructor(private readonly dailyLogService: DailyLogService) {}
 

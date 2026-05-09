@@ -9,6 +9,7 @@ import {
   Req,
   HttpCode,
   HttpStatus,
+  UseGuards,
 } from '@nestjs/common';
 import { FieldValueService } from '../../application/services/field-value.service.js';
 import {
@@ -19,8 +20,10 @@ import {
 import { AuthUser } from '../../../auth/domain/interfaces/auth-user.interface.js';
 import { FieldValue } from '../../domain/entities/field-value.entity.js';
 import { v4 as uuidv4 } from 'uuid';
+import { JwtAuthGuard } from '../../../auth/infrastructure/guards/jwt-auth.guard.js';
 
 @Controller('health/daily-logs/:logId/values')
+@UseGuards(JwtAuthGuard)
 export class FieldValueController {
   constructor(private readonly fieldValueService: FieldValueService) {}
 

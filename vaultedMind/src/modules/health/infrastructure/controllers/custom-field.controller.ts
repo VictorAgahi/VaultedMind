@@ -9,6 +9,7 @@ import {
   Req,
   HttpCode,
   HttpStatus,
+  UseGuards,
 } from '@nestjs/common';
 import { CustomFieldService } from '../../application/services/custom-field.service.js';
 import {
@@ -19,8 +20,10 @@ import {
 import { AuthUser } from '../../../auth/domain/interfaces/auth-user.interface.js';
 import { CustomField } from '../../domain/entities/custom-field.entity.js';
 import { v4 as uuidv4 } from 'uuid';
+import { JwtAuthGuard } from '../../../auth/infrastructure/guards/jwt-auth.guard.js';
 
 @Controller('health/custom-fields')
+@UseGuards(JwtAuthGuard)
 export class CustomFieldController {
   constructor(private readonly customFieldService: CustomFieldService) {}
 
