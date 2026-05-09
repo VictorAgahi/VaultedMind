@@ -28,6 +28,8 @@ FROM node:24-alpine
 
 WORKDIR /app
 
+RUN corepack enable && corepack prepare yarn@4.6.0 --activate
+
 # Create a non-root user
 RUN addgroup -g 1001 vault && \
     adduser -u 1001 -G vault -s /bin/sh -D vault
