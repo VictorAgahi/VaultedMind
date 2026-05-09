@@ -9,8 +9,8 @@ class ApiService {
   ): Promise<T> {
     const url = `${BACKEND_URL}${endpoint}`;
 
-    // Get token from localStorage (client-side only)
-    const token = typeof window !== "undefined" ? localStorage.getItem("auth_token") : null;
+    // Get token from access_token (client-side only)
+    const token = typeof window !== "undefined" ? localStorage.getItem("access_token") : null;
 
     const headers: HeadersInit = {
       "Content-Type": "application/json",
@@ -35,8 +35,8 @@ class ApiService {
         // Handle specific status codes
         if (response.status === 401) {
           if (typeof window !== "undefined") {
-            localStorage.removeItem("auth_token");
-            document.cookie = "auth_token=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT";
+            localStorage.removeItem("access_token");
+            document.cookie = "access_token=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT";
             window.location.href = "/login";
           }
         }

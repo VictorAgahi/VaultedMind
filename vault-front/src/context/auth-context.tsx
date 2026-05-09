@@ -23,14 +23,14 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   useEffect(() => {
     const initAuth = async () => {
-      const token = localStorage.getItem("auth_token");
+      const token = localStorage.getItem("access_token");
       if (token) {
         try {
           const userData = await apiService.get<User>("/auth/me");
           setUser(userData);
         } catch (error) {
           console.error("Failed to initialize auth", error);
-          localStorage.removeItem("auth_token");
+          localStorage.removeItem("access_token");
         }
       }
       setLoading(false);
@@ -43,8 +43,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     setLoading(true);
     try {
       const response = await apiService.post<AuthResponse, LoginCredentials>("/auth/login", credentials);
-      localStorage.setItem("auth_token", response.token);
-      document.cookie = `auth_token=${response.token}; path=/; max-age=86400; SameSite=Strict`;
+      localStorage.setItem("access_token", response.accessToken);
+      document.cookie = `access_token=${response.accessToken}; path=/; max-age=86400; SameSite=Strict`;
       setUser(response.user);
       router.push("/dashboard");
     } catch (error) {
@@ -58,8 +58,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     setLoading(true);
     try {
       const response = await apiService.post<AuthResponse, RegisterData>("/auth/register", userData);
-      localStorage.setItem("auth_token", response.token);
-      document.cookie = `auth_token=${response.token}; path=/; max-age=86400; SameSite=Strict`;
+      localStorage.setItem("access_token", response.accessToken);
+      document.cookie = `access_token=${response.accessToken}; path=/; max-age=86400; SameSite=Strict`;
       setUser(response.user);
       router.push("/dashboard");
     } catch (error) {
@@ -70,9 +70,9 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   };
 
   const logout = () => {
-    localStorage.removeItem("auth_token");
+    localStorage.removeItem("access_token");
     // Remove cookie
-    document.cookie = "auth_token=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT";
+    document.cookie = "access_token=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT";
     setUser(null);
     router.push("/login");
   };
