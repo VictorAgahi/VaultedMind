@@ -27,15 +27,15 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - name: Enable Corepack
+        run: corepack enable
+
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: '24'
           cache: 'npm'
           cache-dependency-path: vault-front/package-lock.json
-
-      - name: Enable Corepack
-        run: corepack enable
 
       - name: Install dependencies
         working-directory: vault-front
