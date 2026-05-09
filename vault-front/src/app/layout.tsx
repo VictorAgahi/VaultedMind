@@ -19,6 +19,10 @@ export const metadata: Metadata = {
     description: "Your mental health data, protected in a modern digital vault.",
     images: ["/assets/logo.png"],
   },
+  icons: {
+    icon: "/icon.png",
+    apple: "/apple-icon.png",
+  },
 };
 
 import { Footer } from "@/components/organisms/footer/footer";
