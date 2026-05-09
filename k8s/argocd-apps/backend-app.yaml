@@ -3,11 +3,6 @@ kind: Application
 metadata:
   name: vault-backend
   namespace: argocd
-  annotations:
-    argocd-image-updater.argoproj.io/image-list: vault-backend=ghcr.io/victoragahi/vault-backend
-    argocd-image-updater.argoproj.io/vault-backend.update-strategy: digest
-    argocd-image-updater.argoproj.io/vault-backend.update-method: kustomize
-    argocd-image-updater.argoproj.io/vault-backend.kustomize-image-name: vault-backend
 spec:
   project: default
   source:
