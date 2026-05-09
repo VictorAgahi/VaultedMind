@@ -20,6 +20,10 @@ FROM node:24-alpine
 
 WORKDIR /app
 
+# Create a non-root user
+RUN addgroup -g 1001 vault && \
+    adduser -u 1001 -G vault -s /bin/sh -D vault
+
 # Set environment to production
 ENV NODE_ENV=production
 
@@ -30,6 +34,11 @@ RUN npm ci --only=production
 # Copy built app from builder stage
 COPY --from=builder /app/.next ./.next
 COPY --from=builder /app/public ./public
+
+# Set ownership to the non-root user
+RUN chown -R vault:vault /app
+
+USER vault
 
 EXPOSE 3000
 

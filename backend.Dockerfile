@@ -27,6 +27,10 @@ FROM node:24-alpine
 
 WORKDIR /app
 
+# Create a non-root user
+RUN addgroup -g 1001 vault && \
+    adduser -u 1001 -G vault -s /bin/sh -D vault
+
 ENV NODE_ENV=production
 
 # Copy package files and node_modules from builder
@@ -37,9 +41,14 @@ COPY --from=builder /app/node_modules ./node_modules
 # Copy built application from builder stage
 COPY --from=builder /app/dist ./dist
 
-EXPOSE 3001
+# Set ownership to the non-root user
+RUN chown -R vault:vault /app
+
+USER vault
+
+EXPOSE 3000
 
 HEALTHCHECK --interval=30s --timeout=3s --start-period=10s --retries=3 \
-  CMD node -e "require('http').get('http://localhost:3001/health', (r) => {if (r.statusCode !== 200) throw new Error(r.statusCode)})"
+  CMD node -e "require('http').get('http://localhost:3000/health', (r) => {if (r.statusCode !== 200) throw new Error(r.statusCode)})"
 
 CMD ["node", "dist/main.js"]
