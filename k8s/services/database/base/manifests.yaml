@@ -48,7 +48,7 @@ spec:
         fsGroup: 999
       containers:
       - name: postgres
-        image: postgres:16
+        image: postgres:latest
         securityContext:
           runAsUser: 999
           runAsNonRoot: true
