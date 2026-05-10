@@ -50,21 +50,26 @@ export const CustomFieldsManager: React.FC = () => {
   const [historicalOptions, setHistoricalOptions] = useState<string[]>([]);
   const [submitting, setSubmitting] = useState(false);
 
-  const fetchFields = React.useCallback(async () => {
+  const fetchFields = React.useCallback(async (signal?: AbortSignal) => {
     setLoading(true);
     try {
-      const data = await apiService.get<CustomField[]>("/health/custom-fields");
+      const data = await apiService.get<CustomField[]>("/health/custom-fields", { signal });
       setFields(data);
-    } catch {
+    } catch (err: unknown) {
+      if ((err as { name?: string }).name === "AbortError") return;
       setError("Failed to load custom fields");
     } finally {
-      setLoading(false);
+      if (!signal?.aborted) {
+        setLoading(false);
+      }
     }
   }, []);
 
   useEffect(() => {
+    const controller = new AbortController();
     // eslint-disable-next-line react-hooks/set-state-in-effect
-    fetchFields();
+    fetchFields(controller.signal);
+    return () => controller.abort();
   }, [fetchFields]);
 
   const handleOpenDialog = (field?: CustomField) => {
@@ -297,10 +302,10 @@ export const CustomFieldsManager: React.FC = () => {
                       }
                     }}
                   />
-                  <Button 
-                    variant="contained" 
+                  <Button
+                    variant="contained"
                     onClick={() => handleAddOption(newValue)}
-                    sx={{ 
+                    sx={{
                       borderRadius: 2,
                       bgcolor: "#d81832",
                       "&:hover": { bgcolor: "#b01328" }
@@ -324,7 +329,7 @@ export const CustomFieldsManager: React.FC = () => {
                           onClick={() => handleAddOption(opt)}
                           icon={<AddIcon style={{ fontSize: 16 }} />}
                           variant="outlined"
-                          sx={{ 
+                          sx={{
                             borderRadius: 1.5,
                             borderColor: "rgba(216, 24, 50, 0.3)",
                             "&:hover": {
@@ -338,16 +343,16 @@ export const CustomFieldsManager: React.FC = () => {
                   </Box>
                 )}
 
-                <Box sx={{ 
-                  bgcolor: "rgba(216, 24, 50, 0.04)", 
-                  p: 2.5, 
+                <Box sx={{
+                  bgcolor: "rgba(216, 24, 50, 0.04)",
+                  p: 2.5,
                   borderRadius: 3,
                   border: "1px solid rgba(216, 24, 50, 0.1)"
                 }}>
-                  <Typography variant="caption" sx={{ 
-                    display: "block", 
-                    mb: 2, 
-                    fontWeight: 700, 
+                  <Typography variant="caption" sx={{
+                    display: "block",
+                    mb: 2,
+                    fontWeight: 700,
                     color: "#d81832",
                     textTransform: "uppercase",
                     letterSpacing: "0.5px"
@@ -361,15 +366,15 @@ export const CustomFieldsManager: React.FC = () => {
                       </Typography>
                     ) : (
                       optionsOrder.map((opt, idx) => (
-                        <Box 
-                          key={opt} 
-                          sx={{ 
-                            display: "flex", 
-                            alignItems: "center", 
-                            bgcolor: "white", 
-                            p: 1.5, 
-                            px: 2, 
-                            borderRadius: 2, 
+                        <Box
+                          key={opt}
+                          sx={{
+                            display: "flex",
+                            alignItems: "center",
+                            bgcolor: "white",
+                            p: 1.5,
+                            px: 2,
+                            borderRadius: 2,
                             boxShadow: "0 2px 4px rgba(0,0,0,0.05)",
                             border: "1px solid #eee",
                             transition: "transform 0.2s, box-shadow 0.2s",
@@ -381,34 +386,34 @@ export const CustomFieldsManager: React.FC = () => {
                         >
                           <DragIndicatorIcon sx={{ color: "#9ca3af", mr: 2, fontSize: 20 }} />
                           <Typography variant="body2" sx={{ flexGrow: 1, fontWeight: 600, color: "#1f2937" }}>{opt}</Typography>
-                          
+
                           <Stack direction="row" spacing={0.5}>
-                            <IconButton 
-                              size="small" 
-                              onClick={() => moveOption(idx, 'up')} 
+                            <IconButton
+                              size="small"
+                              onClick={() => moveOption(idx, 'up')}
                               disabled={idx === 0}
-                              sx={{ 
+                              sx={{
                                 color: "#d81832",
                                 "&.Mui-disabled": { color: "#e5e7eb" }
                               }}
                             >
                               <Typography sx={{ fontWeight: 800 }}>↑</Typography>
                             </IconButton>
-                            <IconButton 
-                              size="small" 
-                              onClick={() => moveOption(idx, 'down')} 
+                            <IconButton
+                              size="small"
+                              onClick={() => moveOption(idx, 'down')}
                               disabled={idx === optionsOrder.length - 1}
-                              sx={{ 
+                              sx={{
                                 color: "#d81832",
                                 "&.Mui-disabled": { color: "#e5e7eb" }
                               }}
                             >
                               <Typography sx={{ fontWeight: 800 }}>↓</Typography>
                             </IconButton>
-                            <IconButton 
-                              size="small" 
-                              onClick={() => handleRemoveOption(opt)} 
-                              sx={{ 
+                            <IconButton
+                              size="small"
+                              onClick={() => handleRemoveOption(opt)}
+                              sx={{
                                 color: "#ef4444",
                                 ml: 1,
                                 "&:hover": { bgcolor: "rgba(239, 68, 68, 0.1)" }

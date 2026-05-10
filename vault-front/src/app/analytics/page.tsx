@@ -41,11 +41,13 @@ export default function AnalyticsPage() {
   const [selectedFreqField, setSelectedFreqField] = useState<string>("");
 
   useEffect(() => {
+    const controller = new AbortController();
+
     const fetchData = async () => {
       try {
         const [fieldsData, logsData] = await Promise.all([
-          apiService.get<CustomField[]>("/health/custom-fields"),
-          apiService.get<DailyLog[]>("/health/daily-logs")
+          apiService.get<CustomField[]>("/health/custom-fields", { signal: controller.signal }),
+          apiService.get<DailyLog[]>("/health/daily-logs", { signal: controller.signal })
         ]);
         setFields(fieldsData);
         setLogs(logsData.sort((a, b) => new Date(a.logDate).getTime() - new Date(b.logDate).getTime()));
@@ -57,13 +59,17 @@ export default function AnalyticsPage() {
         const stringFields = fieldsData.filter(f => f.fieldType === FieldType.STRING || f.fieldType === FieldType.BOOLEAN);
         if (stringFields.length > 0) setSelectedFreqField(stringFields[0].id);
 
-      } catch {
+      } catch (err: unknown) {
+        if ((err as { name?: string }).name === "AbortError") return;
         setError("Échec du chargement des données d'analyse");
       } finally {
-        setLoading(false);
+        if (!controller.signal.aborted) {
+          setLoading(false);
+        }
       }
     };
     fetchData();
+    return () => controller.abort();
   }, []);
 
   const trendData = useMemo(() => {

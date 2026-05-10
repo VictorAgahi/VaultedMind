@@ -60,12 +60,12 @@ export const DailyLogsManager: React.FC = () => {
   const [selectedFieldFilters, setSelectedFieldFilters] = useState<string[]>([]);
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc");
 
-  const fetchData = React.useCallback(async () => {
+  const fetchData = React.useCallback(async (signal?: AbortSignal) => {
     setLoading(true);
     try {
       const [fieldsData, logsData] = await Promise.all([
-        apiService.get<CustomField[]>("/health/custom-fields"),
-        apiService.get<DailyLog[]>("/health/daily-logs")
+        apiService.get<CustomField[]>("/health/custom-fields", { signal }),
+        apiService.get<DailyLog[]>("/health/daily-logs", { signal })
       ]);
       setFields(fieldsData);
 
@@ -74,16 +74,20 @@ export const DailyLogsManager: React.FC = () => {
         (a, b) => new Date(b.logDate).getTime() - new Date(a.logDate).getTime()
       );
       setLogs(sortedLogs);
-    } catch {
+    } catch (err: unknown) {
+      if ((err as { name?: string }).name === "AbortError") return;
       setError("Échec du chargement des données de suivi");
     } finally {
-      setLoading(false);
+      if (!signal?.aborted) {
+        setLoading(false);
+      }
     }
   }, []);
 
   useEffect(() => {
+    const controller = new AbortController();
     // eslint-disable-next-line react-hooks/set-state-in-effect
-    fetchData();
+    fetchData(controller.signal);
 
     const handleFieldsUpdated = () => {
       fetchData();
@@ -91,13 +95,13 @@ export const DailyLogsManager: React.FC = () => {
 
     const handleLogsImported = () => {
       console.log("🔄 Logs imported event received, refreshing data...");
-      setLoading(true);
       fetchData();
     };
 
     window.addEventListener("vaultedmind:fields-updated", handleFieldsUpdated);
     window.addEventListener("vaultedmind:logs-imported", handleLogsImported);
     return () => {
+      controller.abort();
       window.removeEventListener("vaultedmind:fields-updated", handleFieldsUpdated);
       window.removeEventListener("vaultedmind:logs-imported", handleLogsImported);
     };
@@ -129,7 +133,7 @@ export const DailyLogsManager: React.FC = () => {
 
   const historicalValues = useMemo(() => {
     const map: Record<string, Set<string>> = {};
-    
+
     // Add values from optionsOrder (the new custom sorting)
     fields.forEach(field => {
       if (field.optionsOrder && field.optionsOrder.length > 0) {
@@ -151,7 +155,7 @@ export const DailyLogsManager: React.FC = () => {
         }
       });
     });
-    
+
     const result: Record<string, string[]> = {};
     for (const [key, set] of Object.entries(map)) {
       result[key] = Array.from(set).sort();
@@ -304,7 +308,7 @@ export const DailyLogsManager: React.FC = () => {
 
     // Default STRING or NUMBER with Autocomplete for historical values
     const options = historicalValues[field.id] || [];
-    
+
     return (
       <Autocomplete
         key={field.id}

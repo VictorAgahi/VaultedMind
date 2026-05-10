@@ -1,8 +1,8 @@
 import { ApiError } from "@/types";
 
 const isServer = typeof window === "undefined";
-const BACKEND_URL = isServer 
-  ? "http://vault-backend" 
+const BACKEND_URL = isServer
+  ? "http://vault-backend"
   : (process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:8080");
 
 class ApiService {
@@ -15,7 +15,7 @@ class ApiService {
     const url = `${baseUrl}${cleanEndpoint}`;
 
     // Cookies are handled automatically by the browser with credentials: true
-    const token = null; 
+    const token = null;
 
     const headers: HeadersInit = {
       "Content-Type": "application/json",
@@ -23,10 +23,10 @@ class ApiService {
     };
 
     try {
-      const response = await fetch(url, { 
-        ...options, 
+      const response = await fetch(url, {
+        ...options,
         headers,
-        credentials: "include" // Important for sending cookies
+        credentials: "include"
       });
 
       if (!response.ok) {

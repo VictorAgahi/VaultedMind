@@ -22,18 +22,25 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const router = useRouter();
 
   useEffect(() => {
+    const controller = new AbortController();
+
     const initAuth = async () => {
       try {
-        const userData = await apiService.get<User>("/auth/me");
+        const userData = await apiService.get<User>("/auth/me", { signal: controller.signal });
         setUser(userData);
       } catch (error) {
+        if ((error as { name?: string }).name === "AbortError") return;
         // Not logged in or session expired
         console.debug("Not authenticated");
+      } finally {
+        if (!controller.signal.aborted) {
+          setLoading(false);
+        }
       }
-      setLoading(false);
     };
 
     initAuth();
+    return () => controller.abort();
   }, []);
 
   const login = async (credentials: LoginCredentials) => {
