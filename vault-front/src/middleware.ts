@@ -27,15 +27,21 @@ const decodeJwt = (token: string) => {
     const parts = token.split(".");
     if (parts.length !== 3) return null;
     // Decode base64 payload (parts[1])
-    const payload = JSON.parse(atob(parts[1]));
-    return payload;
+    const base64 = parts[1].replace(/-/g, "+").replace(/_/g, "/");
+    const jsonPayload = decodeURIComponent(
+      atob(base64)
+        .split("")
+        .map((c) => "%" + ("00" + c.charCodeAt(0).toString(16)).slice(-2))
+        .join("")
+    );
+    return JSON.parse(jsonPayload);
   } catch (error) {
     return null;
   }
 };
 
 /**
- * Senior Software Engineer Pattern: Session Proxy.
+ * Session Proxy.
  * This pattern abstracts the complexity of token extraction and validation,
  * providing a clean, immutable interface for the middleware logic.
  */
