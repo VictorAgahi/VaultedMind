@@ -37,7 +37,7 @@ kubectl create secret generic postgres-secret \
 # Backend secrets
 kubectl create secret generic vault-backend-secret \
   --from-literal=jwt-secret='CHANGE_ME_RANDOM_JWT_SECRET' \
-  --from-literal=encryption-key='0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef' \
+  --from-literal=encryption-key='<VOTRE_CLE_AES_256_64_CHARS_HEXADECIMAUX>' \
   -n vault-prod
 ```
 

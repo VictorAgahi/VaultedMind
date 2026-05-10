@@ -98,7 +98,7 @@ DB_PORT=5432
 
 # Backend
 JWT_SECRET=your-secret-key
-ENCRYPTION_KEY=0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef
+ENCRYPTION_KEY=votre_cle_aes_256_hex_64_characters
 
 # Ports
 FRONTEND_PORT=3000
