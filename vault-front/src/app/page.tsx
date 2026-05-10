@@ -28,15 +28,34 @@ export default function Home() {
           <Toolbar disableGutters sx={{ justifyContent: "space-between" }}>
             <Box sx={{ display: "flex", alignItems: "center", gap: 1.5 }}>
               <Image src="/assets/logo.png" alt="VaultedMind Logo" width={32} height={32} priority />
-              <Typography variant="h5" sx={{ fontWeight: 800, color: "primary.main" }}>
+              <Typography
+                variant="h5"
+                sx={{
+                  fontWeight: 800,
+                  color: "primary.main",
+                  display: { xs: "none", sm: "block" }
+                }}
+              >
                 VaultedMind
               </Typography>
             </Box>
-            <Stack direction="row" spacing={2}>
-              <Button component={Link} href="/login" color="inherit">
+            <Stack direction="row" spacing={{ xs: 1, sm: 2 }}>
+              <Button
+                component={Link}
+                href="/login"
+                color="inherit"
+                size="small"
+                sx={{ fontSize: { xs: "0.8rem", sm: "0.875rem" } }}
+              >
                 Connexion
               </Button>
-              <Button component={Link} href="/register" variant="contained">
+              <Button
+                component={Link}
+                href="/register"
+                variant="contained"
+                size="small"
+                sx={{ fontSize: { xs: "0.8rem", sm: "0.875rem" }, px: { xs: 1.5, sm: 3 } }}
+              >
                 Démarrer
               </Button>
             </Stack>

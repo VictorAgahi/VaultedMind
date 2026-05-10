@@ -23,6 +23,12 @@ export const metadata: Metadata = {
     icon: "/icon.png",
     apple: "/apple-icon.png",
   },
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: "black-translucent",
+    title: "VaultedMind",
+  },
+  manifest: "/manifest.json",
 };
 
 import { Footer } from "@/components/organisms/footer/footer";
