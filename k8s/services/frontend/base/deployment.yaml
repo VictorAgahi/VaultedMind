@@ -27,7 +27,7 @@ spec:
           capabilities:
             drop:
               - ALL
-        imagePullPolicy: IfNotPresent
+        imagePullPolicy: Always
         env:
         - name: NODE_ENV
           value: production

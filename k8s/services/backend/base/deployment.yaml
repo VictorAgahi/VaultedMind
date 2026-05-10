@@ -22,6 +22,7 @@ spec:
       initContainers:
       - name: migrations
         image: ghcr.io/victoragahi/vault-backend:latest
+        imagePullPolicy: Always
         securityContext:
           allowPrivilegeEscalation: false
           capabilities:
@@ -53,7 +54,7 @@ spec:
           capabilities:
             drop:
               - ALL
-        imagePullPolicy: IfNotPresent
+        imagePullPolicy: Always
         env:
         - name: DB_HOST
           value: postgres

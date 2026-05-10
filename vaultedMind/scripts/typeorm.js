@@ -7,7 +7,7 @@ const typeormCli = require.resolve('typeorm/cli.js');
 
 const isProduction = process.env.NODE_ENV === 'production';
 const cmd = isProduction ? 'node' : 'yarn';
-const args = isProduction 
+const args = isProduction
   ? [typeormCli, ...process.argv.slice(2)]
   : ['node', '--import', 'tsx', typeormCli, ...process.argv.slice(2)];
 
