@@ -500,8 +500,24 @@ export const DailyLogsManager: React.FC = () => {
                 Vous n&apos;avez aucun champ personnalisé actif. Créez-en dans la section &quot;Gérer les champs&quot;.
               </Alert>
             ) : (
-              <Box sx={{ display: "grid", gridTemplateColumns: { xs: "1fr", md: "1fr 1fr" }, gap: 2 }}>
-                {activeFields.map(renderFieldInput)}
+              <Box 
+                sx={{ 
+                  maxHeight: 320, 
+                  overflowY: "auto", 
+                  pr: 1,
+                  // Custom scrollbar
+                  "&::-webkit-scrollbar": { width: 6 },
+                  "&::-webkit-scrollbar-track": { bgcolor: "transparent" },
+                  "&::-webkit-scrollbar-thumb": { 
+                    bgcolor: "rgba(0,0,0,0.08)", 
+                    borderRadius: 3,
+                    "&:hover": { bgcolor: "rgba(0,0,0,0.15)" }
+                  }
+                }}
+              >
+                <Box sx={{ display: "grid", gridTemplateColumns: { xs: "1fr", md: "1fr 1fr" }, gap: 2, p: 0.5 }}>
+                  {activeFields.map(renderFieldInput)}
+                </Box>
               </Box>
             )}
           </DialogContent>

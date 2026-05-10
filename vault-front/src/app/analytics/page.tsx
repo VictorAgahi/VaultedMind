@@ -215,6 +215,15 @@ export default function AnalyticsPage() {
                         bgcolor: "transparent",
                         "& .MuiSelect-select": { py: 1.5, pr: 4 }
                       }}
+                      MenuProps={{
+                        PaperProps: {
+                          style: {
+                            maxHeight: 300,
+                            borderRadius: 12,
+                            marginTop: 8
+                          }
+                        }
+                      }}
                     >
                       {stringFields.map(f => (
                         <MenuItem key={f.id} value={f.id}>{f.name}</MenuItem>
@@ -297,6 +306,15 @@ export default function AnalyticsPage() {
                         borderRadius: 2,
                         bgcolor: "transparent",
                         "& .MuiSelect-select": { py: 1.5, pr: 4 }
+                      }}
+                      MenuProps={{
+                        PaperProps: {
+                          style: {
+                            maxHeight: 300,
+                            borderRadius: 12,
+                            marginTop: 8
+                          }
+                        }
                       }}
                     >
                       {numberAndBoolFields.map(f => (

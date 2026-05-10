@@ -207,43 +207,59 @@ export const CustomFieldsManager: React.FC = () => {
           <CircularProgress />
         </Box>
       ) : (
-        <List>
-          {fields.map((field) => (
-            <ListItem
-              key={field.id}
-              sx={{
-                bgcolor: "background.default",
-                mb: 1,
-                borderRadius: 2,
-                opacity: field.isActive ? 1 : 0.6
-              }}
-            >
-              <ListItemText
-                primary={field.name}
-                secondary={`Type: ${field.fieldType}`}
-              />
-              <ListItemSecondaryAction>
-                <Switch
-                  edge="end"
-                  checked={field.isActive}
-                  onChange={() => handleToggleActive(field)}
-                  color="primary"
+        <Box 
+          sx={{ 
+            maxHeight: 450, 
+            overflowY: "auto", 
+            pr: 1,
+            // Custom scrollbar for premium look
+            "&::-webkit-scrollbar": { width: 6 },
+            "&::-webkit-scrollbar-track": { bgcolor: "transparent" },
+            "&::-webkit-scrollbar-thumb": { 
+              bgcolor: "rgba(0,0,0,0.1)", 
+              borderRadius: 3,
+              "&:hover": { bgcolor: "rgba(0,0,0,0.2)" }
+            }
+          }}
+        >
+          <List>
+            {fields.map((field) => (
+              <ListItem
+                key={field.id}
+                sx={{
+                  bgcolor: "background.default",
+                  mb: 1,
+                  borderRadius: 2,
+                  opacity: field.isActive ? 1 : 0.6
+                }}
+              >
+                <ListItemText
+                  primary={field.name}
+                  secondary={`Type: ${field.fieldType}`}
                 />
-                <IconButton edge="end" aria-label="edit" onClick={() => handleOpenDialog(field)}>
-                  <EditIcon />
-                </IconButton>
-                <IconButton edge="end" aria-label="delete" onClick={() => handleDelete(field.id)} color="error">
-                  <DeleteIcon />
-                </IconButton>
-              </ListItemSecondaryAction>
-            </ListItem>
-          ))}
-          {fields.length === 0 && (
-            <Typography variant="body2" color="text.secondary" align="center" sx={{ py: 4 }}>
-              No custom fields configured yet. Add one to get started!
-            </Typography>
-          )}
-        </List>
+                <ListItemSecondaryAction>
+                  <Switch
+                    edge="end"
+                    checked={field.isActive}
+                    onChange={() => handleToggleActive(field)}
+                    color="primary"
+                  />
+                  <IconButton edge="end" aria-label="edit" onClick={() => handleOpenDialog(field)}>
+                    <EditIcon />
+                  </IconButton>
+                  <IconButton edge="end" aria-label="delete" onClick={() => handleDelete(field.id)} color="error">
+                    <DeleteIcon />
+                  </IconButton>
+                </ListItemSecondaryAction>
+              </ListItem>
+            ))}
+            {fields.length === 0 && (
+              <Typography variant="body2" color="text.secondary" align="center" sx={{ py: 4 }}>
+                No custom fields configured yet. Add one to get started!
+              </Typography>
+            )}
+          </List>
+        </Box>
       )}
 
       <Dialog open={openDialog} onClose={handleCloseDialog} fullWidth maxWidth="sm">
