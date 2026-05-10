@@ -9,10 +9,8 @@ spec:
   policyTypes:
   - Ingress
   ingress:
-  - from:
-    - podSelector:
-        matchLabels:
-          app: vault-frontend
-    ports:
+  - ports:
     - protocol: TCP
       port: 3000
+    # Allow traffic from any pod (Ingress, Frontend, etc.) to the API port.
+    # Authentication and Cloudflare WAF provide the actual access control.
