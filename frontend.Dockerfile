@@ -3,14 +3,23 @@ FROM node:24-alpine AS builder
 
 WORKDIR /app
 
-# Copy package files
+# Install dependencies first (better caching)
 COPY vault-front/package*.json ./
-
-# Install dependencies
 RUN npm ci
 
+# Copy configuration files
+COPY vault-front/next.config.ts ./
+COPY vault-front/tsconfig.json ./
+COPY vault-front/postcss.config.mjs ./
+COPY vault-front/tailwind.config.ts* ./
+
 # Copy source code
-COPY vault-front .
+COPY vault-front/src ./src
+COPY vault-front/public ./public
+
+# Set build-time environment variables
+ARG NEXT_PUBLIC_BACKEND_URL
+ENV NEXT_PUBLIC_BACKEND_URL=$NEXT_PUBLIC_BACKEND_URL
 
 # Build the Next.js app
 RUN npm run build
@@ -24,16 +33,16 @@ WORKDIR /app
 RUN addgroup -g 1001 vault && \
     adduser -u 1001 -G vault -s /bin/sh -D vault
 
-# Set environment to production
 ENV NODE_ENV=production
 
 # Install only production dependencies
 COPY vault-front/package*.json ./
 RUN npm ci --only=production
 
-# Copy built app from builder stage
-COPY --from=builder /app/.next ./.next
+# Copy configuration and built app
+COPY vault-front/next.config.ts ./
 COPY --from=builder /app/public ./public
+COPY --from=builder /app/.next ./.next
 
 # Set ownership to the non-root user
 RUN chown -R vault:vault /app
@@ -42,7 +51,7 @@ USER vault
 
 EXPOSE 3000
 
-HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
+HEALTHCHECK --interval=30s --timeout=3s --start-period=15s --retries=3 \
   CMD node -e "require('http').get('http://localhost:3000', (r) => {if (r.statusCode !== 200) throw new Error(r.statusCode)})"
 
 CMD ["npm", "start"]
