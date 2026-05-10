@@ -7,15 +7,17 @@ import {
   HttpCode,
   HttpStatus,
   Res,
+  UseGuards,
 } from '@nestjs/common';
 import type { Response } from 'express';
 import { AuthService } from '../../application/services/auth.service.js';
 import { LoginDto, RegisterDto } from '../../application/dtos/auth.dto.js';
 import { Public } from '../../../../common/decorators/public.decorator.js';
+import { JwtAuthGuard } from '../guards/jwt-auth.guard.js';
 
 @Controller('auth')
 export class AuthController {
-  constructor(private readonly authService: AuthService) {}
+  constructor(private readonly authService: AuthService) { }
 
   @Public()
   @Post('register')
@@ -55,13 +57,14 @@ export class AuthController {
   private setCookie(response: Response, token: string) {
     response.cookie('access_token', token, {
       httpOnly: true,
-      secure: true, // Should be true in production
+      secure: true,
       sameSite: 'strict',
-      maxAge: 3600000, // 1h
+      maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
       path: '/',
     });
   }
 
+  @UseGuards(JwtAuthGuard)
   @Get('me')
   getMe(@Request() req: { user: { id: string; email: string } }): {
     id: string;
