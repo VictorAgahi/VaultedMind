@@ -18,15 +18,20 @@ import ShieldIcon from "@mui/icons-material/Shield";
 import AnalyticsIcon from "@mui/icons-material/Analytics";
 import HistoryEduIcon from "@mui/icons-material/HistoryEdu";
 
+import Image from "next/image";
+
 export default function Home() {
   return (
     <Box sx={{ minHeight: "100vh", bgcolor: "background.default" }}>
       <AppBar position="static" color="transparent" elevation={0} sx={{ py: 1 }}>
         <Container maxWidth="lg">
           <Toolbar disableGutters sx={{ justifyContent: "space-between" }}>
-            <Typography variant="h5" sx={{ fontWeight: 800, color: "primary.main" }}>
-              VaultedMind
-            </Typography>
+            <Box sx={{ display: "flex", alignItems: "center", gap: 1.5 }}>
+              <Image src="/assets/logo.png" alt="VaultedMind Logo" width={32} height={32} priority />
+              <Typography variant="h5" sx={{ fontWeight: 800, color: "primary.main" }}>
+                VaultedMind
+              </Typography>
+            </Box>
             <Stack direction="row" spacing={2}>
               <Button component={Link} href="/login" color="inherit">
                 Login
@@ -63,7 +68,7 @@ export default function Home() {
           </Grid>
         </Container>
 
-        <Box sx={{ bgcolor: "white", py: 12 }}>
+        <Box sx={{ py: 12 }}>
           <Container maxWidth="lg">
             <Grid container spacing={4}>
               <Grid size={{ xs: 12, md: 4 }}>

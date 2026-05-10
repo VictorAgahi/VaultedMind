@@ -1,6 +1,6 @@
 .container {
   min-height: 100vh;
-  background: #f3f4f6;
+  background: #ede5d9;
   color: #1f2937;
 }
 
@@ -9,7 +9,7 @@
   justify-content: space-between;
   align-items: center;
   padding: 1rem 4rem;
-  background: white;
+  background: #ede5d9;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
 }
 
@@ -53,7 +53,7 @@
 }
 
 .card {
-  background: white;
+  background: #ede5d9;
   padding: 2rem;
   border-radius: 16px;
   box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);

@@ -12,10 +12,7 @@ export const Footer: React.FC = () => {
         py: 6,
         px: 2,
         mt: "auto",
-        backgroundColor: (theme) =>
-          theme.palette.mode === "light"
-            ? theme.palette.grey[50]
-            : theme.palette.grey[900],
+        backgroundColor: "background.default",
       }}
     >
       <Container maxWidth="lg">
