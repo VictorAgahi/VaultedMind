@@ -293,7 +293,7 @@ export const CustomFieldsManager: React.FC = () => {
                     sx={{
                       "& .MuiOutlinedInput-root": {
                         borderRadius: 2,
-                        bgcolor: "white"
+                        bgcolor: "transparent"
                       }
                     }}
                   />

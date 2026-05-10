@@ -84,7 +84,7 @@ export const Navbar: React.FC = () => {
           <Typography variant="body2" sx={{ display: { xs: "none", sm: "block" } }}>
             Bienvenue, <strong>{user?.email || "Utilisateur"}</strong>
           </Typography>
-          <Avatar sx={{ bgcolor: "primary.light", width: 32, height: 32 }}>
+          <Avatar sx={{ bgcolor: "primary.light", width: 32, height: 32, display: { xs: "none", sm: "flex" } }}>
             {user?.email?.[0].toUpperCase() || "U"}
           </Avatar>
           <Button
