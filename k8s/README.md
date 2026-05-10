@@ -1,18 +1,18 @@
-# ☸️ VaultedMind Infrastructure
+# VaultedMind Infrastructure
 
-Production-grade Kubernetes orchestration for VaultedMind using **K3s**, **ArgoCD**, and **Traefik**.
+Production-grade Kubernetes orchestration for VaultedMind using K3s, ArgoCD, and Traefik.
 
-## 🏗️ Deployment Architecture
+## Deployment Architecture
 
 ### 1. GitOps with ArgoCD
 The cluster state is synchronized with this repository.
-- **Root App**: `k8s/argocd/root-app.yaml`
-- **Namespaces**: All resources reside in the `vault-prod` namespace.
+- **Root App**: k8s/argocd/root-app.yaml
+- **Namespaces**: All resources reside in the vault-prod namespace.
 
 ### 2. Network Isolation (Zero Trust)
-We enforce strict traffic rules using `NetworkPolicies`:
-- **Backend Isolation**: Only pods with label `app: vault-frontend` and the Ingress Controller can reach the backend.
-- **Database Isolation**: Only pods with label `app: vault-backend` can reach the PostgreSQL database.
+We enforce strict traffic rules using NetworkPolicies:
+- **Backend Isolation**: Only pods with label app: vault-frontend and the Ingress Controller can reach the backend.
+- **Database Isolation**: Only pods with label app: vault-backend can reach the PostgreSQL database.
 
 ### 3. Edge Security (Traefik)
 Traefik handles incoming traffic with hardened security middlewares:
@@ -21,10 +21,10 @@ Traefik handles incoming traffic with hardened security middlewares:
 
 ---
 
-## 🚀 Setup Instructions
+## Setup Instructions
 
 ### 1. Secret Management
-Secrets are **not** stored in Git. You must create them manually before syncing:
+Secrets are not stored in Git. You must create them manually before syncing:
 
 ```bash
 # Database Secrets
@@ -54,9 +54,9 @@ kubectl apply -k k8s/services/postgres/overlays/prod
 
 ---
 
-## 📊 Monitoring & Logs
-- **Logs**: `kubectl logs -n vault-prod -l app=vault-backend`
-- **Status**: `kubectl get pods -n vault-prod`
+## Monitoring & Logs
+- **Logs**: kubectl logs -n vault-prod -l app=vault-backend
+- **Status**: kubectl get pods -n vault-prod
 
 ---
-© 2026 VaultedMind SRE Team
+© 2026 VaultedMind

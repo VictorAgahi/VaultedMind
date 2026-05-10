@@ -1,6 +1,10 @@
-# 🛡️ VaultedMind - Ultra-Secure Mental Health Vault
+<div align="center">
+  <img src="vault-front/public/assets/logo.png" alt="VaultedMind Logo" width="200" />
+  <h1>VaultedMind</h1>
+  <p>Ultra-Secure Mental Health Vault</p>
+</div>
 
-VaultedMind is a high-security, full-stack application designed to track mental health, daily journals, and personal reflections with **absolute privacy** and **military-grade encryption**.
+VaultedMind is a high-security, full-stack application designed to track mental health, daily journals, and personal reflections with absolute privacy and military-grade encryption.
 
 [![Project Status: Production](https://img.shields.io/badge/Status-Production--Grade-brightgreen.svg)]()
 [![Backend: NestJS](https://img.shields.io/badge/Backend-NestJS-red.svg)](https://nestjs.com/)
@@ -10,9 +14,9 @@ VaultedMind is a high-security, full-stack application designed to track mental 
 
 ---
 
-## 🏗️ Architecture & Security
+## Architecture & Security
 
-VaultedMind is built on a **Zero Trust Architecture**. Your data is never stored in plain text.
+VaultedMind is built on a Zero Trust Architecture. Your data is never stored in plain text.
 
 ```mermaid
 graph TD
@@ -32,29 +36,29 @@ graph TD
     end
 ```
 
-### 🔒 Key Security Features
-- **At-Rest Encryption**: Every log and custom field is encrypted using **AES-256-GCM** before hitting the database.
+### Key Security Features
+- **At-Rest Encryption**: Every log and custom field is encrypted using AES-256-GCM before hitting the database.
 - **Blind Indexing**: User emails are hashed and indexed separately to allow secure lookups without exposing raw PII.
-- **Network Isolation**: Kubernetes `NetworkPolicies` ensure that only the backend can talk to the database, and only the frontend can talk to the backend.
+- **Network Isolation**: Kubernetes NetworkPolicies ensure that only the backend can talk to the database, and only the frontend can talk to the backend.
 - **Brute-Force Protection**: Strict rate-limiting on authentication endpoints.
 - **Hardened Headers**: HSTS, CSP, and X-Frame-Options enforced at the Ingress level.
 
 ---
 
-## 📋 Project Structure
+## Project Structure
 
 ```bash
 vault-projet/
-├── vaultedMind/           # 🚀 NestJS Backend (Domain-Driven Design)
-├── vault-front/           # 🎨 Next.js Frontend (Premium UI/UX)
-├── k8s/                   # ☸️ Kubernetes Manifests (ArgoCD & Kustomize)
-├── docker-compose.yml     # 🐳 Local Development Orchestration
-└── .github/workflows/     # 🤖 Automated CI/CD Pipelines
+├── vaultedMind/           # NestJS Backend (Domain-Driven Design)
+├── vault-front/           # Next.js Frontend (Premium UI/UX)
+├── k8s/                   # Kubernetes Manifests (ArgoCD & Kustomize)
+├── docker-compose.yml     # Local Development Orchestration
+└── .github/workflows/     # Automated CI/CD Pipelines
 ```
 
 ---
 
-## 🚀 Quick Start
+## Quick Start
 
 ### 1. Prerequisites
 - Docker & Docker Compose
@@ -74,30 +78,31 @@ cp vault-front/.env.example vault-front/.env.local
 docker compose up --build
 ```
 
-Access the app at `http://localhost:3000`.
+Access the app at http://localhost:3000.
 
 ---
 
-## 🧪 Testing Strategy
+## Testing Strategy
 - **Unit Tests**: Full coverage for business logic and encryption services.
 - **E2E Tests**: Automated flows for registration, login, and data synchronization.
 - **Security Audit**: Scanned for secrets and vulnerabilities in CI/CD.
 
 ---
 
-## 🛠️ Tech Stack
+## Tech Stack
 | Component | Technology |
 | :--- | :--- |
 | **Frontend** | Next.js 15, MUI v6, TypeScript |
 | **Backend** | NestJS, TypeORM, PostgreSQL |
 | **DevOps** | Docker, K3s, ArgoCD, Traefik |
+
 ---
 
-## 🤝 Contributing
-Contributions are welcome! Please read our `CONTRIBUTING.md` (coming soon) for details on our code of conduct and the process for submitting pull requests.
+## Contributing
+Contributions are welcome! Please read our CONTRIBUTING.md (coming soon) for details on our code of conduct and the process for submitting pull requests.
 
-## 📄 License
+## License
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
 ---
-**VaultedMind** - *Your mind is your sanctuary. We just provide the vault.*
+**VaultedMind** - Your mind is your sanctuary. We just provide the vault.

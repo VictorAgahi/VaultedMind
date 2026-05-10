@@ -1,8 +1,8 @@
-# 🎨 VaultedMind Frontend
+# VaultedMind Frontend
 
 A premium, glassmorphic mental health dashboard built with Next.js 15 and Material UI.
 
-## ✨ Features
+## Features
 - **Modern Dashboard**: Visual progress tracking with Recharts.
 - **Dynamic Journals**: Fluid entry system for daily logs and custom metadata.
 - **Premium UI**: Glassmorphism, smooth transitions, and high-quality typography (Inter/Outfit).
@@ -11,7 +11,7 @@ A premium, glassmorphic mental health dashboard built with Next.js 15 and Materi
 
 ---
 
-## 🔒 Frontend Security
+## Frontend Security
 - **Strict CSP**: Content Security Policy allows only trusted API domains.
 - **HSTS Enforcement**: Ensuring all traffic remains on HTTPS.
 - **JWT Persistence**: Secure HttpOnly cookies (in production) / Managed auth state.
@@ -19,7 +19,7 @@ A premium, glassmorphic mental health dashboard built with Next.js 15 and Materi
 
 ---
 
-## 🛠️ Development
+## Development
 
 ### Setup
 ```bash
@@ -32,14 +32,14 @@ npm run dev
 ```
 
 ### Environment Variables
-Required in `.env.local`:
+Required in .env.local:
 ```bash
 NEXT_PUBLIC_BACKEND_URL=https://api-vault-mind.cyrus-ag.com
 ```
 
 ---
 
-## 📂 Architecture
+## Architecture
 - `src/app`: Next.js App Router (File-based routing).
 - `src/components`: Atomic design inspired components (Atoms, Molecules, Organisms).
 - `src/services`: API communication layer using Axios/Fetch.
@@ -47,7 +47,7 @@ NEXT_PUBLIC_BACKEND_URL=https://api-vault-mind.cyrus-ag.com
 
 ---
 
-## 🧪 Build & Deployment
+## Build & Deployment
 ```bash
 # Production build
 npm run build
@@ -57,4 +57,4 @@ npm start
 ```
 
 ---
-© 2026 VaultedMind Frontend Team
+© 2026 VaultedMind

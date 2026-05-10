@@ -14,13 +14,14 @@ import { AuthService } from '../../application/services/auth.service.js';
 import { LoginDto, RegisterDto } from '../../application/dtos/auth.dto.js';
 import { Public } from '../../../../common/decorators/public.decorator.js';
 import { JwtAuthGuard } from '../guards/jwt-auth.guard.js';
-import { Throttle } from '@nestjs/throttler';
+import { Throttle, SkipThrottle } from '@nestjs/throttler';
 
 @Controller('auth')
 export class AuthController {
   constructor(private readonly authService: AuthService) { }
 
   @Public()
+  @SkipThrottle({ default: process.env.NODE_ENV === 'test' })
   @Throttle({ default: { limit: 5, ttl: 60000 } })
   @Post('register')
   async register(
@@ -33,6 +34,7 @@ export class AuthController {
   }
 
   @Public()
+  @SkipThrottle({ default: process.env.NODE_ENV === 'test' })
   @Throttle({ default: { limit: 5, ttl: 60000 } })
   @HttpCode(HttpStatus.OK)
   @Post('login')
