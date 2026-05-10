@@ -27,7 +27,7 @@ export default function Home() {
         <Container maxWidth="lg">
           <Toolbar disableGutters sx={{ justifyContent: "space-between" }}>
             <Box sx={{ display: "flex", alignItems: "center", gap: 1.5 }}>
-              <Image src="/assets/logo.png" alt="VaultedMind Logo" width={32} height={32} priority unoptimized />
+              <Image src="/assets/logo.png" alt="VaultedMind Logo" width={32} height={32} priority />
               <Typography variant="h5" sx={{ fontWeight: 800, color: "primary.main" }}>
                 VaultedMind
               </Typography>

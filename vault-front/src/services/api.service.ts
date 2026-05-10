@@ -3,7 +3,7 @@ import { ApiError } from "@/types";
 const isServer = typeof window === "undefined";
 const BACKEND_URL = isServer 
   ? "http://vault-backend" 
-  : (process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:3001");
+  : (process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:8080");
 
 class ApiService {
   private async request<T>(

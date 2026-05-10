@@ -27,7 +27,7 @@ export const AuthLayout: React.FC<AuthLayoutProps> = ({
                 alignItems: "center",
                 justifyContent: "center",
                 p: 8,
-                background: "linear-gradient(135deg, #d81832 0%, #c2152a 100%)",
+                background: "linear-gradient(135deg, #070435 0%, #d81832 100%)",
                 position: "relative",
                 overflow: "hidden",
                 "&::before": {
@@ -40,18 +40,48 @@ export const AuthLayout: React.FC<AuthLayoutProps> = ({
                   backgroundImage: "url('https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?ixlib=rb-4.0.3&auto=format&fit=crop&w=2564&q=80')",
                   backgroundSize: "cover",
                   backgroundPosition: "center",
-                  opacity: 0.2,
+                  opacity: 0.3,
                   mixBlendMode: "overlay",
+                },
+                "&::after": {
+                  content: '""',
+                  position: "absolute",
+                  top: "-20%",
+                  right: "-20%",
+                  width: "60%",
+                  height: "60%",
+                  background: "radial-gradient(circle, rgba(216, 24, 50, 0.4) 0%, rgba(216, 24, 50, 0) 70%)",
+                  filter: "blur(60px)",
+                  zIndex: 0,
                 }
               }}
             >
               <Box sx={{ position: "relative", zIndex: 1, color: "white", maxWidth: 500 }}>
-                <Typography variant="h1" sx={{ fontSize: "3.5rem", mb: 3 }}>
+                <Typography variant="h1" sx={{ 
+                  fontSize: "4rem", 
+                  mb: 3, 
+                  fontWeight: 900,
+                  letterSpacing: "-0.04em",
+                  textShadow: "0 10px 30px rgba(0,0,0,0.3)"
+                }}>
                   VaultedMind
                 </Typography>
-                <Typography variant="h5" sx={{ fontStyle: "italic", color: "#070435", lineHeight: 1.6 }}>
+                <Typography variant="h5" sx={{ 
+                  fontStyle: "italic", 
+                  color: "rgba(255,255,255,0.8)", 
+                  lineHeight: 1.6,
+                  fontWeight: 300,
+                  letterSpacing: "0.01em"
+                }}>
                   &quot;The mind is its own place, and in itself can make a heaven of hell, a hell of heaven.&quot;
                 </Typography>
+                <Box sx={{ 
+                  mt: 4, 
+                  width: 60, 
+                  height: 4, 
+                  bgcolor: "primary.main",
+                  borderRadius: 2
+                }} />
               </Box>
             </Box>
           </Grid>

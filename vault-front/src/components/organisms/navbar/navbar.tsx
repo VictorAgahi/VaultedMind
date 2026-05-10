@@ -21,7 +21,7 @@ export const Navbar: React.FC = () => {
       <Toolbar sx={{ justifyContent: "space-between", px: { xs: 2, md: 8 } }}>
         <Box sx={{ display: "flex", alignItems: "center", gap: 4 }}>
           <Box component={Link} href="/dashboard" sx={{ display: "flex", alignItems: "center", gap: 1.5, textDecoration: "none" }}>
-            <Image src="/assets/logo.png" alt="VaultedMind Logo" width={40} height={40} priority unoptimized />
+            <Image src="/assets/logo.png" alt="VaultedMind Logo" width={40} height={40} priority />
             <Typography variant="h6" sx={{ fontWeight: 800, color: "primary.main", letterSpacing: "-0.02em" }}>
               VaultedMind
             </Typography>

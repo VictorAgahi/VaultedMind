@@ -43,8 +43,9 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     setLoading(true);
     try {
       const response = await apiService.post<AuthResponse, LoginCredentials>("/auth/login", credentials);
-      localStorage.setItem("access_token", response.accessToken);
-      document.cookie = `access_token=${response.accessToken}; path=/; max-age=86400; SameSite=Lax`;
+      const token = response.token;
+      localStorage.setItem("access_token", token);
+      document.cookie = `access_token=${token}; path=/; max-age=86400; SameSite=Lax`;
       setUser(response.user);
       router.push("/dashboard");
     } catch (error) {
@@ -58,8 +59,9 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     setLoading(true);
     try {
       const response = await apiService.post<AuthResponse, RegisterData>("/auth/register", userData);
-      localStorage.setItem("access_token", response.accessToken);
-      document.cookie = `access_token=${response.accessToken}; path=/; max-age=86400; SameSite=Lax`;
+      const token = response.token;
+      localStorage.setItem("access_token", token);
+      document.cookie = `access_token=${token}; path=/; max-age=86400; SameSite=Lax`;
       setUser(response.user);
       router.push("/dashboard");
     } catch (error) {

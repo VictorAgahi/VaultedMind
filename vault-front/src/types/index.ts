@@ -8,7 +8,7 @@ export interface User {
 
 export interface AuthResponse {
   user: User;
-  accessToken: string;
+  token: string;
 }
 
 export interface ApiError {

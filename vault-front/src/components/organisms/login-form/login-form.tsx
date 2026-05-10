@@ -59,7 +59,7 @@ export const LoginForm: React.FC = () => {
     >
       <Box component="form" onSubmit={handleSubmit} noValidate>
         <Box sx={{ display: "flex", justifyContent: "center", mb: 3 }}>
-          <Image src="/assets/logo.png" alt="VaultedMind Logo" width={64} height={64} priority unoptimized />
+          <Image src="/assets/logo.png" alt="VaultedMind Logo" width={64} height={64} priority />
         </Box>
         <Typography variant="h4" component="h1" gutterBottom align="center" sx={{ fontWeight: 700 }}>
           Welcome Back
