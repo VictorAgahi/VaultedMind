@@ -14,9 +14,7 @@ export class EncryptionService {
   private readonly key: Buffer;
 
   constructor(private readonly configService: ConfigService) {
-    const secret =
-      this.configService.get<string>('ENCRYPTION_KEY') ||
-      'default_secret_key_32_characters_long_!!';
+    const secret = this.configService.getOrThrow<string>('ENCRYPTION_KEY');
     this.key = Buffer.from(secret, 'utf8').subarray(0, 32);
   }
 

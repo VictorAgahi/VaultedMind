@@ -23,15 +23,12 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   useEffect(() => {
     const initAuth = async () => {
-      const token = localStorage.getItem("access_token");
-      if (token) {
-        try {
-          const userData = await apiService.get<User>("/auth/me");
-          setUser(userData);
-        } catch (error) {
-          console.error("Failed to initialize auth", error);
-          localStorage.removeItem("access_token");
-        }
+      try {
+        const userData = await apiService.get<User>("/auth/me");
+        setUser(userData);
+      } catch (error) {
+        // Not logged in or session expired
+        console.debug("Not authenticated");
       }
       setLoading(false);
     };
@@ -43,9 +40,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     setLoading(true);
     try {
       const response = await apiService.post<AuthResponse, LoginCredentials>("/auth/login", credentials);
-      const token = response.token;
-      localStorage.setItem("access_token", token);
-      document.cookie = `access_token=${token}; path=/; max-age=2592000; SameSite=Lax`;
+      // Token is now set via HttpOnly cookie by backend
       setUser(response.user);
       router.push("/dashboard");
     } catch (error) {
@@ -59,9 +54,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     setLoading(true);
     try {
       const response = await apiService.post<AuthResponse, RegisterData>("/auth/register", userData);
-      const token = response.token;
-      localStorage.setItem("access_token", token);
-      document.cookie = `access_token=${token}; path=/; max-age=2592000; SameSite=Lax`;
+      // Token is now set via HttpOnly cookie by backend
       setUser(response.user);
       router.push("/dashboard");
     } catch (error) {
@@ -71,10 +64,12 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     setLoading(false);
   };
 
-  const logout = () => {
-    localStorage.removeItem("access_token");
-    // Remove cookie
-    document.cookie = "access_token=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT";
+  const logout = async () => {
+    try {
+      await apiService.post("/auth/logout");
+    } catch (error) {
+      console.error("Logout error", error);
+    }
     setUser(null);
     router.push("/login");
   };

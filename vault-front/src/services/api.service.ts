@@ -14,17 +14,20 @@ class ApiService {
     const cleanEndpoint = endpoint.startsWith("/") ? endpoint : `/${endpoint}`;
     const url = `${baseUrl}${cleanEndpoint}`;
 
-    // Get token from access_token (client-side only)
-    const token = typeof window !== "undefined" ? localStorage.getItem("access_token") : null;
+    // Cookies are handled automatically by the browser with credentials: true
+    const token = null; 
 
     const headers: HeadersInit = {
       "Content-Type": "application/json",
-      ...(token ? { Authorization: `Bearer ${token}` } : {}),
       ...options.headers,
     };
 
     try {
-      const response = await fetch(url, { ...options, headers });
+      const response = await fetch(url, { 
+        ...options, 
+        headers,
+        credentials: "include" // Important for sending cookies
+      });
 
       if (!response.ok) {
         let errorData: ApiError;
@@ -40,8 +43,6 @@ class ApiService {
         // Handle specific status codes
         if (response.status === 401) {
           if (typeof window !== "undefined") {
-            localStorage.removeItem("access_token");
-            document.cookie = "access_token=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT";
             window.location.href = "/login";
           }
         }

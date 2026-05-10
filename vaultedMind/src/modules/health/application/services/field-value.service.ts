@@ -17,12 +17,17 @@ export class FieldValueService {
     private readonly dailyLogRepository: DailyLogRepository,
   ) {}
 
-  async saveValue(fieldValue: FieldValue): Promise<FieldValue> {
+  async saveValue(fieldValue: FieldValue, userId: string): Promise<FieldValue> {
+    await this.assertOwnership(fieldValue.dailyLogId, userId);
     this.logger.log(`Saving field value for log: ${fieldValue.dailyLogId}`);
     return this.fieldValueRepository.saveDomain(fieldValue);
   }
 
-  async findByDailyLogId(dailyLogId: string): Promise<FieldValue[]> {
+  async findByDailyLogId(
+    dailyLogId: string,
+    userId: string,
+  ): Promise<FieldValue[]> {
+    await this.assertOwnership(dailyLogId, userId);
     return this.fieldValueRepository.findByDailyLogId(dailyLogId);
   }
 

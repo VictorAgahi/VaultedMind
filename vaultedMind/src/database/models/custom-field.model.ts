@@ -20,7 +20,7 @@ export class CustomFieldModel extends BaseModel {
 
   @Column({ name: 'is_active', type: 'boolean', default: true })
   isActive!: boolean;
-  
+
   @Column({ name: 'options_order', type: 'json', nullable: true })
   optionsOrder?: string[];
 

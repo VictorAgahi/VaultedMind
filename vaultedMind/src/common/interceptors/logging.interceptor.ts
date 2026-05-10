@@ -50,6 +50,7 @@ export class LoggingInterceptor implements NestInterceptor {
       'secret',
       'newPassword',
       'oldPassword',
+      'email',
     ];
 
     const sanitized = { ...(body as Record<string, unknown>) };

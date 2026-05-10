@@ -6,7 +6,9 @@ import {
   Request,
   HttpCode,
   HttpStatus,
+  Res,
 } from '@nestjs/common';
+import type { Response } from 'express';
 import { AuthService } from '../../application/services/auth.service.js';
 import { LoginDto, RegisterDto } from '../../application/dtos/auth.dto.js';
 import { Public } from '../../../../common/decorators/public.decorator.js';
@@ -17,19 +19,54 @@ export class AuthController {
 
   @Public()
   @Post('register')
-  async register(@Body() dto: RegisterDto) {
-    return this.authService.register(dto);
+  async register(
+    @Body() dto: RegisterDto,
+    @Res({ passthrough: true }) response: Response,
+  ) {
+    const { user, token } = await this.authService.register(dto);
+    this.setCookie(response, token);
+    return { user };
   }
 
   @Public()
   @HttpCode(HttpStatus.OK)
   @Post('login')
-  async login(@Body() dto: LoginDto) {
-    return this.authService.login(dto);
+  async login(
+    @Body() dto: LoginDto,
+    @Res({ passthrough: true }) response: Response,
+  ) {
+    const { user, token } = await this.authService.login(dto);
+    this.setCookie(response, token);
+    return { user };
+  }
+
+  @Post('logout')
+  @HttpCode(HttpStatus.OK)
+  logout(@Res({ passthrough: true }) response: Response) {
+    response.clearCookie('access_token', {
+      httpOnly: true,
+      secure: true,
+      sameSite: 'strict',
+      path: '/',
+    });
+    return { message: 'Logged out successfully' };
+  }
+
+  private setCookie(response: Response, token: string) {
+    response.cookie('access_token', token, {
+      httpOnly: true,
+      secure: true, // Should be true in production
+      sameSite: 'strict',
+      maxAge: 3600000, // 1h
+      path: '/',
+    });
   }
 
   @Get('me')
-  getMe(@Request() req: Record<string, unknown>) {
-    return (req as { user: unknown }).user;
+  getMe(@Request() req: { user: { id: string; email: string } }): {
+    id: string;
+    email: string;
+  } {
+    return req.user;
   }
 }

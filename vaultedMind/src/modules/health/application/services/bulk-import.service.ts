@@ -160,7 +160,7 @@ export class BulkImportService {
             new Date(),
             new Date(),
           );
-          await this.fieldValueService.saveValue(fieldValue);
+          await this.fieldValueService.saveValue(fieldValue, userId);
           valuesCreated++;
         }
       }

@@ -25,7 +25,7 @@ import { JwtAuthGuard } from '../../../auth/infrastructure/guards/jwt-auth.guard
 @Controller('health/custom-fields')
 @UseGuards(JwtAuthGuard)
 export class CustomFieldController {
-  constructor(private readonly customFieldService: CustomFieldService) { }
+  constructor(private readonly customFieldService: CustomFieldService) {}
 
   @Post()
   async create(
@@ -56,8 +56,11 @@ export class CustomFieldController {
   }
 
   @Get(':id')
-  async findOne(@Param('id') id: string): Promise<CustomFieldResponseDto> {
-    const field = await this.customFieldService.findById(id);
+  async findOne(
+    @Param('id') id: string,
+    @Req() req: { user: AuthUser },
+  ): Promise<CustomFieldResponseDto> {
+    const field = await this.customFieldService.findById(id, req.user.id);
     return this.mapToResponse(field);
   }
 

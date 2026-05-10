@@ -33,9 +33,8 @@ import { APP_GUARD } from '@nestjs/core';
     JwtModule.registerAsync({
       inject: [ConfigService],
       useFactory: (configService: ConfigService) => ({
-        secret:
-          configService.get<string>('JWT_SECRET') || 'ultra_secret_jwt_key',
-        signOptions: { expiresIn: '180d' },
+        secret: configService.getOrThrow<string>('JWT_SECRET'),
+        signOptions: { expiresIn: '1h' },
       }),
       global: true,
     }),
@@ -52,4 +51,4 @@ import { APP_GUARD } from '@nestjs/core';
     },
   ],
 })
-export class AppModule { }
+export class AppModule {}

@@ -31,6 +31,7 @@ export class FieldValueController {
   async save(
     @Param('logId') logId: string,
     @Body() dto: SaveFieldValueDto,
+    @Req() req: { user: AuthUser },
   ): Promise<FieldValueResponseDto> {
     const entity = new FieldValue(
       uuidv4(),
@@ -41,15 +42,19 @@ export class FieldValueController {
       new Date(),
     );
 
-    const saved = await this.fieldValueService.saveValue(entity);
+    const saved = await this.fieldValueService.saveValue(entity, req.user.id);
     return this.mapToResponse(saved);
   }
 
   @Get()
   async findByLog(
     @Param('logId') logId: string,
+    @Req() req: { user: AuthUser },
   ): Promise<FieldValueResponseDto[]> {
-    const values = await this.fieldValueService.findByDailyLogId(logId);
+    const values = await this.fieldValueService.findByDailyLogId(
+      logId,
+      req.user.id,
+    );
     return values.map((v) => this.mapToResponse(v));
   }
 

@@ -54,8 +54,11 @@ export class DailyLogController {
   }
 
   @Get(':id')
-  async findOne(@Param('id') id: string): Promise<DailyLogResponseDto> {
-    const log = await this.dailyLogService.findById(id);
+  async findOne(
+    @Param('id') id: string,
+    @Req() req: { user: AuthUser },
+  ): Promise<DailyLogResponseDto> {
+    const log = await this.dailyLogService.findById(id, req.user.id);
     return this.mapToResponse(log);
   }
 

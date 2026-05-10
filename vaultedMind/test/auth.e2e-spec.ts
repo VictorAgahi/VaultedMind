@@ -5,7 +5,7 @@ import {
   LoginDto,
 } from '../src/modules/auth/application/dtos/auth.dto.js';
 
-interface AuthResponse {
+export interface AuthResponse {
   user: {
     id: string;
     email: string;
@@ -25,7 +25,7 @@ describe('Authentication (e2e)', () => {
   });
 
   describe('POST /auth/register', () => {
-    it('should register a new user and return a token', async (): Promise<void> => {
+    it('should register a new user and set a cookie', async (): Promise<void> => {
       // Arrange
       const registerDto: RegisterDto = {
         email: `register-${uuidv4()}@example.com`,
@@ -36,13 +36,13 @@ describe('Authentication (e2e)', () => {
       const response = await client
         .post('/auth/register', registerDto)
         .expect(201);
-      const body = response.body as AuthResponse;
+      const body = response.body as { user: { id: string; email: string } };
 
       // Assert
       expect(body).toHaveProperty('user');
       expect(body.user.email).toBe(registerDto.email);
-      expect(body).toHaveProperty('token');
-      expect(typeof body.token).toBe('string');
+      expect(response.header['set-cookie']).toBeDefined();
+      expect(response.header['set-cookie'][0]).toContain('access_token');
     });
 
     it('should return 400 for an invalid email format', async (): Promise<void> => {
@@ -85,17 +85,21 @@ describe('Authentication (e2e)', () => {
       await client.post('/auth/register', { email, password }).expect(201);
     });
 
-    it('should login successfully and return a JWT token', async (): Promise<void> => {
+    it('should login successfully and set a cookie', async (): Promise<void> => {
       // Arrange
       const loginDto: LoginDto = { email, password };
 
       // Act
       const response = await client.post('/auth/login', loginDto).expect(200);
-      const body = response.body as AuthResponse;
+      const body = response.body as { user: { id: string; email: string } };
 
       // Assert
-      expect(body).toHaveProperty('token');
+      expect(response.header['set-cookie']).toBeDefined();
+      expect(response.header['set-cookie'][0]).toContain('access_token');
       expect(body.user.email).toBe(email);
+
+      // Store cookie for subsequent tests
+      client.setAuthCookie(response.header['set-cookie'][0]);
     });
 
     it('should return 401 for a wrong password', async (): Promise<void> => {

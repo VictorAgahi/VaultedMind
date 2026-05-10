@@ -2,11 +2,12 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { INestApplication, ValidationPipe } from '@nestjs/common';
 import request from 'supertest';
 import { Server } from 'http';
+import cookieParser from 'cookie-parser';
 import { AppModule } from '../../src/app.module.js';
 
 export class TestClient {
   private app: INestApplication<Server>;
-  private accessToken?: string;
+  private authCookie?: string;
 
   private constructor(app: INestApplication<Server>) {
     this.app = app;
@@ -18,6 +19,8 @@ export class TestClient {
     }).compile();
 
     const app = moduleFixture.createNestApplication<Server>();
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-call
+    app.use(cookieParser());
     // eslint-disable-next-line @typescript-eslint/no-unsafe-call
     app.useGlobalPipes(new ValidationPipe({ transform: true }));
     // eslint-disable-next-line @typescript-eslint/no-unsafe-call
@@ -34,50 +37,50 @@ export class TestClient {
     return this.app.getHttpServer();
   }
 
-  setToken(token: string): void {
-    this.accessToken = token;
+  setAuthCookie(cookie: string): void {
+    this.authCookie = cookie;
   }
 
-  clearToken(): void {
-    this.accessToken = undefined;
+  clearAuthCookie(): void {
+    this.authCookie = undefined;
   }
 
   post(url: string, body?: object): request.Test {
     const req = request(this.app.getHttpServer()).post(url);
-    if (this.accessToken) {
-      req.set('Authorization', `Bearer ${this.accessToken}`);
+    if (this.authCookie) {
+      req.set('Cookie', this.authCookie);
     }
     return body ? req.send(body) : req;
   }
 
   get(url: string): request.Test {
     const req = request(this.app.getHttpServer()).get(url);
-    if (this.accessToken) {
-      req.set('Authorization', `Bearer ${this.accessToken}`);
+    if (this.authCookie) {
+      req.set('Cookie', this.authCookie);
     }
     return req;
   }
 
   put(url: string, body?: object): request.Test {
     const req = request(this.app.getHttpServer()).put(url);
-    if (this.accessToken) {
-      req.set('Authorization', `Bearer ${this.accessToken}`);
+    if (this.authCookie) {
+      req.set('Cookie', this.authCookie);
     }
     return body ? req.send(body) : req;
   }
 
   patch(url: string, body?: object): request.Test {
     const req = request(this.app.getHttpServer()).patch(url);
-    if (this.accessToken) {
-      req.set('Authorization', `Bearer ${this.accessToken}`);
+    if (this.authCookie) {
+      req.set('Cookie', this.authCookie);
     }
     return body ? req.send(body) : req;
   }
 
   delete(url: string): request.Test {
     const req = request(this.app.getHttpServer()).delete(url);
-    if (this.accessToken) {
-      req.set('Authorization', `Bearer ${this.accessToken}`);
+    if (this.authCookie) {
+      req.set('Cookie', this.authCookie);
     }
     return req;
   }

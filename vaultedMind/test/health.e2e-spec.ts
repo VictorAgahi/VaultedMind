@@ -22,7 +22,7 @@ async function registerAndLogin(client: TestClient): Promise<string> {
   const password = 'Password123!';
   await client.post('/auth/register', { email, password }).expect(201);
   const res = await client.post('/auth/login', { email, password }).expect(200);
-  return (res.body as { token: string }).token;
+  return res.header['set-cookie'][0];
 }
 
 describe('Health Tracking — CRUD (e2e)', () => {
@@ -35,11 +35,11 @@ describe('Health Tracking — CRUD (e2e)', () => {
     clientB = await TestClient.create();
     unauthClient = await TestClient.create();
 
-    const tokenA = await registerAndLogin(clientA);
-    clientA.setToken(tokenA);
+    const cookieA = await registerAndLogin(clientA);
+    clientA.setAuthCookie(cookieA);
 
-    const tokenB = await registerAndLogin(clientB);
-    clientB.setToken(tokenB);
+    const cookieB = await registerAndLogin(clientB);
+    clientB.setAuthCookie(cookieB);
     // unauthClient intentionally has no token
   });
 

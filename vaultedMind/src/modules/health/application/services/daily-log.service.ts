@@ -22,10 +22,15 @@ export class DailyLogService {
     return this.dailyLogRepository.findByUserId(userId);
   }
 
-  async findById(id: string): Promise<DailyLog> {
+  async findById(id: string, userId: string): Promise<DailyLog> {
     try {
-      return await this.dailyLogRepository.findDomainById(id);
+      const log = await this.dailyLogRepository.findDomainById(id);
+      if (log.userId !== userId) {
+        throw new ForbiddenException('You do not own this daily log');
+      }
+      return log;
     } catch (error) {
+      if (error instanceof ForbiddenException) throw error;
       this.logger.error({ error, id }, 'Daily log not found');
       throw new NotFoundException(`Daily log with ID ${id} not found`);
     }
@@ -36,18 +41,12 @@ export class DailyLogService {
     requestingUserId: string,
     updates: Partial<Pick<DailyLog, 'logDate' | 'notes'>>,
   ): Promise<DailyLog> {
-    const existing = await this.findById(id);
-    if (existing.userId !== requestingUserId) {
-      throw new ForbiddenException('You do not own this daily log');
-    }
+    await this.findById(id, requestingUserId);
     return this.dailyLogRepository.updateDomain(id, updates);
   }
 
   async deleteLog(id: string, requestingUserId: string): Promise<void> {
-    const existing = await this.findById(id);
-    if (existing.userId !== requestingUserId) {
-      throw new ForbiddenException('You do not own this daily log');
-    }
+    await this.findById(id, requestingUserId);
     await this.dailyLogRepository.deleteById(id);
   }
 }
