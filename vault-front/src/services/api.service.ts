@@ -41,7 +41,7 @@ class ApiService {
         }
 
         // Handle specific status codes
-        if (response.status === 401) {
+        if (response.status === 401 || response.status === 429) {
           if (typeof window !== "undefined") {
             window.location.href = "/login";
           }
