@@ -14,9 +14,6 @@ class ApiService {
     const cleanEndpoint = endpoint.startsWith("/") ? endpoint : `/${endpoint}`;
     const url = `${baseUrl}${cleanEndpoint}`;
 
-    // Cookies are handled automatically by the browser with credentials: true
-    const token = null;
-
     const headers: HeadersInit = {
       "Content-Type": "application/json",
       ...options.headers,
@@ -43,7 +40,8 @@ class ApiService {
         // Handle specific status codes
         if (response.status === 401 || response.status === 429) {
           if (typeof window !== "undefined") {
-            const isPublicPage = window.location.pathname === "/login" || window.location.pathname === "/register";
+            const publicRoutes = ["/", "/login", "/register"];
+            const isPublicPage = publicRoutes.includes(window.location.pathname);
             if (!isPublicPage) {
               window.location.href = "/login";
             }
