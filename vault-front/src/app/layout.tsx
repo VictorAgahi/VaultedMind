@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Inter } from "next/font/google";
 import "./globals.css";
 import { AuthProvider } from "@/context/auth-context";
@@ -10,6 +10,15 @@ import { theme } from "@/theme/theme";
 import { BottomNav } from "@/components/organisms/bottom-nav/bottom-nav";
 
 const inter = Inter({ subsets: ["latin"] });
+
+export const viewport: Viewport = {
+  themeColor: "#d81832",
+  width: "device-width",
+  initialScale: 1,
+  maximumScale: 1,
+  userScalable: false,
+  viewportFit: "cover",
+};
 
 export const metadata: Metadata = {
   title: "VaultedMind | Sécurisez votre bien-être mental",
@@ -29,11 +38,6 @@ export const metadata: Metadata = {
     title: "VaultedMind",
     startupImage: "/assets/logo.png",
   },
-  manifest: "/manifest.json",
-  other: {
-    "mobile-web-app-capable": "yes",
-    "apple-mobile-web-app-capable": "yes",
-  }
 };
 
 import { Footer } from "@/components/organisms/footer/footer";
