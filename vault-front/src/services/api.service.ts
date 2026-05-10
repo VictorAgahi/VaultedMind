@@ -10,7 +10,9 @@ class ApiService {
     endpoint: string,
     options: RequestInit = {}
   ): Promise<T> {
-    const url = `${BACKEND_URL}${endpoint}`;
+    const baseUrl = BACKEND_URL.endsWith("/") ? BACKEND_URL.slice(0, -1) : BACKEND_URL;
+    const cleanEndpoint = endpoint.startsWith("/") ? endpoint : `/${endpoint}`;
+    const url = `${baseUrl}${cleanEndpoint}`;
 
     // Get token from access_token (client-side only)
     const token = typeof window !== "undefined" ? localStorage.getItem("access_token") : null;
