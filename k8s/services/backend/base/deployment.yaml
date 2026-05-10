@@ -88,6 +88,8 @@ spec:
             secretKeyRef:
               name: vault-backend-secret
               key: encryption-key
+        - name: COOKIE_DOMAIN
+          value: ".cyrus-ag.com"
         ports:
         - containerPort: 3000
           name: http
