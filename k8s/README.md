@@ -1,111 +1,62 @@
-# Kubernetes Deployment
+# ☸️ VaultedMind Infrastructure
 
-Manifests K8s pour déployer Vault sur un cluster K3s avec ArgoCD.
+Production-grade Kubernetes orchestration for VaultedMind using **K3s**, **ArgoCD**, and **Traefik**.
 
-## Structure
+## 🏗️ Deployment Architecture
 
-```
-k8s/
-├── postgres/        # PostgreSQL database
-├── backend/         # NestJS backend API
-├── frontend/        # Next.js frontend
-└── argocd-apps/     # ArgoCD Application resources
-```
+### 1. GitOps with ArgoCD
+The cluster state is synchronized with this repository.
+- **Root App**: `k8s/argocd/root-app.yaml`
+- **Namespaces**: All resources reside in the `vault-prod` namespace.
 
-## Prérequis
+### 2. Network Isolation (Zero Trust)
+We enforce strict traffic rules using `NetworkPolicies`:
+- **Backend Isolation**: Only pods with label `app: vault-frontend` and the Ingress Controller can reach the backend.
+- **Database Isolation**: Only pods with label `app: vault-backend` can reach the PostgreSQL database.
 
-- K3s cluster running
-- ArgoCD installed
-- kubectl configured
-- Traefik Ingress Controller (comes with K3s)
+### 3. Edge Security (Traefik)
+Traefik handles incoming traffic with hardened security middlewares:
+- **security-headers**: HSTS, CSP, X-Frame-Options: DENY, X-Content-Type-Options: nosniff.
+- **TLS**: Automated SSL certificates via Let's Encrypt and cert-manager.
 
-## Étapes de déploiement
+---
 
-### 1. Créer le namespace
+## 🚀 Setup Instructions
+
+### 1. Secret Management
+Secrets are **not** stored in Git. You must create them manually before syncing:
+
 ```bash
-kubectl create namespace vault-prod
-```
-
-### 2. Créer les secrets (IMPORTANT: faire avant ArgoCD sync)
-```bash
-# PostgreSQL credentials
+# Database Secrets
 kubectl create secret generic postgres-secret \
   --from-literal=username='postgres' \
-  --from-literal=password='CHANGE_ME_SECURE_PASSWORD' \
+  --from-literal=password='YOUR_SECURE_PASSWORD' \
   -n vault-prod
 
-# Backend secrets
+# Backend Secrets
 kubectl create secret generic vault-backend-secret \
-  --from-literal=jwt-secret='CHANGE_ME_RANDOM_JWT_SECRET' \
-  --from-literal=encryption-key='<VOTRE_CLE_AES_256_64_CHARS_HEXADECIMAUX>' \
+  --from-literal=jwt-secret='YOUR_JWT_SECRET' \
+  --from-literal=encryption-key='YOUR_AES_256_HEX_KEY' \
   -n vault-prod
 ```
 
-### 3. Mettre à jour le domaine
-Edit `k8s/frontend/ingress.yaml`:
-```yaml
-- host: your-domain.com  # Change this
-```
-
-### 4. Ajouter les Applications ArgoCD
-
-Option A: Via kubectl
+### 2. Deployment with Kustomize
 ```bash
-kubectl apply -f k8s/argocd-apps/postgres-app.yaml
-kubectl apply -f k8s/argocd-apps/backend-app.yaml
-kubectl apply -f k8s/argocd-apps/frontend-app.yaml
+# Frontend
+kubectl apply -k k8s/services/frontend/overlays/prod
+
+# Backend
+kubectl apply -k k8s/services/backend/overlays/prod
+
+# Database
+kubectl apply -k k8s/services/postgres/overlays/prod
 ```
 
-Option B: Via ArgoCD UI
-- ArgoCD URL: https://192.168.1.94:31921
-- New App → Git Repo → VaultedBack
-- App Name: vault-postgres, Path: k8s/postgres
-- Repeat for backend and frontend
+---
 
-### 5. Vérifier le déploiement
-```bash
-kubectl get pods -n vault-prod
-kubectl get svc -n vault-prod
-kubectl get ingress -n vault-prod
-```
+## 📊 Monitoring & Logs
+- **Logs**: `kubectl logs -n vault-prod -l app=vault-backend`
+- **Status**: `kubectl get pods -n vault-prod`
 
-## Services internes
-
-- **Backend API:** `http://vault-backend:3000` (accessible depuis le cluster)
-- **PostgreSQL:** `postgresql://postgres:password@postgres:5432/vaultedmind_db`
-- **Frontend:** Accessible via domaine Cloudflare
-
-## Configuration Cloudflare
-
-1. Ajouter DNS record:
-   - Type: A
-   - Name: app
-   - Content: 192.168.1.94 (IP du cluster)
-   - Proxy: On
-
-2. SSL/TLS: Full (ou Flexible selon ta setup)
-
-3. Firewall: Configure selon tes besoins
-
-## Monitoring
-
-```bash
-# Logs backend
-kubectl logs -f deployment/vault-backend -n vault-prod
-
-# Logs frontend
-kubectl logs -f deployment/vault-frontend -n vault-prod
-
-# Logs postgres
-kubectl logs -f deployment/postgres -n vault-prod
-
-# Port-forward pour debugging
-kubectl port-forward svc/vault-backend 3000:3000 -n vault-prod
-```
-
-## Notes
-
-- Les secrets doivent être créés AVANT le premier sync d'ArgoCD
-- ArgoCD auto-synce à chaque push sur main
-- PostgreSQL utilise une PVC 20Gi (à adapter selon tes besoins)
-- Les images viennent de ghcr.io/victoragahi/
+---
+© 2026 VaultedMind SRE Team

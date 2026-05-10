@@ -1,61 +1,81 @@
-# 🛡️ VaultedMind Backend
+# 🚀 VaultedMind Backend
 
-Backend ultra-sécurisé pour application de santé mentale, bâti avec **NestJS**, **TypeORM**, et une **Clean Architecture** modulaire.
+The secure engine of VaultedMind, built with NestJS and focused on cryptographic integrity and high-performance health tracking.
 
-## 🚀 Stack Technique
+## 🛡️ Security Architecture
 
-- **Node.js**: v24.14.0+
-- **Yarn**: v4.6.0 (Berry)
-- **Framework**: NestJS 11
-- **Base de données**: PostgreSQL 15
-- **ORM**: TypeORM (ESM Mode)
-- **Architecture**: Clean Architecture / EAV Model
+### 1. Data Encryption (AES-256-GCM)
+The core of our privacy model. We use `AES-256-GCM` with a unique Initialization Vector (IV) for every record.
+- **Keys**: Managed via environment variables in production (K8s Secrets).
+- **Scope**: User journals, custom field names, and field values are all encrypted at rest.
 
-## 🏗️ Architecture
+### 2. PII Anonymization (Blind Indexing)
+To allow searching for users without storing their emails in plain text, we use **Blind Indexing**:
+- An HMAC of the email is stored in a dedicated `email_index` column.
+- This allows `O(1)` lookups while maintaining zero-knowledge of the user's actual email address in the index.
 
-Le projet suit une séparation stricte des responsabilités :
-- `src/common/` : Exceptions globales, décorateurs, utilitaires.
-- `src/config/` : Configuration typée et centralisée.
-- `src/database/` : Entités, migrations et Repositories génériques.
-- `src/modules/` : Modules métier (User, Logs, etc.).
+### 3. Protection Against Brute-Force
+All authentication endpoints are protected by `ThrottlerModule`:
+- **Login/Register**: Limited to 5 requests per minute per IP.
 
-### Modèle EAV (Entity-Attribute-Value)
-L'application utilise un modèle EAV pour permettre une flexibilité totale dans le suivi des indicateurs de santé mentale :
-- **User** : Propriétaire des données.
-- **CustomField** : Définition dynamique des champs (ex: Humeur, Sommeil).
-- **DailyLog** : Entrée journalière.
-- **FieldValue** : Valeur associée à un champ pour un log donné.
+---
 
-## 🛠️ Installation
+## 🏗️ Design Patterns
+- **Domain-Driven Design (DDD)**: Logic is isolated into modules (Auth, Health, Common).
+- **Repository Pattern**: Abstracted data access via TypeORM.
+- **DTO Validation**: Strict typing and validation using `class-validator`.
 
+---
+
+## 🛠️ Development
+
+### Installation
 ```bash
-# Activer Corepack pour utiliser la bonne version de Yarn
-corepack enable
-
-# Installation des dépendances
 yarn install
-
-# Lancer la base de données
-docker-compose up -d
-
-# Appliquer les migrations
-yarn migration:run
 ```
 
-## ⚙️ Développement
+### Running Locally
+```bash
+# Development mode
+yarn dev
+
+# Production build
+yarn build
+yarn start:prod
+```
+
+### Database Migrations
+```bash
+# Generate a new migration
+yarn migration:generate src/database/migrations/Name
+
+# Run migrations
+yarn migration:run
+
+# Revert last migration
+yarn migration:revert
+```
+
+---
+
+## 🧪 Testing
+We maintain a high standard of testing to ensure cryptographic services never fail.
 
 ```bash
-# Linting & Build check
-yarn lint
-yarn build
+# Unit tests
+yarn test
 
-# Lancer en mode dev
-yarn start:dev
+# E2E tests (Requires a running Postgres instance)
+yarn test:e2e
 ```
 
-## 🔒 Sécurité & Qualité
-- **Typage Strict** : Aucun `any` autorisé, Generics utilisés partout.
-- **Soft Delete** : Historique conservé via `deleted_at`.
-- **Transactions** : Support natif dans le Base Repository via `executeInTransaction`.
-- **CI/CD** : GitHub Actions vérifie chaque push (Build + Lint).
-- **Husky** : Pre-commit linting activé.
+---
+
+## 📡 API Endpoints (Quick Ref)
+- `POST /auth/register`: User signup.
+- `POST /auth/login`: User authentication (JWT).
+- `GET /health/daily-logs`: Fetch encrypted journals.
+- `POST /health/import`: Bulk import from CSV/JSON.
+
+---
+© 2026 VaultedMind Backend Team
