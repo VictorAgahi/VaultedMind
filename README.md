@@ -49,7 +49,7 @@ graph TD
 
 ```bash
 vault-projet/
-├── vaultedMind/           # NestJS Backend (Domain-Driven Design)
+├── vault-back/           # NestJS Backend (Domain-Driven Design)
 ├── vault-front/           # Next.js Frontend (Premium UI/UX)
 ├── k8s/                   # Kubernetes Manifests (ArgoCD & Kustomize)
 ├── docker-compose.yml     # Local Development Orchestration
@@ -71,7 +71,7 @@ git clone https://github.com/VictorAgahi/VaultedMind.git
 cd VaultedMind
 
 # Setup environment (Placeholder keys provided)
-cp vaultedMind/.env.example vaultedMind/.env.local
+cp vault-back/.env.example vault-back/.env.local
 cp vault-front/.env.example vault-front/.env.local
 
 # Launch with Docker Compose

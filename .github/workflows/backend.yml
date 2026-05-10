@@ -6,7 +6,7 @@ on:
       - main
       - develop
     paths:
-      - 'vaultedMind/**'
+      - 'vault-back/**'
       - '.github/workflows/backend.yml'
       - 'backend.Dockerfile'
       - 'docker-compose.yml'
@@ -15,7 +15,7 @@ on:
       - main
       - develop
     paths:
-      - 'vaultedMind/**'
+      - 'vault-back/**'
       - 'backend.Dockerfile'
       - 'docker-compose.yml'
 
@@ -35,23 +35,23 @@ jobs:
         with:
           node-version: '24'
           cache: 'yarn'
-          cache-dependency-path: vaultedMind/yarn.lock
+          cache-dependency-path: vault-back/yarn.lock
 
       - name: Install dependencies
-        working-directory: vaultedMind
+        working-directory: vault-back
         run: yarn install --frozen-lockfile
 
       - name: Lint
-        working-directory: vaultedMind
+        working-directory: vault-back
         run: yarn lint
 
       - name: Build
-        working-directory: vaultedMind
+        working-directory: vault-back
         run: yarn build
 
       - name: Run unit tests
         if: always()
-        working-directory: vaultedMind
+        working-directory: vault-back
         run: yarn test:unit
 
   e2e-tests:
@@ -85,18 +85,18 @@ jobs:
         with:
           node-version: '24'
           cache: 'yarn'
-          cache-dependency-path: vaultedMind/yarn.lock
+          cache-dependency-path: vault-back/yarn.lock
 
       - name: Install dependencies
-        working-directory: vaultedMind
+        working-directory: vault-back
         run: yarn install --frozen-lockfile
 
       - name: Build application
-        working-directory: vaultedMind
+        working-directory: vault-back
         run: yarn build
 
       - name: Run E2E tests with setup
-        working-directory: vaultedMind
+        working-directory: vault-back
         env:
           DB_HOST: localhost
           DB_PORT: 5432
@@ -114,7 +114,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: backend-e2e-coverage
-          path: vaultedMind/coverage/
+          path: vault-back/coverage/
           retention-days: 7
 
   build-docker:

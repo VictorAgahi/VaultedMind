@@ -7,18 +7,18 @@ RUN corepack enable && corepack prepare yarn@4.6.0 --activate
 RUN echo "nodeLinker: node-modules" > .yarnrc.yml
 
 # Copy package files
-COPY vaultedMind/package.json vaultedMind/yarn.lock ./
-COPY vaultedMind/.yarn ./.yarn
+COPY vault-back/package.json vault-back/yarn.lock ./
+COPY vault-back/.yarn ./.yarn
 
 # Install dependencies
 RUN yarn install
 
 # Copy source code
-COPY vaultedMind/src ./src
-COPY vaultedMind/scripts ./scripts
-COPY vaultedMind/tsconfig*.json ./
-COPY vaultedMind/nest-cli.json ./
-COPY vaultedMind/.prettierrc ./
+COPY vault-back/src ./src
+COPY vault-back/scripts ./scripts
+COPY vault-back/tsconfig*.json ./
+COPY vault-back/nest-cli.json ./
+COPY vault-back/.prettierrc ./
 
 # Build the application
 RUN yarn build
@@ -37,9 +37,9 @@ RUN addgroup -g 1001 vault && \
 ENV NODE_ENV=production
 
 # Copy package files and node_modules from builder
-COPY vaultedMind/package.json vaultedMind/yarn.lock ./
+COPY vault-back/package.json vault-back/yarn.lock ./
 COPY --from=builder /app/.yarnrc.yml ./
-COPY vaultedMind/.yarn ./.yarn
+COPY vault-back/.yarn ./.yarn
 COPY --from=builder /app/node_modules ./node_modules
 
 # Copy built application from builder stage
