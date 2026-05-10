@@ -16,6 +16,12 @@ export const Navbar: React.FC = () => {
   const { user, logout } = useAuth();
   const pathname = usePathname();
 
+  const authRoutes = ["/dashboard", "/import", "/fields", "/analytics"];
+
+  if (!authRoutes.includes(pathname)) {
+    return null;
+  }
+
   return (
     <AppBar position="static" color="inherit" elevation={1}>
       <Toolbar sx={{ justifyContent: "space-between", px: { xs: 2, md: 8 } }}>

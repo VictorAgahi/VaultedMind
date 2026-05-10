@@ -19,13 +19,7 @@ export class DailyLogRepository extends AbstractBaseRepository<DailyLogModel> {
 
   async findDomainById(id: string): Promise<DailyLog> {
     const model = await this.findById(id);
-    if (model.notes) {
-      try {
-        model.notes = this.encryptionService.decrypt(model.notes);
-      } catch (e) {
-        Logger.error(e);
-      }
-    }
+    this.decryptModel(model);
     return DailyLogMapper.toDomain(model);
   }
 
@@ -35,15 +29,7 @@ export class DailyLogRepository extends AbstractBaseRepository<DailyLogModel> {
       relations: ['fieldValues'],
     });
 
-    models.forEach((model) => {
-      if (model.notes) {
-        try {
-          model.notes = this.encryptionService.decrypt(model.notes);
-        } catch (e) {
-          Logger.error(e);
-        }
-      }
-    });
+    models.forEach((model) => this.decryptModel(model));
 
     return models.map((model) => DailyLogMapper.toDomain(model));
   }
@@ -55,11 +41,30 @@ export class DailyLogRepository extends AbstractBaseRepository<DailyLogModel> {
     }
     const savedModel = await this.repository.save(model);
 
-    // Decrypt for returning the domain entity
-    if (savedModel.notes) {
-      savedModel.notes = this.encryptionService.decrypt(savedModel.notes);
-    }
+    this.decryptModel(savedModel);
     return DailyLogMapper.toDomain(savedModel);
+  }
+
+  private decryptModel(model: DailyLogModel): void {
+    if (model.notes) {
+      try {
+        model.notes = this.encryptionService.decrypt(model.notes);
+      } catch (e) {
+        Logger.error('Failed to decrypt notes', e);
+      }
+    }
+
+    if (model.fieldValues && Array.isArray(model.fieldValues)) {
+      model.fieldValues.forEach((fv) => {
+        if (fv.value) {
+          try {
+            fv.value = this.encryptionService.decrypt(fv.value);
+          } catch (e) {
+            Logger.error('Failed to decrypt field value', e);
+          }
+        }
+      });
+    }
   }
 
   async updateDomain(
