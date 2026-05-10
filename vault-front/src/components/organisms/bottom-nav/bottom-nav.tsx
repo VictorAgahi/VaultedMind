@@ -12,6 +12,12 @@ export const BottomNav: React.FC = () => {
   const pathname = usePathname();
   const router = useRouter();
 
+  const authRoutes = ["/dashboard", "/import", "/fields", "/analytics"];
+
+  if (!authRoutes.includes(pathname)) {
+    return null;
+  }
+
   const getValue = () => {
     if (pathname === "/dashboard") return 0;
     if (pathname === "/analytics") return 1;
