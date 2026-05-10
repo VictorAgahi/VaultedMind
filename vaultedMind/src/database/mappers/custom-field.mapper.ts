@@ -11,6 +11,7 @@ export class CustomFieldMapper {
       model.isActive,
       model.createdAt,
       model.updatedAt,
+      model.optionsOrder,
     );
   }
 
@@ -23,6 +24,7 @@ export class CustomFieldMapper {
     model.isActive = entity.isActive;
     model.createdAt = entity.createdAt;
     model.updatedAt = entity.updatedAt;
+    model.optionsOrder = entity.optionsOrder;
     return model;
   }
 }

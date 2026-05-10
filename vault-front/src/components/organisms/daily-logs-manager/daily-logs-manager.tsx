@@ -129,6 +129,18 @@ export const DailyLogsManager: React.FC = () => {
 
   const historicalValues = useMemo(() => {
     const map: Record<string, Set<string>> = {};
+    
+    // Add values from optionsOrder (the new custom sorting)
+    fields.forEach(field => {
+      if (field.optionsOrder && field.optionsOrder.length > 0) {
+        if (!map[field.id]) {
+          map[field.id] = new Set();
+        }
+        field.optionsOrder.forEach(opt => map[field.id].add(opt));
+      }
+    });
+
+    // Add values already present in logs
     logs.forEach(log => {
       log.fieldValues?.forEach(fv => {
         if (fv.value && fv.value.trim() !== '') {
@@ -145,7 +157,7 @@ export const DailyLogsManager: React.FC = () => {
       result[key] = Array.from(set).sort();
     }
     return result;
-  }, [logs]);
+  }, [logs, fields]);
 
   const handleOpenDialog = (log?: DailyLog) => {
     if (log) {

@@ -7,6 +7,10 @@ export class CreateCustomFieldDto {
 
   @IsEnum(FieldType)
   fieldType!: FieldType;
+
+  @IsOptional()
+  @IsString({ each: true })
+  optionsOrder?: string[];
 }
 
 export class UpdateCustomFieldDto {
@@ -17,6 +21,10 @@ export class UpdateCustomFieldDto {
   @IsOptional()
   @IsBoolean()
   isActive?: boolean;
+
+  @IsOptional()
+  @IsString({ each: true })
+  optionsOrder?: string[];
 }
 
 export class CustomFieldResponseDto {
@@ -24,5 +32,6 @@ export class CustomFieldResponseDto {
   name!: string;
   fieldType!: FieldType;
   isActive!: boolean;
+  optionsOrder?: string[];
   createdAt!: Date;
 }

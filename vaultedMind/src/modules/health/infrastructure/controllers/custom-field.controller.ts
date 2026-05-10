@@ -25,7 +25,7 @@ import { JwtAuthGuard } from '../../../auth/infrastructure/guards/jwt-auth.guard
 @Controller('health/custom-fields')
 @UseGuards(JwtAuthGuard)
 export class CustomFieldController {
-  constructor(private readonly customFieldService: CustomFieldService) {}
+  constructor(private readonly customFieldService: CustomFieldService) { }
 
   @Post()
   async create(
@@ -40,6 +40,7 @@ export class CustomFieldController {
       true,
       new Date(),
       new Date(),
+      dto.optionsOrder,
     );
 
     const saved = await this.customFieldService.createField(entity);
@@ -89,6 +90,7 @@ export class CustomFieldController {
       name: entity.name,
       fieldType: entity.fieldType,
       isActive: entity.isActive,
+      optionsOrder: entity.optionsOrder,
       createdAt: entity.createdAt,
     };
   }

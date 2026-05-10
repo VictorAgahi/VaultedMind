@@ -11,7 +11,7 @@ import { CustomField } from '../../domain/entities/custom-field.entity.js';
 export class CustomFieldService {
   private readonly logger = new Logger(CustomFieldService.name);
 
-  constructor(private readonly customFieldRepository: CustomFieldRepository) {}
+  constructor(private readonly customFieldRepository: CustomFieldRepository) { }
 
   async createField(field: CustomField): Promise<CustomField> {
     this.logger.log(
@@ -36,7 +36,7 @@ export class CustomFieldService {
   async updateField(
     id: string,
     requestingUserId: string,
-    updates: Partial<Pick<CustomField, 'name' | 'isActive'>>,
+    updates: Partial<Pick<CustomField, 'name' | 'isActive' | 'optionsOrder'>>,
   ): Promise<CustomField> {
     const existing = await this.findById(id);
     if (existing.userId !== requestingUserId) {

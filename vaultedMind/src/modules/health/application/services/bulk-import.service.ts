@@ -98,6 +98,7 @@ export class BulkImportService {
             true,
             new Date(),
             new Date(),
+            undefined,
           );
           const created = await this.customFieldService.createField(newField);
           fieldMap.set(fieldName, created);

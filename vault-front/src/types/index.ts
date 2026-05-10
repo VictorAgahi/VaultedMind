@@ -39,17 +39,20 @@ export interface CustomField {
   name: string;
   fieldType: FieldType;
   isActive: boolean;
+  optionsOrder?: string[];
   createdAt: string;
 }
 
 export interface CreateCustomFieldDto {
   name: string;
   fieldType: FieldType;
+  optionsOrder?: string[];
 }
 
 export interface UpdateCustomFieldDto {
   name?: string;
   isActive?: boolean;
+  optionsOrder?: string[];
 }
 
 export interface FieldValue {

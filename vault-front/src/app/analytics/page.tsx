@@ -122,26 +122,33 @@ export default function AnalyticsPage() {
     const field = fields.find(f => f.id === selectedStringField);
     if (!field) return { data: [], valueMap: {} };
 
-    // Get all unique values for this field
-    const uniqueValues: Set<string> = new Set();
-    logs.forEach(log => {
-      const fv = log.fieldValues?.find(v => v.customFieldId === selectedStringField);
-      if (fv && fv.value) {
-        uniqueValues.add(fv.value);
-      }
-    });
-
     const valueMap: Record<string, number> = {};
-    Array.from(uniqueValues).forEach((val, idx) => {
-      valueMap[val] = idx;
-    });
+    const customOrder = field.optionsOrder;
+
+    if (customOrder && customOrder.length > 0) {
+      customOrder.forEach((val, idx) => {
+        valueMap[val] = idx;
+      });
+    } else {
+      // Fallback to appearance order if no custom order defined
+      const uniqueValues: Set<string> = new Set();
+      logs.forEach(log => {
+        const fv = log.fieldValues?.find(v => v.customFieldId === selectedStringField);
+        if (fv && fv.value) {
+          uniqueValues.add(fv.value);
+        }
+      });
+      Array.from(uniqueValues).forEach((val, idx) => {
+        valueMap[val] = idx;
+      });
+    }
 
     const chartData = logs.map(log => {
       const fv = log.fieldValues?.find(v => v.customFieldId === selectedStringField);
       let value: number | null = null;
       let label = "";
 
-      if (fv && fv.value) {
+      if (fv && fv.value && valueMap[fv.value] !== undefined) {
         value = valueMap[fv.value];
         label = fv.value;
       }
@@ -183,6 +190,89 @@ export default function AnalyticsPage() {
           </Box>
         ) : (
           <Grid container spacing={4}>
+            {/* String Evolution Chart - NOW FIRST */}
+            <Grid size={{ xs: 12 }}>
+              <Paper sx={{ p: 4, borderRadius: 4 }}>
+                <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", mb: 4, flexWrap: "wrap", gap: 2 }}>
+                  <Typography variant="h5" sx={{ fontWeight: 700 }}>
+                    Évolution des valeurs (Texte)
+                  </Typography>
+                  <FormControl sx={{ minWidth: 260 }} size="small">
+                    <InputLabel id="string-select-label">Sélectionner un champ</InputLabel>
+                    <Select
+                      labelId="string-select-label"
+                      value={selectedStringField}
+                      label="Sélectionner un champ"
+                      onChange={(e) => setSelectedStringField(e.target.value)}
+                      sx={{
+                        borderRadius: 2,
+                        bgcolor: "transparent",
+                        "& .MuiSelect-select": { py: 1.5, pr: 4 }
+                      }}
+                    >
+                      {stringFields.map(f => (
+                        <MenuItem key={f.id} value={f.id}>{f.name}</MenuItem>
+                      ))}
+                    </Select>
+                  </FormControl>
+                </Box>
+
+                {stringEvolutionData.data.length > 0 ? (
+                  <>
+                    <Box sx={{ width: "100%", height: 400 }}>
+                      <ResponsiveContainer width="100%" height="100%">
+                        <LineChart data={stringEvolutionData.data} margin={{ top: 5, right: 30, left: 20, bottom: 5 }}>
+                          <CartesianGrid strokeDasharray="3 3" vertical={false} />
+                          <XAxis dataKey="date" />
+                          <YAxis
+                            type="number"
+                            domain={[0, Math.max(...Object.values(stringEvolutionData.valueMap))]}
+                            allowDecimals={false}
+                          />
+                          <Tooltip
+                            contentStyle={{ borderRadius: 8, border: "none", boxShadow: "0 4px 6px -1px rgb(0 0 0 / 0.1)" }}
+                            formatter={(value) => {
+                              const labels = Object.entries(stringEvolutionData.valueMap);
+                              const label = labels.find(([, idx]) => idx === value)?.[0];
+                              return label || value;
+                            }}
+                          />
+                          <Legend />
+                          <Line
+                            type="monotone"
+                            dataKey="value"
+                            name={fields.find(f => f.id === selectedStringField)?.name || "Valeur"}
+                            stroke="#f59e0b"
+                            strokeWidth={3}
+                            activeDot={{ r: 6 }}
+                          />
+                        </LineChart>
+                      </ResponsiveContainer>
+                    </Box>
+                    {Object.keys(stringEvolutionData.valueMap).length > 0 && (
+                      <Box sx={{ mt: 3, p: 2, bgcolor: "#f9fafb", borderRadius: 2 }}>
+                        <Typography variant="caption" sx={{ fontWeight: 600, display: "block", mb: 1 }}>
+                          Légende des valeurs :
+                        </Typography>
+                        <Box sx={{ display: "flex", flexWrap: "wrap", gap: 2 }}>
+                          {Object.entries(stringEvolutionData.valueMap).sort(([, a], [, b]) => a - b).map(([label, idx]) => (
+                            <Typography key={label} variant="caption" sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+                              <Box sx={{ width: 12, height: 12, bgcolor: `hsl(${(idx * 60) % 360}, 70%, 50%)`, borderRadius: 1 }} />
+                              {idx}: {label}
+                            </Typography>
+                          ))}
+                        </Box>
+                      </Box>
+                    )}
+                  </>
+                ) : (
+                  <Box sx={{ height: 400, display: "flex", alignItems: "center", justifyContent: "center" }}>
+                    <Typography color="text.secondary">Pas assez de données pour afficher l&apos;évolution.</Typography>
+                  </Box>
+                )}
+              </Paper>
+            </Grid>
+
             {/* Trend Chart */}
             <Grid size={{ xs: 12 }}>
               <Paper sx={{ p: 4, borderRadius: 4 }}>
@@ -190,12 +280,18 @@ export default function AnalyticsPage() {
                   <Typography variant="h5" sx={{ fontWeight: 700 }}>
                     Évolution temporelle
                   </Typography>
-                  <FormControl sx={{ minWidth: 200 }} size="small">
-                    <InputLabel>Sélectionner une mesure</InputLabel>
+                  <FormControl sx={{ minWidth: 260 }} size="small">
+                    <InputLabel id="trend-select-label">Sélectionner une mesure</InputLabel>
                     <Select
+                      labelId="trend-select-label"
                       value={selectedTrendField}
                       label="Sélectionner une mesure"
                       onChange={(e) => setSelectedTrendField(e.target.value)}
+                      sx={{
+                        borderRadius: 2,
+                        bgcolor: "transparent",
+                        "& .MuiSelect-select": { py: 1.5, pr: 4 }
+                      }}
                     >
                       {numberAndBoolFields.map(f => (
                         <MenuItem key={f.id} value={f.id}>{f.name}</MenuItem>
@@ -241,12 +337,18 @@ export default function AnalyticsPage() {
                   <Typography variant="h5" sx={{ fontWeight: 700 }}>
                     Analyse de fréquence
                   </Typography>
-                  <FormControl sx={{ minWidth: 200 }} size="small">
-                    <InputLabel>Sélectionner un champ</InputLabel>
+                  <FormControl sx={{ minWidth: 260 }} size="small">
+                    <InputLabel id="freq-select-label">Sélectionner un champ</InputLabel>
                     <Select
+                      labelId="freq-select-label"
                       value={selectedFreqField}
                       label="Sélectionner un champ"
                       onChange={(e) => setSelectedFreqField(e.target.value)}
+                      sx={{
+                        borderRadius: 2,
+                        bgcolor: "transparent",
+                        "& .MuiSelect-select": { py: 1.5, pr: 4 }
+                      }}
                     >
                       {stringAndBoolFields.map(f => (
                         <MenuItem key={f.id} value={f.id}>{f.name}</MenuItem>
@@ -279,84 +381,6 @@ export default function AnalyticsPage() {
                 ) : (
                   <Box sx={{ height: 400, display: "flex", alignItems: "center", justifyContent: "center" }}>
                     <Typography color="text.secondary">Pas assez de données pour afficher les fréquences.</Typography>
-                  </Box>
-                )}
-              </Paper>
-            </Grid>
-
-            {/* String Evolution Chart */}
-            <Grid size={{ xs: 12 }}>
-              <Paper sx={{ p: 4, borderRadius: 4 }}>
-                <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", mb: 4, flexWrap: "wrap", gap: 2 }}>
-                  <Typography variant="h5" sx={{ fontWeight: 700 }}>
-                    Évolution des valeurs (Texte)
-                  </Typography>
-                  <FormControl sx={{ minWidth: 200 }} size="small">
-                    <InputLabel>Sélectionner un champ</InputLabel>
-                    <Select
-                      value={selectedStringField}
-                      label="Sélectionner un champ"
-                      onChange={(e) => setSelectedStringField(e.target.value)}
-                    >
-                      {stringFields.map(f => (
-                        <MenuItem key={f.id} value={f.id}>{f.name}</MenuItem>
-                      ))}
-                    </Select>
-                  </FormControl>
-                </Box>
-
-                {stringEvolutionData.data.length > 0 ? (
-                  <>
-                    <Box sx={{ width: "100%", height: 400 }}>
-                      <ResponsiveContainer width="100%" height="100%">
-                        <LineChart data={stringEvolutionData.data} margin={{ top: 5, right: 30, left: 20, bottom: 5 }}>
-                          <CartesianGrid strokeDasharray="3 3" vertical={false} />
-                          <XAxis dataKey="date" />
-                          <YAxis
-                            type="number"
-                            domain={[0, Math.max(...Object.values(stringEvolutionData.valueMap))]}
-                            allowDecimals={false}
-                          />
-                          <Tooltip
-                            contentStyle={{ borderRadius: 8, border: "none", boxShadow: "0 4px 6px -1px rgb(0 0 0 / 0.1)" }}
-                            formatter={(value) => {
-                              const labels = Object.entries(stringEvolutionData.valueMap);
-                              const label = labels.find(([, idx]) => idx === value)?.[0];
-                              return label || value;
-                            }}
-                          />
-                          <Legend />
-                          <Line
-                            type="stepAfter"
-                            dataKey="value"
-                            name={fields.find(f => f.id === selectedStringField)?.name || "Valeur"}
-                            stroke="#f59e0b"
-                            strokeWidth={2}
-                            activeDot={{ r: 6 }}
-                            isAnimationActive={false}
-                          />
-                        </LineChart>
-                      </ResponsiveContainer>
-                    </Box>
-                    {Object.keys(stringEvolutionData.valueMap).length > 0 && (
-                      <Box sx={{ mt: 3, p: 2, bgcolor: "#f9fafb", borderRadius: 2 }}>
-                        <Typography variant="caption" sx={{ fontWeight: 600, display: "block", mb: 1 }}>
-                          Légende des valeurs :
-                        </Typography>
-                        <Box sx={{ display: "flex", flexWrap: "wrap", gap: 2 }}>
-                          {Object.entries(stringEvolutionData.valueMap).sort(([, a], [, b]) => a - b).map(([label, idx]) => (
-                            <Typography key={label} variant="caption" sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-                              <Box sx={{ width: 12, height: 12, bgcolor: `hsl(${(idx * 60) % 360}, 70%, 50%)`, borderRadius: 1 }} />
-                              {idx}: {label}
-                            </Typography>
-                          ))}
-                        </Box>
-                      </Box>
-                    )}
-                  </>
-                ) : (
-                  <Box sx={{ height: 400, display: "flex", alignItems: "center", justifyContent: "center" }}>
-                    <Typography color="text.secondary">Pas assez de données pour afficher l&apos;évolution.</Typography>
                   </Box>
                 )}
               </Paper>
