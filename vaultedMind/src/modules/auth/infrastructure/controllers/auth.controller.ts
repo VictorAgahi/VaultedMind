@@ -48,22 +48,26 @@ export class AuthController {
   @Post('logout')
   @HttpCode(HttpStatus.OK)
   logout(@Res({ passthrough: true }) response: Response) {
+    const domain = process.env.COOKIE_DOMAIN || undefined;
     response.clearCookie('access_token', {
       httpOnly: true,
       secure: true,
       sameSite: 'lax',
       path: '/',
+      domain: domain,
     });
     return { message: 'Logged out successfully' };
   }
 
   private setCookie(response: Response, token: string) {
+    const domain = process.env.COOKIE_DOMAIN || undefined;
     response.cookie('access_token', token, {
       httpOnly: true,
       secure: true,
       sameSite: 'lax',
       maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
       path: '/',
+      domain: domain,
     });
   }
 
