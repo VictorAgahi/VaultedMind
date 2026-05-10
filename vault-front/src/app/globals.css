@@ -39,6 +39,14 @@ body {
   color: var(--foreground);
   font-family: Arial, Helvetica, sans-serif;
   padding-bottom: 0;
+  
+  /* Support for PWA safe areas (notch / home indicator) */
+  padding-top: env(safe-area-inset-top, 0px);
+}
+
+/* Ensure the background covers the safe area */
+html {
+  background-color: #ede5d9;
 }
 
 @media (max-width: 900px) {

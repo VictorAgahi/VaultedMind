@@ -40,14 +40,16 @@ export const BottomNav: React.FC = () => {
         left: 0,
         right: 0,
         zIndex: 1000,
+        pb: "env(safe-area-inset-bottom, 0px)",
+        bgcolor: "#ede5d9",
+        borderTop: "2px solid #d81832",
       }}
     >
       <BottomNavigation
         value={getValue()}
         onChange={(event, newValue) => handleChange(newValue)}
         sx={{
-          bgcolor: "#ede5d9",
-          borderTop: "2px solid #d81832",
+          bgcolor: "transparent",
           "& .MuiBottomNavigationAction-root": {
             color: "#111827",
             "&.Mui-selected": {
