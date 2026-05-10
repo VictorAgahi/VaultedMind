@@ -35,9 +35,9 @@ RUN addgroup -g 1001 vault && \
 
 ENV NODE_ENV=production
 
-# Install only production dependencies
+# Install production dependencies and sharp for image optimization
 COPY vault-front/package*.json ./
-RUN npm ci --only=production
+RUN npm ci --only=production && npm install sharp
 
 # Copy configuration and built app
 COPY vault-front/next.config.ts ./
