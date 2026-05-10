@@ -216,11 +216,13 @@ export default function AnalyticsPage() {
                         "& .MuiSelect-select": { py: 1.5, pr: 4 }
                       }}
                       MenuProps={{
-                        PaperProps: {
-                          style: {
-                            maxHeight: 300,
-                            borderRadius: 12,
-                            marginTop: 8
+                        slotProps: {
+                          paper: {
+                            sx: {
+                              maxHeight: 300,
+                              borderRadius: 3,
+                              mt: 1
+                            }
                           }
                         }
                       }}
@@ -308,11 +310,13 @@ export default function AnalyticsPage() {
                         "& .MuiSelect-select": { py: 1.5, pr: 4 }
                       }}
                       MenuProps={{
-                        PaperProps: {
-                          style: {
-                            maxHeight: 300,
-                            borderRadius: 12,
-                            marginTop: 8
+                        slotProps: {
+                          paper: {
+                            sx: {
+                              maxHeight: 300,
+                              borderRadius: 3,
+                              mt: 1
+                            }
                           }
                         }
                       }}
