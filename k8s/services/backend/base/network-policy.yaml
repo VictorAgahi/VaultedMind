@@ -13,9 +13,7 @@ spec:
     - podSelector:
         matchLabels:
           app: vault-frontend
-    - podSelector:
-        matchLabels:
-          app: vault-frontend
+    - namespaceSelector: {}
     ports:
     - protocol: TCP
       port: 3000
