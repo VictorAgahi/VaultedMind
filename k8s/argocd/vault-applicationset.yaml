@@ -22,7 +22,7 @@ spec:
     spec:
       project: default
       source:
-        repoURL: https://github.com/VictorAgahi/VaultedBack.git
+        repoURL: https://github.com/VictorAgahi/VaultedMind.git
         targetRevision: main
         path: "k8s/services/{{service}}/overlays/{{env}}"
       destination:

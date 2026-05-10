@@ -67,8 +67,8 @@ vault-projet/
 ### 2. Local Setup
 ```bash
 # Clone the repository
-git clone https://github.com/VictorAgahi/VaultedBack.git
-cd VaultedBack
+git clone https://github.com/VictorAgahi/VaultedMind.git
+cd VaultedMind
 
 # Setup environment (Placeholder keys provided)
 cp vaultedMind/.env.example vaultedMind/.env.local

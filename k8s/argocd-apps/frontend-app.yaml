@@ -6,7 +6,7 @@ metadata:
 spec:
   project: default
   source:
-    repoURL: https://github.com/VictorAgahi/VaultedBack
+    repoURL: https://github.com/VictorAgahi/VaultedMind
     targetRevision: main
     path: k8s/services/frontend/overlays/prod
   destination:
