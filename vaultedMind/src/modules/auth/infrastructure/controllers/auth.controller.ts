@@ -18,7 +18,7 @@ import { Throttle } from '@nestjs/throttler';
 
 @Controller('auth')
 export class AuthController {
-  constructor(private readonly authService: AuthService) {}
+  constructor(private readonly authService: AuthService) { }
 
   @Public()
   @Throttle({ default: { limit: 5, ttl: 60000 } })
@@ -72,7 +72,6 @@ export class AuthController {
   }
 
   @UseGuards(JwtAuthGuard)
-  @SkipThrottle()
   @Get('me')
   getMe(@Request() req: { user: { id: string; email: string } }): {
     id: string;

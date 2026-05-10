@@ -1,21 +1,19 @@
 apiVersion: networking.k8s.io/v1
 kind: NetworkPolicy
 metadata:
-  name: backend-network-policy
+  name: postgres-network-policy
+  namespace: vault-prod
 spec:
   podSelector:
     matchLabels:
-      app: vault-backend
+      app: postgres
   policyTypes:
   - Ingress
   ingress:
   - from:
     - podSelector:
         matchLabels:
-          app: vault-frontend
-    - podSelector:
-        matchLabels:
-          app: vault-frontend
+          app: vault-backend
     ports:
     - protocol: TCP
-      port: 3000
+      port: 5432

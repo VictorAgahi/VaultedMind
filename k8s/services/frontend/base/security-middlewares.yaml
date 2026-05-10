@@ -1,4 +1,4 @@
-apiVersion: traefik.containo.us/v1alpha1
+apiVersion: traefik.io/v1alpha1
 kind: Middleware
 metadata:
   name: security-headers
@@ -15,8 +15,20 @@ spec:
     frameDeny: true
     # XSS Filter
     browserXssFilter: true
-    # CSP
+    # Headers de sécurité réactivés
     customResponseHeaders:
-      Content-Security-Policy: "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; connect-src 'self' https://api-vault-mind.cyrus-ag.com;"
+      Content-Security-Policy: "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; connect-src 'self' https://*.cyrus-ag.com wss://*.cyrus-ag.com; frame-ancestors 'none';"
       X-Robots-Tag: "none"
       Referrer-Policy: "strict-origin-when-cross-origin"
+      X-Frame-Options: "DENY"
+      X-Content-Type-Options: "nosniff"
+---
+apiVersion: traefik.io/v1alpha1
+kind: Middleware
+metadata:
+  name: redirect-to-https
+  namespace: vault-prod
+spec:
+  redirectScheme:
+    scheme: https
+    permanent: true
