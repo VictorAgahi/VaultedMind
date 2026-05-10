@@ -1,0 +1,22 @@
+apiVersion: traefik.containo.us/v1alpha1
+kind: Middleware
+metadata:
+  name: security-headers
+  namespace: vault-prod
+spec:
+  headers:
+    # HSTS
+    stsSeconds: 31536000
+    stsIncludeSubdomains: true
+    stsPreload: true
+    # Prevent Sniffing
+    contentTypeNosniff: true
+    # Prevent Clickjacking
+    frameDeny: true
+    # XSS Filter
+    browserXssFilter: true
+    # CSP
+    customResponseHeaders:
+      Content-Security-Policy: "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; connect-src 'self' https://api-vault-mind.cyrus-ag.com;"
+      X-Robots-Tag: "none"
+      Referrer-Policy: "strict-origin-when-cross-origin"
