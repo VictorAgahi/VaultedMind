@@ -17,10 +17,10 @@ export default function DashboardPage() {
       <Container maxWidth="lg" sx={{ py: 8 }}>
         <Box sx={{ mb: 6 }}>
           <Typography variant="h3" component="h1" gutterBottom sx={{ fontWeight: 800 }}>
-            Your Secure Dashboard
+            Votre tableau de bord sécurisé
           </Typography>
           <Typography variant="h6" color="text.secondary">
-            This is a protected area. Only authenticated users can see this.
+            Ceci est une zone protégée. Seuls les utilisateurs authentifiés peuvent voir ceci.
           </Typography>
         </Box>
 

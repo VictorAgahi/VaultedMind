@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo } from "react";
 import {
   Box,
   Container,
@@ -58,7 +58,7 @@ export default function AnalyticsPage() {
         if (stringFields.length > 0) setSelectedFreqField(stringFields[0].id);
 
       } catch {
-        setError("Failed to load analytics data");
+        setError("Échec du chargement des données d'analyse");
       } finally {
         setLoading(false);
       }
@@ -66,7 +66,6 @@ export default function AnalyticsPage() {
     fetchData();
   }, []);
 
-  // Data for Trend Chart (Numbers over time)
   const trendData = useMemo(() => {
     if (!selectedTrendField) return [];
     const field = fields.find(f => f.id === selectedTrendField);
@@ -91,7 +90,6 @@ export default function AnalyticsPage() {
     }).filter(d => d.value !== null);
   }, [logs, selectedTrendField, fields]);
 
-  // Data for Frequency Chart (Occurrences of strings/booleans)
   const freqData = useMemo(() => {
     if (!selectedFreqField) return [];
 
@@ -170,10 +168,10 @@ export default function AnalyticsPage() {
       <Container maxWidth="lg" sx={{ py: 8 }}>
         <Box sx={{ mb: 6 }}>
           <Typography variant="h3" component="h1" gutterBottom sx={{ fontWeight: 800 }}>
-            Analytics & Insights
+            Analyses & Statistiques
           </Typography>
           <Typography variant="h6" color="text.secondary">
-            Visualize your health patterns and track your progress over time.
+            Visualisez vos schémas de santé et suivez vos progrès au fil du temps.
           </Typography>
         </Box>
 
@@ -190,13 +188,13 @@ export default function AnalyticsPage() {
               <Paper sx={{ p: 4, borderRadius: 4 }}>
                 <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", mb: 4, flexWrap: "wrap", gap: 2 }}>
                   <Typography variant="h5" sx={{ fontWeight: 700 }}>
-                    Evolution Over Time
+                    Évolution temporelle
                   </Typography>
                   <FormControl sx={{ minWidth: 200 }} size="small">
-                    <InputLabel>Select Metric</InputLabel>
+                    <InputLabel>Sélectionner une mesure</InputLabel>
                     <Select
                       value={selectedTrendField}
-                      label="Select Metric"
+                      label="Sélectionner une mesure"
                       onChange={(e) => setSelectedTrendField(e.target.value)}
                     >
                       {numberAndBoolFields.map(f => (
@@ -220,7 +218,7 @@ export default function AnalyticsPage() {
                         <Line
                           type="monotone"
                           dataKey="value"
-                          name={fields.find(f => f.id === selectedTrendField)?.name || "Value"}
+                          name={fields.find(f => f.id === selectedTrendField)?.name || "Valeur"}
                           stroke="#d81832"
                           strokeWidth={3}
                           activeDot={{ r: 8 }}
@@ -230,7 +228,7 @@ export default function AnalyticsPage() {
                   </Box>
                 ) : (
                   <Box sx={{ height: 400, display: "flex", alignItems: "center", justifyContent: "center" }}>
-                    <Typography color="text.secondary">Not enough data to display trends.</Typography>
+                    <Typography color="text.secondary">Pas assez de données pour afficher les tendances.</Typography>
                   </Box>
                 )}
               </Paper>
@@ -241,13 +239,13 @@ export default function AnalyticsPage() {
               <Paper sx={{ p: 4, borderRadius: 4 }}>
                 <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", mb: 4, flexWrap: "wrap", gap: 2 }}>
                   <Typography variant="h5" sx={{ fontWeight: 700 }}>
-                    Value Frequency Analysis
+                    Analyse de fréquence
                   </Typography>
                   <FormControl sx={{ minWidth: 200 }} size="small">
-                    <InputLabel>Select Field</InputLabel>
+                    <InputLabel>Sélectionner un champ</InputLabel>
                     <Select
                       value={selectedFreqField}
-                      label="Select Field"
+                      label="Sélectionner un champ"
                       onChange={(e) => setSelectedFreqField(e.target.value)}
                     >
                       {stringAndBoolFields.map(f => (
@@ -280,7 +278,7 @@ export default function AnalyticsPage() {
                   </Box>
                 ) : (
                   <Box sx={{ height: 400, display: "flex", alignItems: "center", justifyContent: "center" }}>
-                    <Typography color="text.secondary">Not enough data to display frequencies.</Typography>
+                    <Typography color="text.secondary">Pas assez de données pour afficher les fréquences.</Typography>
                   </Box>
                 )}
               </Paper>
@@ -291,13 +289,13 @@ export default function AnalyticsPage() {
               <Paper sx={{ p: 4, borderRadius: 4 }}>
                 <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", mb: 4, flexWrap: "wrap", gap: 2 }}>
                   <Typography variant="h5" sx={{ fontWeight: 700 }}>
-                    String Evolution Over Time
+                    Évolution des valeurs (Texte)
                   </Typography>
                   <FormControl sx={{ minWidth: 200 }} size="small">
-                    <InputLabel>Select Field</InputLabel>
+                    <InputLabel>Sélectionner un champ</InputLabel>
                     <Select
                       value={selectedStringField}
-                      label="Select Field"
+                      label="Sélectionner un champ"
                       onChange={(e) => setSelectedStringField(e.target.value)}
                     >
                       {stringFields.map(f => (
@@ -331,7 +329,7 @@ export default function AnalyticsPage() {
                           <Line
                             type="stepAfter"
                             dataKey="value"
-                            name={fields.find(f => f.id === selectedStringField)?.name || "Value"}
+                            name={fields.find(f => f.id === selectedStringField)?.name || "Valeur"}
                             stroke="#f59e0b"
                             strokeWidth={2}
                             activeDot={{ r: 6 }}
@@ -343,7 +341,7 @@ export default function AnalyticsPage() {
                     {Object.keys(stringEvolutionData.valueMap).length > 0 && (
                       <Box sx={{ mt: 3, p: 2, bgcolor: "#f9fafb", borderRadius: 2 }}>
                         <Typography variant="caption" sx={{ fontWeight: 600, display: "block", mb: 1 }}>
-                          Value Legend:
+                          Légende des valeurs :
                         </Typography>
                         <Box sx={{ display: "flex", flexWrap: "wrap", gap: 2 }}>
                           {Object.entries(stringEvolutionData.valueMap).sort(([, a], [, b]) => a - b).map(([label, idx]) => (
@@ -358,7 +356,7 @@ export default function AnalyticsPage() {
                   </>
                 ) : (
                   <Box sx={{ height: 400, display: "flex", alignItems: "center", justifyContent: "center" }}>
-                    <Typography color="text.secondary">Not enough data to display string evolution.</Typography>
+                    <Typography color="text.secondary">Pas assez de données pour afficher l&apos;évolution.</Typography>
                   </Box>
                 )}
               </Paper>

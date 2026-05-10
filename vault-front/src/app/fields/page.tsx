@@ -61,7 +61,7 @@ export default function FieldsPage() {
       setFields(data);
       setError(null);
     } catch {
-      setError("Failed to load fields");
+      setError("Échec du chargement des champs");
     }
   };
 
@@ -73,7 +73,7 @@ export default function FieldsPage() {
         setFields(data);
         setError(null);
       } catch {
-        setError("Failed to load fields");
+        setError("Échec du chargement des champs");
       } finally {
         setLoading(false);
       }
@@ -114,20 +114,20 @@ export default function FieldsPage() {
           name: fieldName,
         };
         await apiService.patch(`/health/custom-fields/${currentFieldId}`, updateDto);
-        setSuccess("Field updated successfully!");
+        setSuccess("Champ mis à jour avec succès !");
       } else {
         const createDto: CreateCustomFieldDto = {
           name: fieldName,
           fieldType: fieldType,
         };
         await apiService.post("/health/custom-fields", createDto);
-        setSuccess("Field created successfully!");
+        setSuccess("Champ créé avec succès !");
       }
       handleCloseDialog();
       refetchFields();
       window.dispatchEvent(new Event("vaultedmind:fields-updated"));
     } catch {
-      setError("Failed to save field");
+      setError("Échec de l'enregistrement du champ");
     } finally {
       setSubmitting(false);
     }
@@ -139,23 +139,23 @@ export default function FieldsPage() {
         isActive: !field.isActive,
       };
       await apiService.patch(`/health/custom-fields/${field.id}`, updateDto);
-      setSuccess(`Field ${field.isActive ? "deactivated" : "activated"}!`);
+      setSuccess(`Champ ${field.isActive ? "désactivé" : "activé"} !`);
       refetchFields();
       window.dispatchEvent(new Event("vaultedmind:fields-updated"));
     } catch {
-      setError("Failed to update field");
+      setError("Échec de la mise à jour du champ");
     }
   };
 
   const handleDelete = async (fieldId: string) => {
-    if (window.confirm("Are you sure you want to delete this field? This cannot be undone.")) {
+    if (window.confirm("Êtes-vous sûr de vouloir supprimer ce champ ? Cette action est irréversible.")) {
       try {
         await apiService.delete(`/health/custom-fields/${fieldId}`);
-        setSuccess("Field deleted successfully!");
+        setSuccess("Champ supprimé avec succès !");
         refetchFields();
         window.dispatchEvent(new Event("vaultedmind:fields-updated"));
       } catch {
-        setError("Failed to delete field");
+        setError("Échec de la suppression du champ");
       }
     }
   };
@@ -170,10 +170,10 @@ export default function FieldsPage() {
         <Box sx={{ mb: 6, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
           <div>
             <Typography variant="h3" component="h1" gutterBottom sx={{ fontWeight: 800 }}>
-              Custom Fields
+              Champs personnalisés
             </Typography>
             <Typography variant="h6" color="text.secondary">
-              Create and manage your custom tracking fields
+              Créez et gérez vos propres champs de suivi
             </Typography>
           </div>
           <Button
@@ -182,7 +182,7 @@ export default function FieldsPage() {
             onClick={() => handleOpenDialog()}
             sx={{ bgcolor: "#059669", "&:hover": { bgcolor: "#047857" } }}
           >
-            New Field
+            Nouveau champ
           </Button>
         </Box>
 
@@ -205,14 +205,14 @@ export default function FieldsPage() {
         ) : fields.length === 0 ? (
           <Paper sx={{ p: 4, textAlign: "center" }}>
             <Typography color="text.secondary" sx={{ mb: 2 }}>
-              No custom fields yet. Create your first one!
+              Aucun champ personnalisé pour le moment. Créez le premier !
             </Typography>
             <Button
               variant="contained"
               startIcon={<AddIcon />}
               onClick={() => handleOpenDialog()}
             >
-              Create Field
+              Créer un champ
             </Button>
           </Paper>
         ) : (
@@ -221,10 +221,10 @@ export default function FieldsPage() {
               <Table>
                 <TableHead>
                   <TableRow sx={{ bgcolor: "#ede5d9" }}>
-                    <TableCell sx={{ fontWeight: 700 }}>Name</TableCell>
+                    <TableCell sx={{ fontWeight: 700 }}>Nom</TableCell>
                     <TableCell sx={{ fontWeight: 700 }}>Type</TableCell>
                     <TableCell sx={{ fontWeight: 700 }} align="center">
-                      Active
+                      Actif
                     </TableCell>
                     <TableCell sx={{ fontWeight: 700 }} align="right">
                       Actions
@@ -247,14 +247,14 @@ export default function FieldsPage() {
                         <IconButton
                           size="small"
                           onClick={() => handleOpenDialog(field)}
-                          title="Edit"
+                          title="Modifier"
                         >
                           <EditIcon fontSize="small" />
                         </IconButton>
                         <IconButton
                           size="small"
                           onClick={() => handleDelete(field.id)}
-                          title="Delete"
+                          title="Supprimer"
                           sx={{ color: "error.main" }}
                         >
                           <DeleteIcon fontSize="small" />
@@ -281,16 +281,16 @@ export default function FieldsPage() {
       {/* Create/Edit Field Dialog */}
       <Dialog open={openDialog} onClose={handleCloseDialog} fullWidth maxWidth="sm">
         <form onSubmit={handleSubmit}>
-          <DialogTitle>{isEditing ? "Edit Field" : "Create New Field"}</DialogTitle>
+          <DialogTitle>{isEditing ? "Modifier le champ" : "Créer un nouveau champ"}</DialogTitle>
           <DialogContent dividers sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
             <TextField
               autoFocus
-              label="Field Name"
+              label="Nom du champ"
               fullWidth
               variant="outlined"
               value={fieldName}
               onChange={(e) => setFieldName(e.target.value)}
-              placeholder="e.g., Mood, Energy Level"
+              placeholder="ex: Humeur, Niveau d'énergie"
               required
             />
             {!isEditing && (
@@ -301,18 +301,18 @@ export default function FieldsPage() {
                   label="Type"
                   onChange={(e) => setFieldType(e.target.value as FieldType)}
                 >
-                  <MenuItem value={FieldType.STRING}>Text</MenuItem>
-                  <MenuItem value={FieldType.NUMBER}>Number</MenuItem>
-                  <MenuItem value={FieldType.BOOLEAN}>Yes/No</MenuItem>
+                  <MenuItem value={FieldType.STRING}>Texte</MenuItem>
+                  <MenuItem value={FieldType.NUMBER}>Nombre</MenuItem>
+                  <MenuItem value={FieldType.BOOLEAN}>Oui/Non</MenuItem>
                   <MenuItem value={FieldType.DATE}>Date</MenuItem>
                 </Select>
               </FormControl>
             )}
           </DialogContent>
           <DialogActions>
-            <Button onClick={handleCloseDialog}>Cancel</Button>
+            <Button onClick={handleCloseDialog}>Annuler</Button>
             <Button type="submit" variant="contained" disabled={submitting || !fieldName.trim()}>
-              {submitting ? "Saving..." : "Save"}
+              {submitting ? "Enregistrement..." : "Enregistrer"}
             </Button>
           </DialogActions>
         </form>

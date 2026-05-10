@@ -57,10 +57,10 @@ export const BottomNav: React.FC = () => {
           },
         }}
       >
-        <BottomNavigationAction icon={<DashboardIcon />} label="Dashboard" />
-        <BottomNavigationAction icon={<BarChartIcon />} label="Analytics" />
-        <BottomNavigationAction icon={<SettingsIcon />} label="Fields" />
-        <BottomNavigationAction icon={<CloudUploadIcon />} label="Import" />
+        <BottomNavigationAction icon={<DashboardIcon />} label="Tableau de bord" />
+        <BottomNavigationAction icon={<BarChartIcon />} label="Analyses" />
+        <BottomNavigationAction icon={<SettingsIcon />} label="Champs" />
+        <BottomNavigationAction icon={<CloudUploadIcon />} label="Importation" />
       </BottomNavigation>
     </Box>
   );

@@ -11,7 +11,8 @@ import {
   CircularProgress,
   FormControlLabel,
   Checkbox,
-  Link as MuiLink
+  Link as MuiLink,
+  Stack
 } from "@mui/material";
 import { useAuth } from "@/context/auth-context";
 import { ApiError, LoginCredentials } from "@/types";
@@ -40,7 +41,7 @@ export const LoginForm: React.FC = () => {
       await login(formData);
     } catch (err: unknown) {
       const apiError = err as ApiError;
-      setError(apiError.message || "Failed to login");
+      setError(apiError.message || "Échec de la connexion");
     } finally {
       setIsLoading(false);
     }
@@ -62,10 +63,10 @@ export const LoginForm: React.FC = () => {
           <Image src="/assets/logo.png" alt="VaultedMind Logo" width={64} height={64} priority />
         </Box>
         <Typography variant="h4" component="h1" gutterBottom align="center" sx={{ fontWeight: 700 }}>
-          Welcome Back
+          Bon retour
         </Typography>
         <Typography variant="body1" color="text.secondary" align="center" sx={{ mb: 4 }}>
-          Please enter your details
+          Veuillez entrer vos identifiants
         </Typography>
 
         {error && (
@@ -74,52 +75,56 @@ export const LoginForm: React.FC = () => {
           </Alert>
         )}
 
-        <TextField
-          label="Email"
-          name="email"
-          type="email"
-          value={formData.email}
-          onChange={handleChange}
-          required
-          autoFocus
-        />
-
-        <TextField
-          label="Password"
-          name="password"
-          type="password"
-          value={formData.password}
-          onChange={handleChange}
-          required
-        />
-
-        <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", mb: 3, mt: 1 }}>
-          <FormControlLabel
-            control={<Checkbox size="small" color="primary" />}
-            label={<Typography variant="body2">Remember me</Typography>}
+        <Stack spacing={3}>
+          <TextField
+            label="Email"
+            name="email"
+            type="email"
+            fullWidth
+            required
+            value={formData.email}
+            onChange={handleChange}
+            disabled={isLoading}
           />
-          <MuiLink component={Link} href="/forgot-password" variant="body2" sx={{ fontWeight: 600, textDecoration: "none" }}>
-            Forgot password?
-          </MuiLink>
-        </Box>
+          <TextField
+            label="Mot de passe"
+            name="password"
+            type="password"
+            fullWidth
+            required
+            value={formData.password}
+            onChange={handleChange}
+            disabled={isLoading}
+          />
 
-        <Button
-          type="submit"
-          variant="contained"
-          fullWidth
-          size="large"
-          disabled={isLoading}
-          sx={{ py: 1.5, borderRadius: 2 }}
-        >
-          {isLoading ? <CircularProgress size={24} color="inherit" /> : "Sign In"}
-        </Button>
+          <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+            <FormControlLabel
+              control={<Checkbox size="small" color="primary" defaultChecked />}
+              label={<Typography variant="body2">Se souvenir de moi</Typography>}
+            />
+            <MuiLink component={Link} href="/forgot-password" variant="body2" sx={{ fontWeight: 600, textDecoration: "none" }}>
+              Mot de passe oublié ?
+            </MuiLink>
+          </Box>
 
-        <Typography variant="body2" align="center" sx={{ mt: 3 }}>
-          Don&apos;t have an account?{" "}
-          <MuiLink component={Link} href="/register" sx={{ fontWeight: 600, textDecoration: "none" }}>
-            Sign Up
-          </MuiLink>
-        </Typography>
+          <Button
+            type="submit"
+            variant="contained"
+            fullWidth
+            size="large"
+            disabled={isLoading}
+            sx={{ py: 1.5, borderRadius: 2, fontSize: "1.1rem" }}
+          >
+            {isLoading ? <CircularProgress size={24} color="inherit" /> : "Se connecter"}
+          </Button>
+
+          <Typography variant="body2" align="center">
+            Vous n&apos;avez pas de compte ?{" "}
+            <MuiLink component={Link} href="/register" sx={{ fontWeight: 600, textDecoration: "none" }}>
+              S&apos;inscrire
+            </MuiLink>
+          </Typography>
+        </Stack>
       </Box>
     </Paper>
   );

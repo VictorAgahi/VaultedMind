@@ -12,11 +12,11 @@ import { BottomNav } from "@/components/organisms/bottom-nav/bottom-nav";
 const inter = Inter({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
-  title: "VaultedMind | Secure Your Mental Well-being",
-  description: "VaultedMind is a high-security platform designed to track your mental health, daily logs, and personal insights with absolute privacy and encryption.",
+  title: "VaultedMind | Sécurisez votre bien-être mental",
+  description: "VaultedMind est une plateforme de haute sécurité conçue pour suivre votre santé mentale, vos journaux quotidiens et vos réflexions personnelles avec une confidentialité et un chiffrement absolus.",
   openGraph: {
-    title: "VaultedMind | Secure Your Mental Well-being",
-    description: "Your mental health data, protected in a modern digital vault.",
+    title: "VaultedMind | Sécurisez votre bien-être mental",
+    description: "Vos données de santé mentale, protégées dans un coffre-fort numérique moderne.",
     images: ["/assets/logo.png"],
   },
   icons: {

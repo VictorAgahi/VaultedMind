@@ -75,7 +75,7 @@ export const DailyLogsManager: React.FC = () => {
       );
       setLogs(sortedLogs);
     } catch {
-      setError("Failed to load tracking data");
+      setError("Échec du chargement des données de suivi");
     } finally {
       setLoading(false);
     }
@@ -177,13 +177,13 @@ export const DailyLogsManager: React.FC = () => {
   };
 
   const handleDeleteLog = async (logId: string, logDate: string) => {
-    if (window.confirm(`Delete the log for ${new Date(logDate).toLocaleDateString()}? This cannot be undone.`)) {
+    if (window.confirm(`Supprimer le journal du ${new Date(logDate).toLocaleDateString()} ? Cette action est irréversible.`)) {
       try {
         await apiService.delete(`/health/daily-logs/${logId}`);
         setError(null);
         await fetchData();
       } catch {
-        setError("Failed to delete log");
+        setError("Échec de la suppression du journal");
       }
     }
   };
@@ -237,7 +237,7 @@ export const DailyLogsManager: React.FC = () => {
       handleCloseDialog();
     } catch (err: unknown) {
       const apiError = err as import("@/types").ApiError;
-      setError(apiError.message || "Operation failed");
+      setError(apiError.message || "L'opération a échoué");
     } finally {
       setSubmitting(false);
     }
@@ -319,14 +319,14 @@ export const DailyLogsManager: React.FC = () => {
     <Paper sx={{ p: 4, borderRadius: 4, mt: 4 }}>
       <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", mb: 4 }}>
         <Typography variant="h6" sx={{ fontWeight: 700 }}>
-          Daily Tracking
+          Suivi Quotidien
         </Typography>
         <Button
           variant="contained"
           startIcon={<AddIcon />}
           onClick={() => handleOpenDialog()}
         >
-          Add Daily Log
+          Ajouter un journal
         </Button>
       </Box>
 
@@ -337,7 +337,7 @@ export const DailyLogsManager: React.FC = () => {
         {activeFields.length > 0 && (
           <Box>
             <Typography variant="body2" sx={{ fontWeight: 600, mb: 2 }}>
-              Filter by fields (show logs with ALL selected fields):
+              Filtrer par champs (affiche les journaux avec TOUS les champs sélectionnés) :
             </Typography>
             <Autocomplete
               multiple
@@ -350,7 +350,7 @@ export const DailyLogsManager: React.FC = () => {
               renderInput={(params) => (
                 <TextField
                   {...params}
-                  placeholder="Select fields to filter..."
+                  placeholder="Sélectionner des champs..."
                   size="small"
                 />
               )}
@@ -361,15 +361,15 @@ export const DailyLogsManager: React.FC = () => {
 
         <Box sx={{ display: "flex", gap: 2, alignItems: "flex-end" }}>
           <FormControl sx={{ minWidth: 200 }}>
-            <InputLabel size="small">Sort by Date</InputLabel>
+            <InputLabel size="small">Trier par date</InputLabel>
             <Select
               value={sortOrder}
-              label="Sort by Date"
+              label="Trier par date"
               onChange={(e) => setSortOrder(e.target.value as "asc" | "desc")}
               size="small"
             >
-              <MenuItem value="desc">Newest First (↓)</MenuItem>
-              <MenuItem value="asc">Oldest First (↑)</MenuItem>
+              <MenuItem value="desc">Plus récent (↓)</MenuItem>
+              <MenuItem value="asc">Plus ancien (↑)</MenuItem>
             </Select>
           </FormControl>
           {(selectedFieldFilters.length > 0 || sortOrder !== "desc") && (
@@ -381,7 +381,7 @@ export const DailyLogsManager: React.FC = () => {
               }}
               variant="outlined"
             >
-              Clear Filters
+              Réinitialiser
             </Button>
           )}
         </Box>
@@ -411,8 +411,8 @@ export const DailyLogsManager: React.FC = () => {
                 <TableRow>
                   <TableCell colSpan={activeFields.length + 3} align="center" sx={{ py: 3 }}>
                     {selectedFieldFilters.length > 0
-                      ? "No logs match the selected filters. Try adjusting your selection."
-                      : "No daily logs found. Start tracking!"}
+                      ? "Aucun journal ne correspond aux filtres sélectionnés. Essayez d'ajuster votre sélection."
+                      : "Aucun journal trouvé. Commencez votre suivi !"}
                   </TableCell>
                 </TableRow>
               ) : (
@@ -430,13 +430,13 @@ export const DailyLogsManager: React.FC = () => {
                       {log.notes || "-"}
                     </TableCell>
                     <TableCell align="right">
-                      <IconButton size="small" onClick={() => handleOpenDialog(log)} title="Edit">
+                      <IconButton size="small" onClick={() => handleOpenDialog(log)} title="Modifier">
                         <EditIcon fontSize="small" />
                       </IconButton>
                       <IconButton
                         size="small"
                         onClick={() => handleDeleteLog(log.id, log.logDate)}
-                        title="Delete"
+                        title="Supprimer"
                         sx={{ color: "error.main" }}
                       >
                         <DeleteIcon fontSize="small" />
@@ -452,7 +452,7 @@ export const DailyLogsManager: React.FC = () => {
 
       <Dialog open={openDialog} onClose={handleCloseDialog} fullWidth maxWidth="md">
         <form onSubmit={handleSubmit}>
-          <DialogTitle>{isEditing ? "Edit Daily Log" : "New Daily Log"}</DialogTitle>
+          <DialogTitle>{isEditing ? "Modifier le journal" : "Nouveau journal"}</DialogTitle>
           <DialogContent dividers>
             <Box sx={{ display: "grid", gridTemplateColumns: { xs: "1fr", md: "1fr 1fr" }, gap: 2, mb: 3 }}>
               <TextField
@@ -466,22 +466,22 @@ export const DailyLogsManager: React.FC = () => {
                 required
               />
               <TextField
-                label="General Notes"
+                label="Notes générales"
                 fullWidth
                 variant="outlined"
                 value={notes}
                 onChange={(e) => setNotes(e.target.value)}
-                placeholder="How was your day?"
+                placeholder="Comment s'est passée votre journée ?"
               />
             </Box>
 
             <Typography variant="subtitle2" color="text.secondary" sx={{ mb: 2 }}>
-              Custom Trackers
+              Champs personnalisés
             </Typography>
 
             {activeFields.length === 0 ? (
               <Alert severity="info">
-                You have no active custom fields. Create some in the &quot;Manage Custom Fields&quot; section.
+                Vous n&apos;avez aucun champ personnalisé actif. Créez-en dans la section &quot;Gérer les champs&quot;.
               </Alert>
             ) : (
               <Box sx={{ display: "grid", gridTemplateColumns: { xs: "1fr", md: "1fr 1fr" }, gap: 2 }}>
@@ -490,9 +490,9 @@ export const DailyLogsManager: React.FC = () => {
             )}
           </DialogContent>
           <DialogActions>
-            <Button onClick={handleCloseDialog}>Cancel</Button>
+            <Button onClick={handleCloseDialog}>Annuler</Button>
             <Button type="submit" variant="contained" disabled={submitting}>
-              {submitting ? "Saving..." : "Save"}
+              {submitting ? "Enregistrement..." : "Enregistrer"}
             </Button>
           </DialogActions>
         </form>

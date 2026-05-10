@@ -43,7 +43,7 @@ export const Navbar: React.FC = () => {
               disableElevation
               sx={{ borderRadius: 2 }}
             >
-              Dashboard
+              Tableau de bord
             </Button>
             <Button
               component={Link}
@@ -54,17 +54,7 @@ export const Navbar: React.FC = () => {
               disableElevation
               sx={{ borderRadius: 2 }}
             >
-              Analytics
-            </Button>
-            <Button
-              component={Link}
-              href="/import"
-              color={pathname === "/import" ? "primary" : "inherit"}
-              variant={pathname === "/import" ? "contained" : "text"}
-              disableElevation
-              sx={{ borderRadius: 2 }}
-            >
-              Import CSV
+              Analyses
             </Button>
             <Button
               component={Link}
@@ -75,14 +65,24 @@ export const Navbar: React.FC = () => {
               disableElevation
               sx={{ borderRadius: 2 }}
             >
-              Fields
+              Champs
+            </Button>
+            <Button
+              component={Link}
+              href="/import"
+              color={pathname === "/import" ? "primary" : "inherit"}
+              variant={pathname === "/import" ? "contained" : "text"}
+              disableElevation
+              sx={{ borderRadius: 2 }}
+            >
+              Importation CSV
             </Button>
           </Box>
         </Box>
 
         <Box sx={{ display: "flex", alignItems: "center", gap: 3 }}>
           <Typography variant="body2" sx={{ display: { xs: "none", sm: "block" } }}>
-            Welcome, <strong>{user?.email || "User"}</strong>
+            Bienvenue, <strong>{user?.email || "Utilisateur"}</strong>
           </Typography>
           <Avatar sx={{ bgcolor: "primary.light", width: 32, height: 32 }}>
             {user?.email?.[0].toUpperCase() || "U"}
@@ -93,7 +93,7 @@ export const Navbar: React.FC = () => {
             onClick={logout}
             startIcon={<LogoutIcon />}
           >
-            Logout
+            Déconnexion
           </Button>
         </Box>
       </Toolbar>

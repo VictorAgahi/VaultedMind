@@ -34,10 +34,10 @@ export default function Home() {
             </Box>
             <Stack direction="row" spacing={2}>
               <Button component={Link} href="/login" color="inherit">
-                Login
+                Connexion
               </Button>
               <Button component={Link} href="/register" variant="contained">
-                Get Started
+                Démarrer
               </Button>
             </Stack>
           </Toolbar>
@@ -49,11 +49,11 @@ export default function Home() {
           <Grid container spacing={4} sx={{ alignItems: "center" }}>
             <Grid size={{ xs: 12, md: 7 }}>
               <Typography variant="h1" sx={{ fontSize: { xs: "3rem", md: "4.5rem" }, mb: 3 }}>
-                Secure Your <Box component="span" sx={{ color: "primary.main" }}>Mind</Box>.
+                Sécurisez votre <Box component="span" sx={{ color: "primary.main" }}>Esprit</Box>.
               </Typography>
               <Typography variant="h5" color="text.secondary" sx={{ mb: 5, lineHeight: 1.6, maxWidth: 600 }}>
-                VaultedMind is a state-of-the-art encryption platform for your most personal thoughts,
-                health records, and digital legacy. Built for privacy, designed for peace of mind.
+                VaultedMind est une plateforme de chiffrement de pointe pour vos pensées les plus personnelles,
+                vos dossiers de santé et votre héritage numérique. Conçu pour la confidentialité, pensé pour votre tranquillité.
               </Typography>
               <Button
                 component={Link}
@@ -62,7 +62,7 @@ export default function Home() {
                 size="large"
                 sx={{ py: 2, px: 4, fontSize: "1.1rem" }}
               >
-                Initialize Your Vault
+                Initialiser votre coffre
               </Button>
             </Grid>
           </Grid>
@@ -76,10 +76,10 @@ export default function Home() {
                   <CardContent sx={{ p: 4 }}>
                     <ShieldIcon color="primary" sx={{ fontSize: 48, mb: 2 }} />
                     <Typography variant="h5" gutterBottom sx={{ fontWeight: 700 }}>
-                      End-to-End Encryption
+                      Chiffrement de bout en bout
                     </Typography>
                     <Typography color="text.secondary">
-                      Your data is encrypted before it even leaves your device. Only you hold the key.
+                      Vos données sont cryptées avant même de quitter votre appareil. Vous seul détenez la clé.
                     </Typography>
                   </CardContent>
                 </Card>
@@ -89,10 +89,10 @@ export default function Home() {
                   <CardContent sx={{ p: 4 }}>
                     <AnalyticsIcon color="primary" sx={{ fontSize: 48, mb: 2 }} />
                     <Typography variant="h5" gutterBottom sx={{ fontWeight: 700 }}>
-                      Mental Health Tracking
+                      Suivi de santé mentale
                     </Typography>
                     <Typography color="text.secondary">
-                      Advanced analytics to help you understand your emotional patterns over time.
+                      Des analyses avancées pour vous aider à comprendre vos schémas émotionnels au fil du temps.
                     </Typography>
                   </CardContent>
                 </Card>
@@ -102,10 +102,10 @@ export default function Home() {
                   <CardContent sx={{ p: 4 }}>
                     <HistoryEduIcon color="primary" sx={{ fontSize: 48, mb: 2 }} />
                     <Typography variant="h5" gutterBottom sx={{ fontWeight: 700 }}>
-                      Digital Inheritance
+                      Héritage Numérique
                     </Typography>
                     <Typography color="text.secondary">
-                      Securely pass your digital legacy to loved ones with our &quot;Dead Man&apos;s Switch&quot; technology.
+                      Transmettez votre héritage numérique en toute sécurité grâce à notre technologie de &quot;Dead Man&apos;s Switch&quot;.
                     </Typography>
                   </CardContent>
                 </Card>
@@ -114,12 +114,6 @@ export default function Home() {
           </Container>
         </Box>
       </main>
-
-      <Box component="footer" sx={{ py: 6, textAlign: "center", borderTop: "1px solid", borderColor: "divider" }}>
-        <Typography variant="body2" color="text.secondary">
-          &copy; 2024 VaultedMind. All rights reserved.
-        </Typography>
-      </Box>
     </Box>
   );
 }

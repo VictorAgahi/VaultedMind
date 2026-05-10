@@ -89,13 +89,13 @@ function cleanColumnName(value: string): string {
 function parseCSV(content: string): BulkRowDto[] {
   if (!isValidTextFile(content)) {
     throw new Error(
-      'Invalid file format. Please export your spreadsheet as a CSV or TSV file. From Numbers: File → Export → CSV or Excel format'
+      'Format de fichier invalide. Veuillez exporter votre tableur en format CSV ou TSV. Depuis Numbers : Fichier → Exporter vers → CSV ou format Excel'
     );
   }
 
   const lines = content.split("\n").filter((line) => line.trim());
   if (lines.length < 2) {
-    throw new Error('CSV file is empty or has only headers');
+    throw new Error('Le fichier CSV est vide ou ne contient que les en-têtes');
   }
 
   const delimiter = detectDelimiter(lines[0]);
@@ -106,7 +106,7 @@ function parseCSV(content: string): BulkRowDto[] {
 
   if (headers.length === 0) {
     throw new Error(
-      `Could not parse file headers. Make sure the file uses ${delimiter === "\t" ? "tab" : "comma"} as delimiter`
+      `Impossible d'analyser les en-têtes. Vérifiez que le fichier utilise des ${delimiter === "\t" ? "tabulations" : "virgules"} comme séparateur`
     );
   }
 
@@ -116,7 +116,7 @@ function parseCSV(content: string): BulkRowDto[] {
 
   if (dateColumnIndex === -1) {
     throw new Error(
-      `CSV must have a "Date" column. Found columns: ${headers.join(", ")}`
+      `Le CSV doit avoir une colonne "Date". Colonnes trouvées : ${headers.join(", ")}`
     );
   }
 
@@ -175,7 +175,7 @@ export default function ImportPage() {
 
       if (rows.length === 0) {
         setParsing(false);
-        setError("❌ No valid rows found in the CSV file. Check that dates are in format: 'day month year' (e.g., '8 mai 2026')");
+        setError("❌ Aucune ligne valide trouvée dans le fichier CSV. Vérifiez que les dates sont au format : 'jour mois année' (ex: '8 mai 2026')");
         setParsedRows([]);
         return;
       }
@@ -185,7 +185,7 @@ export default function ImportPage() {
       setParsing(false);
     } catch (err) {
       setParsing(false);
-      setError(`❌ Error parsing file: ${(err as Error).message}`);
+      setError(`❌ Erreur lors de l'analyse du fichier : ${(err as Error).message}`);
       setParsedRows([]);
     }
   };
@@ -217,7 +217,7 @@ export default function ImportPage() {
 
   const handleImport = async () => {
     if (parsedRows.length === 0) {
-      setError("❌ No rows to import");
+      setError("❌ Aucune ligne à importer");
       return;
     }
 
@@ -257,7 +257,7 @@ export default function ImportPage() {
       }
 
       console.error("Import error details:", errorObj);
-      setError(`❌ Import failed: ${errorMsg}`);
+      setError(`❌ L'importation a échoué : ${errorMsg}`);
     } finally {
       setLoading(false);
     }
@@ -270,10 +270,10 @@ export default function ImportPage() {
       <Container maxWidth="lg" sx={{ py: 8 }}>
         <Box sx={{ mb: 6 }}>
           <Typography variant="h3" component="h1" gutterBottom sx={{ fontWeight: 800 }}>
-            Import Data
+            Importer des données
           </Typography>
           <Typography variant="h6" color="text.secondary">
-            Upload a CSV or TSV file to bulk import daily logs and create custom fields.
+            Téléchargez un fichier CSV ou TSV pour importer vos journaux en masse et créer des champs personnalisés.
           </Typography>
         </Box>
 
@@ -308,7 +308,7 @@ export default function ImportPage() {
                   <>
                     <CircularProgress size={48} />
                     <Typography variant="h6" sx={{ fontWeight: 600 }}>
-                      Parsing file...
+                      Analyse du fichier...
                     </Typography>
                   </>
                 ) : (
@@ -321,7 +321,7 @@ export default function ImportPage() {
                       }}
                     />
                     <Typography variant="h6" sx={{ fontWeight: 600 }}>
-                      {dragActive ? "Drop your file here" : "Upload CSV or TSV File"}
+                      {dragActive ? "Déposez votre fichier ici" : "Télécharger un fichier CSV ou TSV"}
                     </Typography>
                   </>
                 )}
@@ -330,8 +330,8 @@ export default function ImportPage() {
                   color="text.secondary"
                   sx={{ textAlign: "center", maxWidth: 400 }}
                 >
-                  Drag and drop your file or click to browse. The file must have a &quot;Date&quot;
-                  column (e.g., &quot;8 mai 2026&quot;).
+                  Glissez-déposez votre fichier ou cliquez pour parcourir. Le fichier doit avoir une colonne &quot;Date&quot;
+                  (ex: &quot;8 mai 2026&quot;).
                 </Typography>
                 <Button
                   variant="contained"
@@ -339,7 +339,7 @@ export default function ImportPage() {
                   disabled={parsing}
                   sx={{ mt: 2 }}
                 >
-                  {parsing ? "Parsing..." : "Choose File"}
+                  {parsing ? "Analyse..." : "Choisir un fichier"}
                   <input
                     type="file"
                     hidden
@@ -350,7 +350,7 @@ export default function ImportPage() {
                 </Button>
                 {parsing && (
                   <Typography variant="body2" sx={{ color: "#3b82f6", fontWeight: 500 }}>
-                    Reading and validating...
+                    Lecture et validation...
                   </Typography>
                 )}
                 {fileName && !parsing && (
@@ -375,7 +375,7 @@ export default function ImportPage() {
           {parseSuccess && !success && (
             <Grid size={{ xs: 12 }}>
               <Alert severity="success" sx={{ fontSize: "1rem" }}>
-                ✓ File parsed successfully! {parsedRows.length} valid rows ready to import.
+                ✓ Fichier analysé avec succès ! {parsedRows.length} lignes prêtes à être importées.
               </Alert>
             </Grid>
           )}
@@ -384,8 +384,8 @@ export default function ImportPage() {
           {success && (
             <Grid size={{ xs: 12 }}>
               <Alert severity="success" sx={{ fontSize: "1rem" }}>
-                ✓ Import successful! Created {success.logsCreated} logs,{" "}
-                {success.fieldsCreated} fields, and {success.valuesCreated} values.
+                ✓ Importation réussie ! Création de {success.logsCreated} journaux,{" "}
+                {success.fieldsCreated} champs, et {success.valuesCreated} valeurs.
               </Alert>
             </Grid>
           )}
@@ -396,14 +396,14 @@ export default function ImportPage() {
               <Grid size={{ xs: 12 }}>
                 <Paper sx={{ p: 4, borderRadius: 4 }}>
                   <Typography variant="h6" sx={{ fontWeight: 700, mb: 2 }}>
-                    Preview ({parsedRows.length} rows)
+                    Aperçu ({parsedRows.length} lignes)
                   </Typography>
                   <TableContainer>
                     <Table size="small">
                       <TableHead>
                         <TableRow sx={{ bgcolor: "#ede5d9" }}>
                           <TableCell sx={{ fontWeight: 700 }}>Date</TableCell>
-                          <TableCell sx={{ fontWeight: 700 }}>Fields</TableCell>
+                          <TableCell sx={{ fontWeight: 700 }}>Champs</TableCell>
                         </TableRow>
                       </TableHead>
                       <TableBody>
@@ -435,7 +435,7 @@ export default function ImportPage() {
                   </TableContainer>
                   {parsedRows.length > 10 && (
                     <Typography variant="caption" sx={{ mt: 2, display: "block" }}>
-                      ... and {parsedRows.length - 10} more rows
+                      ... et {parsedRows.length - 10} lignes supplémentaires
                     </Typography>
                   )}
                 </Paper>
@@ -454,7 +454,7 @@ export default function ImportPage() {
                       "&:hover": { bgcolor: "#047857" },
                     }}
                   >
-                    {loading ? <CircularProgress size={24} /> : "Import"}
+                    {loading ? <CircularProgress size={24} /> : "Importer"}
                   </Button>
                   <Button
                     variant="outlined"
@@ -467,7 +467,7 @@ export default function ImportPage() {
                     }}
                     disabled={loading}
                   >
-                    Cancel
+                    Annuler
                   </Button>
                 </Box>
               </Grid>

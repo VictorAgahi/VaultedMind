@@ -38,26 +38,26 @@ export const Footer: React.FC = () => {
           >
             VaultedMind
           </Typography>
-          
+
           <Box sx={{ display: "flex", gap: 3 }}>
             <MuiLink component={Link} href="/privacy" color="text.secondary" variant="body2" sx={{ textDecoration: "none" }}>
-              Privacy Policy
+              Politique de confidentialité
             </MuiLink>
             <MuiLink component={Link} href="/terms" color="text.secondary" variant="body2" sx={{ textDecoration: "none" }}>
-              Terms of Service
+              Conditions d&apos;utilisation
             </MuiLink>
             <MuiLink component={Link} href="/contact" color="text.secondary" variant="body2" sx={{ textDecoration: "none" }}>
               Contact
             </MuiLink>
           </Box>
         </Box>
-        
+
         <Divider sx={{ mb: 4 }} />
-        
+
         <Typography variant="body2" color="text.secondary" align="center">
           {"Copyright © "}
           VaultedMind {new Date().getFullYear()}
-          {" - Secure Your Mental Well-being."}
+          {" - Sécurisez votre bien-être mental."}
         </Typography>
       </Container>
     </Box>

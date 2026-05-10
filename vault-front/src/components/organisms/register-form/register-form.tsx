@@ -38,7 +38,7 @@ export const RegisterForm: React.FC = () => {
       await register(formData);
     } catch (err: unknown) {
       const apiError = err as ApiError;
-      setError(apiError.message || "Failed to register");
+      setError(apiError.message || "Échec de l'inscription");
     } finally {
       setIsLoading(false);
     }
@@ -60,10 +60,10 @@ export const RegisterForm: React.FC = () => {
           <Image src="/assets/logo.png" alt="VaultedMind Logo" width={64} height={64} priority />
         </Box>
         <Typography variant="h4" component="h1" gutterBottom align="center" sx={{ fontWeight: 700 }}>
-          Create Account
+          Créer un compte
         </Typography>
         <Typography variant="body1" color="text.secondary" align="center" sx={{ mb: 4 }}>
-          Join VaultedMind today
+          Rejoignez VaultedMind dès aujourd&apos;hui
         </Typography>
 
         {error && (
@@ -84,7 +84,7 @@ export const RegisterForm: React.FC = () => {
         />
 
         <TextField
-          label="Password"
+          label="Mot de passe"
           name="password"
           type="password"
           value={formData.password}
@@ -100,13 +100,13 @@ export const RegisterForm: React.FC = () => {
           disabled={isLoading}
           sx={{ py: 1.5, mt: 2, borderRadius: 2 }}
         >
-          {isLoading ? <CircularProgress size={24} color="inherit" /> : "Sign Up"}
+          {isLoading ? <CircularProgress size={24} color="inherit" /> : "S'inscrire"}
         </Button>
 
         <Typography variant="body2" align="center" sx={{ mt: 3 }}>
-          Already have an account?{" "}
+          Vous avez déjà un compte ?{" "}
           <MuiLink component={Link} href="/login" sx={{ fontWeight: 600, textDecoration: "none" }}>
-            Sign In
+            Se connecter
           </MuiLink>
         </Typography>
       </Box>
