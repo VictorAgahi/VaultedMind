@@ -14,12 +14,14 @@ import { AuthService } from '../../application/services/auth.service.js';
 import { LoginDto, RegisterDto } from '../../application/dtos/auth.dto.js';
 import { Public } from '../../../../common/decorators/public.decorator.js';
 import { JwtAuthGuard } from '../guards/jwt-auth.guard.js';
+import { SkipThrottle } from '@nestjs/throttler';
 
 @Controller('auth')
 export class AuthController {
   constructor(private readonly authService: AuthService) {}
 
   @Public()
+  @SkipThrottle()
   @Post('register')
   async register(
     @Body() dto: RegisterDto,
@@ -31,6 +33,7 @@ export class AuthController {
   }
 
   @Public()
+  @SkipThrottle()
   @HttpCode(HttpStatus.OK)
   @Post('login')
   async login(
@@ -65,6 +68,7 @@ export class AuthController {
   }
 
   @UseGuards(JwtAuthGuard)
+  @SkipThrottle()
   @Get('me')
   getMe(@Request() req: { user: { id: string; email: string } }): {
     id: string;

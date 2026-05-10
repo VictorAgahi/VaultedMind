@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-unsafe-assignment */
 import { ExecutionContext, Injectable, Logger } from '@nestjs/common';
 import { ThrottlerGuard, ThrottlerException } from '@nestjs/throttler';
 import type { ThrottlerLimitDetail } from '@nestjs/throttler';
@@ -11,6 +10,7 @@ export class CustomThrottlerGuard extends ThrottlerGuard {
     context: ExecutionContext,
     throttlerLimitDetail: ThrottlerLimitDetail,
   ): Promise<void> {
+    await Promise.resolve();
     const req = context.switchToHttp().getRequest<{
       ip: string;
       connection?: { remoteAddress?: string };
@@ -24,9 +24,7 @@ export class CustomThrottlerGuard extends ThrottlerGuard {
       `Rate limit exceeded for IP: ${ip} on route ${req.method} ${req.url}. Limit detail: ${JSON.stringify(throttlerLimitDetail)}`,
     );
 
-    const rawMessage = await this.errorMessage(context, throttlerLimitDetail);
-    const message =
-      typeof rawMessage === 'string' ? rawMessage : String(rawMessage);
+    const message = this.errorMessage;
     throw new ThrottlerException(message);
   }
 }
