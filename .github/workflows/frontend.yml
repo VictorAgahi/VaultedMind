@@ -80,6 +80,8 @@ jobs:
           tags: |
             ghcr.io/${{ steps.prepare.outputs.owner }}/vault-frontend:latest
             ghcr.io/${{ steps.prepare.outputs.owner }}/vault-frontend:${{ github.sha }}
+          build-args: |
+            NEXT_PUBLIC_BACKEND_URL=https://api.vault-mind.cyrus-ag.com
           cache-from: type=registry,ref=ghcr.io/${{ steps.prepare.outputs.owner }}/vault-frontend:buildcache
           cache-to: type=registry,ref=ghcr.io/${{ steps.prepare.outputs.owner }}/vault-frontend:buildcache,mode=max
 
