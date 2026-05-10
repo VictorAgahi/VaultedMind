@@ -167,7 +167,7 @@ export default function FieldsPage() {
       <Navbar />
 
       <Container maxWidth="lg" sx={{ py: 8 }}>
-        <Box sx={{ mb: 6, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+        <Box sx={{ mb: 6, display: "flex", flexDirection: { xs: "column", md: "row" }, justifyContent: "space-between", alignItems: { xs: "flex-start", md: "center" }, gap: 3 }}>
           <div>
             <Typography variant="h3" component="h1" gutterBottom sx={{ fontWeight: 800 }}>
               Champs personnalisés
@@ -175,15 +175,36 @@ export default function FieldsPage() {
             <Typography variant="h6" color="text.secondary">
               Créez et gérez vos propres champs de suivi
             </Typography>
+            {fields.length > 0 && (
+              <Button
+                variant="contained"
+                startIcon={<AddIcon />}
+                onClick={() => handleOpenDialog()}
+                sx={{ 
+                  mt: 2, 
+                  bgcolor: "#059669", 
+                  "&:hover": { bgcolor: "#047857" },
+                  display: { xs: "inline-flex", md: "none" } 
+                }}
+              >
+                Nouveau champ
+              </Button>
+            )}
           </div>
-          <Button
-            variant="contained"
-            startIcon={<AddIcon />}
-            onClick={() => handleOpenDialog()}
-            sx={{ bgcolor: "#059669", "&:hover": { bgcolor: "#047857" } }}
-          >
-            Nouveau champ
-          </Button>
+          {fields.length > 0 && (
+            <Button
+              variant="contained"
+              startIcon={<AddIcon />}
+              onClick={() => handleOpenDialog()}
+              sx={{ 
+                bgcolor: "#059669", 
+                "&:hover": { bgcolor: "#047857" },
+                display: { xs: "none", md: "inline-flex" } 
+              }}
+            >
+              Nouveau champ
+            </Button>
+          )}
         </Box>
 
         {error && (

@@ -43,7 +43,7 @@ export const Navbar: React.FC = () => {
               disableElevation
               sx={{ borderRadius: 2 }}
             >
-              Tableau de bord
+              Accueil
             </Button>
             <Button
               component={Link}

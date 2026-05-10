@@ -27,8 +27,13 @@ export const metadata: Metadata = {
     capable: true,
     statusBarStyle: "black-translucent",
     title: "VaultedMind",
+    startupImage: "/assets/logo.png",
   },
   manifest: "/manifest.json",
+  other: {
+    "mobile-web-app-capable": "yes",
+    "apple-mobile-web-app-capable": "yes",
+  }
 };
 
 import { Footer } from "@/components/organisms/footer/footer";
