@@ -22,7 +22,7 @@ spec:
           service:
             name: vault-frontend
             port:
-              number: 3000
+              number: 80
   - host: api.vault-mind.cyrus-ag.com
     http:
       paths:
@@ -32,4 +32,4 @@ spec:
           service:
             name: vault-backend
             port:
-              number: 3000
+              number: 80
