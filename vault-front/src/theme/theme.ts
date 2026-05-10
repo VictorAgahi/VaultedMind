@@ -90,7 +90,7 @@ const themeOptions: ThemeOptions = {
     MuiTableContainer: {
       styleOverrides: {
         root: {
-          border: "2px solid #d81832",
+          border: "none",
           borderRadius: "8px",
           backgroundColor: "#ede5d9",
         },
@@ -113,7 +113,7 @@ const themeOptions: ThemeOptions = {
             },
           },
           "& tbody td": {
-            borderColor: "#d81832",
+            borderBottom: "1px solid rgba(216, 24, 50, 0.2)",
             backgroundColor: "#ede5d9",
           },
         },
@@ -122,12 +122,13 @@ const themeOptions: ThemeOptions = {
     MuiTableCell: {
       styleOverrides: {
         root: {
-          borderColor: "#d81832",
+          borderColor: "rgba(216, 24, 50, 0.2)",
           backgroundColor: "#ede5d9",
         },
         head: {
           backgroundColor: "#ede5d9",
           borderColor: "#d81832",
+          borderBottomWidth: "2px",
         },
       },
     },
