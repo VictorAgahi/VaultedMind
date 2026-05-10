@@ -91,15 +91,13 @@ Access the app at `http://localhost:3000`.
 | **Frontend** | Next.js 15, MUI v6, TypeScript |
 | **Backend** | NestJS, TypeORM, PostgreSQL |
 | **DevOps** | Docker, K3s, ArgoCD, Traefik |
-| **Monitoring** | Prometheus, Grafana (Planned) |
-
 ---
 
 ## 🤝 Contributing
 Contributions are welcome! Please read our `CONTRIBUTING.md` (coming soon) for details on our code of conduct and the process for submitting pull requests.
 
 ## 📄 License
-This project is proprietary. All rights reserved.
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
 ---
 **VaultedMind** - *Your mind is your sanctuary. We just provide the vault.*
