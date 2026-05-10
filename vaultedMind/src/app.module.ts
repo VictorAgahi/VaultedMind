@@ -7,7 +7,8 @@ import { SecurityModule } from './common/security/security.module.js';
 import { JwtModule } from '@nestjs/jwt';
 import { UserModule } from './modules/user/infrastructure/user.module.js';
 import { AuthModule } from './modules/auth/infrastructure/auth.module.js';
-import { ThrottlerModule, ThrottlerGuard } from '@nestjs/throttler';
+import { ThrottlerModule } from '@nestjs/throttler';
+import { CustomThrottlerGuard } from './common/guards/custom-throttler.guard.js';
 import { HealthModule } from './modules/health/infrastructure/health.module.js';
 import { APP_GUARD } from '@nestjs/core';
 
@@ -47,7 +48,7 @@ import { APP_GUARD } from '@nestjs/core';
   providers: [
     {
       provide: APP_GUARD,
-      useClass: ThrottlerGuard,
+      useClass: CustomThrottlerGuard,
     },
   ],
 })
