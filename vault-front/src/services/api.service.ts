@@ -43,7 +43,10 @@ class ApiService {
         // Handle specific status codes
         if (response.status === 401 || response.status === 429) {
           if (typeof window !== "undefined") {
-            window.location.href = "/login";
+            const isPublicPage = window.location.pathname === "/login" || window.location.pathname === "/register";
+            if (!isPublicPage) {
+              window.location.href = "/login";
+            }
           }
         }
 
