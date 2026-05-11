@@ -47,6 +47,25 @@ export class FieldValueRepository extends AbstractBaseRepository<FieldValueModel
     return models.map((model) => FieldValueMapper.toDomain(model));
   }
 
+  async findOneByLogAndField(
+    dailyLogId: string,
+    customFieldId: string,
+  ): Promise<FieldValue | null> {
+    const model = await this.repository.findOne({
+      where: { dailyLogId, customFieldId },
+    });
+
+    if (!model) return null;
+
+    try {
+      model.value = this.encryptionService.decrypt(model.value);
+    } catch (e) {
+      Logger.error(e);
+    }
+
+    return FieldValueMapper.toDomain(model);
+  }
+
   async saveDomain(entity: FieldValue): Promise<FieldValue> {
     const model = FieldValueMapper.toPersistence(entity);
     model.value = this.encryptionService.encrypt(model.value);

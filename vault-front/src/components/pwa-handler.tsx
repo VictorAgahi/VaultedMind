@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect } from 'react';
+import { apiService } from '@/services/api.service';
 
 export default function PWAHandler() {
   const urlBase64ToUint8Array = (base64String: string) => {
@@ -18,37 +19,39 @@ export default function PWAHandler() {
     if ('serviceWorker' in navigator && 'PushManager' in window) {
       const registerServiceWorker = async () => {
         try {
+          console.log('[PWA] Registering Service Worker...');
           const registration = await navigator.serviceWorker.register('/sw.js');
+          console.log('[PWA] Service Worker registered:', registration.scope);
 
-          // Request permission and subscribe if not already done
+          // Request permission
           const permission = await Notification.requestPermission();
+          console.log('[PWA] Notification permission:', permission);
+
           if (permission === 'granted') {
             const publicVapidKey = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY;
 
             if (!publicVapidKey) {
-              console.error('VAPID public key is missing');
+              console.error('[PWA] VAPID public key is missing');
               return;
             }
 
             let subscription = await registration.pushManager.getSubscription();
             if (!subscription) {
+              console.log('[PWA] Creating new push subscription...');
               subscription = await registration.pushManager.subscribe({
                 userVisibleOnly: true,
                 applicationServerKey: urlBase64ToUint8Array(publicVapidKey)
               });
             }
 
-            await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/notifications/subscribe`, {
-              method: 'POST',
-              body: JSON.stringify(subscription),
-              headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${localStorage.getItem('auth_token')}`
-              }
-            });
+            console.log('[PWA] Subscription object:', subscription);
+
+            // Send subscription to backend using apiService
+            await apiService.post('/notifications/subscribe', subscription);
+            console.log('[PWA] Subscription sent to backend successfully');
           }
         } catch (err) {
-          console.error('PWA Initialization failed:', err);
+          console.error('[PWA] Initialization failed:', err);
         }
       };
 

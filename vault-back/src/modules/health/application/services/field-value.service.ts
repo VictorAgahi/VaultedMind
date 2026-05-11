@@ -19,7 +19,20 @@ export class FieldValueService {
 
   async saveValue(fieldValue: FieldValue, userId: string): Promise<FieldValue> {
     await this.assertOwnership(fieldValue.dailyLogId, userId);
-    this.logger.log(`Saving field value for log: ${fieldValue.dailyLogId}`);
+
+    const existing = await this.fieldValueRepository.findOneByLogAndField(
+      fieldValue.dailyLogId,
+      fieldValue.customFieldId,
+    );
+
+    if (existing) {
+      this.logger.log(
+        `Updating existing field value for log: ${fieldValue.dailyLogId}`,
+      );
+      return this.updateValue(existing.id, userId, fieldValue.value);
+    }
+
+    this.logger.log(`Saving new field value for log: ${fieldValue.dailyLogId}`);
     return this.fieldValueRepository.saveDomain(fieldValue);
   }
 

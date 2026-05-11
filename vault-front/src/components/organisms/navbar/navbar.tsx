@@ -7,6 +7,8 @@ import LogoutIcon from "@mui/icons-material/Logout";
 import DashboardIcon from "@mui/icons-material/Dashboard";
 import BarChartIcon from "@mui/icons-material/BarChart";
 import SettingsIcon from "@mui/icons-material/Settings";
+import CloudUploadIcon from "@mui/icons-material/CloudUpload";
+import PersonIcon from "@mui/icons-material/Person";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 
@@ -16,7 +18,7 @@ export const Navbar: React.FC = () => {
   const { user, logout } = useAuth();
   const pathname = usePathname();
 
-  const authRoutes = ["/dashboard", "/import", "/fields", "/analytics", "/privacy", "/terms", "/contact"];
+  const authRoutes = ["/dashboard", "/import", "/fields", "/analytics", "/profile", "/privacy", "/terms", "/contact"];
 
   if (!authRoutes.includes(pathname)) {
     return null;
@@ -72,21 +74,35 @@ export const Navbar: React.FC = () => {
               href="/import"
               color={pathname === "/import" ? "primary" : "inherit"}
               variant={pathname === "/import" ? "contained" : "text"}
+              startIcon={<CloudUploadIcon />}
               disableElevation
               sx={{ borderRadius: 2 }}
             >
-              Importation CSV
+              Importation
+            </Button>
+            <Button
+              component={Link}
+              href="/profile"
+              color={pathname === "/profile" ? "primary" : "inherit"}
+              variant={pathname === "/profile" ? "contained" : "text"}
+              startIcon={<PersonIcon />}
+              disableElevation
+              sx={{ borderRadius: 2 }}
+            >
+              Profil
             </Button>
           </Box>
         </Box>
 
         <Box sx={{ display: "flex", alignItems: "center", gap: 3 }}>
-          <Typography variant="body2" sx={{ display: { xs: "none", sm: "block" } }}>
-            Bienvenue, <strong>{user?.email || "Utilisateur"}</strong>
-          </Typography>
-          <Avatar sx={{ bgcolor: "primary.light", width: 32, height: 32, display: { xs: "none", sm: "flex" } }}>
-            {user?.email?.[0].toUpperCase() || "U"}
-          </Avatar>
+          <Box component={Link} href="/profile" sx={{ textDecoration: "none", color: "inherit", display: "flex", alignItems: "center", gap: 2 }}>
+            <Typography variant="body2" sx={{ display: { xs: "none", sm: "block" } }}>
+              Bienvenue, <strong>{user?.email || "Utilisateur"}</strong>
+            </Typography>
+            <Avatar sx={{ bgcolor: "primary.light", width: 32, height: 32, display: { xs: "none", sm: "flex" } }}>
+              {user?.email?.[0].toUpperCase() || "U"}
+            </Avatar>
+          </Box>
           <Button
             variant="outlined"
             size="small"

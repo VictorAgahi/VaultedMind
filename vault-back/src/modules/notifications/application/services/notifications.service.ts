@@ -8,6 +8,7 @@ import { NotificationSubscriptionModel } from '../../../../database/models/notif
 
 interface PushSubscription {
   endpoint: string;
+  expirationTime?: number | null;
   keys: {
     p256dh: string;
     auth: string;
@@ -18,6 +19,7 @@ interface INotificationSubscription {
   id: string;
   userId: string;
   endpoint: string;
+  expirationTime?: number | null;
   keys: {
     p256dh: string;
     auth: string;
@@ -49,12 +51,14 @@ export class NotificationsService {
 
     if (existing) {
       existing.keys = subscription.keys;
+      existing.expirationTime = subscription.expirationTime ?? undefined;
       return this.subscriptionRepository.save(existing);
     }
 
     const newSub = this.subscriptionRepository.create({
       userId,
       endpoint: subscription.endpoint,
+      expirationTime: subscription.expirationTime ?? undefined,
       keys: subscription.keys,
     });
 
@@ -97,6 +101,32 @@ export class NotificationsService {
         } else {
           this.logger.error(`Error sending push to user ${sub.userId}:`, error);
         }
+      }
+    }
+  }
+
+  async sendTestNotification(userId: string) {
+    const subscriptions = await this.subscriptionRepository.find({
+      where: { userId },
+    });
+
+    const payload = JSON.stringify({
+      title: 'Test de Notification !',
+      body: 'Ceci est une notification de test envoyée 30 secondes après ta demande.',
+      url: '/profile',
+    });
+
+    for (const sub of subscriptions) {
+      try {
+        await webpush.sendNotification(
+          {
+            endpoint: sub.endpoint,
+            keys: sub.keys,
+          },
+          payload,
+        );
+      } catch (error: any) {
+        this.logger.error(`Error sending test push to user ${userId}:`, error);
       }
     }
   }

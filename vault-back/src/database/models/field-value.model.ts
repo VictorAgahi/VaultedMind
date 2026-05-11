@@ -1,10 +1,11 @@
-import { Entity, Column, ManyToOne, JoinColumn } from 'typeorm';
+import { Entity, Column, ManyToOne, JoinColumn, Unique } from 'typeorm';
 import type { Relation } from 'typeorm';
 import { BaseModel } from './base.model.js';
 import { DailyLogModel } from './daily-log.model.js';
 import { CustomFieldModel } from './custom-field.model.js';
 
 @Entity('field_values')
+@Unique(['dailyLogId', 'customFieldId'])
 export class FieldValueModel extends BaseModel {
   @Column({ type: 'text' })
   value!: string;

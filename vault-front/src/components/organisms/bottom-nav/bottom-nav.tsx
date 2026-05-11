@@ -6,13 +6,14 @@ import DashboardIcon from "@mui/icons-material/Dashboard";
 import BarChartIcon from "@mui/icons-material/BarChart";
 import SettingsIcon from "@mui/icons-material/Settings";
 import CloudUploadIcon from "@mui/icons-material/CloudUpload";
+import PersonIcon from "@mui/icons-material/Person";
 import { usePathname, useRouter } from "next/navigation";
 
 export const BottomNav: React.FC = () => {
   const pathname = usePathname();
   const router = useRouter();
 
-  const authRoutes = ["/dashboard", "/import", "/fields", "/analytics"];
+  const authRoutes = ["/dashboard", "/import", "/fields", "/analytics", "/profile"];
 
   if (!authRoutes.includes(pathname)) {
     return null;
@@ -23,11 +24,12 @@ export const BottomNav: React.FC = () => {
     if (pathname === "/analytics") return 1;
     if (pathname === "/fields") return 2;
     if (pathname === "/import") return 3;
+    if (pathname === "/profile") return 4;
     return 0;
   };
 
   const handleChange = (newValue: number) => {
-    const paths = ["/dashboard", "/analytics", "/fields", "/import"];
+    const paths = ["/dashboard", "/analytics", "/fields", "/import", "/profile"];
     router.push(paths[newValue]);
   };
 
@@ -62,7 +64,8 @@ export const BottomNav: React.FC = () => {
         <BottomNavigationAction icon={<DashboardIcon />} label="Accueil" />
         <BottomNavigationAction icon={<BarChartIcon />} label="Analyses" />
         <BottomNavigationAction icon={<SettingsIcon />} label="Champs" />
-        <BottomNavigationAction icon={<CloudUploadIcon />} label="Importation" />
+        <BottomNavigationAction icon={<CloudUploadIcon />} label="Import" />
+        <BottomNavigationAction icon={<PersonIcon />} label="Profil" />
       </BottomNavigation>
     </Box>
   );
