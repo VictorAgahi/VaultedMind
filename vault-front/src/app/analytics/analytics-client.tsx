@@ -22,6 +22,10 @@ const EvolutionQualitativeChart = dynamic(() => import("@/components/analytics/e
 const TrendNumericalChart = dynamic(() => import("@/components/analytics/trend-numerical-chart").then(m => m.TrendNumericalChart), { ssr: false });
 const ValueDistributionChart = dynamic(() => import("@/components/analytics/value-distribution-chart").then(m => m.ValueDistributionChart), { ssr: false });
 const CorrelationStudy = dynamic(() => import("@/components/correlation-study/correlation-study").then(m => m.CorrelationStudy), { ssr: false });
+const AdvancedAnalyses = dynamic(() => import("@/components/analytics/advanced-analyses").then(m => m.AdvancedAnalyses), { ssr: false });
+const ResponsiveContainer = dynamic(() => import("recharts").then(m => m.ResponsiveContainer), { ssr: false });
+
+import { Fade, useMediaQuery } from "@mui/material";
 
 interface ChartContainerProps {
   children: React.ReactNode;
@@ -31,23 +35,30 @@ interface ChartContainerProps {
 }
 
 const ChartContainer: React.FC<ChartContainerProps> = ({ children, aspect, mobileAspect, minHeight }) => {
+  const ref = React.useRef<HTMLDivElement>(null);
+  const [width, setWidth] = React.useState(0);
   const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
+
+  useEffect(() => {
+    if (!ref.current) return;
+    const observeTarget = ref.current;
+    const resizeObserver = new ResizeObserver((entries) => {
+      if (entries[0]) setWidth(entries[0].contentRect.width);
+    });
+    resizeObserver.observe(observeTarget);
+    return () => resizeObserver.unobserve(observeTarget);
+  }, []);
+
+  const finalAspect = isMobile && mobileAspect ? mobileAspect : aspect;
+
   return (
-    <Box
-      sx={{
-        width: "100%",
-        position: "relative",
-        paddingBottom: `${(1 / (mobileAspect ?? aspect)) * 100}%`,
-        height: 0,
-        minHeight: minHeight,
-        [theme.breakpoints.up("sm")]: {
-          paddingBottom: `${(1 / aspect) * 100}%`
-        }
-      }}
-    >
-      <Box sx={{ position: "absolute", top: 0, left: 0, width: "100%", height: "100%" }}>
-        {children}
-      </Box>
+    <Box ref={ref} sx={{ width: "100%", minWidth: 0, minHeight }}>
+      {width > 0 && (
+        <ResponsiveContainer width={width} aspect={finalAspect} debounce={50}>
+          {children as React.ReactElement}
+        </ResponsiveContainer>
+      )}
     </Box>
   );
 };
@@ -123,10 +134,19 @@ export default function AnalyticsClient() {
 
       if (fieldsData.length) defaults.advSelectedField = fieldsData[0].id;
 
+      const logsWithData = logsData.map(log => {
+        const dateObj = new Date(log.logDate);
+        return {
+          ...log,
+          _ts: dateObj.getTime(),
+          _day: dateObj.getDay()
+        };
+      });
+
       dispatch({
         type: "SET_DATA",
         fields: fieldsData,
-        logs: logsData.sort((a, b) => new Date(a.logDate).getTime() - new Date(b.logDate).getTime()),
+        logs: logsWithData.sort((a, b) => a._ts - b._ts),
         defaults
       });
     } catch (err: unknown) {
@@ -233,6 +253,18 @@ export default function AnalyticsClient() {
     return { data, valueMap };
   }, [logs, selectedStringField, fieldsMap]);
 
+  const SELECT_MENU_PROPS = {
+    slotProps: {
+      paper: {
+        sx: {
+          maxHeight: 300,
+          '&::-webkit-scrollbar': { width: '8px' },
+          '&::-webkit-scrollbar-thumb': { backgroundColor: 'rgba(0,0,0,0.1)', borderRadius: '4px' }
+        }
+      }
+    }
+  };
+
   if (loading) return <Box sx={{ display: "flex", justifyContent: "center", alignItems: "center", height: "100vh" }}><CircularProgress size={60} thickness={4} /></Box>;
 
   return (
@@ -240,53 +272,88 @@ export default function AnalyticsClient() {
       <Navbar />
       <Container maxWidth="xl" sx={{ py: 6 }}>
         <Box sx={{ mb: 6 }}>
-          <Typography variant="h3" sx={{ fontWeight: 800, mb: 1, color: "#142949" }}>Analyses</Typography>
+          <Typography variant="h3" sx={{ fontWeight: 900, mb: 1, color: "#142949", letterSpacing: "-0.02em" }}>Analyses</Typography>
           <Typography variant="h6" color="text.secondary">Visualisez vos progrès et découvrez des corrélations.</Typography>
         </Box>
 
         {error && <Alert severity="error" sx={{ mb: 4, borderRadius: 3 }}>{error}</Alert>}
 
-        <Paper sx={{ borderRadius: 4, overflow: "hidden", mb: 4, border: "none", boxShadow: "0 4px 20px rgba(0,0,0,0.05)" }}>
-          <Tabs value={tabValue} onChange={(_, v) => dispatch({ type: "SET_TAB", value: v })} variant="fullWidth">
-            <Tab label="Tendances & Répartition" sx={{ fontWeight: 700, py: 2 }} />
-            <Tab label="Étude de Corrélation" sx={{ fontWeight: 700, py: 2 }} />
+        <Paper elevation={0} sx={{ borderRadius: 6, overflow: "hidden", mb: 6, border: "1px solid rgba(0,0,0,0.05)", boxShadow: "0 10px 15px -3px rgba(0,0,0,0.05)" }}>
+          <Tabs
+            value={tabValue}
+            onChange={(_, v) => dispatch({ type: "SET_TAB", value: v })}
+            variant="fullWidth"
+            sx={{
+              '& .MuiTab-root': { fontWeight: 700, py: 3, fontSize: '1rem' },
+              '& .Mui-selected': { color: '#6366f1' },
+              '& .MuiTabs-indicator': { backgroundColor: '#6366f1', height: 3 }
+            }}
+          >
+            <Tab label="Tendances & Répartition" />
+            <Tab label="Étude de Corrélation" />
+            <Tab label="Analyses Avancées" />
           </Tabs>
         </Paper>
 
-        {tabValue === 0 ? (
-          <Grid container spacing={4}>
-            <Grid size={{ xs: 12, md: 8 }}>
-              <EvolutionQualitativeChart
-                data={qualitativeData.data}
-                valueMap={qualitativeData.valueMap}
-                selectedField={selectedStringField}
-                setSelectedField={(id) => dispatch({ type: "SET_FIELD", key: "selectedStringField", id })}
-                stringFields={fields.filter(f => f.fieldType === FieldType.STRING)}
-                ChartContainer={ChartContainer}
-              />
-            </Grid>
-            <Grid size={{ xs: 12, md: 4 }}>
-              <ValueDistributionChart
-                data={freqData}
-                selectedField={selectedFreqField}
-                setSelectedField={(id) => dispatch({ type: "SET_FIELD", key: "selectedFreqField", id })}
-                stringAndBoolFields={fields}
-                ChartContainer={ChartContainer}
-              />
-            </Grid>
-            <Grid size={{ xs: 12 }}>
-              <TrendNumericalChart
-                data={trendData}
-                selectedField={selectedTrendField}
-                setSelectedField={(id) => dispatch({ type: "SET_FIELD", key: "selectedTrendField", id })}
-                fields={fields}
-                ChartContainer={ChartContainer}
-              />
-            </Grid>
-          </Grid>
-        ) : (
-          <CorrelationStudy fields={fields} logs={logs} />
-        )}
+        <Box sx={{ minHeight: 600 }}>
+          {tabValue === 0 && (
+            <Fade in={tabValue === 0} timeout={400}>
+              <Grid container spacing={4}>
+                <Grid size={{ xs: 12, md: 8 }}>
+                  <EvolutionQualitativeChart
+                    data={qualitativeData.data}
+                    valueMap={qualitativeData.valueMap}
+                    selectedField={selectedStringField}
+                    setSelectedField={(id) => dispatch({ type: "SET_FIELD", key: "selectedStringField", id })}
+                    stringFields={fields.filter(f => f.fieldType === FieldType.STRING)}
+                    ChartContainer={ChartContainer}
+                    menuProps={SELECT_MENU_PROPS}
+                  />
+                </Grid>
+                <Grid size={{ xs: 12, md: 4 }}>
+                  <ValueDistributionChart
+                    data={freqData}
+                    selectedField={selectedFreqField}
+                    setSelectedField={(id) => dispatch({ type: "SET_FIELD", key: "selectedFreqField", id })}
+                    stringAndBoolFields={fields}
+                    ChartContainer={ChartContainer}
+                  />
+                </Grid>
+                <Grid size={{ xs: 12 }}>
+                  <TrendNumericalChart
+                    data={trendData}
+                    selectedField={selectedTrendField}
+                    setSelectedField={(id) => dispatch({ type: "SET_FIELD", key: "selectedTrendField", id })}
+                    fields={fields}
+                    ChartContainer={ChartContainer}
+                  />
+                </Grid>
+              </Grid>
+            </Fade>
+          )}
+
+          {tabValue === 1 && (
+            <Fade in={tabValue === 1} timeout={400}>
+              <Box>
+                <CorrelationStudy fields={fields} logs={logs} />
+              </Box>
+            </Fade>
+          )}
+
+          {tabValue === 2 && (
+            <Fade in={tabValue === 2} timeout={400}>
+              <Box>
+                <AdvancedAnalyses
+                  fields={fields}
+                  logs={logs}
+                  activeAdvField={state.advSelectedField || (fields.length > 0 ? fields[0].id : "")}
+                  setAdvSelectedField={(id) => dispatch({ type: "SET_FIELD", key: "advSelectedField", id })}
+                  ChartContainer={ChartContainer}
+                />
+              </Box>
+            </Fade>
+          )}
+        </Box>
       </Container>
     </Box>
   );

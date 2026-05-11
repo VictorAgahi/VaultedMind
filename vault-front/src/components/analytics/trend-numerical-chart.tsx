@@ -9,18 +9,20 @@ import {
   InputLabel,
   Select,
   MenuItem,
-  Tooltip as MuiTooltip
+  Tooltip as MuiTooltip,
+  MenuProps
 } from "@mui/material";
 import InfoIcon from "@mui/icons-material/Info";
-import dynamic from "next/dynamic";
 
-const AreaChart = dynamic(() => import("recharts").then(m => m.AreaChart), { ssr: false });
-const Area = dynamic(() => import("recharts").then(m => m.Area), { ssr: false });
-const XAxis = dynamic(() => import("recharts").then(m => m.XAxis), { ssr: false });
-const YAxis = dynamic(() => import("recharts").then(m => m.YAxis), { ssr: false });
-const CartesianGrid = dynamic(() => import("recharts").then(m => m.CartesianGrid), { ssr: false });
-const Tooltip = dynamic(() => import("recharts").then(m => m.Tooltip), { ssr: false });
-const Legend = dynamic(() => import("recharts").then(m => m.Legend), { ssr: false });
+import {
+  AreaChart,
+  Area,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  Legend
+} from "recharts";
 import { CustomField, FieldType } from "@/types";
 
 interface ChartDataPoint {
@@ -43,6 +45,7 @@ interface TrendNumericalChartProps {
   setSelectedField: (id: string) => void;
   fields: CustomField[];
   ChartContainer: React.FC<ChartContainerProps>;
+  menuProps?: Partial<MenuProps>;
 }
 
 export const TrendNumericalChart: React.FC<TrendNumericalChartProps> = ({
@@ -50,7 +53,8 @@ export const TrendNumericalChart: React.FC<TrendNumericalChartProps> = ({
   selectedField,
   setSelectedField,
   fields,
-  ChartContainer
+  ChartContainer,
+  menuProps
 }) => {
   const currentField = React.useMemo(() => fields.find(f => f.id === selectedField), [fields, selectedField]);
   const numberAndBoolFields = React.useMemo(() =>
@@ -58,7 +62,7 @@ export const TrendNumericalChart: React.FC<TrendNumericalChartProps> = ({
     [fields]);
 
   return (
-    <Paper sx={{ p: 4, borderRadius: 6, height: "100%" }}>
+    <Paper elevation={0} sx={{ p: { xs: 2, md: 4 }, borderRadius: 6, border: "1px solid rgba(0,0,0,0.05)", boxShadow: "0 10px 15px -3px rgba(0,0,0,0.05)", height: "100%" }}>
       <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", mb: 4, flexWrap: "wrap", gap: 2 }}>
         <Box>
           <Box sx={{ display: "flex", alignItems: "center", gap: 1, mb: 1 }}>
@@ -69,12 +73,14 @@ export const TrendNumericalChart: React.FC<TrendNumericalChartProps> = ({
           </Box>
           <Typography variant="body2" color="text.secondary">Analyse temporelle des valeurs.</Typography>
         </Box>
-        <FormControl size="small" sx={{ minWidth: 150 }}>
-          <InputLabel>Variable</InputLabel>
+        <FormControl fullWidth size="small" sx={{ mb: 4 }}>
+          <InputLabel>Champ numérique</InputLabel>
           <Select
             value={selectedField}
-            label="Variable"
+            label="Champ numérique"
             onChange={(e) => setSelectedField(e.target.value)}
+            sx={{ borderRadius: 3 }}
+            MenuProps={menuProps}
           >
             {numberAndBoolFields.map(f => <MenuItem key={f.id} value={f.id}>{f.name}</MenuItem>)}
           </Select>

@@ -113,18 +113,23 @@ export const CustomFieldsManager: React.FC = () => {
     e.preventDefault();
     dispatch({ type: "SET_SUBMITTING", submitting: true });
     try {
-      const payload = {
-        ...formData,
-        optionsOrder: formData.optionsOrder.reduce<string[]>((acc, o) => {
-          if (o.value.trim() !== "") acc.push(o.value);
-          return acc;
-        }, [])
-      };
+      const optionsArray = formData.optionsOrder.reduce<string[]>((acc, o) => {
+        if (o.value.trim() !== "") acc.push(o.value);
+        return acc;
+      }, []);
 
       if (dialog.isEditing && dialog.id) {
-        await apiService.patch<CustomField, UpdateCustomFieldDto>(`/health/custom-fields/${dialog.id}`, payload);
+        const updatePayload: UpdateCustomFieldDto = {
+          name: formData.name,
+          optionsOrder: optionsArray
+        };
+        await apiService.patch<CustomField, UpdateCustomFieldDto>(`/health/custom-fields/${dialog.id}`, updatePayload);
       } else {
-        await apiService.post<CustomField, CreateCustomFieldDto>("/health/custom-fields", payload);
+        const createPayload: CreateCustomFieldDto = {
+          ...formData,
+          optionsOrder: optionsArray
+        };
+        await apiService.post<CustomField, CreateCustomFieldDto>("/health/custom-fields", createPayload);
       }
       dispatch({ type: "SET_LOADING", loading: true });
       await fetchFields();

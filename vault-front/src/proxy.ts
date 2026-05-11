@@ -1,16 +1,5 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
-import type { User } from "./types";
-
-/**
- * @interface SessionState
- * Encapsulates the authentication state of a request.
- */
-interface SessionState {
-  readonly isAuthenticated: boolean;
-  readonly user: User | null;
-  readonly accessToken: string | null;
-}
 
 // --- Configuration ---
 const PUBLIC_ROUTES = new Set(["/", "/login", "/register"]);
@@ -26,59 +15,30 @@ const decodeJwt = (token: string) => {
   try {
     const parts = token.split(".");
     if (parts.length !== 3) return null;
-    // Decode base64 payload (parts[1])
     const base64 = parts[1].replace(/-/g, "+").replace(/_/g, "/");
-    const jsonPayload = decodeURIComponent(
-      atob(base64)
-        .split("")
-        .map((c) => "%" + ("00" + c.charCodeAt(0).toString(16)).slice(-2))
-        .join("")
-    );
-    return JSON.parse(jsonPayload);
+    // Optimized decode for Edge/Browser
+    const decoded = atob(base64);
+    const bytes = new Uint8Array(decoded.length);
+    for (let i = 0; i < decoded.length; i++) {
+      bytes[i] = decoded.charCodeAt(i);
+    }
+    return JSON.parse(new TextDecoder().decode(bytes));
   } catch {
     return null;
   }
 };
 
 /**
- * Session Proxy.
- * This pattern abstracts the complexity of token extraction and validation,
- * providing a clean, immutable interface for the middleware logic.
- */
-function createSessionProxy(request: NextRequest): SessionState {
-  const accessToken = request.cookies.get(AUTH_COOKIE_NAME)?.value || null;
-  const payload = accessToken ? decodeJwt(accessToken) : null;
-
-  // Validation logic: check for presence and expiration
-  const isExpired = payload?.exp ? Date.now() >= payload.exp * 1000 : false;
-  const isValid = !!payload && !isExpired;
-
-  const state: SessionState = {
-    isAuthenticated: isValid,
-    user: isValid ? payload : null,
-    accessToken: accessToken,
-  };
-
-  // Using a Proxy to ensure the session state remains read-only and provides a clean API
-  return new Proxy(state, {
-    get(target, prop) {
-      return target[prop as keyof SessionState];
-    },
-    set() {
-      throw new Error("Session state is immutable within the middleware context.");
-    },
-  });
-}
-
-/**
  * Next.js Middleware - Edge Proxy / Interceptor
- * Implements a strict 'Deny by Default' security model.
  */
 export async function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
-  // 1. Initialize Auth Proxy
-  const session = createSessionProxy(request);
+  // 1. Direct Session Extraction (No Proxy object overhead)
+  const accessToken = request.cookies.get(AUTH_COOKIE_NAME)?.value || null;
+  const payload = accessToken ? decodeJwt(accessToken) : null;
+  const isExpired = payload?.exp ? Date.now() >= payload.exp * 1000 : false;
+  const isAuthenticated = !!payload && !isExpired;
 
   // 2. Identify Route Category
   const isPublicRoute = PUBLIC_ROUTES.has(pathname);
@@ -91,12 +51,12 @@ export async function proxy(request: NextRequest) {
    */
 
   // A. Redirect authenticated users away from login/register
-  if (isAuthPage && session.isAuthenticated) {
+  if (isAuthPage && isAuthenticated) {
     return NextResponse.redirect(new URL(DEFAULT_AUTH_REDIRECT, request.url));
   }
 
   // B. Protect all non-public routes (Deny by Default)
-  if (!isPublicRoute && !session.isAuthenticated) {
+  if (!isPublicRoute && !isAuthenticated) {
     const loginUrl = new URL(LOGIN_PATH, request.url);
 
     // Preserve the intended destination for post-login redirect
@@ -107,7 +67,7 @@ export async function proxy(request: NextRequest) {
     const response = NextResponse.redirect(loginUrl);
 
     // If a token was present but invalid (expired/corrupt), clean it up
-    if (session.accessToken) {
+    if (accessToken) {
       response.cookies.delete(AUTH_COOKIE_NAME);
     }
 

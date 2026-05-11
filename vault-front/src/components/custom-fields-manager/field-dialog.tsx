@@ -99,12 +99,23 @@ export const FieldDialog: React.FC<FieldDialogProps> = ({
               placeholder="Ex: Humeur, Sommeil, Poids..."
             />
 
-            <FormControl fullWidth>
+            <FormControl fullWidth disabled={isEditing}>
               <InputLabel>Type de donnée</InputLabel>
               <Select
                 value={formData.fieldType}
                 label="Type de donnée"
                 onChange={(e) => setFormData((prev) => ({ ...prev, fieldType: e.target.value as FieldType }))}
+                MenuProps={{
+                  slotProps: {
+                    paper: {
+                      sx: {
+                        maxHeight: 300,
+                        '&::-webkit-scrollbar': { width: '8px' },
+                        '&::-webkit-scrollbar-thumb': { backgroundColor: 'rgba(0,0,0,0.1)', borderRadius: '4px' }
+                      }
+                    }
+                  }
+                }}
               >
                 <MenuItem value={FieldType.NUMBER}>Nombre (ex: 75.5)</MenuItem>
                 <MenuItem value={FieldType.STRING}>Texte / Choix (ex: Très bien)</MenuItem>

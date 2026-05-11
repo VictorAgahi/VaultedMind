@@ -1,5 +1,3 @@
-/* eslint-disable no-restricted-globals */
-
 // Service Worker for VaultedMind
 const CACHE_NAME = "vault-mind-cache-v1";
 

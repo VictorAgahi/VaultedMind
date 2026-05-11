@@ -74,6 +74,8 @@ export interface DailyLog {
   notes?: string;
   createdAt: string;
   fieldValues?: FieldValue[];
+  _ts?: number;
+  _day?: number;
 }
 
 
