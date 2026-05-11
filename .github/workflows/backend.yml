@@ -49,6 +49,13 @@ jobs:
         working-directory: vault-back
         run: yarn build
 
+      - name: Upload dist
+        uses: actions/upload-artifact@v4
+        with:
+          name: backend-dist
+          path: vault-back/dist/
+          retention-days: 1
+
       - name: Run unit tests
         if: always()
         working-directory: vault-back
@@ -91,9 +98,11 @@ jobs:
         working-directory: vault-back
         run: yarn install --frozen-lockfile
 
-      - name: Build application
-        working-directory: vault-back
-        run: yarn build
+      - name: Download dist
+        uses: actions/download-artifact@v4
+        with:
+          name: backend-dist
+          path: vault-back/dist/
 
       - name: Run E2E tests with setup
         working-directory: vault-back
@@ -154,7 +163,7 @@ jobs:
           tags: |
             ghcr.io/${{ steps.prepare.outputs.owner }}/vault-backend:latest
             ghcr.io/${{ steps.prepare.outputs.owner }}/vault-backend:${{ github.sha }}
-          cache-from: type=registry,ref=ghcr.io/${{ steps.prepare.outputs.owner }}/vault-backend:buildcache
-          cache-to: type=registry,ref=ghcr.io/${{ steps.prepare.outputs.owner }}/vault-backend:buildcache,mode=max
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
 
 

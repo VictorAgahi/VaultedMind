@@ -5,7 +5,8 @@ WORKDIR /app
 
 # Install dependencies first (better caching)
 COPY vault-front/package*.json ./
-RUN npm ci
+RUN --mount=type=cache,target=/root/.npm \
+    npm ci
 
 # Copy configuration files
 COPY vault-front/next.config.ts ./
@@ -21,8 +22,9 @@ COPY vault-front/public ./public
 ARG NEXT_PUBLIC_BACKEND_URL
 ENV NEXT_PUBLIC_BACKEND_URL=$NEXT_PUBLIC_BACKEND_URL
 
-# Build the Next.js app
-RUN npm run build
+# Build the Next.js app with cache mount for .next/cache
+RUN --mount=type=cache,target=/app/.next/cache \
+    npm run build
 
 # Production stage
 FROM node:24-alpine
@@ -35,9 +37,10 @@ RUN addgroup -g 1001 vault && \
 
 ENV NODE_ENV=production
 
-# Install production dependencies and sharp for image optimization
+# Install production dependencies
 COPY vault-front/package*.json ./
-RUN npm ci --only=production && npm install sharp
+RUN --mount=type=cache,target=/root/.npm \
+    npm ci --only=production
 
 # Copy configuration and built app
 COPY vault-front/next.config.ts ./

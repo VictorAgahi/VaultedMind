@@ -11,7 +11,8 @@ COPY vault-back/package.json vault-back/yarn.lock ./
 COPY vault-back/.yarn ./.yarn
 
 # Install dependencies
-RUN yarn install
+RUN --mount=type=cache,target=/root/.yarn/berry/cache \
+    yarn install
 
 # Copy source code
 COPY vault-back/src ./src
@@ -21,7 +22,8 @@ COPY vault-back/nest-cli.json ./
 COPY vault-back/.prettierrc ./
 
 # Build the application
-RUN yarn build
+RUN --mount=type=cache,target=/app/dist/.cache \
+    yarn build
 
 # Production stage
 FROM node:24-alpine
