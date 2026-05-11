@@ -7,7 +7,7 @@ import { ThemeProvider } from "@mui/material/styles";
 import CssBaseline from "@mui/material/CssBaseline";
 import Box from "@mui/material/Box";
 import { theme } from "@/theme/theme";
-import { BottomNav } from "@/components/organisms/bottom-nav/bottom-nav";
+import { BottomNav } from "@/components/bottom-nav/bottom-nav";
 import PWAHandler from "@/components/pwa-handler";
 
 const inter = Inter({ subsets: ["latin"] });
@@ -22,6 +22,7 @@ export const viewport: Viewport = {
 };
 
 export const metadata: Metadata = {
+  metadataBase: new URL(process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'),
   title: "VaultedMind | Sécurisez votre bien-être mental",
   description: "VaultedMind est une plateforme de haute sécurité conçue pour suivre votre santé mentale, vos journaux quotidiens et vos réflexions personnelles avec une confidentialité et un chiffrement absolus.",
   openGraph: {
@@ -42,7 +43,7 @@ export const metadata: Metadata = {
   },
 };
 
-import { Footer } from "@/components/organisms/footer/footer";
+import { Footer } from "@/components/footer/footer";
 
 export default function RootLayout({
   children,
