@@ -57,7 +57,7 @@ export const CustomFieldsManager: React.FC = () => {
       setFields(data);
     } catch (err: unknown) {
       if ((err as { name?: string }).name === "AbortError") return;
-      setError("Failed to load custom fields");
+      setError("Échec du chargement des champs personnalisés");
     } finally {
       if (!signal?.aborted) {
         setLoading(false);
@@ -154,7 +154,7 @@ export const CustomFieldsManager: React.FC = () => {
       handleCloseDialog();
     } catch (err: unknown) {
       const apiError = err as import("@/types").ApiError;
-      setError(apiError.message || "Operation failed");
+      setError(apiError.message || "L'opération a échoué");
     } finally {
       setSubmitting(false);
     }
@@ -169,18 +169,18 @@ export const CustomFieldsManager: React.FC = () => {
       await fetchFields();
       window.dispatchEvent(new Event("vaultedmind:fields-updated"));
     } catch {
-      setError("Failed to update status");
+      setError("Échec de la mise à jour du statut");
     }
   };
 
   const handleDelete = async (id: string) => {
-    if (window.confirm("Are you sure you want to delete this field?")) {
+    if (window.confirm("Êtes-vous sûr de vouloir supprimer ce champ ?")) {
       try {
         await apiService.delete(`/health/custom-fields/${id}`);
         await fetchFields();
         window.dispatchEvent(new Event("vaultedmind:fields-updated"));
       } catch {
-        setError("Failed to delete field");
+        setError("Échec de la suppression du champ");
       }
     }
   };
@@ -189,14 +189,14 @@ export const CustomFieldsManager: React.FC = () => {
     <Paper sx={{ p: 4, borderRadius: 4 }}>
       <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", mb: 3 }}>
         <Typography variant="h6" sx={{ fontWeight: 700 }}>
-          Manage Custom Fields
+          Gérer les champs personnalisés
         </Typography>
         <Button
           variant="contained"
           startIcon={<AddIcon />}
           onClick={() => handleOpenDialog()}
         >
-          Add Field
+          Ajouter un champ
         </Button>
       </Box>
 
@@ -235,7 +235,11 @@ export const CustomFieldsManager: React.FC = () => {
               >
                 <ListItemText
                   primary={field.name}
-                  secondary={`Type: ${field.fieldType}`}
+                  secondary={`Type : ${
+                    field.fieldType === FieldType.STRING ? "Texte" :
+                    field.fieldType === FieldType.NUMBER ? "Nombre" :
+                    field.fieldType === FieldType.BOOLEAN ? "Oui/Non" : "Date"
+                  }`}
                 />
                 <ListItemSecondaryAction>
                   <Switch
@@ -255,7 +259,7 @@ export const CustomFieldsManager: React.FC = () => {
             ))}
             {fields.length === 0 && (
               <Typography variant="body2" color="text.secondary" align="center" sx={{ py: 4 }}>
-                No custom fields configured yet. Add one to get started!
+                Aucun champ personnalisé configuré pour le moment. Ajoutez-en un pour commencer !
               </Typography>
             )}
           </List>
@@ -264,12 +268,12 @@ export const CustomFieldsManager: React.FC = () => {
 
       <Dialog open={openDialog} onClose={handleCloseDialog} fullWidth maxWidth="sm">
         <form onSubmit={handleSubmit}>
-          <DialogTitle>{isEditing ? "Edit Field" : "Add Custom Field"}</DialogTitle>
+          <DialogTitle>{isEditing ? "Modifier le champ" : "Ajouter un champ personnalisé"}</DialogTitle>
           <DialogContent>
             <TextField
               autoFocus
               margin="dense"
-              label="Field Name"
+              label="Nom du champ"
               fullWidth
               variant="outlined"
               value={name}
@@ -279,15 +283,15 @@ export const CustomFieldsManager: React.FC = () => {
             />
             {!isEditing && (
               <FormControl fullWidth variant="outlined">
-                <InputLabel>Field Type</InputLabel>
+                <InputLabel>Type de champ</InputLabel>
                 <Select
                   value={fieldType}
                   onChange={(e) => setFieldType(e.target.value as FieldType)}
-                  label="Field Type"
+                  label="Type de champ"
                 >
-                  <MenuItem value={FieldType.STRING}>Text (String)</MenuItem>
-                  <MenuItem value={FieldType.NUMBER}>Number</MenuItem>
-                  <MenuItem value={FieldType.BOOLEAN}>Yes/No (Boolean)</MenuItem>
+                  <MenuItem value={FieldType.STRING}>Texte (String)</MenuItem>
+                  <MenuItem value={FieldType.NUMBER}>Nombre</MenuItem>
+                  <MenuItem value={FieldType.BOOLEAN}>Oui/Non (Booléen)</MenuItem>
                   <MenuItem value={FieldType.DATE}>Date</MenuItem>
                 </Select>
               </FormControl>
@@ -447,9 +451,9 @@ export const CustomFieldsManager: React.FC = () => {
             )}
           </DialogContent>
           <DialogActions>
-            <Button onClick={handleCloseDialog}>Cancel</Button>
+            <Button onClick={handleCloseDialog}>Annuler</Button>
             <Button type="submit" variant="contained" disabled={submitting}>
-              {submitting ? "Saving..." : "Save"}
+              {submitting ? "Enregistrement..." : "Enregistrer"}
             </Button>
           </DialogActions>
         </form>

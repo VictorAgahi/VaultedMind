@@ -74,6 +74,7 @@ export const DailyLogsManager: React.FC = () => {
         (a, b) => new Date(b.logDate).getTime() - new Date(a.logDate).getTime()
       );
       setLogs(sortedLogs);
+      setError(null);
     } catch (err: unknown) {
       if ((err as { name?: string }).name === "AbortError") return;
       setError("Échec du chargement des données de suivi");

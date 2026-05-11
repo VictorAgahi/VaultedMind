@@ -58,6 +58,9 @@ class ApiService {
 
       return await response.json();
     } catch (error) {
+      if ((error as Error).name === "AbortError") {
+        throw error;
+      }
       if ((error as ApiError).statusCode) {
         throw error;
       }
