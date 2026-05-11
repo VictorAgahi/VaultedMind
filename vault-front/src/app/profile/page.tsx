@@ -28,11 +28,15 @@ export default function ProfilePage() {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
+    let timeoutId: NodeJS.Timeout;
     if (typeof window !== "undefined" && "Notification" in window) {
-      setTimeout(() => {
+      timeoutId = setTimeout(() => {
         setNotificationStatus(Notification.permission);
       }, 0);
     }
+    return () => {
+      if (timeoutId) clearTimeout(timeoutId);
+    };
   }, []);
 
   const urlBase64ToUint8Array = (base64String: string) => {

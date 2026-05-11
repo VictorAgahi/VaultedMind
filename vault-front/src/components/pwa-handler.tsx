@@ -1,9 +1,10 @@
 'use client';
 
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { apiService } from '@/services/api.service';
 
 export default function PWAHandler() {
+  const [refreshing, setRefreshing] = useState(false);
   const urlBase64ToUint8Array = (base64String: string) => {
     const padding = '='.repeat((4 - (base64String.length % 4)) % 4);
     const base64 = (base64String + padding).replace(/-/g, '+').replace(/_/g, '/');
@@ -14,6 +15,22 @@ export default function PWAHandler() {
     }
     return outputArray;
   };
+
+  useEffect(() => {
+    if ('serviceWorker' in navigator) {
+      const handleControllerChange = () => {
+        if (refreshing) return;
+        setRefreshing(true);
+        window.location.reload();
+      };
+
+      navigator.serviceWorker.addEventListener("controllerchange", handleControllerChange);
+
+      return () => {
+        navigator.serviceWorker.removeEventListener("controllerchange", handleControllerChange);
+      };
+    }
+  }, [refreshing]);
 
   useEffect(() => {
     if ('serviceWorker' in navigator && 'PushManager' in window) {
