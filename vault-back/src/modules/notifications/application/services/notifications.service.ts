@@ -65,13 +65,9 @@ export class NotificationsService {
     return this.subscriptionRepository.save(newSub);
   }
 
-  @Cron('30 18 * * *') // Every day at 18:30
+  @Cron('30 20 * * *')
   async sendDailyReminders() {
     this.logger.log('Running daily log reminder cron job...');
-
-    // Logic to find users who haven't filled their log today
-    // For now, we'll send it to everyone who has a subscription
-    // In a real app, you'd join with the 'logs' table
 
     const subscriptions =
       (await this.subscriptionRepository.find()) as unknown as INotificationSubscription[];
