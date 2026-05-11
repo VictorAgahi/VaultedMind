@@ -87,8 +87,8 @@ export const TrendNumericalChart: React.FC<TrendNumericalChartProps> = ({
         </FormControl>
       </Box>
 
-      <ChartContainer aspect={2} minHeight={250}>
-        <AreaChart data={data}>
+      <ChartContainer aspect={2.5} mobileAspect={1.1} minHeight={300}>
+        <AreaChart data={data} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
           <defs>
             <linearGradient id="colorValue" x1="0" y1="0" x2="0" y2="1">
               <stop offset="5%" stopColor="#10b981" stopOpacity={0.3} />
@@ -101,6 +101,8 @@ export const TrendNumericalChart: React.FC<TrendNumericalChartProps> = ({
             axisLine={false}
             tickLine={false}
             tick={{ fontSize: 12, fill: "#666" }}
+            domain={currentField?.fieldType === FieldType.BOOLEAN ? [0, 1] : ["auto", "auto"]}
+            ticks={currentField?.fieldType === FieldType.BOOLEAN ? [0, 1] : undefined}
             tickFormatter={(val) => currentField?.fieldType === FieldType.BOOLEAN ? (val === 1 ? "Oui" : "Non") : val}
           />
           <Tooltip

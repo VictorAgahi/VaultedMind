@@ -85,7 +85,7 @@ export const EvolutionQualitativeChart: React.FC<EvolutionQualitativeChartProps>
         </FormControl>
       </Box>
 
-      <ChartContainer aspect={3} mobileAspect={1.5} minHeight={300}>
+      <ChartContainer aspect={2.5} mobileAspect={1.1} minHeight={300}>
         <LineChart data={data}>
           <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="rgba(0,0,0,0.05)" />
           <XAxis dataKey="dateDisplay" axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: "#666" }} minTickGap={30} />
@@ -93,8 +93,8 @@ export const EvolutionQualitativeChart: React.FC<EvolutionQualitativeChartProps>
             axisLine={false}
             tickLine={false}
             tick={{ fontSize: 12, fill: "#666" }}
-            domain={[0, Math.max(0, ...Object.values(valueMap))]}
-            tickFormatter={(val) => reverseMap[val] || ""}
+            ticks={Object.values(valueMap)}
+            tickFormatter={(val) => reverseMap[val] || val}
           />
           <Tooltip
             contentStyle={{ borderRadius: 12, border: "none", boxShadow: "0 10px 15px -3px rgba(0,0,0,0.1)" }}

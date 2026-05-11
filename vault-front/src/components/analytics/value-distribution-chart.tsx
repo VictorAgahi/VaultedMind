@@ -75,7 +75,7 @@ export const ValueDistributionChart: React.FC<ValueDistributionChartProps> = ({
         </FormControl>
       </Box>
 
-      <ChartContainer aspect={2} minHeight={250}>
+      <ChartContainer aspect={2.5} mobileAspect={1.1} minHeight={300}>
         <BarChart data={data}>
           <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="rgba(0,0,0,0.05)" />
           <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: "#666" }} />
