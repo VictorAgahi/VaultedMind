@@ -207,16 +207,16 @@ export const CustomFieldsManager: React.FC = () => {
           <CircularProgress />
         </Box>
       ) : (
-        <Box 
-          sx={{ 
-            maxHeight: 450, 
-            overflowY: "auto", 
+        <Box
+          sx={{
+            maxHeight: 450,
+            overflowY: "auto",
             pr: 1,
             // Custom scrollbar for premium look
             "&::-webkit-scrollbar": { width: 6 },
             "&::-webkit-scrollbar-track": { bgcolor: "transparent" },
-            "&::-webkit-scrollbar-thumb": { 
-              bgcolor: "rgba(0,0,0,0.1)", 
+            "&::-webkit-scrollbar-thumb": {
+              bgcolor: "rgba(0,0,0,0.1)",
               borderRadius: 3,
               "&:hover": { bgcolor: "rgba(0,0,0,0.2)" }
             }
@@ -235,11 +235,10 @@ export const CustomFieldsManager: React.FC = () => {
               >
                 <ListItemText
                   primary={field.name}
-                  secondary={`Type : ${
-                    field.fieldType === FieldType.STRING ? "Texte" :
+                  secondary={`Type : ${field.fieldType === FieldType.STRING ? "Texte" :
                     field.fieldType === FieldType.NUMBER ? "Nombre" :
-                    field.fieldType === FieldType.BOOLEAN ? "Oui/Non" : "Date"
-                  }`}
+                      field.fieldType === FieldType.BOOLEAN ? "Oui/Non" : "Date"
+                    }`}
                 />
                 <ListItemSecondaryAction>
                   <Switch
@@ -288,6 +287,7 @@ export const CustomFieldsManager: React.FC = () => {
                   value={fieldType}
                   onChange={(e) => setFieldType(e.target.value as FieldType)}
                   label="Type de champ"
+                  MenuProps={{ slotProps: { paper: { sx: { maxHeight: 300, '&::-webkit-scrollbar': { width: '8px' }, '&::-webkit-scrollbar-thumb': { backgroundColor: 'rgba(0,0,0,0.1)', borderRadius: '4px' } } } } }}
                 >
                   <MenuItem value={FieldType.STRING}>Texte (String)</MenuItem>
                   <MenuItem value={FieldType.NUMBER}>Nombre</MenuItem>
@@ -301,10 +301,10 @@ export const CustomFieldsManager: React.FC = () => {
               <Box sx={{ mt: 3 }}>
                 <Divider sx={{ mb: 2 }} />
                 <Typography variant="subtitle2" sx={{ mb: 1, fontWeight: 600 }}>
-                  Classement des valeurs (pour les graphiques)
+                  Classement des valeurs
                 </Typography>
                 <Typography variant="caption" color="text.secondary" sx={{ display: "block", mb: 2 }}>
-                  Définissez l&apos;ordre des valeurs (ex: Faible, Moyen, Élevé). Les valeurs non listées seront ignorées sur les graphiques d&apos;évolution.
+                  Définissez l&apos;ordre des valeurs. Les valeurs non listées seront ignorées sur les graphiques d&apos;évolution.
                 </Typography>
 
                 <Box sx={{ display: "flex", gap: 1, mb: 3 }}>

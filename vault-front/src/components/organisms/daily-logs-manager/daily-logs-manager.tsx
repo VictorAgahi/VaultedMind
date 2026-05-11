@@ -95,7 +95,7 @@ export const DailyLogsManager: React.FC = () => {
     };
 
     const handleLogsImported = () => {
-      console.log("🔄 Logs imported event received, refreshing data...");
+      console.log("Logs imported event received, refreshing data...");
       fetchData();
     };
 
@@ -282,6 +282,7 @@ export const DailyLogsManager: React.FC = () => {
             value={value}
             label={field.name}
             onChange={(e) => handleFieldValueChange(field.id, e.target.value)}
+            MenuProps={{ slotProps: { paper: { sx: { maxHeight: 300, '&::-webkit-scrollbar': { width: '8px' }, '&::-webkit-scrollbar-thumb': { backgroundColor: 'rgba(0,0,0,0.1)', borderRadius: '4px' } } } } }}
           >
             <MenuItem value=""><em>Non renseigné</em></MenuItem>
             <MenuItem value="true">Oui</MenuItem>
@@ -384,9 +385,10 @@ export const DailyLogsManager: React.FC = () => {
               label="Trier par date"
               onChange={(e) => setSortOrder(e.target.value as "asc" | "desc")}
               size="small"
+              MenuProps={{ slotProps: { paper: { sx: { maxHeight: 300, '&::-webkit-scrollbar': { width: '8px' }, '&::-webkit-scrollbar-thumb': { backgroundColor: 'rgba(0,0,0,0.1)', borderRadius: '4px' } } } } }}
             >
-              <MenuItem value="desc">Plus récent (↓)</MenuItem>
-              <MenuItem value="asc">Plus ancien (↑)</MenuItem>
+              <MenuItem value="desc">Plus récent</MenuItem>
+              <MenuItem value="asc">Plus ancien</MenuItem>
             </Select>
           </FormControl>
           {(selectedFieldFilters.length > 0 || sortOrder !== "desc") && (
@@ -501,16 +503,16 @@ export const DailyLogsManager: React.FC = () => {
                 Vous n&apos;avez aucun champ personnalisé actif. Créez-en dans la section &quot;Gérer les champs&quot;.
               </Alert>
             ) : (
-              <Box 
-                sx={{ 
-                  maxHeight: 320, 
-                  overflowY: "auto", 
+              <Box
+                sx={{
+                  maxHeight: 320,
+                  overflowY: "auto",
                   pr: 1,
                   // Custom scrollbar
                   "&::-webkit-scrollbar": { width: 6 },
                   "&::-webkit-scrollbar-track": { bgcolor: "transparent" },
-                  "&::-webkit-scrollbar-thumb": { 
-                    bgcolor: "rgba(0,0,0,0.08)", 
+                  "&::-webkit-scrollbar-thumb": {
+                    bgcolor: "rgba(0,0,0,0.08)",
                     borderRadius: 3,
                     "&:hover": { bgcolor: "rgba(0,0,0,0.15)" }
                   }
