@@ -88,6 +88,21 @@ spec:
             secretKeyRef:
               name: vault-backend-secret
               key: encryption-key
+        - name: VAPID_PUBLIC_KEY
+          valueFrom:
+            secretKeyRef:
+              name: vault-backend-secret
+              key: vapid-public-key
+        - name: VAPID_PRIVATE_KEY
+          valueFrom:
+            secretKeyRef:
+              name: vault-backend-secret
+              key: vapid-private-key
+        - name: VAPID_EMAIL
+          valueFrom:
+            secretKeyRef:
+              name: vault-backend-secret
+              key: vapid-email
         - name: COOKIE_DOMAIN
           value: ".cyrus-ag.com"
         ports:

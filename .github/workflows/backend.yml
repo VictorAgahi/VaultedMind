@@ -115,6 +115,9 @@ jobs:
           NODE_ENV: test
           JWT_SECRET: ${{ secrets.TEST_JWT_SECRET }}
           ENCRYPTION_KEY: ${{ secrets.TEST_ENCRYPTION_KEY }}
+          VAPID_PUBLIC_KEY: "BJXYwIQViMCc6tgBLrb3d74NtNqylYeQ6chEf6oq1RD3qxKWGlrHYgJyMHkz1_A-mCQ94-Mmel74hZltvNTMb80" # FAKE
+          VAPID_PRIVATE_KEY: "IVjetpmO96fB_Jmsf60-OLs1zkqGsqDD4QmNYki7eFg" # FAKE
+          VAPID_EMAIL: "mailto:test@test.com"
           SERVICE_PORT: 3000
         run: yarn test:e2e:ci
 

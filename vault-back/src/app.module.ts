@@ -10,10 +10,13 @@ import { AuthModule } from './modules/auth/infrastructure/auth.module.js';
 import { ThrottlerModule } from '@nestjs/throttler';
 import { CustomThrottlerGuard } from './common/guards/custom-throttler.guard.js';
 import { HealthModule } from './modules/health/infrastructure/health.module.js';
+import { NotificationsModule } from './modules/notifications/notifications.module.js';
+import { ScheduleModule } from '@nestjs/schedule';
 import { APP_GUARD } from '@nestjs/core';
 
 @Module({
   imports: [
+    ScheduleModule.forRoot(),
     ThrottlerModule.forRoot([
       {
         ttl: 60000,
@@ -44,6 +47,7 @@ import { APP_GUARD } from '@nestjs/core';
     UserModule,
     AuthModule,
     HealthModule,
+    NotificationsModule,
   ],
   providers: [
     {

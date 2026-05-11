@@ -20,7 +20,9 @@ COPY vault-front/public ./public
 
 # Set build-time environment variables
 ARG NEXT_PUBLIC_BACKEND_URL
+ARG NEXT_PUBLIC_VAPID_PUBLIC_KEY
 ENV NEXT_PUBLIC_BACKEND_URL=$NEXT_PUBLIC_BACKEND_URL
+ENV NEXT_PUBLIC_VAPID_PUBLIC_KEY=$NEXT_PUBLIC_VAPID_PUBLIC_KEY
 
 # Build the Next.js app with cache mount for .next/cache
 RUN --mount=type=cache,target=/app/.next/cache \

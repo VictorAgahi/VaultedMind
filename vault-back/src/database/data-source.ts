@@ -4,6 +4,7 @@ import { UserModel } from './models/user.model.js';
 import { CustomFieldModel } from './models/custom-field.model.js';
 import { DailyLogModel } from './models/daily-log.model.js';
 import { FieldValueModel } from './models/field-value.model.js';
+import { NotificationSubscriptionModel } from './models/notification-subscription.model.js';
 
 config();
 
@@ -15,7 +16,13 @@ export const dataSourceOptions: DataSourceOptions = {
   password: process.env.DB_PASSWORD,
   database: process.env.DB_NAME,
   schema: process.env.DB_SCHEMA,
-  entities: [UserModel, CustomFieldModel, DailyLogModel, FieldValueModel],
+  entities: [
+    UserModel,
+    CustomFieldModel,
+    DailyLogModel,
+    FieldValueModel,
+    NotificationSubscriptionModel,
+  ],
   migrations: ['dist/database/migrations/*.js'],
   synchronize: false,
   logging: true,

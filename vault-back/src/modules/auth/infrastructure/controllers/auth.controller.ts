@@ -18,7 +18,7 @@ import { Throttle, SkipThrottle } from '@nestjs/throttler';
 
 @Controller('auth')
 export class AuthController {
-  constructor(private readonly authService: AuthService) { }
+  constructor(private readonly authService: AuthService) {}
 
   @Public()
   @SkipThrottle({ default: process.env.NODE_ENV === 'test' })

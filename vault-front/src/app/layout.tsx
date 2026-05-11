@@ -8,6 +8,7 @@ import CssBaseline from "@mui/material/CssBaseline";
 import Box from "@mui/material/Box";
 import { theme } from "@/theme/theme";
 import { BottomNav } from "@/components/organisms/bottom-nav/bottom-nav";
+import PWAHandler from "@/components/pwa-handler";
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -32,6 +33,7 @@ export const metadata: Metadata = {
     icon: "/icon.png",
     apple: "/apple-icon.png",
   },
+  manifest: "/manifest.json",
   appleWebApp: {
     capable: true,
     statusBarStyle: "black-translucent",
@@ -58,6 +60,7 @@ export default function RootLayout({
                 <Box component="main" sx={{ flexGrow: 1 }}>
                   {children}
                 </Box>
+                <PWAHandler />
                 <Footer />
                 <BottomNav />
               </Box>

@@ -22,7 +22,7 @@ COPY vault-back/nest-cli.json ./
 COPY vault-back/.prettierrc ./
 
 # Build the application
-RUN --mount=type=cache,target=/app/dist/.cache \
+RUN --mount=type=cache,target=/root/.cache/nest \
     yarn build
 
 # Production stage
