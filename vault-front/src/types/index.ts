@@ -11,6 +11,11 @@ export interface AuthResponse {
   token: string;
 }
 
+export interface AppError extends Error {
+  statusCode?: number;
+  errors?: Record<string, string[]>;
+}
+
 export interface ApiError {
   message: string;
   statusCode: number;
@@ -55,7 +60,7 @@ export interface UpdateCustomFieldDto {
   optionsOrder?: string[];
 }
 
-export interface FieldValue {
+interface FieldValue {
   id: string;
   dailyLogId: string;
   customFieldId: string;
@@ -71,22 +76,10 @@ export interface DailyLog {
   fieldValues?: FieldValue[];
 }
 
-export interface CreateDailyLogDto {
-  logDate: string;
-  notes?: string;
-}
 
-export interface UpdateDailyLogDto {
-  logDate?: string;
-  notes?: string;
-}
-
-export interface SaveFieldValueDto {
-  customFieldId: string;
-  value: string;
-}
 
 export interface BulkRowDto {
+  tempId?: string;
   date: string;
   fields: Record<string, string>;
 }

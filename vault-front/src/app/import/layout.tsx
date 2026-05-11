@@ -1,11 +1,10 @@
 import { Metadata } from "next";
-import ImportClient from "./import-client";
 
 export const metadata: Metadata = {
   title: "Importation | VaultedMind",
   description: "Importez vos données historiques en toute sécurité.",
 };
 
-export default function ImportPage() {
-  return <ImportClient />;
+export default function ImportLayout({ children }: { children: React.ReactNode }) {
+  return <>{children}</>;
 }

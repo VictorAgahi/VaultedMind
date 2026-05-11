@@ -1,33 +1,11 @@
-"use client";
+import { Metadata } from "next";
+import DashboardClient from "./dashboard-client";
 
-import {
-  Box,
-  Typography,
-  Container,
-  Grid
-} from "@mui/material";
-import { DailyLogsManager } from "@/components/organisms/daily-logs-manager/daily-logs-manager";
-import { Navbar } from "@/components/organisms/navbar/navbar";
+export const metadata: Metadata = {
+  title: "Tableau de Bord | VaultedMind",
+  description: "Suivez votre santé mentale et gérez vos journaux quotidiens.",
+};
 
 export default function DashboardPage() {
-  return (
-    <Box sx={{ minHeight: "100vh", bgcolor: "#ede5d9" }}>
-      <Navbar />
-
-      <Container maxWidth="lg" sx={{ py: 8 }}>
-        <Box sx={{ mb: 6 }}>
-          <Typography variant="h3" component="h1" gutterBottom sx={{ fontWeight: 800 }}>
-            Votre tableau de bord sécurisé
-          </Typography>
-          <Typography variant="h6" color="text.secondary">
-            Ceci est une zone protégée. Seuls les utilisateurs authentifiés peuvent voir ceci.
-          </Typography>
-        </Box>
-
-        <Grid size={{ xs: 12 }}>
-          <DailyLogsManager />
-        </Grid>
-      </Container>
-    </Box>
-  );
+  return <DashboardClient />;
 }
