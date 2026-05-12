@@ -1,6 +1,5 @@
 "use client";
 
-import React from "react";
 import { Box, CircularProgress, Typography, Container } from "@mui/material";
 
 export default function Loading() {
@@ -11,7 +10,7 @@ export default function Loading() {
         display: "flex",
         alignItems: "center",
         justifyContent: "center",
-        background: "linear-gradient(135deg, #fdfbfb 0%, #ebedee 100%)",
+        bgcolor: "background.default",
         p: 3,
       }}
     >

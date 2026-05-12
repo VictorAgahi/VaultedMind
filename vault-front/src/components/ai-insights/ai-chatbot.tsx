@@ -1,0 +1,342 @@
+"use client";
+
+import { useState, useRef, useEffect, useTransition } from "react";
+import {
+  Box,
+  Fab,
+  Paper,
+  Typography,
+  IconButton,
+  TextField,
+  List,
+  ListItem,
+  Avatar,
+  Fade,
+  CircularProgress,
+} from "@mui/material";
+import ChatIcon from "@mui/icons-material/Chat";
+import CloseIcon from "@mui/icons-material/Close";
+import SendIcon from "@mui/icons-material/Send";
+import SmartToyIcon from "@mui/icons-material/SmartToy";
+import PersonIcon from "@mui/icons-material/Person";
+import { apiService } from "@/services/api.service";
+import { useAuth } from "@/context/auth-context";
+
+interface Message {
+  id: string;
+  text: string;
+  sender: "user" | "ai";
+}
+
+export function AIChatBot() {
+  const { isAuthenticated } = useAuth();
+  const [isOpen, setIsOpen] = useState(false);
+  const [messages, setMessages] = useState<Message[]>([
+    {
+      id: "1",
+      text: "Bonjour ! Je suis votre assistant VaultedMind. Comment puis-je vous aider aujourd'hui ?",
+      sender: "ai",
+    },
+  ]);
+  const [inputValue, setInputValue] = useState("");
+  const [isPending, startTransition] = useTransition();
+  const scrollRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (scrollRef.current) {
+      scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
+    }
+  }, [messages, isPending]);
+
+  // Bloquer le scroll du corps de la page quand le chat est ouvert sur mobile
+  useEffect(() => {
+    if (isOpen && typeof window !== "undefined" && window.innerWidth < 600) {
+      const originalStyle = window.getComputedStyle(document.body).overflow;
+      document.body.style.overflow = "hidden";
+      return () => {
+        document.body.style.overflow = originalStyle;
+      };
+    }
+  }, [isOpen]);
+
+  if (!isAuthenticated) return null;
+
+  const handleSendMessage = async () => {
+    if (!inputValue.trim() || isPending) return;
+
+    const userMsg: Message = {
+      id: Date.now().toString(),
+      text: inputValue,
+      sender: "user",
+    };
+
+    setMessages((prev) => [...prev, userMsg]);
+    setInputValue("");
+
+    startTransition(async () => {
+      try {
+        const { response } = await apiService.post<{ response: string }>(
+          "/health/ai-chat",
+          { message: inputValue }
+        );
+
+        const aiMsg: Message = {
+          id: (Date.now() + 1).toString(),
+          text: response,
+          sender: "ai",
+        };
+
+        setMessages((prev) => [...prev, aiMsg]);
+      } catch (_error) {
+        console.log(_error);
+        const errorMsg: Message = {
+          id: (Date.now() + 1).toString(),
+          text: "Désolé, je rencontre une erreur de connexion. Veuillez réessayer.",
+          sender: "ai",
+        };
+        setMessages((prev) => [...prev, errorMsg]);
+      }
+    });
+  };
+
+  return (
+    <>
+      <Fab
+        color="primary"
+        aria-label="chat"
+        onClick={() => setIsOpen(!isOpen)}
+        sx={{
+          position: "fixed",
+          bottom: { xs: 110, sm: 24 },
+          right: { xs: 16, sm: 24 },
+          boxShadow: "0 8px 24px rgba(216, 24, 50, 0.3)",
+          zIndex: 1100,
+          width: { xs: 52, sm: 56 },
+          height: { xs: 52, sm: 56 },
+          display: { xs: isOpen ? "none" : "flex", sm: "flex" },
+          transition: "all 0.3s cubic-bezier(0.4, 0, 0.2, 1)",
+          "&:hover": {
+            transform: "scale(1.1) rotate(5deg)",
+          }
+        }}
+      >
+        {isOpen ? <CloseIcon /> : <ChatIcon />}
+      </Fab>
+
+      <Fade in={isOpen}>
+        <Paper
+          elevation={12}
+          sx={{
+            position: "fixed",
+            bottom: { xs: 0, sm: 96 },
+            right: { xs: 0, sm: 24 },
+            width: { xs: "100%", sm: 380 },
+            height: { xs: "100%", sm: 500 },
+            maxHeight: { xs: "none", sm: 600 },
+            display: "flex",
+            flexDirection: "column",
+            borderRadius: { xs: 0, sm: 3 },
+            overflow: "hidden",
+            zIndex: 1050,
+            boxShadow: { xs: "none", sm: "0 12px 48px rgba(0,0,0,0.15)" },
+            // Support pour les zones sécurisées (encoche/status bar)
+            top: { xs: 0, sm: "auto" },
+            left: { xs: 0, sm: "auto" },
+          }}
+        >
+          {/* Header */}
+          <Box
+            sx={{
+              pt: { xs: "calc(env(safe-area-inset-top, 0px) + 16px)", sm: 2 },
+              pb: 2,
+              px: 2,
+              bgcolor: "primary.main",
+              color: "white",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "space-between",
+              gap: 1.5,
+              flexShrink: 0,
+            }}
+          >
+            <Box sx={{ display: "flex", alignItems: "center", gap: 1.5 }}>
+              <Avatar sx={{ bgcolor: "rgba(255,255,255,0.2)" }}>
+                <SmartToyIcon />
+              </Avatar>
+              <Box>
+                <Typography variant="subtitle1" sx={{ fontWeight: 600, lineHeight: 1.2 }}>
+                  Assistant VaultedMind
+                </Typography>
+                <Typography variant="caption" sx={{ opacity: 0.8 }}>
+                  Toujours là pour vous écouter
+                </Typography>
+              </Box>
+            </Box>
+            <IconButton 
+              size="small" 
+              onClick={() => setIsOpen(false)} 
+              sx={{ color: "white", display: { xs: "flex", sm: "none" } }}
+            >
+              <CloseIcon />
+            </IconButton>
+          </Box>
+
+          {/* Messages area */}
+          <Box
+            ref={scrollRef}
+            sx={{
+              flexGrow: 1,
+              p: 2,
+              overflowY: "auto",
+              bgcolor: "#f9fafb",
+              display: "flex",
+              flexDirection: "column",
+              gap: 2,
+            }}
+          >
+            <List sx={{ p: 0 }}>
+              {messages.map((msg) => (
+                <ListItem
+                  key={msg.id}
+                  sx={{
+                    flexDirection: "column",
+                    alignItems: msg.sender === "user" ? "flex-end" : "flex-start",
+                    p: 0,
+                    mb: 2,
+                  }}
+                >
+                  <Box
+                    sx={{
+                      display: "flex",
+                      flexDirection: msg.sender === "user" ? "row-reverse" : "row",
+                      alignItems: "flex-end",
+                      gap: 1,
+                      maxWidth: "85%",
+                    }}
+                  >
+                    <Avatar
+                      sx={{
+                        width: 28,
+                        height: 28,
+                        bgcolor: msg.sender === "user" ? "secondary.main" : "primary.main",
+                        fontSize: "0.8rem",
+                      }}
+                    >
+                      {msg.sender === "user" ? <PersonIcon fontSize="small" /> : <SmartToyIcon fontSize="small" />}
+                    </Avatar>
+                    <Paper
+                      elevation={0}
+                      sx={{
+                        p: 1.5,
+                        borderRadius: 2,
+                        bgcolor: msg.sender === "user" ? "primary.main" : "white",
+                        color: msg.sender === "user" ? "white" : "text.primary",
+                        border: msg.sender === "user" ? "none" : "1px solid #e5e7eb",
+                        borderBottomLeftRadius: msg.sender === "ai" ? 0 : 2,
+                        borderBottomRightRadius: msg.sender === "user" ? 0 : 2,
+                        wordBreak: "break-word",
+                        overflowWrap: "anywhere",
+                      }}
+                    >
+                      <Typography variant="body2" sx={{ whiteSpace: "pre-wrap", lineHeight: 1.5 }}>
+                        {msg.text}
+                      </Typography>
+                    </Paper>
+                  </Box>
+                </ListItem>
+              ))}
+              {isPending && (
+                <ListItem sx={{ p: 0, mb: 2 }}>
+                  <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+                    <Avatar sx={{ width: 28, height: 28, bgcolor: "primary.main" }}>
+                      <SmartToyIcon fontSize="small" />
+                    </Avatar>
+                    <Paper
+                      elevation={0}
+                      sx={{ p: 1.5, borderRadius: 2, bgcolor: "white", border: "1px solid #e5e7eb" }}
+                    >
+                      <CircularProgress size={16} thickness={5} />
+                    </Paper>
+                  </Box>
+                </ListItem>
+              )}
+            </List>
+          </Box>
+
+          {/* Input area */}
+          <Box sx={{ 
+            p: 2, 
+            pb: { xs: "calc(env(safe-area-inset-bottom, 0px) + 16px)", sm: 2 },
+            bgcolor: "white", 
+            borderTop: "1px solid #e5e7eb",
+            flexShrink: 0
+          }}>
+            <Box sx={{ display: "flex", gap: 1, alignItems: "center" }}>
+              <TextField
+                fullWidth
+                size="small"
+                multiline
+                maxRows={4}
+                placeholder="Posez votre question..."
+                value={inputValue}
+                onChange={(e) => setInputValue(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" && !e.shiftKey) {
+                    e.preventDefault();
+                    handleSendMessage();
+                  }
+                }}
+                sx={{
+                  "& .MuiOutlinedInput-root": {
+                    borderRadius: 3,
+                    bgcolor: "white",
+                    border: "1px solid #e5e7eb",
+                    transition: "all 0.2s",
+                    minHeight: 44,
+                    alignItems: "flex-end",
+                    pb: 1,
+                    "& fieldset": { border: "none" },
+                    "&.Mui-focused": {
+                      border: "1px solid",
+                      borderColor: "primary.main",
+                      boxShadow: "0 0 0 2px rgba(99, 102, 241, 0.1)"
+                    }
+                  },
+                  "& .MuiInputBase-input": {
+                    py: 0.5,
+                  }
+                }}
+              />
+              <IconButton
+                onClick={handleSendMessage}
+                disabled={!inputValue.trim() || isPending}
+                sx={{
+                  bgcolor: inputValue.trim() ? "primary.main" : "transparent",
+                  color: inputValue.trim() ? "white" : "#9ca3af",
+                  transition: "all 0.2s ease-in-out",
+                  "&:hover": {
+                    bgcolor: inputValue.trim() ? "primary.dark" : "transparent",
+                    transform: inputValue.trim() ? "scale(1.05)" : "none"
+                  },
+                  "&.Mui-disabled": {
+                    bgcolor: "transparent",
+                    color: "#d1d5db"
+                  },
+                  width: 44,
+                  height: 44,
+                  flexShrink: 0,
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  p: 0,
+                }}
+              >
+                <SendIcon fontSize="small" />
+              </IconButton>
+            </Box>
+          </Box>
+        </Paper>
+      </Fade>
+    </>
+  );
+}

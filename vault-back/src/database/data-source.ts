@@ -6,6 +6,8 @@ import { DailyLogModel } from './models/daily-log.model.js';
 import { FieldValueModel } from './models/field-value.model.js';
 import { NotificationSubscriptionModel } from './models/notification-subscription.model.js';
 
+import { AIInsightModel } from './models/ai-insight.model.js';
+
 config();
 
 export const dataSourceOptions: DataSourceOptions = {
@@ -22,6 +24,7 @@ export const dataSourceOptions: DataSourceOptions = {
     DailyLogModel,
     FieldValueModel,
     NotificationSubscriptionModel,
+    AIInsightModel,
   ],
   migrations: ['dist/database/migrations/*.js'],
   synchronize: false,

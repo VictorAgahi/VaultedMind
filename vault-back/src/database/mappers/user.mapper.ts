@@ -17,6 +17,7 @@ export class UserMapper {
       model.passwordHash,
       model.createdAt,
       model.updatedAt,
+      model.aiInsightsEnabled,
       model.deletedAt,
     );
   }
@@ -30,6 +31,7 @@ export class UserMapper {
     model.emailIndex = this.encryptionService.createBlindIndex(entity.email);
 
     model.passwordHash = entity.passwordHash;
+    model.aiInsightsEnabled = entity.aiInsightsEnabled;
     model.createdAt = entity.createdAt;
     model.updatedAt = entity.updatedAt;
     model.deletedAt = entity.deletedAt;

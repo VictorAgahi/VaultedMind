@@ -44,7 +44,7 @@ interface EvolutionQualitativeChartProps {
   selectedField: string;
   setSelectedField: (id: string) => void;
   stringFields: CustomField[];
-  ChartContainer: React.FC<ChartContainerProps>;
+  ChartContainer: React.FC<ChartContainerProps & { fullHeight?: boolean }>;
   menuProps?: Partial<MenuProps>;
 }
 
@@ -60,60 +60,85 @@ export const EvolutionQualitativeChart: React.FC<EvolutionQualitativeChartProps>
   const reverseMap = Object.entries(valueMap).reduce((acc, [k, v]) => ({ ...acc, [v]: k }), {} as Record<number, string>);
 
   return (
-    <Paper elevation={0} sx={{ p: { xs: 2, md: 4 }, borderRadius: 6, border: "1px solid rgba(0,0,0,0.05)", boxShadow: "0 10px 15px -3px rgba(0,0,0,0.05)" }}>
-      <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", mb: 4, flexWrap: "wrap", gap: 2 }}>
-        <Box>
-          <Box sx={{ display: "flex", alignItems: "center", gap: 1, mb: 1 }}>
-            <Typography variant="h6" sx={{ fontWeight: 800 }}>Évolution Qualitative</Typography>
-            <MuiTooltip title="Visualisez l'évolution de vos ressentis textuels dans le temps.">
-              <InfoIcon sx={{ fontSize: 18, color: "text.secondary", cursor: "help" }} />
-            </MuiTooltip>
+    <Paper elevation={0} sx={{ 
+      borderRadius: 6, 
+      border: "1px solid rgba(0,0,0,0.05)", 
+      boxShadow: "0 10px 15px -3px rgba(0,0,0,0.05)",
+      height: "100%",
+      display: "flex",
+      flexDirection: "column",
+      overflow: "hidden"
+    }}>
+      <Box sx={{ p: { xs: 2, md: 4 }, pb: 0 }}>
+        <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", mb: 4, flexWrap: "wrap", gap: 2 }}>
+          <Box>
+            <Box sx={{ display: "flex", alignItems: "center", gap: 1, mb: 1 }}>
+              <Typography variant="h6" sx={{ fontWeight: 800 }}>Évolution Qualitative</Typography>
+              <MuiTooltip title="Visualisez l'évolution de vos ressentis textuels dans le temps.">
+                <InfoIcon sx={{ fontSize: 18, color: "text.secondary", cursor: "help" }} />
+              </MuiTooltip>
+            </Box>
+            <Typography variant="body2" color="text.secondary">Suivi des tendances pour vos mesures textuelles.</Typography>
           </Box>
-          <Typography variant="body2" color="text.secondary">Suivi des tendances pour vos mesures textuelles.</Typography>
+          <FormControl fullWidth size="small" sx={{ mb: 4 }}>
+            <InputLabel>Champ qualitatif</InputLabel>
+            <Select
+              value={selectedField}
+              label="Champ qualitatif"
+              onChange={(e) => setSelectedField(e.target.value)}
+              sx={{ borderRadius: 3 }}
+              MenuProps={menuProps}
+            >
+              {stringFields.map(f => <MenuItem key={f.id} value={f.id}>{f.name}</MenuItem>)}
+            </Select>
+          </FormControl>
         </Box>
-        <FormControl fullWidth size="small" sx={{ mb: 4 }}>
-          <InputLabel>Champ qualitatif</InputLabel>
-          <Select
-            value={selectedField}
-            label="Champ qualitatif"
-            onChange={(e) => setSelectedField(e.target.value)}
-            sx={{ borderRadius: 3 }}
-            MenuProps={menuProps}
-          >
-            {stringFields.map(f => <MenuItem key={f.id} value={f.id}>{f.name}</MenuItem>)}
-          </Select>
-        </FormControl>
       </Box>
-
-      <ChartContainer aspect={2.5} mobileAspect={1.1} minHeight={300}>
-        <LineChart data={data}>
-          <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="rgba(0,0,0,0.05)" />
-          <XAxis dataKey="dateDisplay" axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: "#666" }} minTickGap={30} />
-          <YAxis
-            axisLine={false}
-            tickLine={false}
-            tick={{ fontSize: 12, fill: "#666" }}
-            ticks={Object.values(valueMap)}
-            tickFormatter={(val) => reverseMap[val] || val}
-          />
-          <Tooltip
-            contentStyle={{ borderRadius: 12, border: "none", boxShadow: "0 10px 15px -3px rgba(0,0,0,0.1)" }}
-            formatter={(value: string | number | readonly (string | number)[] | undefined) => [reverseMap[Number(value)] || value, "Valeur"]}
-          />
-          <Legend />
-          <Line
-            type="monotone"
-            dataKey="value"
-            stroke="#6366f1"
-            strokeWidth={4}
-            dot={{ r: 4, fill: "#6366f1", strokeWidth: 2, stroke: "#fff" }}
-            activeDot={{ r: 6, strokeWidth: 0 }}
-            name="Ressenti"
-            connectNulls
-          />
-        </LineChart>
-      </ChartContainer>
+ 
+      <Box sx={{ flexGrow: 1 }}>
+        <ChartContainer aspect={1.5} mobileAspect={1.0} minHeight={350} fullHeight>
+          <LineChart data={data} margin={{ top: 35, right: 20, left: 20, bottom: 20 }}>
+            <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="rgba(0,0,0,0.05)" />
+            <XAxis 
+              dataKey="dateDisplay" 
+              axisLine={false} 
+              tickLine={false} 
+              tick={{ fontSize: 10, fill: "#666", fontWeight: 600 }} 
+              minTickGap={20}
+              padding={{ left: 10, right: 10 }}
+            />
+            <YAxis
+              axisLine={false}
+              tickLine={false}
+              allowDecimals={false}
+              tick={{ fontSize: 10, fill: "#666", fontWeight: 600 }}
+              domain={[0, Math.max(...Object.values(valueMap), 1)]}
+              ticks={Object.values(valueMap)}
+              tickFormatter={(val) => {
+                const text = reverseMap[val] || val;
+                return text.length > 12 ? text.substring(0, 10) + '...' : text;
+              }}
+              width={70}
+            />
+            <Tooltip
+              contentStyle={{ borderRadius: 12, border: "none", boxShadow: "0 10px 15px -3px rgba(0,0,0,0.1)" }}
+              // eslint-disable-next-line @typescript-eslint/no-explicit-any
+              formatter={(val: any) => [reverseMap[Number(val)] || (val as string | number), "État"]}
+            />
+            <Legend verticalAlign="top" height={50} />
+            <Line
+              type="monotone"
+              dataKey="value"
+              stroke="#6366f1"
+              strokeWidth={4}
+              dot={{ r: 4, fill: "#6366f1", strokeWidth: 2, stroke: "#fff" }}
+              activeDot={{ r: 6, strokeWidth: 0 }}
+              name="Ressenti"
+              connectNulls
+            />
+          </LineChart>
+        </ChartContainer>
+      </Box>
     </Paper>
   );
 };
-

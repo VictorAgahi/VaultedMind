@@ -9,6 +9,7 @@ export class User {
     public readonly passwordHash: string,
     public readonly createdAt: Date,
     public readonly updatedAt: Date,
+    public aiInsightsEnabled: boolean = false,
     public readonly deletedAt?: Date,
   ) {}
 

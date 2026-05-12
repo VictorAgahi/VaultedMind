@@ -27,7 +27,7 @@ export const AuthLayout: React.FC<AuthLayoutProps> = ({
                 alignItems: "center",
                 justifyContent: "center",
                 p: 8,
-                background: "linear-gradient(135deg, #070435 0%, #d81832 100%)",
+                background: `linear-gradient(135deg, ${theme.palette.primary.dark} 0%, ${theme.palette.primary.main} 100%)`,
                 position: "relative",
                 overflow: "hidden",
                 "&::before": {

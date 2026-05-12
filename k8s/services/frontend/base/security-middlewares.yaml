@@ -5,17 +5,17 @@ metadata:
   namespace: vault-prod
 spec:
   headers:
-    # HSTS
+    # HSTS & SSL
+    sslRedirect: true
     stsSeconds: 31536000
     stsIncludeSubdomains: true
     stsPreload: true
-    # Prevent Sniffing
+    forceSTSHeader: true
+    # Protection
     contentTypeNosniff: true
-    # Prevent Clickjacking
     frameDeny: true
-    # XSS Filter
     browserXssFilter: true
-    # Headers de sécurité réactivés
+    # Headers personnalisés
     customResponseHeaders:
       Content-Security-Policy: "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; connect-src 'self' https://*.cyrus-ag.com wss://*.cyrus-ag.com; frame-ancestors 'none';"
       X-Robots-Tag: "none"

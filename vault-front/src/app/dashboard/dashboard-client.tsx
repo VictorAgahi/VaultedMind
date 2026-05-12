@@ -7,9 +7,34 @@ import {
   Grid
 } from "@mui/material";
 import { DailyLogsManager } from "@/components/daily-logs-manager/daily-logs-manager";
+import { InsightsPanel } from "@/components/ai-insights/insights-panel";
 import { Navbar } from "@/components/navbar/navbar";
+import { useAuth } from "@/context/auth-context";
+import { CircularProgress, Stack } from "@mui/material";
 
 export default function DashboardPage() {
+  const { user, loading } = useAuth();
+
+  if (loading) {
+    return (
+      <Stack
+        sx={{
+          height: "100vh",
+          bgcolor: "#ede5d9",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center"
+        }}
+      >
+        <CircularProgress />
+      </Stack>
+    );
+  }
+
+  if (!user) {
+    return null;
+  }
+
   return (
     <Box sx={{ minHeight: "100vh", bgcolor: "#ede5d9" }}>
       <Navbar />
@@ -26,6 +51,10 @@ export default function DashboardPage() {
 
         <Grid size={{ xs: 12 }}>
           <DailyLogsManager />
+        </Grid>
+
+        <Grid size={{ xs: 12 }}>
+          <InsightsPanel />
         </Grid>
       </Container>
     </Box>

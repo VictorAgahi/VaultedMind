@@ -9,6 +9,7 @@ import Box from "@mui/material/Box";
 import { theme } from "@/theme/theme";
 import { BottomNav } from "@/components/bottom-nav/bottom-nav";
 import PWAHandler from "@/components/pwa-handler";
+import { AIChatBot } from "@/components/ai-insights/ai-chatbot";
 import Script from "next/script";
 
 const inter = Inter({ subsets: ["latin"] });
@@ -160,6 +161,7 @@ export default function RootLayout({
                 <PWAHandler />
                 <Footer />
                 <BottomNav />
+                <AIChatBot />
               </Box>
             </AuthProvider>
           </ThemeProvider>

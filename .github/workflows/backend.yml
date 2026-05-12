@@ -119,6 +119,7 @@ jobs:
           VAPID_PRIVATE_KEY: "IVjetpmO96fB_Jmsf60-OLs1zkqGsqDD4QmNYki7eFg" # FAKE
           VAPID_EMAIL: "mailto:test@test.com"
           SERVICE_PORT: 3000
+          OPENAI_API_KEY: "sk-fake-key-for-ci"
         run: yarn test:e2e:ci
 
       - name: Upload coverage

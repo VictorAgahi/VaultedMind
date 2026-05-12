@@ -6,7 +6,7 @@ metadata:
   annotations:
     reloader.stakater.com/auto: "true"
 spec:
-  replicas: 2
+  replicas: 1
   selector:
     matchLabels:
       app: vault-backend
@@ -103,6 +103,11 @@ spec:
             secretKeyRef:
               name: vault-backend-secret
               key: vapid-email
+        - name: OPENAI_API_KEY
+          valueFrom:
+            secretKeyRef:
+              name: vault-backend-secret
+              key: openai-api-key
         - name: COOKIE_DOMAIN
           value: ".cyrus-ag.com"
         ports:

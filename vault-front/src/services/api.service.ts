@@ -37,12 +37,12 @@ class ApiService {
           };
         }
 
-        if (response.status === 401 || response.status === 429) {
+        if (response.status === 401 || response.status === 403 || (response.status === 400 && errorData.message?.toLowerCase().includes("token"))) {
           if (typeof window !== "undefined") {
             const publicRoutes = ["/", "/login", "/register", "/about", "/contact", "/privacy", "/terms"];
             const isPublicPage = publicRoutes.includes(window.location.pathname);
             if (!isPublicPage) {
-              window.location.href = "/login";
+              window.location.href = "/login?reason=session_expired";
             }
           }
         }

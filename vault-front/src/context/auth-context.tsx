@@ -30,7 +30,14 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         setUser(userData);
       } catch (error) {
         if ((error as { name?: string }).name === "AbortError") return;
-        console.debug("Not authenticated");
+        console.debug("Not authenticated", error);
+
+        if (typeof window !== "undefined") {
+          const publicRoutes = ["/", "/login", "/register", "/about", "/contact", "/privacy", "/terms"];
+          if (!publicRoutes.includes(window.location.pathname)) {
+            push("/login?reason=session_invalid");
+          }
+        }
       } finally {
         if (!controller.signal.aborted) {
           setLoading(false);
@@ -40,7 +47,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
     initAuth();
     return () => controller.abort();
-  }, []);
+  }, [push]);
 
   const login = async (credentials: LoginCredentials) => {
     setLoading(true);

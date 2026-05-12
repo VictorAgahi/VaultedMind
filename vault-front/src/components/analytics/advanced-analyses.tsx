@@ -23,7 +23,8 @@ import {
   Radar,
   PolarGrid,
   PolarAngleAxis,
-  PolarRadiusAxis
+  PolarRadiusAxis,
+  Tooltip
 } from "recharts";
 
 interface AdvancedAnalysesProps {
@@ -31,7 +32,7 @@ interface AdvancedAnalysesProps {
   logs: DailyLog[];
   activeAdvField: string;
   setAdvSelectedField: (id: string) => void;
-  ChartContainer: React.FC<{ children: React.ReactNode, aspect: number, mobileAspect?: number, minHeight: number }>;
+  ChartContainer: React.FC<{ children: React.ReactNode, aspect: number, mobileAspect?: number, minHeight: number, fullHeight?: boolean }>;
   menuProps?: Partial<MenuProps>;
 }
 
@@ -158,6 +159,23 @@ export const AdvancedAnalyses: React.FC<AdvancedAnalysesProps> = ({
               <PolarGrid stroke="rgba(0,0,0,0.05)" />
               <PolarAngleAxis dataKey="subject" tick={{ fontSize: 11, fontWeight: 600, fill: theme.palette.text.secondary }} />
               <PolarRadiusAxis angle={30} domain={[0, 'auto']} hide />
+              <Tooltip
+                contentStyle={{ borderRadius: 12, border: "none", boxShadow: "0 10px 15px -3px rgba(0,0,0,0.1)" }}
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                formatter={(val: any) => {
+                  const field = fields.find(f => f.id === activeAdvField);
+                  const numVal = Number(val);
+                  if (field?.fieldType === FieldType.BOOLEAN) return [`${(numVal * 100).toFixed(0)}% Oui`, "Moyenne"];
+                  if (field?.fieldType === FieldType.STRING) {
+                    const mapping = advFieldMappings[activeAdvField];
+                    if (mapping) {
+                      const label = Object.keys(mapping).find(key => mapping[key] === Math.round(numVal));
+                      return [label || numVal.toFixed(2), "Valeur"];
+                    }
+                  }
+                  return [numVal.toFixed(2), "Moyenne"];
+                }}
+              />
               <Radar
                 name="Moyenne"
                 dataKey="A"
@@ -181,14 +199,57 @@ export const AdvancedAnalyses: React.FC<AdvancedAnalysesProps> = ({
               {statsSummary ? (
                 <Grid container spacing={2}>
                   {[
-                    { label: "Moyenne", value: statsSummary.mean, color: "#6366f1" },
-                    { label: "Min", value: statsSummary.min, color: "#94a3b8" },
-                    { label: "Max", value: statsSummary.max, color: "#94a3b8" },
+                    {
+                      label: "Moyenne",
+                      value: (() => {
+                        const field = fields.find(f => f.id === activeAdvField);
+                        if (field?.fieldType === FieldType.BOOLEAN) return `${(parseFloat(statsSummary.mean) * 100).toFixed(0)}% Oui`;
+                        if (field?.fieldType === FieldType.STRING) {
+                          const mapping = advFieldMappings[activeAdvField];
+                          if (mapping) {
+                            const label = Object.keys(mapping).find(key => mapping[key] === Math.round(parseFloat(statsSummary.mean)));
+                            return label || statsSummary.mean;
+                          }
+                        }
+                        return statsSummary.mean;
+                      })(),
+                      color: "#6366f1"
+                    },
+                    {
+                      label: "Min",
+                      value: (() => {
+                        const field = fields.find(f => f.id === activeAdvField);
+                        if (field?.fieldType === FieldType.BOOLEAN) return statsSummary.min === 1 ? "Oui" : "Non";
+                        if (field?.fieldType === FieldType.STRING) {
+                          const mapping = advFieldMappings[activeAdvField];
+                          if (mapping) {
+                            return Object.keys(mapping).find(key => mapping[key] === statsSummary.min) || statsSummary.min;
+                          }
+                        }
+                        return statsSummary.min;
+                      })(),
+                      color: "#94a3b8"
+                    },
+                    {
+                      label: "Max",
+                      value: (() => {
+                        const field = fields.find(f => f.id === activeAdvField);
+                        if (field?.fieldType === FieldType.BOOLEAN) return statsSummary.max === 1 ? "Oui" : "Non";
+                        if (field?.fieldType === FieldType.STRING) {
+                          const mapping = advFieldMappings[activeAdvField];
+                          if (mapping) {
+                            return Object.keys(mapping).find(key => mapping[key] === statsSummary.max) || statsSummary.max;
+                          }
+                        }
+                        return statsSummary.max;
+                      })(),
+                      color: "#94a3b8"
+                    },
                   ].map((stat) => (
                     <Grid size={{ xs: 4 }} key={stat.label}>
-                      <Box sx={{ p: { xs: 1.5, md: 3 }, bgcolor: "rgba(255,255,255,0.6)", borderRadius: 4, textAlign: "center", border: "1px solid rgba(0,0,0,0.03)" }}>
+                      <Box sx={{ p: { xs: 1, md: 3 }, bgcolor: "rgba(255,255,255,0.6)", borderRadius: 4, textAlign: "center", border: "1px solid rgba(0,0,0,0.03)", height: "100%", display: "flex", flexDirection: "column", justifyContent: "center" }}>
                         <Typography variant="caption" color="text.secondary" sx={{ display: "block", mb: 0.5, fontWeight: 600 }}>{stat.label}</Typography>
-                        <Typography variant="h6" sx={{ fontWeight: 900, color: stat.color }}>{stat.value}</Typography>
+                        <Typography variant="h6" sx={{ fontWeight: 900, color: stat.color, fontSize: { xs: "0.9rem", md: "1.25rem" } }}>{stat.value}</Typography>
                       </Box>
                     </Grid>
                   ))}

@@ -4,11 +4,10 @@ metadata:
   name: vault-backend
   namespace: vault-prod
 spec:
-  type: NodePort
+  type: ClusterIP
   selector:
     app: vault-backend
   ports:
   - port: 80
     targetPort: 3000
-    nodePort: 31416
     name: http

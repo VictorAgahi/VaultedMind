@@ -16,14 +16,12 @@ import {
 import { Navbar } from "@/components/navbar/navbar";
 import { apiService } from "@/services/api.service";
 import { DailyLog, CustomField, FieldType } from "@/types";
-import dynamic from "next/dynamic";
-
-const EvolutionQualitativeChart = dynamic(() => import("@/components/analytics/evolution-qualitative-chart").then(m => m.EvolutionQualitativeChart), { ssr: false });
-const TrendNumericalChart = dynamic(() => import("@/components/analytics/trend-numerical-chart").then(m => m.TrendNumericalChart), { ssr: false });
-const ValueDistributionChart = dynamic(() => import("@/components/analytics/value-distribution-chart").then(m => m.ValueDistributionChart), { ssr: false });
-const CorrelationStudy = dynamic(() => import("@/components/correlation-study/correlation-study").then(m => m.CorrelationStudy), { ssr: false });
-const AdvancedAnalyses = dynamic(() => import("@/components/analytics/advanced-analyses").then(m => m.AdvancedAnalyses), { ssr: false });
-const ResponsiveContainer = dynamic(() => import("recharts").then(m => m.ResponsiveContainer), { ssr: false });
+import { EvolutionQualitativeChart } from "@/components/analytics/evolution-qualitative-chart";
+import { TrendNumericalChart } from "@/components/analytics/trend-numerical-chart";
+import { ValueDistributionChart } from "@/components/analytics/value-distribution-chart";
+import { CorrelationStudy } from "@/components/correlation-study/correlation-study";
+import { AdvancedAnalyses } from "@/components/analytics/advanced-analyses";
+import { ResponsiveContainer } from "recharts";
 
 import { Fade, useMediaQuery } from "@mui/material";
 
@@ -32,9 +30,10 @@ interface ChartContainerProps {
   aspect: number;
   mobileAspect?: number;
   minHeight: number;
+  fullHeight?: boolean;
 }
 
-const ChartContainer: React.FC<ChartContainerProps> = ({ children, aspect, mobileAspect, minHeight }) => {
+const ChartContainer: React.FC<ChartContainerProps> = ({ children, aspect, mobileAspect, minHeight, fullHeight }) => {
   const ref = React.useRef<HTMLDivElement>(null);
   const [width, setWidth] = React.useState(0);
   const theme = useTheme();
@@ -53,9 +52,22 @@ const ChartContainer: React.FC<ChartContainerProps> = ({ children, aspect, mobil
   const finalAspect = isMobile && mobileAspect ? mobileAspect : aspect;
 
   return (
-    <Box ref={ref} sx={{ width: "100%", minWidth: 0, minHeight }}>
+    <Box ref={ref} sx={{
+      width: "100%",
+      minWidth: 0,
+      minHeight,
+      flexGrow: fullHeight ? 1 : 0,
+      height: fullHeight && !isMobile ? "100%" : "auto",
+      display: fullHeight ? "flex" : "block",
+      flexDirection: "column"
+    }}>
       {width > 0 && (
-        <ResponsiveContainer width={width} aspect={finalAspect} debounce={50}>
+        <ResponsiveContainer
+          width={width}
+          height={fullHeight && !isMobile ? "100%" : undefined}
+          aspect={fullHeight && !isMobile ? undefined : finalAspect}
+          debounce={50}
+        >
           {children as React.ReactElement}
         </ResponsiveContainer>
       )}
@@ -270,9 +282,9 @@ export default function AnalyticsClient() {
   return (
     <Box sx={{ minHeight: "100vh" }}>
       <Navbar />
-      <Container maxWidth="xl" sx={{ py: 6 }}>
+      <Container maxWidth={false} sx={{ py: 6, px: { xs: 2, md: 3, lg: 4 } }}>
         <Box sx={{ mb: 6 }}>
-          <Typography variant="h3" sx={{ fontWeight: 900, mb: 1, color: "#142949", letterSpacing: "-0.02em" }}>Analyses</Typography>
+          <Typography variant="h4" sx={{ fontWeight: 900, mb: 1, color: "#142949", letterSpacing: "-0.02em" }}>Analyses</Typography>
           <Typography variant="h6" color="text.secondary">Visualisez vos progrès et découvrez des corrélations.</Typography>
         </Box>
 
@@ -284,21 +296,21 @@ export default function AnalyticsClient() {
             onChange={(_, v) => dispatch({ type: "SET_TAB", value: v })}
             variant="fullWidth"
             sx={{
-              '& .MuiTab-root': { fontWeight: 700, py: 3, fontSize: '1rem' },
+              '& .MuiTab-root': { fontWeight: 700, py: 2, fontSize: '0.9rem' },
               '& .Mui-selected': { color: '#6366f1' },
               '& .MuiTabs-indicator': { backgroundColor: '#6366f1', height: 3 }
             }}
           >
-            <Tab label="Tendances & Répartition" />
-            <Tab label="Étude de Corrélation" />
-            <Tab label="Analyses Avancées" />
+            <Tab label="Tendances" />
+            <Tab label="Corrélation" />
+            <Tab label="Analyses" />
           </Tabs>
         </Paper>
 
         <Box sx={{ minHeight: 600 }}>
           {tabValue === 0 && (
             <Fade in={tabValue === 0} timeout={400}>
-              <Grid container spacing={4}>
+              <Grid container spacing={{ xs: 2, md: 4 }}>
                 <Grid size={{ xs: 12, md: 8 }}>
                   <EvolutionQualitativeChart
                     data={qualitativeData.data}

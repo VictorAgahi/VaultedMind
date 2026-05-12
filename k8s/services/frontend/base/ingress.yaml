@@ -4,10 +4,11 @@ metadata:
   name: vault-frontend
   namespace: vault-prod
   annotations:
-    kubernetes.io/ingress.class: traefik
-    cert-manager.io/cluster-issuer: letsencrypt-prod
+    traefik.ingress.kubernetes.io/router.entrypoints: web,websecure
     traefik.ingress.kubernetes.io/router.middlewares: vault-prod-security-headers@kubernetescrd
+    cert-manager.io/cluster-issuer: cloudflare-issuer
 spec:
+  ingressClassName: traefik
   tls:
   - hosts:
     - vault-mind.cyrus-ag.com

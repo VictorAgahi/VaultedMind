@@ -1,0 +1,15 @@
+◇ injected env (15) from .env // tip: ⌁ auth for agents [www.vestauth.com]
+query: SELECT version()
+query: SELECT * FROM current_schema()
+Error during migration run:
+TypeORMError: Entity metadata for UserModel#aiInsights was not found. Check if you specified a correct entity object and if it's connected in the connection options.
+    at <anonymous> (/Users/victoragahi/Developer/vault-projet/vault-back/node_modules/typeorm/metadata-builder/src/metadata-builder/EntityMetadataBuilder.ts:1128:23)
+    at Array.forEach (<anonymous>)
+    at EntityMetadataBuilder.computeInverseProperties (/Users/victoragahi/Developer/vault-projet/vault-back/node_modules/typeorm/metadata-builder/src/metadata-builder/EntityMetadataBuilder.ts:1118:34)
+    at <anonymous> (/Users/victoragahi/Developer/vault-projet/vault-back/node_modules/typeorm/metadata-builder/src/metadata-builder/EntityMetadataBuilder.ts:160:18)
+    at Array.forEach (<anonymous>)
+    at EntityMetadataBuilder.build (/Users/victoragahi/Developer/vault-projet/vault-back/node_modules/typeorm/metadata-builder/src/metadata-builder/EntityMetadataBuilder.ts:159:25)
+    at ConnectionMetadataBuilder.buildEntityMetadatas (/Users/victoragahi/Developer/vault-projet/vault-back/node_modules/typeorm/connection/src/connection/ConnectionMetadataBuilder.ts:106:11)
+    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+    at async DataSource.buildMetadatas (/Users/victoragahi/Developer/vault-projet/vault-back/node_modules/typeorm/data-source/src/data-source/DataSource.ts:733:13)
+    at async DataSource.initialize (/Users/victoragahi/Developer/vault-projet/vault-back/node_modules/typeorm/data-source/src/data-source/DataSource.ts:264:13)

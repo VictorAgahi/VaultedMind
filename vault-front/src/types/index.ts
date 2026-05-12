@@ -95,3 +95,12 @@ export interface BulkImportResponseDto {
   fieldsCreated: number;
   valuesCreated: number;
 }
+
+export interface AIInsightResponseDto {
+  id: string;
+  type: 'DAILY_SUMMARY' | 'WEEKLY_TREND' | 'ANOMALY' | 'RECOMMENDATION';
+  title: string;
+  content: string;
+  metadata?: Record<string, unknown>;
+  createdAt: string;
+}
