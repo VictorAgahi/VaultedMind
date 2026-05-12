@@ -46,4 +46,18 @@ export class AuthService {
     this.logger.log(`User logged in successfully: ${user.id}`);
     return { user, token };
   }
+
+  async validateUserById(userId: string): Promise<{ id: string } | null> {
+    const user = await this.userRepository.findUserById(userId);
+    return user ? { id: user.id } : null;
+  }
+
+  async deleteAccount(userId: string) {
+    this.logger.log(`Initiating account deletion for user: ${userId}`);
+    await this.userService.deleteUser(userId);
+  }
+
+  async exportUserData(userId: string) {
+    return await this.userService.exportUserData(userId);
+  }
 }

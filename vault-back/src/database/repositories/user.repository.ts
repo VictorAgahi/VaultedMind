@@ -58,4 +58,11 @@ export class UserRepository extends AbstractBaseRepository<UserModel> {
     const savedModel = await this.repository.save(model);
     return this.userMapper.toDomain(savedModel);
   }
+
+  /**
+   * Hard deletes a user from the database.
+   */
+  async deleteUser(id: string): Promise<void> {
+    await this.repository.delete(id);
+  }
 }

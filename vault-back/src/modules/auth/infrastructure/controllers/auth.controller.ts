@@ -8,6 +8,7 @@ import {
   HttpStatus,
   Res,
   UseGuards,
+  Delete,
 } from '@nestjs/common';
 import type { Response } from 'express';
 import { AuthService } from '../../application/services/auth.service.js';
@@ -80,5 +81,18 @@ export class AuthController {
     email: string;
   } {
     return req.user;
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Get('export')
+  async export(@Request() req: { user: { id: string } }) {
+    return await this.authService.exportUserData(req.user.id);
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Delete('account')
+  @HttpCode(HttpStatus.NO_CONTENT)
+  async deleteAccount(@Request() req: { user: { id: string } }) {
+    await this.authService.deleteAccount(req.user.id);
   }
 }

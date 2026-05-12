@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import { useState, useEffect } from "react";
 import {
   Container,
   Typography,
@@ -10,17 +10,25 @@ import {
   Button,
   Divider,
   Alert,
-  CircularProgress
+  CircularProgress,
+  Stack
 } from "@mui/material";
 import {
   Person as PersonIcon,
   Notifications as NotificationsIcon,
   NotificationsActive as NotificationsActiveIcon,
-  Logout as LogoutIcon
+  Logout as LogoutIcon,
+  Download as DownloadIcon,
+  DeleteForever as DeleteIcon,
+  Shield as ShieldIcon
 } from "@mui/icons-material";
 import { useAuth } from "@/context/auth-context";
 import { Navbar } from "@/components/navbar/navbar";
 import { apiService } from "@/services/api.service";
+
+const getExportFilename = () => {
+  return `vaultedmind-data-export-${new Date().toISOString().split('T')[0]}.json`;
+};
 
 export default function ProfilePage() {
   const { user, logout } = useAuth();
@@ -169,6 +177,63 @@ export default function ProfilePage() {
               </Box>
             )}
           </Box>
+        </Paper>
+
+        <Paper elevation={0} sx={{ p: 3, borderRadius: 4, bgcolor: "background.paper", border: "1px solid", borderColor: "divider", mb: 3 }}>
+          <Typography variant="subtitle1" gutterBottom sx={{ fontWeight: 600, display: "flex", alignItems: "center" }}>
+            <ShieldIcon sx={{ mr: 1, fontSize: 20, color: "primary.main" }} />
+            Sécurité et Données (RGPD)
+          </Typography>
+          <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
+            Conformément au <strong>Règlement Général sur la Protection des Données (RGPD)</strong>, vous disposez d&apos;un contrôle total sur vos informations personnelles et de santé.
+          </Typography>
+
+          <Stack spacing={2}>
+            <Button
+              variant="outlined"
+              fullWidth
+              startIcon={<DownloadIcon />}
+              onClick={async () => {
+                try {
+                  const data = await apiService.get("/auth/export");
+                  const blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" });
+                  const url = window.URL.createObjectURL(blob);
+                  const a = document.createElement("a");
+                  a.href = url;
+                  a.download = getExportFilename();
+                  document.body.appendChild(a);
+                  a.click();
+                  window.URL.revokeObjectURL(url);
+                  document.body.removeChild(a);
+                } catch {
+                  setError("Échec de l'exportation des données.");
+                }
+              }}
+              sx={{ borderRadius: 3, py: 1.2, textTransform: "none", fontWeight: 600 }}
+            >
+              Exporter mes données (JSON AES-256)
+            </Button>
+
+            <Button
+              variant="outlined"
+              color="error"
+              fullWidth
+              startIcon={<DeleteIcon />}
+              onClick={async () => {
+                if (window.confirm("ÊTES-VOUS ABSOLUMENT SÛR ? Cette action est irréversible et supprimera définitivement votre coffre-fort mental, vos clés de chiffrement et toutes vos données de santé.")) {
+                  try {
+                    await apiService.delete("/auth/account");
+                    logout();
+                  } catch (err: unknown) {
+                    setError((err as Error).message);
+                  }
+                }
+              }}
+              sx={{ borderRadius: 3, py: 1.2, textTransform: "none", fontWeight: 600 }}
+            >
+              Supprimer définitivement mon compte
+            </Button>
+          </Stack>
         </Paper>
 
         <Button

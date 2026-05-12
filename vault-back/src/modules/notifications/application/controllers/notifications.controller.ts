@@ -15,7 +15,7 @@ import { SubscribeDto } from '../dtos/subscribe.dto.js';
 export class NotificationsController {
   private readonly logger = new Logger(NotificationsController.name);
 
-  constructor(private readonly notificationsService: NotificationsService) { }
+  constructor(private readonly notificationsService: NotificationsService) {}
 
   @UseGuards(JwtAuthGuard)
   @Post('subscribe')
