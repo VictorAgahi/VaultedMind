@@ -3,8 +3,10 @@
 import React from "react";
 import { Box, Typography, Button, Container } from "@mui/material";
 import Link from "next/link";
-import HomeIcon from "@mui/icons-material/Home";
-import SentimentVeryDissatisfiedIcon from "@mui/icons-material/SentimentVeryDissatisfied";
+import {
+  Home as HomeIcon,
+  SentimentVeryDissatisfied as SentimentVeryDissatisfiedIcon
+} from "@mui/icons-material";
 
 export default function NotFound() {
   return (

@@ -35,7 +35,7 @@ export default function ContactClient() {
               </Box>
               <Box>
                 <Typography variant="subtitle2" color="text.primary" sx={{ opacity: 0.7 }}>Email</Typography>
-                <Typography variant="h6" sx={{ fontWeight: 700, color: "text.primary" }}>support@vaultedmind.com</Typography>
+                <Typography variant="h6" sx={{ fontWeight: 700, color: "text.primary" }}>support.vaultedmind@gmail.com</Typography>
               </Box>
             </CardContent>
           </Card>
@@ -47,7 +47,7 @@ export default function ContactClient() {
               </Box>
               <Box>
                 <Typography variant="subtitle2" color="text.primary" sx={{ opacity: 0.7 }}>Web</Typography>
-                <Typography variant="h6" sx={{ fontWeight: 700, color: "text.primary" }}>www.vaultedmind.com</Typography>
+                <Typography variant="h6" sx={{ fontWeight: 700, color: "text.primary" }}>https://vault-mind.cyrus-ag.com/</Typography>
               </Box>
             </CardContent>
           </Card>
