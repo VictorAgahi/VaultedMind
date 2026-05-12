@@ -18,7 +18,7 @@ export const Navbar: React.FC = () => {
   const { user, logout } = useAuth();
   const pathname = usePathname();
 
-  const authRoutes = ["/dashboard", "/import", "/fields", "/analytics", "/profile", "/privacy", "/terms", "/contact"];
+  const authRoutes = ["/dashboard", "/import", "/fields", "/analytics", "/profile"];
 
   if (!authRoutes.includes(pathname)) {
     return null;

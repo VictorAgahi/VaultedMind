@@ -50,6 +50,9 @@ export const Footer: React.FC = () => {
             <MuiLink component={Link} href="/contact" color="text.secondary" variant="body2" sx={{ textDecoration: "none" }}>
               Contact
             </MuiLink>
+            <MuiLink href="https://github.com/VictorAgahi/VaultedMind" target="_blank" rel="noopener noreferrer" color="text.secondary" variant="body2" sx={{ textDecoration: "none" }}>
+              GitHub
+            </MuiLink>
           </Box>
         </Box>
 

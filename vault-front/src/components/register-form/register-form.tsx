@@ -8,6 +8,8 @@ import {
   Typography,
   Paper,
   Alert,
+  FormControlLabel,
+  Checkbox,
   CircularProgress,
   Link as MuiLink
 } from "@mui/material";
@@ -22,6 +24,7 @@ export const RegisterForm: React.FC = () => {
     email: "",
     password: "",
   });
+  const [acceptedTerms, setAcceptedTerms] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -32,6 +35,10 @@ export const RegisterForm: React.FC = () => {
 
   const registerUser = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!acceptedTerms) {
+      setError("Vous devez accepter les conditions d'utilisation.");
+      return;
+    }
     setIsSubmitting(true);
     setError(null);
     try {
@@ -90,13 +97,36 @@ export const RegisterForm: React.FC = () => {
           required
         />
 
+        <FormControlLabel
+          control={
+            <Checkbox
+              checked={acceptedTerms}
+              onChange={(e) => setAcceptedTerms(e.target.checked)}
+              color="primary"
+            />
+          }
+          label={
+            <Typography variant="body2" color="text.secondary">
+              J&apos;accepte les{" "}
+              <MuiLink component={Link} href="/terms" target="_blank" sx={{ fontWeight: 600, textDecoration: "none" }}>
+                conditions d&apos;utilisation
+              </MuiLink>
+              {" "}et la{" "}
+              <MuiLink component={Link} href="/privacy" target="_blank" sx={{ fontWeight: 600, textDecoration: "none" }}>
+                politique de confidentialité
+              </MuiLink>
+            </Typography>
+          }
+          sx={{ mb: 2, mt: 1 }}
+        />
+
         <Button
           type="submit"
           variant="contained"
           fullWidth
           size="large"
-          disabled={isSubmitting}
-          sx={{ py: 1.5, mt: 2, borderRadius: 2 }}
+          disabled={isSubmitting || !acceptedTerms}
+          sx={{ py: 1.5, mt: 1, borderRadius: 2 }}
         >
           {isSubmitting ? <CircularProgress size={24} color="inherit" /> : "S'inscrire"}
         </Button>

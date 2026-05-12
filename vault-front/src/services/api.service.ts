@@ -37,10 +37,9 @@ class ApiService {
           };
         }
 
-        // Handle specific status codes
         if (response.status === 401 || response.status === 429) {
           if (typeof window !== "undefined") {
-            const publicRoutes = ["/", "/login", "/register"];
+            const publicRoutes = ["/", "/login", "/register", "/about", "/contact", "/privacy", "/terms"];
             const isPublicPage = publicRoutes.includes(window.location.pathname);
             if (!isPublicPage) {
               window.location.href = "/login";
@@ -51,7 +50,6 @@ class ApiService {
         throw errorData;
       }
 
-      // For 204 No Content
       if (response.status === 204) {
         return {} as T;
       }

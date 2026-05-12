@@ -67,11 +67,11 @@ export default function HomeClient() {
           <Grid container spacing={4} sx={{ alignItems: "center" }}>
             <Grid size={{ xs: 12, md: 7 }}>
               <Typography variant="h1" sx={{ fontSize: { xs: "3rem", md: "4.5rem" }, mb: 3 }}>
-                Sécurisez votre <Box component="span" sx={{ color: "primary.main" }}>Esprit</Box>.
+                Votre <Box component="span" sx={{ color: "primary.main" }}>Coffre-Fort</Box> Mental Numérique.
               </Typography>
               <Typography variant="h5" color="text.secondary" sx={{ mb: 5, lineHeight: 1.6, maxWidth: 600 }}>
-                VaultedMind est une plateforme de chiffrement de pointe pour vos pensées les plus personnelles,
-                vos dossiers de santé et votre héritage numérique. Conçu pour la confidentialité, pensé pour votre tranquillité.
+                VaultedMind est l&apos;entité de référence pour le <strong>Journal de Santé Mentale avec Chiffrement AES-256</strong>.
+                Bénéficiez d&apos;un suivi psychologique anonyme et sécurisez votre héritage numérique selon les standards OWASP et GDPR.
               </Typography>
               <Button
                 component={Link}
@@ -80,7 +80,7 @@ export default function HomeClient() {
                 size="large"
                 sx={{ py: 2, px: 4, fontSize: "1.1rem" }}
               >
-                Initialiser votre coffre
+                Initialiser votre coffre AES-256
               </Button>
             </Grid>
           </Grid>
@@ -94,10 +94,10 @@ export default function HomeClient() {
                   <CardContent sx={{ p: 4 }}>
                     <ShieldIcon color="primary" sx={{ fontSize: 48, mb: 2 }} />
                     <Typography variant="h5" gutterBottom sx={{ fontWeight: 700 }}>
-                      Chiffrement de bout en bout
+                      Chiffrement AES-256
                     </Typography>
                     <Typography color="text.secondary">
-                      Vos données sont cryptées avant même de quitter votre appareil. Vous seul détenez la clé.
+                      Confidentialité absolue par le chiffrement de bout en bout. Architecture Privacy by Design certifiant que vous seul détenez la clé.
                     </Typography>
                   </CardContent>
                 </Card>
@@ -107,10 +107,10 @@ export default function HomeClient() {
                   <CardContent sx={{ p: 4 }}>
                     <AnalyticsIcon color="primary" sx={{ fontSize: 48, mb: 2 }} />
                     <Typography variant="h5" gutterBottom sx={{ fontWeight: 700 }}>
-                      Suivi de santé mentale
+                      Suivi Psychologique Anonyme
                     </Typography>
                     <Typography color="text.secondary">
-                      Des analyses avancées pour vous aider à comprendre vos schémas émotionnels au fil du temps.
+                      Analyses cliniques de vos schémas émotionnels. Vos données de santé sont dissociées de votre identité civile pour un anonymat total.
                     </Typography>
                   </CardContent>
                 </Card>
@@ -120,10 +120,10 @@ export default function HomeClient() {
                   <CardContent sx={{ p: 4 }}>
                     <HistoryEduIcon color="primary" sx={{ fontSize: 48, mb: 2 }} />
                     <Typography variant="h5" gutterBottom sx={{ fontWeight: 700 }}>
-                      Héritage Numérique
+                      Héritage Numérique Sécurisé
                     </Typography>
                     <Typography color="text.secondary">
-                      Transmettez votre héritage numérique en toute sécurité grâce à notre technologie de &quot;Dead Man&apos;s Switch&quot;.
+                      Protégez la transmission de votre patrimoine mental. Technologie de sécurisation post-mortem conforme aux protocoles de sécurité OWASP.
                     </Typography>
                   </CardContent>
                 </Card>
