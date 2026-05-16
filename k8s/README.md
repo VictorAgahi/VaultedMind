@@ -6,7 +6,7 @@ Production-grade Kubernetes orchestration for VaultedMind using K3s, ArgoCD, and
 
 ### 1. GitOps with ArgoCD
 The cluster state is synchronized with this repository.
-- **Root App**: k8s/argocd/root-app.yaml
+- **ApplicationSet**: k8s/argocd/vault-applicationset.yaml (deploys postgres, backend, frontend)
 - **Namespaces**: All resources reside in the vault-prod namespace.
 
 ### 2. Network Isolation (Zero Trust)

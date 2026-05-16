@@ -13,9 +13,18 @@ spec:
       labels:
         app: postgres
     spec:
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 999   # postgres user in official alpine image
+        fsGroup: 999
       containers:
       - name: postgres
         image: postgres:17-alpine
+        securityContext:
+          allowPrivilegeEscalation: false
+          capabilities:
+            drop:
+              - ALL
         env:
         - name: POSTGRES_USER
           valueFrom:
@@ -48,9 +57,19 @@ spec:
             command:
             - /bin/sh
             - -c
-            - pg_isready -U $POSTGRES_USER
+            - pg_isready -U $POSTGRES_USER -d $POSTGRES_DB
           initialDelaySeconds: 30
           periodSeconds: 10
+          failureThreshold: 3
+        readinessProbe:
+          exec:
+            command:
+            - /bin/sh
+            - -c
+            - pg_isready -U $POSTGRES_USER -d $POSTGRES_DB
+          initialDelaySeconds: 10
+          periodSeconds: 5
+          failureThreshold: 3
       volumes:
       - name: postgres-storage
         persistentVolumeClaim:
