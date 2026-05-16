@@ -5,8 +5,7 @@ metadata:
   namespace: vault-prod
 spec:
   headers:
-    # HSTS & SSL
-    sslRedirect: true
+    # HSTS (no sslRedirect — Cloudflare handles HTTP→HTTPS at edge)
     stsSeconds: 31536000
     stsIncludeSubdomains: true
     stsPreload: true
@@ -15,7 +14,7 @@ spec:
     contentTypeNosniff: true
     frameDeny: true
     browserXssFilter: true
-    # Headers personnalisés
+    # Custom response headers
     customResponseHeaders:
       Content-Security-Policy: "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; connect-src 'self' https://*.cyrus-ag.com wss://*.cyrus-ag.com; frame-ancestors 'none';"
       X-Robots-Tag: "none"
@@ -23,12 +22,40 @@ spec:
       X-Frame-Options: "DENY"
       X-Content-Type-Options: "nosniff"
 ---
+# Cloudflare IP allowlist — only allow traffic from Cloudflare edge
+# This prevents direct origin access, ensuring WAF/DDoS protection
 apiVersion: traefik.io/v1alpha1
 kind: Middleware
 metadata:
-  name: redirect-to-https
+  name: cloudflare-only
   namespace: vault-prod
 spec:
-  redirectScheme:
-    scheme: https
-    permanent: true
+  ipAllowList:
+    sourceRange:
+      # Cloudflare IPv4 — https://www.cloudflare.com/ips-v4/
+      - "173.245.48.0/20"
+      - "103.21.244.0/22"
+      - "103.22.200.0/22"
+      - "103.31.4.0/22"
+      - "141.101.64.0/18"
+      - "108.162.192.0/18"
+      - "190.93.240.0/20"
+      - "188.114.96.0/20"
+      - "197.234.240.0/22"
+      - "198.41.128.0/17"
+      - "162.158.0.0/15"
+      - "104.16.0.0/13"
+      - "104.24.0.0/14"
+      - "172.64.0.0/13"
+      - "131.0.72.0/22"
+      # Cloudflare IPv6 — https://www.cloudflare.com/ips-v6/
+      - "2400:cb00::/32"
+      - "2606:4700::/32"
+      - "2803:f800::/32"
+      - "2405:b500::/32"
+      - "2405:8100::/32"
+      - "2a06:98c0::/29"
+      - "2c0f:f248::/32"
+    # Use X-Forwarded-For depth=1 since Cloudflare is the direct upstream
+    ipStrategy:
+      depth: 0

@@ -1,18 +1,21 @@
+# Frontend Ingress — vault-mind.cyrus-ag.com
+# Split from backend to prevent HTTP/2 connection coalescing issues with Cloudflare
 apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
   name: vault-frontend
   namespace: vault-prod
   annotations:
-    traefik.ingress.kubernetes.io/router.entrypoints: web,websecure
-    traefik.ingress.kubernetes.io/router.middlewares: vault-prod-security-headers@kubernetescrd
+    # ONLY websecure — Cloudflare Full (strict) always connects via HTTPS
+    traefik.ingress.kubernetes.io/router.entrypoints: websecure
+    # Middleware chain: Cloudflare IP allowlist + security headers
+    traefik.ingress.kubernetes.io/router.middlewares: vault-prod-cloudflare-only@kubernetescrd,vault-prod-security-headers@kubernetescrd
     cert-manager.io/cluster-issuer: cloudflare-issuer
 spec:
   ingressClassName: traefik
   tls:
   - hosts:
     - vault-mind.cyrus-ag.com
-    - api-vault-mind.cyrus-ag.com
     secretName: vault-tls
   rules:
   - host: vault-mind.cyrus-ag.com
@@ -25,6 +28,25 @@ spec:
             name: vault-frontend
             port:
               number: 80
+---
+# Backend Ingress — api-vault-mind.cyrus-ag.com
+# Separate Ingress eliminates Cloudflare HTTP/2 connection coalescing between domains
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: vault-backend
+  namespace: vault-prod
+  annotations:
+    traefik.ingress.kubernetes.io/router.entrypoints: websecure
+    traefik.ingress.kubernetes.io/router.middlewares: vault-prod-cloudflare-only@kubernetescrd,vault-prod-security-headers@kubernetescrd
+    cert-manager.io/cluster-issuer: cloudflare-issuer
+spec:
+  ingressClassName: traefik
+  tls:
+  - hosts:
+    - api-vault-mind.cyrus-ag.com
+    secretName: vault-tls
+  rules:
   - host: api-vault-mind.cyrus-ag.com
     http:
       paths:
