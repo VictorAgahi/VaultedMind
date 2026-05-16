@@ -5,8 +5,9 @@ metadata:
   namespace: vault-prod
 spec:
   headers:
-    # HSTS & SSL
-    sslRedirect: true
+    # NOTE: HTTP→HTTPS redirect is handled by Cloudflare "Always Use HTTPS" (dashboard).
+    # Do NOT set sslRedirect: true here — Cloudflare Flexible mode sends HTTP to origin,
+    # which would create an infinite redirect loop resulting in 404.
     stsSeconds: 31536000
     stsIncludeSubdomains: true
     stsPreload: true
