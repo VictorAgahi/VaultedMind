@@ -15,7 +15,7 @@ import NavigateNextIcon from "@mui/icons-material/NavigateNext";
 import SecurityIcon from "@mui/icons-material/Security";
 import BugReportIcon from "@mui/icons-material/BugReport";
 import VerifiedUserIcon from "@mui/icons-material/VerifiedUser";
-import MailOutlineIcon from "@mui/icons-material/MailOutline";
+import EmailIcon from "@mui/icons-material/Email";
 
 const sections = [
   {
@@ -45,7 +45,7 @@ const sections = [
       "sont exclus du périmètre et peuvent faire l'objet de poursuites judiciaires.",
   },
   {
-    icon: <MailOutlineIcon color="primary" />,
+    icon: <EmailIcon color="primary" />,
     title: "4. Contact sécurité",
     content:
       "Pour tout signalement de vulnérabilité ou question relative à la sécurité de la plateforme, " +
@@ -140,7 +140,7 @@ export default function SecurityPolicyClient() {
             bgcolor: "action.hover",
           }}
         >
-          <MailOutlineIcon fontSize="small" color="primary" />
+          <EmailIcon fontSize="small" color="primary" />
           <Typography variant="body2" color="text.secondary">
             Contact sécurité :{" "}
             <MuiLink href="mailto:security@cyrus-ag.com" color="primary">
