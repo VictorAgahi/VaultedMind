@@ -13,16 +13,7 @@ spec:
     - podSelector:
         matchLabels:
           app: vault-frontend
-    ports:
-    - protocol: TCP
-      port: 3000
-  - from:
-    - namespaceSelector:
-        matchLabels:
-          kubernetes.io/metadata.name: kube-system
-      podSelector:
-        matchLabels:
-          app.kubernetes.io/name: traefik
+    - namespaceSelector: {}
     ports:
     - protocol: TCP
       port: 3000

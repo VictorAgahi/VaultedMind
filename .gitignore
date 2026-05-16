@@ -76,8 +76,3 @@ Thumbs.db
 
 # Analytics
 .cache/
-
-# Kubernetes secrets (never commit these)
-k8s/argocd/repo-secret.yaml
-k8s/**/*-secret.yaml
-k8s/**/*-sealed*.yaml

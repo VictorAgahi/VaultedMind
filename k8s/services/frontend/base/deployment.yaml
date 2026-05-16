@@ -45,27 +45,18 @@ spec:
           limits:
             memory: "256Mi"
             cpu: "250m"
-        # startupProbe: allows up to 5 min (30×10s) for Next.js cold start before liveness kicks in
-        startupProbe:
-          httpGet:
-            path: /
-            port: 3000
-          failureThreshold: 30
-          periodSeconds: 10
         livenessProbe:
           httpGet:
             path: /
             port: 3000
-          initialDelaySeconds: 0
-          periodSeconds: 15
-          failureThreshold: 3
+          initialDelaySeconds: 30
+          periodSeconds: 10
         readinessProbe:
           httpGet:
             path: /
             port: 3000
-          initialDelaySeconds: 0
+          initialDelaySeconds: 10
           periodSeconds: 5
-          failureThreshold: 3
         volumeMounts:
         - name: next-cache
           mountPath: /app/.next/cache
