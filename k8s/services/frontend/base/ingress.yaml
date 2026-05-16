@@ -5,10 +5,7 @@ metadata:
   namespace: vault-prod
   annotations:
     traefik.ingress.kubernetes.io/router.entrypoints: web,websecure
-    # redirect-to-https must come FIRST so HTTP traffic is redirected at network level
-    traefik.ingress.kubernetes.io/router.middlewares: >-
-      vault-prod-redirect-to-https@kubernetescrd,
-      vault-prod-security-headers@kubernetescrd
+    traefik.ingress.kubernetes.io/router.middlewares: vault-prod-security-headers@kubernetescrd
     cert-manager.io/cluster-issuer: cloudflare-issuer
 spec:
   ingressClassName: traefik
