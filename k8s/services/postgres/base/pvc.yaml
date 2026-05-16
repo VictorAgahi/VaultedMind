@@ -4,6 +4,7 @@ metadata:
   name: postgres-pvc
   namespace: vault-prod
 spec:
+  storageClassName: local-path
   accessModes:
     - ReadWriteOnce
   resources:
