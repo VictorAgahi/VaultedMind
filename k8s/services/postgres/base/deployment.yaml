@@ -13,8 +13,6 @@ spec:
       labels:
         app: postgres
     spec:
-      securityContext:
-        fsGroup: 999
       containers:
       - name: postgres
         image: postgres:17-alpine
