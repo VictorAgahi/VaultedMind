@@ -61,9 +61,14 @@ export class AIInsightService {
         insightType = InsightType.WEEKLY_TREND;
       }
 
+      const promptParams = {
+        logs: sanitizedData,
+        userContext: user.aiContext || undefined,
+      };
+
       const prompt = this.promptService.generatePrompt(
         insightType,
-        sanitizedData,
+        promptParams as any, // Will fix PromptService next
       );
 
       this.logger.log(
@@ -121,6 +126,18 @@ export class AIInsightService {
   async getAIInsightsStatus(userId: string): Promise<boolean> {
     const user = await this.userRepository.findUserById(userId);
     return user.aiInsightsEnabled;
+  }
+
+  async getAIContext(userId: string): Promise<string> {
+    const user = await this.userRepository.findUserById(userId);
+    return user.aiContext || '';
+  }
+
+  async updateAIContext(userId: string, context: string): Promise<void> {
+    const user = await this.userRepository.findUserById(userId);
+    user.aiContext = context;
+    await this.userRepository.saveUser(user);
+    this.logger.log(`AI context updated for user ${userId}`);
   }
 
   async deleteAIInsight(userId: string, insightId: string): Promise<void> {

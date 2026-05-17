@@ -81,14 +81,9 @@ export function AIChatBot() {
 
     startTransition(async () => {
       try {
-        const savedContext = localStorage.getItem("vaultedmind_ai_context") || "";
-        const payloadMessage = savedContext 
-          ? `[Contexte de l'utilisateur à respecter pour ta réponse : ${savedContext}]\n\nQuestion de l'utilisateur : ${inputValue}`
-          : inputValue;
-
         const { response } = await apiService.post<{ response: string }>(
           "/health/ai-chat",
-          { message: payloadMessage }
+          { message: inputValue }
         );
 
         const aiMsg: Message = {

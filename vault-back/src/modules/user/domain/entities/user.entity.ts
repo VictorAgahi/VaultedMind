@@ -10,6 +10,7 @@ export class User {
     public readonly createdAt: Date,
     public readonly updatedAt: Date,
     public aiInsightsEnabled: boolean = false,
+    public aiContext?: string,
     public readonly deletedAt?: Date,
   ) {}
 

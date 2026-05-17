@@ -1,6 +1,7 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { DailyLogRepository } from '../../../../database/repositories/daily-log.repository.js';
 import { CustomFieldRepository } from '../../../../database/repositories/custom-field.repository.js';
+import { UserRepository } from '../../../../database/repositories/user.repository.js';
 import { DataSanitizerService } from './data-sanitizer.service.js';
 import { LLMService } from './llm.service.js';
 
@@ -11,6 +12,7 @@ export class AIChatService {
   constructor(
     private readonly dailyLogRepository: DailyLogRepository,
     private readonly customFieldRepository: CustomFieldRepository,
+    private readonly userRepository: UserRepository,
     private readonly dataSanitizer: DataSanitizerService,
     private readonly llmService: LLMService,
   ) { }
@@ -39,9 +41,12 @@ export class AIChatService {
         context = "L'utilisateur n'a pas encore assez de données enregistrées.";
       }
 
+      const user = await this.userRepository.findUserById(userId);
+      const userContext = user.aiContext ? `\n[CONTEXTE PERSONNALISÉ À RESPECTER : ${user.aiContext}]\n` : '';
+
       const systemPrompt = `Tu es l'assistant IA de VaultedMind, une application de suivi du bien-être mental. 
 Ton rôle est d'aider l'utilisateur à comprendre ses données, à identifier des modèles et à lui donner des conseils bienveillants.
-
+${userContext}
 ${context}
 
 CONSIGNES :

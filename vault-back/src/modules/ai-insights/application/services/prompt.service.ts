@@ -14,9 +14,15 @@ interface SanitizedData {
   lastEntryDate?: string;
 }
 
+interface PromptParams {
+  logs: SanitizedData;
+  userContext?: string;
+}
+
 @Injectable()
 export class PromptService {
-  generateDailySummaryPrompt(sanitizedData: SanitizedData): string {
+  generateDailySummaryPrompt(params: PromptParams): string {
+    const { logs: sanitizedData, userContext } = params;
     const fieldText = sanitizedData.fieldSummaries
       .map((f) => {
         let desc = `- ${f.fieldName} (${f.fieldType})`;
@@ -35,6 +41,7 @@ export class PromptService {
 Période des données : ${sanitizedData.dateRange}
 Nombre d'entrées : ${sanitizedData.totalLogs}
 
+${userContext ? `[CONTEXTE UTILISATEUR IMPORTANT À RESPECTER : ${userContext}]\n` : ''}
 Résumé des champs :
 ${fieldText}
 
@@ -46,7 +53,8 @@ Fournis des informations exploitables sur :
 Garde un ton chaleureux, encourageant et non-jugeant. Évite de répéter les données brutes, concentre-toi sur l'analyse.`;
   }
 
-  generateWeeklyTrendPrompt(sanitizedData: SanitizedData): string {
+  generateWeeklyTrendPrompt(params: PromptParams): string {
+    const { logs: sanitizedData, userContext } = params;
     const fieldText = sanitizedData.fieldSummaries
       .map((f) => {
         let desc = `- ${f.fieldName}`;
@@ -65,6 +73,7 @@ Garde un ton chaleureux, encourageant et non-jugeant. Évite de répéter les do
 Période : ${sanitizedData.dateRange}
 Entrées cette semaine : ${sanitizedData.totalLogs}
 
+${userContext ? `[CONTEXTE UTILISATEUR IMPORTANT À RESPECTER : ${userContext}]\n` : ''}
 Données hebdomadaires :
 ${fieldText}
 
@@ -76,12 +85,14 @@ Fournis :
 Sois concis (3-4 phrases). Concentre-toi sur les modèles, pas sur les points de données individuels.`;
   }
 
-  generateAnomalyPrompt(sanitizedData: SanitizedData): string {
+  generateAnomalyPrompt(params: PromptParams): string {
+    const { logs: sanitizedData, userContext } = params;
     return `Recherche tout modèle inhabituel ou anomalie dans ces données personnelles : RÉPONDS IMPÉRATIVEMENT EN FRANÇAIS.
 
 Période : ${sanitizedData.dateRange}
 Entrées récentes : ${sanitizedData.totalLogs}
 
+${userContext ? `[CONTEXTE UTILISATEUR IMPORTANT À RESPECTER : ${userContext}]\n` : ''}
 Données :
 ${sanitizedData.fieldSummaries.map((f) => `- ${f.fieldName}: ${f.avgValue || f.values?.join(', ') || 'N/A'}`).join('\n')}
 
@@ -93,16 +104,16 @@ Si des anomalies sont détectées :
 Si tout semble normal, affirme-le brièvement. Garde la réponse sous les 100 mots.`;
   }
 
-  generatePrompt(type: InsightType, sanitizedData: SanitizedData): string {
+  generatePrompt(type: InsightType, params: PromptParams): string {
     switch (type) {
       case InsightType.DAILY_SUMMARY:
-        return this.generateDailySummaryPrompt(sanitizedData);
+        return this.generateDailySummaryPrompt(params);
       case InsightType.WEEKLY_TREND:
-        return this.generateWeeklyTrendPrompt(sanitizedData);
+        return this.generateWeeklyTrendPrompt(params);
       case InsightType.ANOMALY:
-        return this.generateAnomalyPrompt(sanitizedData);
+        return this.generateAnomalyPrompt(params);
       default:
-        return this.generateDailySummaryPrompt(sanitizedData);
+        return this.generateDailySummaryPrompt(params);
     }
   }
 }

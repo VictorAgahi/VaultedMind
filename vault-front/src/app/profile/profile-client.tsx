@@ -41,21 +41,30 @@ export default function ProfilePage() {
 
   const [aiContext, setAiContext] = useState<string>("");
   const [aiContextSaved, setAiContextSaved] = useState(false);
+  const [isSavingContext, setIsSavingContext] = useState(false);
 
   useEffect(() => {
-    if (typeof window !== "undefined") {
-      Promise.resolve().then(() => {
-        const savedContext = localStorage.getItem("vaultedmind_ai_context") || "";
-        setAiContext(savedContext);
-      });
-    }
+    const fetchContext = async () => {
+      try {
+        const res = await apiService.get<{ context: string }>("/health/ai-insights/context");
+        setAiContext(res.context || "");
+      } catch (err) {
+        console.error("Failed to fetch AI context", err);
+      }
+    };
+    fetchContext();
   }, []);
 
-  const handleSaveAiContext = () => {
-    if (typeof window !== "undefined") {
-      localStorage.setItem("vaultedmind_ai_context", aiContext);
+  const handleSaveAiContext = async () => {
+    setIsSavingContext(true);
+    try {
+      await apiService.post("/health/ai-insights/context", { context: aiContext });
       setAiContextSaved(true);
       setTimeout(() => setAiContextSaved(false), 3000);
+    } catch (err) {
+      console.error("Failed to save AI context", err);
+    } finally {
+      setIsSavingContext(false);
     }
   };
 
@@ -227,7 +236,8 @@ export default function ProfilePage() {
             color="primary"
             fullWidth
             onClick={handleSaveAiContext}
-            startIcon={<SaveIcon />}
+            disabled={isSavingContext}
+            startIcon={isSavingContext ? <CircularProgress size={20} color="inherit" /> : <SaveIcon />}
             sx={{ borderRadius: 3, py: 1.2, textTransform: "none", fontWeight: 600 }}
           >
             {aiContextSaved ? "Contexte sauvegardé !" : "Enregistrer le contexte"}

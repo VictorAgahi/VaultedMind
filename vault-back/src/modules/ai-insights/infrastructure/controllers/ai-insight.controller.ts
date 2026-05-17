@@ -12,6 +12,7 @@ import { AIInsightService } from '../../application/services/ai-insight.service.
 import { AIInsightResponseDto } from '../../application/dtos/ai-insight.dto.js';
 import { JwtAuthGuard } from '../../../auth/infrastructure/guards/jwt-auth.guard.js';
 import { AuthUser } from '../../../auth/domain/interfaces/auth-user.interface.js';
+import { Body } from '@nestjs/common';
 
 @Controller('health/ai-insights')
 export class AIInsightController {
@@ -82,6 +83,23 @@ export class AIInsightController {
   async getStatus(@Request() req: { user: AuthUser }) {
     const enabled = await this.aiInsightService.getAIInsightsStatus(req.user.id);
     return { enabled };
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Get('context')
+  async getContext(@Request() req: { user: AuthUser }) {
+    const context = await this.aiInsightService.getAIContext(req.user.id);
+    return { context };
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Post('context')
+  async updateContext(
+    @Request() req: { user: AuthUser },
+    @Body('context') context: string,
+  ) {
+    await this.aiInsightService.updateAIContext(req.user.id, context);
+    return { message: 'AI Context updated successfully' };
   }
 
   @UseGuards(JwtAuthGuard)

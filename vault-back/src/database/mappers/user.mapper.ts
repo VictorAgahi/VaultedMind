@@ -18,6 +18,7 @@ export class UserMapper {
       model.createdAt,
       model.updatedAt,
       model.aiInsightsEnabled,
+      model.aiContext,
       model.deletedAt,
     );
   }
@@ -32,6 +33,7 @@ export class UserMapper {
 
     model.passwordHash = entity.passwordHash;
     model.aiInsightsEnabled = entity.aiInsightsEnabled;
+    model.aiContext = entity.aiContext;
     model.createdAt = entity.createdAt;
     model.updatedAt = entity.updatedAt;
     model.deletedAt = entity.deletedAt;
