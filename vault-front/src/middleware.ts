@@ -44,10 +44,20 @@ export async function middleware(request: NextRequest) {
   const isExpired = payload?.exp ? Date.now() >= payload.exp * 1000 : false;
   const isAuthenticated = !!payload && !isExpired;
 
+  const reason = request.nextUrl.searchParams.get("reason");
+  const forceClear = reason === "session_expired" || reason === "network_error";
+
   const isPublicRoute = PUBLIC_ROUTES.has(normalizedPathname);
   const isAuthPage = normalizedPathname === LOGIN_PATH || normalizedPathname === "/register";
 
   // --- LOGIQUE DE ROUTAGE ---
+
+  if (forceClear && isAuthPage) {
+    // Le frontend demande explicitement de vider la session (ex: backend injoignable ou erreur 401)
+    const response = NextResponse.next();
+    if (accessToken) response.cookies.delete(AUTH_COOKIE_NAME);
+    return response;
+  }
 
   if (isPublicRoute) {
     if (isAuthPage && isAuthenticated) {
