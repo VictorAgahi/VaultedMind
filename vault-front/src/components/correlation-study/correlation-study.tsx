@@ -8,7 +8,12 @@ import {
   Grid,
   useTheme,
   useMediaQuery,
-  MenuProps
+  useMediaQuery,
+  MenuProps,
+  FormControl,
+  InputLabel,
+  Select,
+  MenuItem
 } from "@mui/material";
 import { ResponsiveContainer } from "recharts";
 import { CustomField, DailyLog, FieldType } from "@/types";
@@ -122,7 +127,6 @@ interface CorrelationStudyProps {
 export const CorrelationStudy: React.FC<CorrelationStudyProps> = ({ fields, logs }) => {
   const [selectedFieldA, setSelectedFieldA] = useState<string>("");
   const [selectedFieldB, setSelectedFieldB] = useState<string>("");
-  const [activeCell, setActiveCell] = useState<ActiveCellInfo | null>(null);
 
   const measurableFields = useMemo(() => {
     return fields.filter(f =>
@@ -259,8 +263,29 @@ export const CorrelationStudy: React.FC<CorrelationStudyProps> = ({ fields, logs
       <Grid container spacing={{ xs: 2, md: 4 }}>
         <Grid size={{ xs: 12, lg: 7 }}>
           <Paper elevation={0} sx={{ ...refinedPaperStyle, position: "relative" }}>
-            <Box sx={{ display: "flex", alignItems: "center", gap: 1, mb: 4 }}>
+            <Box sx={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: 2, mb: 4 }}>
               <Typography variant="h6" sx={{ fontWeight: 800 }}>Matrice de Corrélation</Typography>
+              <Box sx={{ flexGrow: 1 }} />
+              <FormControl size="small" sx={{ minWidth: 140 }}>
+                <InputLabel>Variable X</InputLabel>
+                <Select
+                  value={activeFieldA}
+                  label="Variable X"
+                  onChange={(e) => setSelectedFieldA(e.target.value)}
+                >
+                  {measurableFields.map(f => <MenuItem key={f.id} value={f.id}>{f.name}</MenuItem>)}
+                </Select>
+              </FormControl>
+              <FormControl size="small" sx={{ minWidth: 140 }}>
+                <InputLabel>Variable Y</InputLabel>
+                <Select
+                  value={activeFieldB}
+                  label="Variable Y"
+                  onChange={(e) => setSelectedFieldB(e.target.value)}
+                >
+                  {measurableFields.map(f => <MenuItem key={f.id} value={f.id}>{f.name}</MenuItem>)}
+                </Select>
+              </FormControl>
             </Box>
             <CorrelationMatrix
               measurableFields={measurableFields}
@@ -270,7 +295,6 @@ export const CorrelationStudy: React.FC<CorrelationStudyProps> = ({ fields, logs
               onCellClick={(cell) => {
                 setSelectedFieldA(cell.xId);
                 setSelectedFieldB(cell.yId);
-                setActiveCell(cell);
               }}
             />
           </Paper>
@@ -279,8 +303,8 @@ export const CorrelationStudy: React.FC<CorrelationStudyProps> = ({ fields, logs
         <Grid size={{ xs: 12, lg: 5 }}>
           <Paper elevation={0} sx={{ ...refinedPaperStyle, height: "100%", position: "relative", overflow: "hidden" }}>
             <CorrelationDetail
-              activeCell={activeCell}
-              onClose={() => setActiveCell(null)}
+              activeCell={matrixData.find(c => c.xId === activeFieldA && c.yId === activeFieldB) || null}
+              onClose={() => {}} // Disabled close since we always show a cell
               getInterpretation={getInterpretation}
               currentCorrelation={currentCorrelation}
               ChartContainer={ChartContainer}
