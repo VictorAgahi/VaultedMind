@@ -1,11 +1,26 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 
-// --- Configuration ---
 const PUBLIC_ROUTES = new Set(["/", "/login", "/register", "/about", "/contact", "/privacy", "/terms"]);
 const AUTH_COOKIE_NAME = "access_token";
 const DEFAULT_AUTH_REDIRECT = "/dashboard";
 const LOGIN_PATH = "/login";
+
+/**
+ * Dynamically determines the cookie domain (wildcard or specific host)
+ */
+const getCookieDomain = (host: string | null): string | undefined => {
+  if (!host) return undefined;
+  const hostname = host.split(":")[0];
+  if (hostname === "localhost" || /^(\d{1,3}\.){3}\d{1,3}$/.test(hostname)) {
+    return undefined;
+  }
+  const parts = hostname.split(".");
+  if (parts.length >= 2) {
+    return `.${parts.slice(-2).join(".")}`;
+  }
+  return undefined;
+};
 
 /**
  * Minimal JWT decoder for Edge Runtime compatibility.
@@ -55,7 +70,15 @@ export async function middleware(request: NextRequest) {
   if (forceClear && isAuthPage) {
     // Le frontend demande explicitement de vider la session (ex: backend injoignable ou erreur 401)
     const response = NextResponse.next();
-    if (accessToken) response.cookies.delete(AUTH_COOKIE_NAME);
+    const domain = getCookieDomain(request.headers.get("host"));
+    response.cookies.delete(AUTH_COOKIE_NAME);
+    if (domain) {
+      response.cookies.set(AUTH_COOKIE_NAME, "", {
+        domain,
+        maxAge: 0,
+        path: "/",
+      });
+    }
     return response;
   }
 
@@ -72,7 +95,15 @@ export async function middleware(request: NextRequest) {
       loginUrl.searchParams.set("callbackUrl", normalizedPathname);
     }
     const response = NextResponse.redirect(loginUrl);
-    if (accessToken) response.cookies.delete(AUTH_COOKIE_NAME);
+    const domain = getCookieDomain(request.headers.get("host"));
+    response.cookies.delete(AUTH_COOKIE_NAME);
+    if (domain) {
+      response.cookies.set(AUTH_COOKIE_NAME, "", {
+        domain,
+        maxAge: 0,
+        path: "/",
+      });
+    }
     return response;
   }
 
