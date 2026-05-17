@@ -34,6 +34,8 @@ export function AIChatBot() {
   const { isAuthenticated } = useAuth();
   const pathname = usePathname();
   const [isOpen, setIsOpen] = useState(false);
+  const [isEnabled, setIsEnabled] = useState(false);
+  const [loading, setLoading] = useState(true);
   const [messages, setMessages] = useState<Message[]>([
     {
       id: "1",
@@ -51,7 +53,33 @@ export function AIChatBot() {
     }
   }, [messages, isPending]);
 
-  // Bloquer le scroll du corps de la page quand le chat est ouvert sur mobile
+  useEffect(() => {
+    if (!isAuthenticated) return;
+
+    const checkStatus = async () => {
+      try {
+        const { enabled } = await apiService.get<{ enabled: boolean }>("/health/ai-insights/status");
+        setIsEnabled(enabled);
+      } catch (err) {
+        console.error("Failed to check AI status for chatbot", err);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    checkStatus();
+
+    const handleStatusChange = (e: Event) => {
+      const customEvent = e as CustomEvent<{ enabled: boolean }>;
+      setIsEnabled(customEvent.detail.enabled);
+    };
+
+    window.addEventListener("ai-insights-status-changed", handleStatusChange);
+    return () => {
+      window.removeEventListener("ai-insights-status-changed", handleStatusChange);
+    };
+  }, [isAuthenticated]);
+
   useEffect(() => {
     if (isOpen && typeof window !== "undefined" && window.innerWidth < 600) {
       const originalStyle = window.getComputedStyle(document.body).overflow;
@@ -62,7 +90,7 @@ export function AIChatBot() {
     }
   }, [isOpen]);
 
-  if (!isAuthenticated) return null;
+  if (!isAuthenticated || loading || !isEnabled) return null;
   if (!pathname?.startsWith("/dashboard") && !pathname?.startsWith("/analytics")) {
     return null;
   }
@@ -178,9 +206,9 @@ export function AIChatBot() {
                 </Typography>
               </Box>
             </Box>
-            <IconButton 
-              size="small" 
-              onClick={() => setIsOpen(false)} 
+            <IconButton
+              size="small"
+              onClick={() => setIsOpen(false)}
               sx={{ color: "white", display: { xs: "flex", sm: "none" } }}
             >
               <CloseIcon />
@@ -270,10 +298,10 @@ export function AIChatBot() {
           </Box>
 
           {/* Input area */}
-          <Box sx={{ 
-            p: 2, 
+          <Box sx={{
+            p: 2,
             pb: { xs: "calc(env(safe-area-inset-bottom, 0px) + 16px)", sm: 2 },
-            bgcolor: "white", 
+            bgcolor: "white",
             borderTop: "1px solid #e5e7eb",
             flexShrink: 0
           }}>

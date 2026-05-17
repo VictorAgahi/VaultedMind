@@ -42,17 +42,25 @@ export default function ProfilePage() {
   const [aiContext, setAiContext] = useState<string>("");
   const [aiContextSaved, setAiContextSaved] = useState(false);
   const [isSavingContext, setIsSavingContext] = useState(false);
+  const [isAiEnabled, setIsAiEnabled] = useState(false);
+  const [loadingStatus, setLoadingStatus] = useState(true);
 
   useEffect(() => {
-    const fetchContext = async () => {
+    const init = async () => {
       try {
-        const res = await apiService.get<{ context: string }>("/health/ai-insights/context");
-        setAiContext(res.context || "");
+        const [statusRes, contextRes] = await Promise.all([
+          apiService.get<{ enabled: boolean }>("/health/ai-insights/status"),
+          apiService.get<{ context: string }>("/health/ai-insights/context"),
+        ]);
+        setIsAiEnabled(statusRes.enabled);
+        setAiContext(contextRes.context || "");
       } catch (err) {
-        console.error("Failed to fetch AI context", err);
+        console.error("Failed to fetch AI context or status", err);
+      } finally {
+        setLoadingStatus(false);
       }
     };
-    fetchContext();
+    init();
   }, []);
 
   const handleSaveAiContext = async () => {
@@ -211,38 +219,40 @@ export default function ProfilePage() {
           </Box>
         </Paper>
 
-        <Paper elevation={0} sx={{ p: 3, borderRadius: 4, bgcolor: "background.paper", border: "1px solid", borderColor: "divider", mb: 3 }}>
-          <Typography variant="subtitle1" gutterBottom sx={{ fontWeight: 600, display: "flex", alignItems: "center" }}>
-            <SmartToyIcon sx={{ mr: 1, fontSize: 20, color: "primary.main" }} />
-            Personnaliser l&apos;IA
-          </Typography>
-          <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
-            Donnez un contexte par défaut à votre assistant IA. Ces informations (ex: &quot;Je suis étudiant&quot;, &quot;Je suis très stressé en ce moment&quot;) seront utilisées pour personnaliser ses réponses et vos bilans.
-          </Typography>
+        {!loadingStatus && isAiEnabled && (
+          <Paper elevation={0} sx={{ p: 3, borderRadius: 4, bgcolor: "background.paper", border: "1px solid", borderColor: "divider", mb: 3 }}>
+            <Typography variant="subtitle1" gutterBottom sx={{ fontWeight: 600, display: "flex", alignItems: "center" }}>
+              <SmartToyIcon sx={{ mr: 1, fontSize: 20, color: "primary.main" }} />
+              Personnaliser l&apos;IA
+            </Typography>
+            <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
+              Donnez un contexte par défaut à votre assistant IA. Ces informations (ex: &quot;Je suis étudiant&quot;, &quot;Je suis très stressé en ce moment&quot;) seront utilisées pour personnaliser ses réponses et vos bilans.
+            </Typography>
 
-          <TextField
-            fullWidth
-            multiline
-            rows={4}
-            variant="outlined"
-            placeholder="Ex: J'aimerais que tu sois direct et que tu te concentres sur la productivité..."
-            value={aiContext}
-            onChange={(e) => setAiContext(e.target.value)}
-            sx={{ mb: 2 }}
-          />
+            <TextField
+              fullWidth
+              multiline
+              rows={4}
+              variant="outlined"
+              placeholder="Ex: J'aimerais que tu sois direct et que tu te concentres sur la productivité..."
+              value={aiContext}
+              onChange={(e) => setAiContext(e.target.value)}
+              sx={{ mb: 2 }}
+            />
 
-          <Button
-            variant="contained"
-            color="primary"
-            fullWidth
-            onClick={handleSaveAiContext}
-            disabled={isSavingContext}
-            startIcon={isSavingContext ? <CircularProgress size={20} color="inherit" /> : <SaveIcon />}
-            sx={{ borderRadius: 3, py: 1.2, textTransform: "none", fontWeight: 600 }}
-          >
-            {aiContextSaved ? "Contexte sauvegardé !" : "Enregistrer le contexte"}
-          </Button>
-        </Paper>
+            <Button
+              variant="contained"
+              color="primary"
+              fullWidth
+              onClick={handleSaveAiContext}
+              disabled={isSavingContext}
+              startIcon={isSavingContext ? <CircularProgress size={20} color="inherit" /> : <SaveIcon />}
+              sx={{ borderRadius: 3, py: 1.2, textTransform: "none", fontWeight: 600 }}
+            >
+              {aiContextSaved ? "Contexte sauvegardé !" : "Enregistrer le contexte"}
+            </Button>
+          </Paper>
+        )}
 
         <Paper elevation={0} sx={{ p: 3, borderRadius: 4, bgcolor: "background.paper", border: "1px solid", borderColor: "divider", mb: 3 }}>
           <Typography variant="subtitle1" gutterBottom sx={{ fontWeight: 600, display: "flex", alignItems: "center" }}>

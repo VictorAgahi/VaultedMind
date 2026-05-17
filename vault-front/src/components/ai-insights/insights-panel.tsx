@@ -189,6 +189,7 @@ export function InsightsPanel() {
       try {
         await apiService.post("/health/ai-insights/disable");
         dispatch({ type: "SET_ENABLED", enabled: false });
+        window.dispatchEvent(new CustomEvent("ai-insights-status-changed", { detail: { enabled: false } }));
       } catch (error: unknown) {
         console.error("Erreur lors de la désactivation :", getErrorMessage(error));
       }
@@ -199,8 +200,8 @@ export function InsightsPanel() {
     try {
       await apiService.post("/health/ai-insights/enable");
       dispatch({ type: "SET_ENABLED", enabled: true });
+      window.dispatchEvent(new CustomEvent("ai-insights-status-changed", { detail: { enabled: true } }));
       setOpenConfirm(false);
-      // Fetch insights after enabling
       const insights = await apiService.get<AIInsightResponseDto[]>(
         "/health/ai-insights"
       );
