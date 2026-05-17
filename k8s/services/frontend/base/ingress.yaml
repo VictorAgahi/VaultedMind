@@ -6,8 +6,8 @@ metadata:
   name: vault-frontend
   namespace: vault-prod
   annotations:
-    # ONLY websecure — Cloudflare Full (strict) always connects via HTTPS
-    traefik.ingress.kubernetes.io/router.entrypoints: websecure
+    # Allow web (HTTP) for local Cloudflare Tunnel connection, websecure for direct HTTPS
+    traefik.ingress.kubernetes.io/router.entrypoints: web,websecure
     # Middleware chain: Cloudflare IP allowlist + security headers
     traefik.ingress.kubernetes.io/router.middlewares: vault-prod-security-headers@kubernetescrd
     cert-manager.io/cluster-issuer: cloudflare-issuer
@@ -37,7 +37,7 @@ metadata:
   name: vault-backend
   namespace: vault-prod
   annotations:
-    traefik.ingress.kubernetes.io/router.entrypoints: websecure
+    traefik.ingress.kubernetes.io/router.entrypoints: web,websecure
     traefik.ingress.kubernetes.io/router.middlewares: vault-prod-security-headers@kubernetescrd
     cert-manager.io/cluster-issuer: cloudflare-issuer
 spec:
