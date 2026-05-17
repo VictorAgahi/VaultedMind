@@ -1,8 +1,7 @@
 "use client";
 
 import { usePathname } from "next/navigation";
-
-import { useState, useRef, useEffect, useTransition } from "react";
+import React, { useRef, useEffect, useTransition } from "react";
 import {
   Box,
   Fab,
@@ -30,22 +29,287 @@ interface Message {
   sender: "user" | "ai";
 }
 
-export function AIChatBot() {
-  const { isAuthenticated } = useAuth();
-  const pathname = usePathname();
-  const [isOpen, setIsOpen] = useState(false);
-  const [isEnabled, setIsEnabled] = useState(false);
-  const [loading, setLoading] = useState(true);
-  const [messages, setMessages] = useState<Message[]>([
+interface ChatHeaderProps {
+  onClose: () => void;
+}
+
+const ChatHeader: React.FC<ChatHeaderProps> = ({ onClose }) => (
+  <Box
+    sx={{
+      pt: { xs: "calc(env(safe-area-inset-top, 0px) + 16px)", sm: 2 },
+      pb: 2,
+      px: 2,
+      bgcolor: "primary.main",
+      color: "white",
+      display: "flex",
+      alignItems: "center",
+      justifyContent: "space-between",
+      gap: 1.5,
+      flexShrink: 0,
+    }}
+  >
+    <Box sx={{ display: "flex", alignItems: "center", gap: 1.5 }}>
+      <Avatar sx={{ bgcolor: "rgba(255,255,255,0.2)" }}>
+        <SmartToyIcon />
+      </Avatar>
+      <Box>
+        <Typography variant="subtitle1" sx={{ fontWeight: 600, lineHeight: 1.2 }}>
+          Assistant VaultedMind
+        </Typography>
+        <Typography variant="caption" sx={{ opacity: 0.8 }}>
+          Toujours là pour vous écouter
+        </Typography>
+      </Box>
+    </Box>
+    <IconButton
+      size="small"
+      onClick={onClose}
+      sx={{ color: "white", display: { xs: "flex", sm: "none" } }}
+    >
+      <CloseIcon />
+    </IconButton>
+  </Box>
+);
+
+interface MessageListProps {
+  messages: Message[];
+  isPending: boolean;
+  scrollRef: React.RefObject<HTMLDivElement | null>;
+}
+
+const MessageList: React.FC<MessageListProps> = ({ messages, isPending, scrollRef }) => (
+  <Box
+    ref={scrollRef}
+    sx={{
+      flexGrow: 1,
+      p: 2,
+      overflowY: "auto",
+      bgcolor: "#f9fafb",
+      display: "flex",
+      flexDirection: "column",
+      gap: 2,
+    }}
+  >
+    <List sx={{ p: 0 }}>
+      {messages.map((msg) => (
+        <ListItem
+          key={msg.id}
+          sx={{
+            flexDirection: "column",
+            alignItems: msg.sender === "user" ? "flex-end" : "flex-start",
+            p: 0,
+            mb: 2,
+          }}
+        >
+          <Box
+            sx={{
+              display: "flex",
+              flexDirection: msg.sender === "user" ? "row-reverse" : "row",
+              alignItems: "flex-end",
+              gap: 1,
+              maxWidth: "85%",
+            }}
+          >
+            <Avatar
+              sx={{
+                width: 28,
+                height: 28,
+                bgcolor: msg.sender === "user" ? "secondary.main" : "primary.main",
+                fontSize: "0.8rem",
+              }}
+            >
+              {msg.sender === "user" ? <PersonIcon fontSize="small" /> : <SmartToyIcon fontSize="small" />}
+            </Avatar>
+            <Paper
+              elevation={0}
+              sx={{
+                p: 1.5,
+                borderRadius: 2,
+                bgcolor: msg.sender === "user" ? "primary.main" : "white",
+                color: msg.sender === "user" ? "white" : "text.primary",
+                border: msg.sender === "user" ? "none" : "1px solid #e5e7eb",
+                borderBottomLeftRadius: msg.sender === "ai" ? 0 : 2,
+                borderBottomRightRadius: msg.sender === "user" ? 0 : 2,
+                wordBreak: "break-word",
+                overflowWrap: "anywhere",
+              }}
+            >
+              <Typography variant="body2" sx={{ whiteSpace: "pre-wrap", lineHeight: 1.5 }}>
+                {msg.text}
+              </Typography>
+            </Paper>
+          </Box>
+        </ListItem>
+      ))}
+      {isPending && (
+        <ListItem sx={{ p: 0, mb: 2 }}>
+          <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+            <Avatar sx={{ width: 28, height: 28, bgcolor: "primary.main" }}>
+              <SmartToyIcon fontSize="small" />
+            </Avatar>
+            <Paper
+              elevation={0}
+              sx={{ p: 1.5, borderRadius: 2, bgcolor: "white", border: "1px solid #e5e7eb" }}
+            >
+              <CircularProgress size={16} thickness={5} />
+            </Paper>
+          </Box>
+        </ListItem>
+      )}
+    </List>
+  </Box>
+);
+
+interface ChatInputProps {
+  value: string;
+  onChange: (val: string) => void;
+  onSend: () => void;
+  disabled: boolean;
+}
+
+const ChatInput: React.FC<ChatInputProps> = ({ value, onChange, onSend, disabled }) => (
+  <Box sx={{
+    p: 2,
+    pb: { xs: "calc(env(safe-area-inset-bottom, 0px) + 16px)", sm: 2 },
+    bgcolor: "white",
+    borderTop: "1px solid #e5e7eb",
+    flexShrink: 0
+  }}>
+    <Box sx={{ display: "flex", gap: 1, alignItems: "center" }}>
+      <TextField
+        fullWidth
+        size="small"
+        multiline
+        maxRows={4}
+        placeholder="Posez votre question..."
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        onKeyDown={(e) => {
+          if (e.key === "Enter" && !e.shiftKey) {
+            e.preventDefault();
+            onSend();
+          }
+        }}
+        sx={{
+          "& .MuiOutlinedInput-root": {
+            borderRadius: 3,
+            bgcolor: "white",
+            border: "1px solid #e5e7eb",
+            transition: "all 0.2s",
+            minHeight: 44,
+            alignItems: "flex-end",
+            pb: 1,
+            "& fieldset": { border: "none" },
+            "&.Mui-focused": {
+              border: "1px solid",
+              borderColor: "primary.main",
+              boxShadow: "0 0 0 2px rgba(99, 102, 241, 0.1)"
+            }
+          },
+          "& .MuiInputBase-input": {
+            py: 0.5,
+          }
+        }}
+      />
+      <IconButton
+        onClick={onSend}
+        disabled={disabled}
+        sx={{
+          bgcolor: value.trim() ? "primary.main" : "transparent",
+          color: value.trim() ? "white" : "#9ca3af",
+          transition: "all 0.2s ease-in-out",
+          "&:hover": {
+            bgcolor: value.trim() ? "primary.dark" : "transparent",
+            transform: value.trim() ? "scale(1.05)" : "none"
+          },
+          "&.Mui-disabled": {
+            bgcolor: "transparent",
+            color: "#d1d5db"
+          },
+          width: 44,
+          height: 44,
+          flexShrink: 0,
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          p: 0,
+        }}
+      >
+        <SendIcon fontSize="small" />
+      </IconButton>
+    </Box>
+  </Box>
+);
+
+interface ChatState {
+  isOpen: boolean;
+  isEnabled: boolean;
+  loading: boolean;
+  messages: Message[];
+  inputValue: string;
+}
+
+type ChatAction =
+  | { type: "SET_OPEN"; payload: boolean }
+  | { type: "INIT_SUCCESS"; payload: { isEnabled: boolean } }
+  | { type: "INIT_FAILURE" }
+  | { type: "SET_INPUT_VALUE"; payload: string }
+  | { type: "SEND_MESSAGE_START"; payload: Message }
+  | { type: "SEND_MESSAGE_SUCCESS"; payload: Message }
+  | { type: "SEND_MESSAGE_FAILURE"; payload: Message }
+  | { type: "SET_ENABLED"; payload: boolean };
+
+const initialChatState: ChatState = {
+  isOpen: false,
+  isEnabled: false,
+  loading: true,
+  messages: [
     {
       id: "1",
       text: "Bonjour ! Je suis votre assistant VaultedMind. Comment puis-je vous aider aujourd'hui ?",
       sender: "ai",
     },
-  ]);
-  const [inputValue, setInputValue] = useState("");
+  ],
+  inputValue: "",
+};
+
+function chatReducer(state: ChatState, action: ChatAction): ChatState {
+  switch (action.type) {
+    case "SET_OPEN":
+      return { ...state, isOpen: action.payload };
+    case "INIT_SUCCESS":
+      return { ...state, isEnabled: action.payload.isEnabled, loading: false };
+    case "INIT_FAILURE":
+      return { ...state, loading: false };
+    case "SET_INPUT_VALUE":
+      return { ...state, inputValue: action.payload };
+    case "SEND_MESSAGE_START":
+      return {
+        ...state,
+        messages: [...state.messages, action.payload],
+        inputValue: "",
+      };
+    case "SEND_MESSAGE_SUCCESS":
+    case "SEND_MESSAGE_FAILURE":
+      return {
+        ...state,
+        messages: [...state.messages, action.payload],
+      };
+    case "SET_ENABLED":
+      return { ...state, isEnabled: action.payload };
+    default:
+      return state;
+  }
+}
+
+export function AIChatBot() {
+  const { isAuthenticated } = useAuth();
+  const pathname = usePathname();
+  const [state, dispatch] = React.useReducer(chatReducer, initialChatState);
   const [isPending, startTransition] = useTransition();
   const scrollRef = useRef<HTMLDivElement>(null);
+
+  const { isOpen, isEnabled, loading, messages, inputValue } = state;
 
   useEffect(() => {
     if (scrollRef.current) {
@@ -59,11 +323,10 @@ export function AIChatBot() {
     const checkStatus = async () => {
       try {
         const { enabled } = await apiService.get<{ enabled: boolean }>("/health/ai-insights/status");
-        setIsEnabled(enabled);
+        dispatch({ type: "INIT_SUCCESS", payload: { isEnabled: enabled } });
       } catch (err) {
         console.error("Failed to check AI status for chatbot", err);
-      } finally {
-        setLoading(false);
+        dispatch({ type: "INIT_FAILURE" });
       }
     };
 
@@ -71,7 +334,7 @@ export function AIChatBot() {
 
     const handleStatusChange = (e: Event) => {
       const customEvent = e as CustomEvent<{ enabled: boolean }>;
-      setIsEnabled(customEvent.detail.enabled);
+      dispatch({ type: "SET_ENABLED", payload: customEvent.detail.enabled });
     };
 
     window.addEventListener("ai-insights-status-changed", handleStatusChange);
@@ -90,7 +353,7 @@ export function AIChatBot() {
     }
   }, [isOpen]);
 
-  if (!isAuthenticated || loading || !isEnabled) return null;
+  if (!isAuthenticated) return null;
   if (!pathname?.startsWith("/dashboard") && !pathname?.startsWith("/analytics")) {
     return null;
   }
@@ -104,8 +367,7 @@ export function AIChatBot() {
       sender: "user",
     };
 
-    setMessages((prev) => [...prev, userMsg]);
-    setInputValue("");
+    dispatch({ type: "SEND_MESSAGE_START", payload: userMsg });
 
     startTransition(async () => {
       try {
@@ -120,7 +382,7 @@ export function AIChatBot() {
           sender: "ai",
         };
 
-        setMessages((prev) => [...prev, aiMsg]);
+        dispatch({ type: "SEND_MESSAGE_SUCCESS", payload: aiMsg });
       } catch (_error) {
         console.log(_error);
         const errorMsg: Message = {
@@ -128,17 +390,17 @@ export function AIChatBot() {
           text: "Désolé, je rencontre une erreur de connexion. Veuillez réessayer.",
           sender: "ai",
         };
-        setMessages((prev) => [...prev, errorMsg]);
+        dispatch({ type: "SEND_MESSAGE_FAILURE", payload: errorMsg });
       }
     });
   };
 
-  return (
+  return (!loading && isEnabled) ? (
     <>
       <Fab
         color="primary"
         aria-label="chat"
-        onClick={() => setIsOpen(!isOpen)}
+        onClick={() => dispatch({ type: "SET_OPEN", payload: !isOpen })}
         sx={{
           position: "fixed",
           bottom: { xs: 110, sm: 24 },
@@ -173,204 +435,20 @@ export function AIChatBot() {
             overflow: "hidden",
             zIndex: 1050,
             boxShadow: { xs: "none", sm: "0 12px 48px rgba(0,0,0,0.15)" },
-            // Support pour les zones sécurisées (encoche/status bar)
             top: { xs: 0, sm: "auto" },
             left: { xs: 0, sm: "auto" },
           }}
         >
-          {/* Header */}
-          <Box
-            sx={{
-              pt: { xs: "calc(env(safe-area-inset-top, 0px) + 16px)", sm: 2 },
-              pb: 2,
-              px: 2,
-              bgcolor: "primary.main",
-              color: "white",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "space-between",
-              gap: 1.5,
-              flexShrink: 0,
-            }}
-          >
-            <Box sx={{ display: "flex", alignItems: "center", gap: 1.5 }}>
-              <Avatar sx={{ bgcolor: "rgba(255,255,255,0.2)" }}>
-                <SmartToyIcon />
-              </Avatar>
-              <Box>
-                <Typography variant="subtitle1" sx={{ fontWeight: 600, lineHeight: 1.2 }}>
-                  Assistant VaultedMind
-                </Typography>
-                <Typography variant="caption" sx={{ opacity: 0.8 }}>
-                  Toujours là pour vous écouter
-                </Typography>
-              </Box>
-            </Box>
-            <IconButton
-              size="small"
-              onClick={() => setIsOpen(false)}
-              sx={{ color: "white", display: { xs: "flex", sm: "none" } }}
-            >
-              <CloseIcon />
-            </IconButton>
-          </Box>
-
-          {/* Messages area */}
-          <Box
-            ref={scrollRef}
-            sx={{
-              flexGrow: 1,
-              p: 2,
-              overflowY: "auto",
-              bgcolor: "#f9fafb",
-              display: "flex",
-              flexDirection: "column",
-              gap: 2,
-            }}
-          >
-            <List sx={{ p: 0 }}>
-              {messages.map((msg) => (
-                <ListItem
-                  key={msg.id}
-                  sx={{
-                    flexDirection: "column",
-                    alignItems: msg.sender === "user" ? "flex-end" : "flex-start",
-                    p: 0,
-                    mb: 2,
-                  }}
-                >
-                  <Box
-                    sx={{
-                      display: "flex",
-                      flexDirection: msg.sender === "user" ? "row-reverse" : "row",
-                      alignItems: "flex-end",
-                      gap: 1,
-                      maxWidth: "85%",
-                    }}
-                  >
-                    <Avatar
-                      sx={{
-                        width: 28,
-                        height: 28,
-                        bgcolor: msg.sender === "user" ? "secondary.main" : "primary.main",
-                        fontSize: "0.8rem",
-                      }}
-                    >
-                      {msg.sender === "user" ? <PersonIcon fontSize="small" /> : <SmartToyIcon fontSize="small" />}
-                    </Avatar>
-                    <Paper
-                      elevation={0}
-                      sx={{
-                        p: 1.5,
-                        borderRadius: 2,
-                        bgcolor: msg.sender === "user" ? "primary.main" : "white",
-                        color: msg.sender === "user" ? "white" : "text.primary",
-                        border: msg.sender === "user" ? "none" : "1px solid #e5e7eb",
-                        borderBottomLeftRadius: msg.sender === "ai" ? 0 : 2,
-                        borderBottomRightRadius: msg.sender === "user" ? 0 : 2,
-                        wordBreak: "break-word",
-                        overflowWrap: "anywhere",
-                      }}
-                    >
-                      <Typography variant="body2" sx={{ whiteSpace: "pre-wrap", lineHeight: 1.5 }}>
-                        {msg.text}
-                      </Typography>
-                    </Paper>
-                  </Box>
-                </ListItem>
-              ))}
-              {isPending && (
-                <ListItem sx={{ p: 0, mb: 2 }}>
-                  <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-                    <Avatar sx={{ width: 28, height: 28, bgcolor: "primary.main" }}>
-                      <SmartToyIcon fontSize="small" />
-                    </Avatar>
-                    <Paper
-                      elevation={0}
-                      sx={{ p: 1.5, borderRadius: 2, bgcolor: "white", border: "1px solid #e5e7eb" }}
-                    >
-                      <CircularProgress size={16} thickness={5} />
-                    </Paper>
-                  </Box>
-                </ListItem>
-              )}
-            </List>
-          </Box>
-
-          {/* Input area */}
-          <Box sx={{
-            p: 2,
-            pb: { xs: "calc(env(safe-area-inset-bottom, 0px) + 16px)", sm: 2 },
-            bgcolor: "white",
-            borderTop: "1px solid #e5e7eb",
-            flexShrink: 0
-          }}>
-            <Box sx={{ display: "flex", gap: 1, alignItems: "center" }}>
-              <TextField
-                fullWidth
-                size="small"
-                multiline
-                maxRows={4}
-                placeholder="Posez votre question..."
-                value={inputValue}
-                onChange={(e) => setInputValue(e.target.value)}
-                onKeyDown={(e) => {
-                  if (e.key === "Enter" && !e.shiftKey) {
-                    e.preventDefault();
-                    handleSendMessage();
-                  }
-                }}
-                sx={{
-                  "& .MuiOutlinedInput-root": {
-                    borderRadius: 3,
-                    bgcolor: "white",
-                    border: "1px solid #e5e7eb",
-                    transition: "all 0.2s",
-                    minHeight: 44,
-                    alignItems: "flex-end",
-                    pb: 1,
-                    "& fieldset": { border: "none" },
-                    "&.Mui-focused": {
-                      border: "1px solid",
-                      borderColor: "primary.main",
-                      boxShadow: "0 0 0 2px rgba(99, 102, 241, 0.1)"
-                    }
-                  },
-                  "& .MuiInputBase-input": {
-                    py: 0.5,
-                  }
-                }}
-              />
-              <IconButton
-                onClick={handleSendMessage}
-                disabled={!inputValue.trim() || isPending}
-                sx={{
-                  bgcolor: inputValue.trim() ? "primary.main" : "transparent",
-                  color: inputValue.trim() ? "white" : "#9ca3af",
-                  transition: "all 0.2s ease-in-out",
-                  "&:hover": {
-                    bgcolor: inputValue.trim() ? "primary.dark" : "transparent",
-                    transform: inputValue.trim() ? "scale(1.05)" : "none"
-                  },
-                  "&.Mui-disabled": {
-                    bgcolor: "transparent",
-                    color: "#d1d5db"
-                  },
-                  width: 44,
-                  height: 44,
-                  flexShrink: 0,
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  p: 0,
-                }}
-              >
-                <SendIcon fontSize="small" />
-              </IconButton>
-            </Box>
-          </Box>
+          <ChatHeader onClose={() => dispatch({ type: "SET_OPEN", payload: false })} />
+          <MessageList messages={messages} isPending={isPending} scrollRef={scrollRef} />
+          <ChatInput
+            value={inputValue}
+            onChange={(val) => dispatch({ type: "SET_INPUT_VALUE", payload: val })}
+            onSend={handleSendMessage}
+            disabled={!inputValue.trim() || isPending}
+          />
         </Paper>
       </Fade>
     </>
-  );
+  ) : null;
 }

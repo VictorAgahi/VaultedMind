@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useReducer, useEffect } from "react";
 import {
   Container,
   Typography,
@@ -33,17 +33,136 @@ const getExportFilename = () => {
   return `vaultedmind-data-export-${new Date().toISOString().split('T')[0]}.json`;
 };
 
+interface ProfileState {
+  notificationStatus: NotificationPermission;
+  isSubscribing: boolean;
+  error: string | null;
+  aiContext: string;
+  aiContextSaved: boolean;
+  isSavingContext: boolean;
+  isAiEnabled: boolean;
+  loadingStatus: boolean;
+}
+
+type ProfileAction =
+  | { type: "INIT_SUCCESS"; payload: { isAiEnabled: boolean; aiContext: string } }
+  | { type: "INIT_FAILURE" }
+  | { type: "SET_NOTIFICATION_STATUS"; payload: NotificationPermission }
+  | { type: "SUBSCRIBE_START" }
+  | { type: "SUBSCRIBE_SUCCESS"; payload: NotificationPermission }
+  | { type: "SUBSCRIBE_FAILURE"; payload: string }
+  | { type: "SET_AI_CONTEXT"; payload: string }
+  | { type: "SAVE_CONTEXT_START" }
+  | { type: "SAVE_CONTEXT_SUCCESS" }
+  | { type: "SAVE_CONTEXT_SAVED_CLEARED" }
+  | { type: "SAVE_CONTEXT_FAILURE"; payload: string }
+  | { type: "CLEAR_ERROR" }
+  | { type: "SET_ERROR"; payload: string };
+
+const initialState: ProfileState = {
+  notificationStatus: "default",
+  isSubscribing: false,
+  error: null,
+  aiContext: "",
+  aiContextSaved: false,
+  isSavingContext: false,
+  isAiEnabled: false,
+  loadingStatus: true,
+};
+
+function profileReducer(state: ProfileState, action: ProfileAction): ProfileState {
+  switch (action.type) {
+    case "INIT_SUCCESS":
+      return {
+        ...state,
+        isAiEnabled: action.payload.isAiEnabled,
+        aiContext: action.payload.aiContext,
+        loadingStatus: false,
+      };
+    case "INIT_FAILURE":
+      return {
+        ...state,
+        loadingStatus: false,
+      };
+    case "SET_NOTIFICATION_STATUS":
+      return {
+        ...state,
+        notificationStatus: action.payload,
+      };
+    case "SUBSCRIBE_START":
+      return {
+        ...state,
+        isSubscribing: true,
+        error: null,
+      };
+    case "SUBSCRIBE_SUCCESS":
+      return {
+        ...state,
+        isSubscribing: false,
+        notificationStatus: action.payload,
+      };
+    case "SUBSCRIBE_FAILURE":
+      return {
+        ...state,
+        isSubscribing: false,
+        error: action.payload,
+      };
+    case "SET_AI_CONTEXT":
+      return {
+        ...state,
+        aiContext: action.payload,
+      };
+    case "SAVE_CONTEXT_START":
+      return {
+        ...state,
+        isSavingContext: true,
+      };
+    case "SAVE_CONTEXT_SUCCESS":
+      return {
+        ...state,
+        isSavingContext: false,
+        aiContextSaved: true,
+      };
+    case "SAVE_CONTEXT_SAVED_CLEARED":
+      return {
+        ...state,
+        aiContextSaved: false,
+      };
+    case "SAVE_CONTEXT_FAILURE":
+      return {
+        ...state,
+        isSavingContext: false,
+        error: action.payload,
+      };
+    case "CLEAR_ERROR":
+      return {
+        ...state,
+        error: null,
+      };
+    case "SET_ERROR":
+      return {
+        ...state,
+        error: action.payload,
+      };
+    default:
+      return state;
+  }
+}
+
 export default function ProfilePage() {
   const { user, logout } = useAuth();
-  const [notificationStatus, setNotificationStatus] = useState<NotificationPermission>("default");
-  const [isSubscribing, setIsSubscribing] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [state, dispatch] = useReducer(profileReducer, initialState);
 
-  const [aiContext, setAiContext] = useState<string>("");
-  const [aiContextSaved, setAiContextSaved] = useState(false);
-  const [isSavingContext, setIsSavingContext] = useState(false);
-  const [isAiEnabled, setIsAiEnabled] = useState(false);
-  const [loadingStatus, setLoadingStatus] = useState(true);
+  const {
+    notificationStatus,
+    isSubscribing,
+    error,
+    aiContext,
+    aiContextSaved,
+    isSavingContext,
+    isAiEnabled,
+    loadingStatus,
+  } = state;
 
   useEffect(() => {
     const init = async () => {
@@ -52,27 +171,30 @@ export default function ProfilePage() {
           apiService.get<{ enabled: boolean }>("/health/ai-insights/status"),
           apiService.get<{ context: string }>("/health/ai-insights/context"),
         ]);
-        setIsAiEnabled(statusRes.enabled);
-        setAiContext(contextRes.context || "");
+        dispatch({
+          type: "INIT_SUCCESS",
+          payload: {
+            isAiEnabled: statusRes.enabled,
+            aiContext: contextRes.context || "",
+          },
+        });
       } catch (err) {
         console.error("Failed to fetch AI context or status", err);
-      } finally {
-        setLoadingStatus(false);
+        dispatch({ type: "INIT_FAILURE" });
       }
     };
     init();
   }, []);
 
   const handleSaveAiContext = async () => {
-    setIsSavingContext(true);
+    dispatch({ type: "SAVE_CONTEXT_START" });
     try {
       await apiService.post("/health/ai-insights/context", { context: aiContext });
-      setAiContextSaved(true);
-      setTimeout(() => setAiContextSaved(false), 3000);
+      dispatch({ type: "SAVE_CONTEXT_SUCCESS" });
+      setTimeout(() => dispatch({ type: "SAVE_CONTEXT_SAVED_CLEARED" }), 3000);
     } catch (err) {
       console.error("Failed to save AI context", err);
-    } finally {
-      setIsSavingContext(false);
+      dispatch({ type: "SAVE_CONTEXT_FAILURE", payload: "Échec de l'enregistrement du contexte." });
     }
   };
 
@@ -80,7 +202,7 @@ export default function ProfilePage() {
     let timeoutId: NodeJS.Timeout;
     if (typeof window !== "undefined" && "Notification" in window) {
       timeoutId = setTimeout(() => {
-        setNotificationStatus(Notification.permission);
+        dispatch({ type: "SET_NOTIFICATION_STATUS", payload: Notification.permission });
       }, 0);
     }
     return () => {
@@ -100,15 +222,14 @@ export default function ProfilePage() {
   };
 
   const handleEnableNotifications = async () => {
-    setIsSubscribing(true);
-    setError(null);
+    dispatch({ type: "SUBSCRIBE_START" });
     try {
       if (!("serviceWorker" in navigator) || !("PushManager" in window)) {
         throw new Error("Les notifications push ne sont pas supportées par ce navigateur.");
       }
 
       const permission = await Notification.requestPermission();
-      setNotificationStatus(permission);
+      dispatch({ type: "SET_NOTIFICATION_STATUS", payload: permission });
 
       if (permission === "granted") {
         const registration = await navigator.serviceWorker.ready;
@@ -127,14 +248,13 @@ export default function ProfilePage() {
         }
 
         await apiService.post("/notifications/subscribe", subscription);
+        dispatch({ type: "SUBSCRIBE_SUCCESS", payload: permission });
       } else if (permission === "denied") {
         throw new Error("Vous avez bloqué les notifications. Changez les paramètres de votre navigateur pour les activer.");
       }
     } catch (err: unknown) {
       console.error("Notification error:", err);
-      setError((err as Error).message);
-    } finally {
-      setIsSubscribing(false);
+      dispatch({ type: "SUBSCRIBE_FAILURE", payload: (err as Error).message });
     }
   };
 
@@ -190,7 +310,7 @@ export default function ProfilePage() {
                       await apiService.post("/notifications/test");
                       alert("Notification de test programmée dans 30 secondes ! Reste sur la page ou ferme l'onglet pour tester.");
                     } catch (err) {
-                      setError((err as Error).message);
+                      dispatch({ type: "SET_ERROR", payload: (err as Error).message });
                     }
                   }}
                   startIcon={<NotificationsIcon />}
@@ -236,7 +356,7 @@ export default function ProfilePage() {
               variant="outlined"
               placeholder="Ex: J'aimerais que tu sois direct et que tu te concentres sur la productivité..."
               value={aiContext}
-              onChange={(e) => setAiContext(e.target.value)}
+              onChange={(e) => dispatch({ type: "SET_AI_CONTEXT", payload: e.target.value })}
               sx={{ mb: 2 }}
             />
 
@@ -281,7 +401,7 @@ export default function ProfilePage() {
                   window.URL.revokeObjectURL(url);
                   document.body.removeChild(a);
                 } catch {
-                  setError("Échec de l'exportation des données.");
+                  dispatch({ type: "SET_ERROR", payload: "Échec de l'exportation des données." });
                 }
               }}
               sx={{ borderRadius: 3, py: 1.2, textTransform: "none", fontWeight: 600 }}
@@ -300,7 +420,7 @@ export default function ProfilePage() {
                     await apiService.delete("/auth/account");
                     logout();
                   } catch (err: unknown) {
-                    setError((err as Error).message);
+                    dispatch({ type: "SET_ERROR", payload: (err as Error).message });
                   }
                 }
               }}

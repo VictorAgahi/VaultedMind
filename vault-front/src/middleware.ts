@@ -29,15 +29,17 @@ const getCookieDomain = (host: string | null): string | undefined => {
 const decodeJwt = (token: string) => {
   try {
     const parts = token.split(".");
-    if (parts.length !== 3) return null;
+    if (parts.length !== 3) {
+      return null;
+    }
     const base64 = parts[1].replace(/-/g, "+").replace(/_/g, "/");
-    // Optimized decode for Edge/Browser
     const decoded = atob(base64);
     const bytes = new Uint8Array(decoded.length);
     for (let i = 0; i < decoded.length; i++) {
       bytes[i] = decoded.charCodeAt(i);
     }
-    return JSON.parse(new TextDecoder().decode(bytes));
+    const payload = JSON.parse(new TextDecoder().decode(bytes));
+    return payload;
   } catch {
     return null;
   }
@@ -55,9 +57,19 @@ export async function middleware(request: NextRequest) {
     : pathname;
 
   const accessToken = request.cookies.get(AUTH_COOKIE_NAME)?.value || null;
+
+  console.log(`[Middleware] Request URL: ${request.url}`);
+  console.log(`[Middleware] Pathname: ${normalizedPathname}`);
+  console.log(`[Middleware] Cookie present: ${!!accessToken}`);
+  if (accessToken) {
+    console.log(`[Middleware] Raw Cookie value starts with: ${accessToken.substring(0, 20)}...`);
+  }
+
   const payload = accessToken ? decodeJwt(accessToken) : null;
   const isExpired = payload?.exp ? Date.now() >= payload.exp * 1000 : false;
   const isAuthenticated = !!payload && !isExpired;
+
+  console.log(`[Middleware] isAuthenticated: ${isAuthenticated} (payload: ${!!payload}, isExpired: ${isExpired})`);
 
   const reason = request.nextUrl.searchParams.get("reason");
   const forceClear = reason === "session_expired" || reason === "network_error";
@@ -65,10 +77,12 @@ export async function middleware(request: NextRequest) {
   const isPublicRoute = PUBLIC_ROUTES.has(normalizedPathname);
   const isAuthPage = normalizedPathname === LOGIN_PATH || normalizedPathname === "/register";
 
+  console.log(`[Middleware] isPublicRoute: ${isPublicRoute}, isAuthPage: ${isAuthPage}, forceClear: ${forceClear}`);
+
   // --- LOGIQUE DE ROUTAGE ---
 
   if (forceClear && isAuthPage) {
-    // Le frontend demande explicitement de vider la session (ex: backend injoignable ou erreur 401)
+    console.log(`[Middleware] Force clearing cookie due to reason: ${reason}`);
     const response = NextResponse.next();
     const domain = getCookieDomain(request.headers.get("host"));
     response.cookies.delete(AUTH_COOKIE_NAME);
@@ -84,12 +98,14 @@ export async function middleware(request: NextRequest) {
 
   if (isPublicRoute) {
     if (isAuthPage && isAuthenticated) {
+      console.log(`[Middleware] Authenticated user on auth page, redirecting to: ${DEFAULT_AUTH_REDIRECT}`);
       return NextResponse.redirect(new URL(DEFAULT_AUTH_REDIRECT, request.url));
     }
     return NextResponse.next();
   }
 
   if (!isAuthenticated) {
+    console.log(`[Middleware] Unauthenticated access to private route, redirecting to login`);
     const loginUrl = new URL(LOGIN_PATH, request.url);
     if (normalizedPathname !== "/") {
       loginUrl.searchParams.set("callbackUrl", normalizedPathname);
@@ -107,6 +123,7 @@ export async function middleware(request: NextRequest) {
     return response;
   }
 
+  console.log(`[Middleware] Access granted to private route: ${normalizedPathname}`);
   return NextResponse.next();
 }
 

@@ -54,7 +54,9 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     try {
       const response = await apiService.post<AuthResponse, LoginCredentials>("/auth/login", credentials);
       setUser(response.user);
-      push("/dashboard");
+      setTimeout(() => {
+        push("/dashboard");
+      }, 150);
     } catch (error) {
       setLoading(false);
       throw error;
@@ -67,7 +69,9 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     try {
       const response = await apiService.post<AuthResponse, RegisterData>("/auth/register", userData);
       setUser(response.user);
-      push("/dashboard");
+      setTimeout(() => {
+        push("/dashboard");
+      }, 150);
     } catch (error) {
       setLoading(false);
       throw error;
