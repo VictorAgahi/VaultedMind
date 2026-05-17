@@ -18,14 +18,14 @@ export const CorrelationMatrix: React.FC<CorrelationMatrixProps> = ({
   activeFieldB,
   onCellClick
 }) => (
-  <Box sx={{
-    display: "grid",
-    gridTemplateColumns: `auto repeat(${measurableFields.length}, 1fr)`,
-    gap: 1,
-    overflowX: "auto",
-    pb: 2
-  }}>
-    <Box /> {/* Top-left empty cell */}
+  <Box sx={{ overflowX: "auto", width: "100%", pb: 2 }}>
+    <Box sx={{
+      display: "grid",
+      gridTemplateColumns: `auto repeat(${measurableFields.length}, minmax(45px, 1fr))`,
+      gap: 1,
+      minWidth: "max-content"
+    }}>
+      <Box /> {/* Top-left empty cell */}
     
     {/* Column Headers */}
     {measurableFields.map(f => (
@@ -78,5 +78,6 @@ export const CorrelationMatrix: React.FC<CorrelationMatrixProps> = ({
         })}
       </React.Fragment>
     ))}
+    </Box>
   </Box>
 );
