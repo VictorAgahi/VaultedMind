@@ -1,5 +1,7 @@
 "use client";
 
+import { usePathname } from "next/navigation";
+
 import { useState, useRef, useEffect, useTransition } from "react";
 import {
   Box,
@@ -30,6 +32,7 @@ interface Message {
 
 export function AIChatBot() {
   const { isAuthenticated } = useAuth();
+  const pathname = usePathname();
   const [isOpen, setIsOpen] = useState(false);
   const [messages, setMessages] = useState<Message[]>([
     {
@@ -60,6 +63,9 @@ export function AIChatBot() {
   }, [isOpen]);
 
   if (!isAuthenticated) return null;
+  if (!pathname?.startsWith("/dashboard") && !pathname?.startsWith("/analytics")) {
+    return null;
+  }
 
   const handleSendMessage = async () => {
     if (!inputValue.trim() || isPending) return;
@@ -75,9 +81,14 @@ export function AIChatBot() {
 
     startTransition(async () => {
       try {
+        const savedContext = localStorage.getItem("vaultedmind_ai_context") || "";
+        const payloadMessage = savedContext 
+          ? `[Contexte de l'utilisateur à respecter pour ta réponse : ${savedContext}]\n\nQuestion de l'utilisateur : ${inputValue}`
+          : inputValue;
+
         const { response } = await apiService.post<{ response: string }>(
           "/health/ai-chat",
-          { message: inputValue }
+          { message: payloadMessage }
         );
 
         const aiMsg: Message = {

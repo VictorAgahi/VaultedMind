@@ -64,15 +64,14 @@ class ApiService {
       if ((error as ApiError).statusCode) {
         throw error;
       }
-      
-      // Handle Network errors or CORS errors
+
       if (typeof window !== "undefined") {
         const publicRoutes = ["/", "/login", "/register", "/about", "/contact", "/privacy", "/terms"];
         const isPublicPage = publicRoutes.includes(window.location.pathname);
         if (!isPublicPage) {
-           window.localStorage.clear();
-           window.sessionStorage.clear();
-           window.location.href = "/login?reason=network_error";
+          window.localStorage.clear();
+          window.sessionStorage.clear();
+          window.location.href = "/login?reason=network_error";
         }
       }
 

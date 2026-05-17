@@ -8,7 +8,6 @@ import {
   Grid,
   useTheme,
   useMediaQuery,
-  useMediaQuery,
   MenuProps,
   FormControl,
   InputLabel,
@@ -304,7 +303,7 @@ export const CorrelationStudy: React.FC<CorrelationStudyProps> = ({ fields, logs
           <Paper elevation={0} sx={{ ...refinedPaperStyle, height: "100%", position: "relative", overflow: "hidden" }}>
             <CorrelationDetail
               activeCell={matrixData.find(c => c.xId === activeFieldA && c.yId === activeFieldB) || null}
-              onClose={() => {}} // Disabled close since we always show a cell
+              onClose={() => { }} // Disabled close since we always show a cell
               getInterpretation={getInterpretation}
               currentCorrelation={currentCorrelation}
               ChartContainer={ChartContainer}

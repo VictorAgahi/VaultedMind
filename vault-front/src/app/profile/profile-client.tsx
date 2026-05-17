@@ -11,7 +11,8 @@ import {
   Divider,
   Alert,
   CircularProgress,
-  Stack
+  Stack,
+  TextField
 } from "@mui/material";
 import {
   Person as PersonIcon,
@@ -20,7 +21,9 @@ import {
   Logout as LogoutIcon,
   Download as DownloadIcon,
   DeleteForever as DeleteIcon,
-  Shield as ShieldIcon
+  Shield as ShieldIcon,
+  SmartToy as SmartToyIcon,
+  Save as SaveIcon
 } from "@mui/icons-material";
 import { useAuth } from "@/context/auth-context";
 import { Navbar } from "@/components/navbar/navbar";
@@ -35,6 +38,26 @@ export default function ProfilePage() {
   const [notificationStatus, setNotificationStatus] = useState<NotificationPermission>("default");
   const [isSubscribing, setIsSubscribing] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  const [aiContext, setAiContext] = useState<string>("");
+  const [aiContextSaved, setAiContextSaved] = useState(false);
+
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      Promise.resolve().then(() => {
+        const savedContext = localStorage.getItem("vaultedmind_ai_context") || "";
+        setAiContext(savedContext);
+      });
+    }
+  }, []);
+
+  const handleSaveAiContext = () => {
+    if (typeof window !== "undefined") {
+      localStorage.setItem("vaultedmind_ai_context", aiContext);
+      setAiContextSaved(true);
+      setTimeout(() => setAiContextSaved(false), 3000);
+    }
+  };
 
   useEffect(() => {
     let timeoutId: NodeJS.Timeout;
@@ -177,6 +200,38 @@ export default function ProfilePage() {
               </Box>
             )}
           </Box>
+        </Paper>
+
+        <Paper elevation={0} sx={{ p: 3, borderRadius: 4, bgcolor: "background.paper", border: "1px solid", borderColor: "divider", mb: 3 }}>
+          <Typography variant="subtitle1" gutterBottom sx={{ fontWeight: 600, display: "flex", alignItems: "center" }}>
+            <SmartToyIcon sx={{ mr: 1, fontSize: 20, color: "primary.main" }} />
+            Personnaliser l&apos;IA
+          </Typography>
+          <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
+            Donnez un contexte par défaut à votre assistant IA. Ces informations (ex: &quot;Je suis étudiant&quot;, &quot;Je suis très stressé en ce moment&quot;) seront utilisées pour personnaliser ses réponses et vos bilans.
+          </Typography>
+
+          <TextField
+            fullWidth
+            multiline
+            rows={4}
+            variant="outlined"
+            placeholder="Ex: J'aimerais que tu sois direct et que tu te concentres sur la productivité..."
+            value={aiContext}
+            onChange={(e) => setAiContext(e.target.value)}
+            sx={{ mb: 2 }}
+          />
+
+          <Button
+            variant="contained"
+            color="primary"
+            fullWidth
+            onClick={handleSaveAiContext}
+            startIcon={<SaveIcon />}
+            sx={{ borderRadius: 3, py: 1.2, textTransform: "none", fontWeight: 600 }}
+          >
+            {aiContextSaved ? "Contexte sauvegardé !" : "Enregistrer le contexte"}
+          </Button>
         </Paper>
 
         <Paper elevation={0} sx={{ p: 3, borderRadius: 4, bgcolor: "background.paper", border: "1px solid", borderColor: "divider", mb: 3 }}>
