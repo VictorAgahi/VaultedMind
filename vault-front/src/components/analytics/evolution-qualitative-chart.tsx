@@ -22,7 +22,8 @@ import {
   Tooltip,
   Legend
 } from "recharts";
-import { CustomField } from "@/types";
+import { CustomField, FieldType } from "@/types";
+import { formatHourlyValue } from "@/utils/time-converter";
 
 interface ChartDataPoint {
   key: string;
@@ -58,6 +59,10 @@ export const EvolutionQualitativeChart: React.FC<EvolutionQualitativeChartProps>
   menuProps
 }) => {
   const reverseMap = Object.entries(valueMap).reduce((acc, [k, v]) => ({ ...acc, [v]: k }), {} as Record<number, string>);
+  
+  const field = stringFields.find(f => f.id === selectedField);
+  const isHourly = field?.fieldType === FieldType.NUMBER && (field.optionsOrder || []).includes("isHourly");
+  const isNumeric = field?.fieldType === FieldType.NUMBER;
 
   return (
     <Paper elevation={0} sx={{ 
@@ -73,18 +78,18 @@ export const EvolutionQualitativeChart: React.FC<EvolutionQualitativeChartProps>
         <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", mb: 4, flexWrap: "wrap", gap: 2 }}>
           <Box>
             <Box sx={{ display: "flex", alignItems: "center", gap: 1, mb: 1 }}>
-              <Typography variant="h6" sx={{ fontWeight: 800 }}>Évolution Qualitative</Typography>
-              <MuiTooltip title="Visualisez l'évolution de vos ressentis textuels dans le temps.">
+              <Typography variant="h6" sx={{ fontWeight: 800 }}>Évolution Temporelle & Qualitative</Typography>
+              <MuiTooltip title="Visualisez l'évolution de vos ressentis et de vos mesures physiques dans le temps.">
                 <InfoIcon sx={{ fontSize: 18, color: "text.secondary", cursor: "help" }} />
               </MuiTooltip>
             </Box>
-            <Typography variant="body2" color="text.secondary">Suivi des tendances pour vos mesures textuelles.</Typography>
+            <Typography variant="body2" color="text.secondary">Suivi des tendances pour vos mesures qualitatives et numériques.</Typography>
           </Box>
           <FormControl fullWidth size="small" sx={{ mb: 4 }}>
-            <InputLabel>Champ qualitatif</InputLabel>
+            <InputLabel>Champ à analyser</InputLabel>
             <Select
               value={selectedField}
-              label="Champ qualitatif"
+              label="Champ à analyser"
               onChange={(e) => setSelectedField(e.target.value)}
               sx={{ borderRadius: 3 }}
               MenuProps={menuProps}
@@ -110,12 +115,15 @@ export const EvolutionQualitativeChart: React.FC<EvolutionQualitativeChartProps>
             <YAxis
               axisLine={false}
               tickLine={false}
-              allowDecimals={false}
+              allowDecimals={!isHourly}
               tick={{ fontSize: 10, fill: "#666", fontWeight: 600 }}
-              domain={[0, Math.max(...Object.values(valueMap), 1)]}
-              ticks={Object.values(valueMap)}
+              domain={isNumeric ? ['auto', 'auto'] : [0, Math.max(...Object.values(valueMap), 1)]}
+              ticks={(!isNumeric || Object.keys(valueMap).length <= 8) ? Object.values(valueMap) : undefined}
               tickFormatter={(val) => {
-                const text = reverseMap[val] || val;
+                if (isHourly) {
+                  return formatHourlyValue(val.toString());
+                }
+                const text = reverseMap[val] || val.toString();
                 return text.length > 12 ? text.substring(0, 10) + '...' : text;
               }}
               width={70}
@@ -123,7 +131,12 @@ export const EvolutionQualitativeChart: React.FC<EvolutionQualitativeChartProps>
             <Tooltip
               contentStyle={{ borderRadius: 12, border: "none", boxShadow: "0 10px 15px -3px rgba(0,0,0,0.1)" }}
               // eslint-disable-next-line @typescript-eslint/no-explicit-any
-              formatter={(val: any) => [reverseMap[Number(val)] || (val as string | number), "État"]}
+              formatter={(val: any) => {
+                if (isHourly) {
+                  return [formatHourlyValue((val ?? "").toString()), "Valeur"];
+                }
+                return [reverseMap[Number(val)] || (val ?? "").toString(), isNumeric ? "Valeur" : "État"];
+              }}
             />
             <Legend verticalAlign="top" height={50} />
             <Line
@@ -133,7 +146,7 @@ export const EvolutionQualitativeChart: React.FC<EvolutionQualitativeChartProps>
               strokeWidth={4}
               dot={{ r: 4, fill: "#6366f1", strokeWidth: 2, stroke: "#fff" }}
               activeDot={{ r: 6, strokeWidth: 0 }}
-              name="Ressenti"
+              name={field?.name || "Valeur"}
               connectNulls
             />
           </LineChart>

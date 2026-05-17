@@ -40,13 +40,17 @@ export class AIInsightService {
         (log) => new Date(log.logDate) >= thirtyDaysAgo,
       );
 
-      if (recentLogs.length === 0) {
-        this.logger.debug(`No recent logs for user ${userId}`);
+      if (recentLogs.length < 3) {
+        this.logger.debug(
+          `Too little data for user ${userId} (${recentLogs.length} logs, minimum 3 required)`,
+        );
         return null;
       }
 
       const fields = await this.customFieldRepository.findByUserId(userId);
-      if (fields.length === 0) {
+      const activeFields = fields.filter((f) => f.isActive);
+      if (activeFields.length === 0) {
+        this.logger.debug(`No active custom fields for user ${userId}`);
         return null;
       }
 
@@ -138,6 +142,21 @@ export class AIInsightService {
     user.aiContext = context;
     await this.userRepository.saveUser(user);
     this.logger.log(`AI context updated for user ${userId}`);
+  }
+
+  async optimizeAIContext(context: string): Promise<string> {
+    const prompt = `Agis en tant qu'expert en ingénierie de prompt et psychologue comportementaliste.
+L'utilisateur a saisi le contexte personnel suivant pour personnaliser ses analyses et les réponses de son assistant IA :
+---
+"${context}"
+---
+Optimise et structure ce texte de manière extrêmement claire, professionnelle, et percutante pour un grand modèle de langage (LLM). 
+Rédige le résultat directement sous forme de profil structuré en français (par exemple avec des sections comme "Profil", "Objectifs", "Style de communication souhaité"). 
+Conserve absolument toutes les informations de base fournies par l'utilisateur mais enrichis-les pour que l'IA comprenne parfaitement son état d'esprit, ses contraintes et ses buts.
+Ne mets aucune introduction ni conclusion, renvoie UNIQUEMENT le texte optimisé final prêt à être enregistré.`;
+
+    const optimized = await this.llmService.generateText(prompt, 500);
+    return optimized.trim();
   }
 
   async deleteAIInsight(userId: string, insightId: string): Promise<void> {

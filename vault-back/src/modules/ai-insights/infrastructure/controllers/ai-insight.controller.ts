@@ -46,7 +46,7 @@ export class AIInsightController {
       );
       if (!insight) {
         throw new BadRequestException(
-          'Cannot generate insight. Please ensure AI insights are enabled and you have recent logs.',
+          "Impossible de générer l'analyse. Assure-toi d'avoir activé les analyses IA, d'avoir au moins un champ personnalisé actif, et d'avoir saisi au moins 3 entrées de journal dans les 30 derniers jours.",
         );
       }
       return {
@@ -102,6 +102,19 @@ export class AIInsightController {
   ) {
     await this.aiInsightService.updateAIContext(req.user.id, context);
     return { message: 'AI Context updated successfully' };
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Post('context/optimize')
+  async optimizeContext(@Body() body: { context: string }) {
+    const { context } = body;
+    if (!context || context.trim() === '') {
+      throw new BadRequestException(
+        'Le contexte ne peut pas être vide pour être optimisé.',
+      );
+    }
+    const optimized = await this.aiInsightService.optimizeAIContext(context);
+    return { optimized };
   }
 
   @UseGuards(JwtAuthGuard)

@@ -19,9 +19,12 @@ import { DailyLog, CustomField, FieldType } from "@/types";
 import { EvolutionQualitativeChart } from "@/components/analytics/evolution-qualitative-chart";
 import { TrendNumericalChart } from "@/components/analytics/trend-numerical-chart";
 import { ValueDistributionChart } from "@/components/analytics/value-distribution-chart";
+import { MultiTrendChart } from "@/components/analytics/multi-trend-chart";
 import { CorrelationStudy } from "@/components/correlation-study/correlation-study";
 import { AdvancedAnalyses } from "@/components/analytics/advanced-analyses";
+import { HabitImpactStudy } from "@/components/analytics/habit-impact-study";
 import { ResponsiveContainer } from "recharts";
+import { formatHourlyValue } from "@/utils/time-converter";
 
 import { Fade, useMediaQuery } from "@mui/material";
 
@@ -113,6 +116,9 @@ const analyticsReducer = (state: AnalyticsState, action: AnalyticsAction): Analy
 };
 
 export default function AnalyticsClient() {
+  const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
+
   const [state, dispatch] = React.useReducer(analyticsReducer, {
     fields: [],
     logs: [],
@@ -138,7 +144,7 @@ export default function AnalyticsClient() {
       const numF = fieldsData.filter(f => f.fieldType === FieldType.NUMBER || f.fieldType === FieldType.BOOLEAN);
       if (numF.length) defaults.selectedTrendField = numF[0].id;
 
-      const strF = fieldsData.filter(f => f.fieldType === FieldType.STRING);
+      const strF = fieldsData.filter(f => f.fieldType === FieldType.STRING || f.fieldType === FieldType.NUMBER);
       if (strF.length) defaults.selectedStringField = strF[0].id;
 
       const freqF = fieldsData.filter(f => f.fieldType === FieldType.STRING || f.fieldType === FieldType.BOOLEAN);
@@ -238,25 +244,57 @@ export default function AnalyticsClient() {
     if (!field) return { data: [], valueMap: {} };
 
     const valueMap: Record<string, number> = {};
-    if (field.optionsOrder?.length) {
-      field.optionsOrder.forEach((opt, i) => { valueMap[opt] = i; });
-    } else {
+    const isNumeric = field.fieldType === FieldType.NUMBER;
+
+    if (isNumeric) {
       const uniqueVals = Array.from(new Set(logs.flatMap(l => {
         const v = l.fieldValues?.find(fv => fv.customFieldId === selectedStringField)?.value;
-        return v ? [v] : [];
-      }))) as string[];
-      uniqueVals.sort().forEach((v, i) => { valueMap[v] = i; });
+        const num = parseFloat(v || "");
+        return !isNaN(num) ? [num] : [];
+      }))) as number[];
+      uniqueVals.sort((a, b) => a - b);
+
+      uniqueVals.forEach(v => {
+        const isHourly = (field.optionsOrder || []).includes("isHourly");
+        const label = isHourly ? formatHourlyValue(v.toString()) : v.toString();
+        valueMap[label] = v;
+      });
+    } else {
+      if (field.optionsOrder?.length) {
+        field.optionsOrder.forEach((opt, i) => { valueMap[opt] = i; });
+      } else {
+        const uniqueVals = Array.from(new Set(logs.flatMap(l => {
+          const v = l.fieldValues?.find(fv => fv.customFieldId === selectedStringField)?.value;
+          return v ? [v] : [];
+        }))) as string[];
+        uniqueVals.sort().forEach((v, i) => { valueMap[v] = i; });
+      }
     }
 
     const data = logs.reduce<ChartDataPoint[]>((acc, log) => {
       const v = log.fieldValues?.find(fv => fv.customFieldId === selectedStringField)?.value;
       if (v && v !== "-") {
         const dateStr = new Date(log.logDate).toISOString().split("T")[0];
+        const isHourly = isNumeric && (field.optionsOrder || []).includes("isHourly");
+
+        let numericValue: number | null = null;
+        let displayLabel = v;
+
+        if (isNumeric) {
+          const parsed = parseFloat(v);
+          if (!isNaN(parsed)) {
+            numericValue = parsed;
+            displayLabel = isHourly ? formatHourlyValue(v) : v;
+          }
+        } else {
+          numericValue = valueMap[v] ?? null;
+        }
+
         acc.push({
           key: dateStr,
           dateDisplay: new Date(log.logDate).toLocaleDateString(),
-          value: valueMap[v] ?? null,
-          label: v
+          value: numericValue,
+          label: displayLabel
         });
       }
       return acc;
@@ -264,6 +302,86 @@ export default function AnalyticsClient() {
 
     return { data, valueMap };
   }, [logs, selectedStringField, fieldsMap]);
+
+  const multiTrendData = useMemo(() => {
+    if (!logs.length) return [];
+
+    const logsByDate = new Map<string, DailyLog[]>();
+    logs.forEach(log => {
+      const d = new Date(log.logDate).toISOString().split("T")[0];
+      if (!logsByDate.has(d)) logsByDate.set(d, []);
+      logsByDate.get(d)?.push(log);
+    });
+
+    const minDate = new Date(logs[0].logDate);
+    const maxDate = new Date(logs[logs.length - 1].logDate);
+    const result: Record<string, string | number | boolean | null>[] = [];
+
+    const stringFieldMaps = new Map<string, Record<string, number>>();
+    fields.forEach(field => {
+      if (field.fieldType === FieldType.STRING) {
+        const valueMap: Record<string, number> = {};
+        if (field.optionsOrder?.length) {
+          field.optionsOrder.forEach((opt, i) => { valueMap[opt] = i; });
+        } else {
+          const uniqueVals = Array.from(new Set(logs.flatMap(l => {
+            const v = l.fieldValues?.find(fv => fv.customFieldId === field.id)?.value;
+            return v && v !== "-" ? [v] : [];
+          }))) as string[];
+          uniqueVals.sort().forEach((v, i) => { valueMap[v] = i; });
+        }
+        stringFieldMaps.set(field.id, valueMap);
+      }
+    });
+
+    for (let d = new Date(minDate); d <= maxDate; d.setDate(d.getDate() + 1)) {
+      const dStr = d.toISOString().split("T")[0];
+      const dayLogs = logsByDate.get(dStr);
+      const disp = d.toLocaleDateString();
+
+      const point: Record<string, string | number | boolean | null> = {
+        dateDisplay: disp,
+        dateStr: dStr
+      };
+
+      const lastLog = dayLogs ? dayLogs[dayLogs.length - 1] : null;
+      const fvMap = new Map<string, string>();
+      if (lastLog && lastLog.fieldValues) {
+        lastLog.fieldValues.forEach(fv => {
+          fvMap.set(fv.customFieldId, fv.value);
+        });
+      }
+
+      fields.forEach(field => {
+        if (!lastLog) {
+          point[field.id] = null;
+        } else {
+          const val = fvMap.get(field.id);
+          if (val !== undefined && val !== "" && val !== "-") {
+            if (field.fieldType === FieldType.BOOLEAN) {
+              point[field.id] = val === "true" ? 1 : 0;
+            } else if (field.fieldType === FieldType.NUMBER) {
+              point[field.id] = parseFloat(val);
+            } else if (field.fieldType === FieldType.STRING) {
+              const valueMap = stringFieldMaps.get(field.id);
+              if (valueMap && val in valueMap) {
+                point[field.id] = valueMap[val];
+              } else {
+                point[field.id] = null;
+              }
+            } else {
+              point[field.id] = null;
+            }
+          } else {
+            point[field.id] = null;
+          }
+        }
+      });
+
+      result.push(point);
+    }
+    return result;
+  }, [logs, fields]);
 
   const SELECT_MENU_PROPS = {
     slotProps: {
@@ -294,7 +412,9 @@ export default function AnalyticsClient() {
           <Tabs
             value={tabValue}
             onChange={(_, v) => dispatch({ type: "SET_TAB", value: v })}
-            variant="fullWidth"
+            variant={isMobile ? "scrollable" : "fullWidth"}
+            scrollButtons={isMobile ? "auto" : undefined}
+            allowScrollButtonsMobile
             sx={{
               '& .MuiTab-root': { fontWeight: 700, py: 2, fontSize: '0.9rem' },
               '& .Mui-selected': { color: '#6366f1' },
@@ -304,6 +424,7 @@ export default function AnalyticsClient() {
             <Tab label="Tendances" />
             <Tab label="Corrélation" />
             <Tab label="Analyses" />
+            <Tab label="Impact Habitudes" />
           </Tabs>
         </Paper>
 
@@ -317,7 +438,7 @@ export default function AnalyticsClient() {
                     valueMap={qualitativeData.valueMap}
                     selectedField={selectedStringField}
                     setSelectedField={(id) => dispatch({ type: "SET_FIELD", key: "selectedStringField", id })}
-                    stringFields={fields.filter(f => f.fieldType === FieldType.STRING)}
+                    stringFields={fields.filter(f => f.fieldType === FieldType.STRING || f.fieldType === FieldType.NUMBER)}
                     ChartContainer={ChartContainer}
                     menuProps={SELECT_MENU_PROPS}
                   />
@@ -337,6 +458,14 @@ export default function AnalyticsClient() {
                     selectedField={selectedTrendField}
                     setSelectedField={(id) => dispatch({ type: "SET_FIELD", key: "selectedTrendField", id })}
                     fields={fields}
+                    ChartContainer={ChartContainer}
+                  />
+                </Grid>
+                <Grid size={{ xs: 12 }}>
+                  <MultiTrendChart
+                    data={multiTrendData}
+                    fields={fields}
+                    logs={logs}
                     ChartContainer={ChartContainer}
                   />
                 </Grid>
@@ -360,6 +489,18 @@ export default function AnalyticsClient() {
                   logs={logs}
                   activeAdvField={state.advSelectedField || (fields.length > 0 ? fields[0].id : "")}
                   setAdvSelectedField={(id) => dispatch({ type: "SET_FIELD", key: "advSelectedField", id })}
+                  ChartContainer={ChartContainer}
+                />
+              </Box>
+            </Fade>
+          )}
+
+          {tabValue === 3 && (
+            <Fade in={tabValue === 3} timeout={400}>
+              <Box>
+                <HabitImpactStudy
+                  fields={fields}
+                  logs={logs}
                   ChartContainer={ChartContainer}
                 />
               </Box>

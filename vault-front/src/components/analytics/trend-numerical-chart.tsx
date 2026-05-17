@@ -24,6 +24,7 @@ import {
   Legend,
 } from "recharts";
 import { CustomField, FieldType } from "@/types";
+import { formatHourlyValue } from "@/utils/time-converter";
 
 interface ChartDataPoint {
   key: string;
@@ -60,6 +61,10 @@ export const TrendNumericalChart: React.FC<TrendNumericalChartProps> = ({
   const numberAndBoolFields = React.useMemo(() =>
     fields.filter(f => f.fieldType === FieldType.NUMBER || f.fieldType === FieldType.BOOLEAN),
     [fields]);
+
+  const isHourly = React.useMemo(() =>
+    currentField?.fieldType === FieldType.NUMBER && (currentField.optionsOrder || []).includes("isHourly"),
+    [currentField]);
 
   return (
     <Paper elevation={0} sx={{ 
@@ -119,18 +124,29 @@ export const TrendNumericalChart: React.FC<TrendNumericalChartProps> = ({
               axisLine={false}
               tickLine={false}
               tick={{ fontSize: 10, fill: "#666", fontWeight: 600 }}
-              tickFormatter={(val) => currentField?.fieldType === FieldType.BOOLEAN ? (Number(val) === 1 ? "Oui" : "Non") : val}
-              width={40}
+              tickFormatter={(val) => {
+                if (currentField?.fieldType === FieldType.BOOLEAN) {
+                  return Number(val) === 1 ? "Oui" : "Non";
+                }
+                if (isHourly) {
+                  return formatHourlyValue(val.toString());
+                }
+                return val;
+              }}
+              width={50}
             />
             <Tooltip
               contentStyle={{ borderRadius: 12, border: "none", boxShadow: "0 10px 15px -3px rgba(0,0,0,0.1)" }}
               // eslint-disable-next-line @typescript-eslint/no-explicit-any
-              formatter={(value: any) => [
-                currentField?.fieldType === FieldType.BOOLEAN
-                  ? (Number(value) === 1 ? "Oui" : "Non")
-                  : value,
-                "Valeur"
-              ]}
+              formatter={(value: any) => {
+                if (currentField?.fieldType === FieldType.BOOLEAN) {
+                  return [Number(value) === 1 ? "Oui" : "Non", "Valeur"];
+                }
+                if (isHourly) {
+                  return [formatHourlyValue((value ?? "").toString()), "Valeur"];
+                }
+                return [value, "Valeur"];
+              }}
             />
             <Legend verticalAlign="top" height={50} />
             <Area

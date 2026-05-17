@@ -87,6 +87,49 @@ export const LogEntryDialog: React.FC<LogEntryDialogProps> = ({
       );
     }
 
+    const isHourly = field.fieldType === FieldType.NUMBER && (field.optionsOrder || []).includes("isHourly");
+
+    if (isHourly) {
+      let timeValue = "";
+      if (value) {
+        if (/^\d{2}:\d{2}$/.test(value)) {
+          timeValue = value;
+        } else if (value.includes("h") || value.includes(":")) {
+          const clean = value.replace("h", ":");
+          const parts = clean.split(":");
+          const h = parseInt(parts[0], 10);
+          const m = parts[1] ? parseInt(parts[1], 10) : 0;
+          if (!isNaN(h)) {
+            timeValue = `${h.toString().padStart(2, "0")}:${m.toString().padStart(2, "0")}`;
+          }
+        } else {
+          const num = parseFloat(value);
+          if (!isNaN(num)) {
+            const hours = Math.floor(num);
+            const minutes = Math.round((num - hours) * 60);
+            timeValue = `${hours.toString().padStart(2, "0")}:${minutes.toString().padStart(2, "0")}`;
+          }
+        }
+      }
+
+      return (
+        <TextField
+          key={field.id}
+          margin="dense"
+          label={field.name}
+          type="time"
+          fullWidth
+          variant="outlined"
+          slotProps={{ 
+            inputLabel: { shrink: true }
+          }}
+          value={timeValue}
+          onChange={(e) => onFieldValueChange(field.id, e.target.value)}
+          helperText="Format horaire (converti en décimal pour les analyses)"
+        />
+      );
+    }
+
     const options = historicalValues[field.id] || [];
 
     return (

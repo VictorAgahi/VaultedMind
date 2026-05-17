@@ -23,6 +23,8 @@ import DeleteIcon from "@mui/icons-material/Delete";
 import { apiService } from "@/services/api.service";
 import { AIInsightResponseDto } from "@/types";
 import EmojiEventsIcon from "@mui/icons-material/EmojiEvents";
+import PsychologyIcon from "@mui/icons-material/Psychology";
+import LightbulbIcon from "@mui/icons-material/Lightbulb";
 
 function getErrorMessage(error: unknown): string {
   if (error instanceof Error) {
@@ -75,6 +77,162 @@ const insightTypeLabels: Record<string, string> = {
   RECOMMENDATION: "Recommandation",
 };
 
+function InsightContent({ text }: { text: string }) {
+  if (!text) return null;
+
+  // Split by newlines
+  const lines = text.split("\n").flatMap((l) => {
+    const trimmed = l.trim();
+    return trimmed ? [trimmed] : [];
+  });
+
+  return (
+    <Box sx={{ display: "flex", flexDirection: "column", gap: 2, mb: 2 }}>
+      {lines.map((line, idx) => {
+        // Parse bold text helper
+        const parseBoldText = (str: string) => {
+          const parts = str.split(/\*\*([^*]+)\*\*/g);
+          return parts.map((part, i) => {
+            if (i % 2 === 1) {
+              return (
+                <Box key={i} component="span" sx={{ fontWeight: 800, color: "#0f172a" }}>
+                  {part}
+                </Box>
+              );
+            }
+            return part;
+          });
+        };
+
+        // Section: Analysis
+        if (line.includes("🔍") || line.toLowerCase().includes("analyse comportementale")) {
+          const cleanText = line.replace(/🔍\s*(\*\*([^*]+)\*\*|[^:]+):?/, "").trim();
+          return (
+            <Box 
+              key={idx} 
+              sx={{ 
+                p: 2, 
+                borderRadius: 3, 
+                bgcolor: "rgba(99, 102, 241, 0.03)", 
+                borderLeft: "4px solid #6366f1",
+                mt: 0.5
+              }}
+            >
+              <Typography 
+                variant="subtitle2" 
+                sx={{ 
+                  fontWeight: 900, 
+                  color: "#4f46e5", 
+                  display: "flex", 
+                  alignItems: "center", 
+                  mb: 1,
+                  fontSize: "0.85rem",
+                  textTransform: "uppercase",
+                  letterSpacing: "0.05em"
+                }}
+              >
+                <PsychologyIcon sx={{ fontSize: 20, color: "#4f46e5", mr: 1 }} />
+                Analyse comportementale & Observations
+              </Typography>
+              <Typography variant="body2" sx={{ color: "#475569", lineHeight: 1.7, fontSize: "0.9rem" }}>
+                {parseBoldText(cleanText)}
+              </Typography>
+            </Box>
+          );
+        }
+
+        // Section: Recommendations header
+        if (line.includes("💡") || line.toLowerCase().includes("recommandations concrètes")) {
+          return (
+            <Typography 
+              key={idx}
+              variant="subtitle2" 
+              sx={{ 
+                fontWeight: 900, 
+                color: "#d97706", 
+                display: "flex", 
+                alignItems: "center", 
+                mt: 1.5,
+                mb: 0.5,
+                fontSize: "0.85rem",
+                textTransform: "uppercase",
+                letterSpacing: "0.05em"
+              }}
+            >
+              <LightbulbIcon sx={{ fontSize: 18, color: "#d97706", mr: 1 }} />
+              Recommandations concrètes
+            </Typography>
+          );
+        }
+
+        // Recommendation Items (e.g. "1. **Routine...**")
+        const matchListItem = line.match(/^(\d+)\.\s*(.*)/);
+        if (matchListItem) {
+          const number = matchListItem[1];
+          const itemText = matchListItem[2];
+          return (
+            <Box 
+              key={idx} 
+              sx={{ 
+                display: "flex", 
+                gap: 1.5, 
+                p: 1.5, 
+                borderRadius: 2.5, 
+                bgcolor: "rgba(245, 158, 11, 0.02)", 
+                borderLeft: "3px solid #f59e0b",
+                alignItems: "flex-start"
+              }}
+            >
+              <Box 
+                sx={{ 
+                  bgcolor: "#f59e0b", 
+                  color: "white", 
+                  fontWeight: 800, 
+                  borderRadius: "50%", 
+                  width: 20, 
+                  height: 20, 
+                  display: "flex", 
+                  alignItems: "center", 
+                  justifyContent: "center", 
+                  fontSize: "0.7rem",
+                  flexShrink: 0,
+                  mt: 0.2
+                }}
+              >
+                {number}
+              </Box>
+              <Typography variant="body2" sx={{ color: "#475569", lineHeight: 1.6, fontSize: "0.875rem" }}>
+                {parseBoldText(itemText)}
+              </Typography>
+            </Box>
+          );
+        }
+
+        // Standard text
+        return (
+          <Typography 
+            key={idx} 
+            variant="body2" 
+            sx={{ 
+              color: "#475569", 
+              lineHeight: 1.6, 
+              fontSize: "0.875rem",
+              fontStyle: line.startsWith("Souviens-toi") || line.startsWith("Ces petits") || line.startsWith("Chaque petite") || line.startsWith("chaque petite") ? "italic" : "normal",
+              bgcolor: line.startsWith("Souviens-toi") || line.startsWith("Ces petits") || line.startsWith("Chaque petite") || line.startsWith("chaque petite") ? "rgba(0,0,0,0.01)" : "transparent",
+              p: line.startsWith("Souviens-toi") || line.startsWith("Ces petits") || line.startsWith("Chaque petite") || line.startsWith("chaque petite") ? 1.5 : 0,
+              borderRadius: 2,
+              borderLeft: line.startsWith("Souviens-toi") || line.startsWith("Ces petits") || line.startsWith("Chaque petite") || line.startsWith("chaque petite") ? "2px solid rgba(0,0,0,0.1)" : "none",
+              mt: 0.5
+            }}
+          >
+            {parseBoldText(line)}
+          </Typography>
+        );
+      })}
+    </Box>
+  );
+}
+
 function InsightCard({ insight, isMounted, onDelete }: { insight: AIInsightResponseDto, isMounted: boolean, onDelete: (id: string) => void }) {
   const dateStr = isMounted ? `${new Date(insight.createdAt).toLocaleDateString()} ${new Date(
     insight.createdAt
@@ -88,51 +246,55 @@ function InsightCard({ insight, isMounted, onDelete }: { insight: AIInsightRespo
       sx={{
         border: "1px solid #e5e7eb",
         boxShadow: "none",
-        position: "relative",
+        borderRadius: 4,
         "&:hover": { boxShadow: "0 2px 8px rgba(0,0,0,0.1)" },
       }}
     >
-      <IconButton
-        size="small"
-        onClick={() => onDelete(insight.id)}
-        sx={{
-          position: "absolute",
-          top: 8,
-          right: 8,
-          color: "#9ca3af",
-          "&:hover": { color: "#ef4444" },
-        }}
-      >
-        <DeleteIcon fontSize="small" />
-      </IconButton>
-      <CardContent sx={{ pr: 6 }}>
+      <CardContent sx={{ p: 3 }}>
         <Box
           sx={{
             display: "flex",
             justifyContent: "space-between",
             alignItems: "flex-start",
-            mb: 1,
+            mb: 2.5,
+            gap: 2
           }}
         >
-          <Typography variant="subtitle1" sx={{ fontWeight: 600 }}>
+          <Typography variant="subtitle1" sx={{ fontWeight: 800, color: "#1e293b", flexGrow: 1 }}>
             {insight.title}
           </Typography>
-          <Typography
-            variant="caption"
-            sx={{
-              bgcolor: "#f3f4f6",
-              px: 1.5,
-              py: 0.5,
-              borderRadius: 1,
-              fontSize: "0.75rem",
-            }}
-          >
-            {insightTypeLabels[insight.type] || insight.type.replace(/_/g, " ")}
-          </Typography>
+          <Box sx={{ display: "flex", flexDirection: "row", alignItems: "center", gap: 1.5, flexShrink: 0 }}>
+            <Typography
+              variant="caption"
+              sx={{
+                bgcolor: "rgba(99, 102, 241, 0.08)",
+                color: "#4f46e5",
+                fontWeight: 700,
+                px: 1.5,
+                py: 0.5,
+                borderRadius: 2,
+                fontSize: "0.75rem",
+                whiteSpace: "nowrap"
+              }}
+            >
+              {insightTypeLabels[insight.type] || insight.type.replace(/_/g, " ")}
+            </Typography>
+            <IconButton
+              size="small"
+              onClick={() => onDelete(insight.id)}
+              sx={{
+                color: "#9ca3af",
+                p: 0.5,
+                "&:hover": { color: "#ef4444", bgcolor: "rgba(239, 68, 68, 0.05)" },
+              }}
+            >
+              <DeleteIcon fontSize="small" />
+            </IconButton>
+          </Box>
         </Box>
-        <Typography variant="body2" sx={{ color: "#6b7280", mb: 1.5 }}>
-          {insight.content}
-        </Typography>
+        
+        <InsightContent text={insight.content} />
+
         <Typography
           variant="caption"
           sx={{ color: "#9ca3af", minHeight: "1em", display: "block" }}
@@ -288,7 +450,7 @@ export function InsightsPanel() {
         </Alert>
       ) : (
         <Stack spacing={2}>
-          {state.insights.map((insight) => {
+          {state.insights.slice(0, 3).map((insight) => {
             return (
               <InsightCard key={insight.id} insight={insight} isMounted={isMounted} onDelete={deleteInsight} />
             );

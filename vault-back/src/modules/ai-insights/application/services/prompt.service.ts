@@ -27,8 +27,8 @@ export class PromptService {
       .map((f) => {
         let desc = `- ${f.fieldName} (${f.fieldType})`;
         if (f.avgValue !== undefined) {
-          desc += `: average ${f.avgValue}`;
-          if (f.trend) desc += ` (trend: ${f.trend})`;
+          desc += `: moyenne de ${f.avgValue}`;
+          if (f.trend) desc += ` (tendance : ${f.trend})`;
         } else if (f.values) {
           desc += `: ${f.values.join(', ')}`;
         }
@@ -36,21 +36,26 @@ export class PromptService {
       })
       .join('\n');
 
-    return `Analyse les données suivantes de journal de bord personnel et fournis un résumé bref et pertinent sur les habitudes récentes et le bien-être de la personne. Sois concis (2-3 phrases). RÉPONDS IMPÉRATIVEMENT EN FRANÇAIS.
+    return `Agis en tant que coach de bien-être expert, ingénieur en sciences du comportement et analyste de données de santé de pointe.
+Analyse les données du journal de bord personnel de l'utilisateur ci-dessous et fournis un rapport d'analyse quotidien ultra-poussé, structuré, bienveillant et perspicace.
+
+⚠️ DIRECTIVES IMPORTANTES DE TON ET DE STYLE :
+1. TUTOIER L'UTILISATEUR ABSOLUMENT : Adresse-toi directement à lui en utilisant exclusivement le tutoiement ("tu", "toi", "ton", "ta"). Ne dis jamais "vous".
+2. RESPECT DU CONTEXTE : Basse-toi impérativement sur le contexte de vie et les objectifs personnels de l'utilisateur ci-dessous pour personnaliser tes retours et analyses de manière pertinente.
+3. ANALYSE PROFONDE ET CROISÉE : Ne te contente pas de redire les chiffres. Mets en relation les différentes variables pour identifier des corrélations sous-jacentes (ex: l'impact d'une habitude sur le sommeil, le niveau de stress ou l'humeur).
+4. FORMAT : Rédige une analyse détaillée, structurée avec des paragraphes aérés (environ 150-250 mots). RÉPONDS IMPÉRATIVEMENT EN FRANÇAIS.
 
 Période des données : ${sanitizedData.dateRange}
-Nombre d'entrées : ${sanitizedData.totalLogs}
+Nombre d'entrées analysées : ${sanitizedData.totalLogs}
 
-${userContext ? `[CONTEXTE UTILISATEUR IMPORTANT À RESPECTER : ${userContext}]\n` : ''}
-Résumé des champs :
+${userContext ? `[CONTEXTE PERSONNEL ET CONFIGURATION DE L'UTILISATEUR] :\n${userContext}\n` : ''}
+
+Résumé des indicateurs suivis :
 ${fieldText}
 
-Fournis des informations exploitables sur :
-1. Les modèles globaux de bien-être
-2. Toute tendance notable
-3. Une recommandation douce pour s'améliorer
-
-Garde un ton chaleureux, encourageant et non-jugeant. Évite de répéter les données brutes, concentre-toi sur l'analyse.`;
+Structure ton retour ainsi :
+- 🔍 Analyse comportementale & Observations croisées : Analyse de manière poussée ce que révèlent ses indicateurs, en faisant des liens malins avec son contexte de vie.
+- 💡 Recommandations concrètes : Suggère 1 ou 2 pistes d'action immédiates, actionnables et bienveillantes, en phase avec ses objectifs.`;
   }
 
   generateWeeklyTrendPrompt(params: PromptParams): string {
@@ -59,8 +64,8 @@ Garde un ton chaleureux, encourageant et non-jugeant. Évite de répéter les do
       .map((f) => {
         let desc = `- ${f.fieldName}`;
         if (f.avgValue !== undefined) {
-          desc += ` (avg: ${f.avgValue})`;
-          if (f.trend) desc += `, trend: ${f.trend}`;
+          desc += ` (moyenne : ${f.avgValue})`;
+          if (f.trend) desc += `, tendance : ${f.trend}`;
         } else if (f.values) {
           desc += `: ${f.values.join(', ')}`;
         }
@@ -68,40 +73,52 @@ Garde un ton chaleureux, encourageant et non-jugeant. Évite de répéter les do
       })
       .join('\n');
 
-    return `Analyse les données de bien-être de la semaine et identifie les tendances clés : RÉPONDS IMPÉRATIVEMENT EN FRANÇAIS.
+    return `Agis en tant que data analyste et coach comportemental personnel.
+Analyse les données de bien-être de la semaine et fournis un bilan hebdomadaire complet, profond et structuré.
+
+⚠️ DIRECTIVES IMPORTANTES DE TON ET DE STYLE :
+1. TUTOIER L'UTILISATEUR ABSOLUMENT : Adresse-toi directement à lui en utilisant exclusivement le tutoiement ("tu", "toi", "ton", "ta"). Ne dis jamais "vous".
+2. RESPECT DU CONTEXTE : Oriente l'analyse hebdomadaire pour l'aider à atteindre les objectifs décrits dans son contexte personnel.
+3. FORMAT : Structure ton analyse de manière claire avec des sections lisibles en français.
 
 Période : ${sanitizedData.dateRange}
 Entrées cette semaine : ${sanitizedData.totalLogs}
 
-${userContext ? `[CONTEXTE UTILISATEUR IMPORTANT À RESPECTER : ${userContext}]\n` : ''}
-Données hebdomadaires :
+${userContext ? `[CONTEXTE PERSONNEL ET CONFIGURATION DE L'UTILISATEUR] :\n${userContext}\n` : ''}
+
+Données hebdomadaires consolidées :
 ${fieldText}
 
 Fournis :
-1. Les 3 principales tendances de bien-être (positives ou préoccupantes)
-2. Une comparaison avec les habitudes habituelles si elles sont évidentes
-3. Une analyse sur la trajectoire de la semaine
-
-Sois concis (3-4 phrases). Concentre-toi sur les modèles, pas sur les points de données individuels.`;
+- 📈 Les 3 principales tendances marquantes observées cette semaine (bonnes habitudes à fêter ou alertes sur lesquelles être vigilant)
+- 🎯 L'adéquation avec ses objectifs personnels formulés dans son contexte de vie
+- 🚀 Un plan d'action ou un défi stimulant pour la semaine à venir`;
   }
 
   generateAnomalyPrompt(params: PromptParams): string {
     const { logs: sanitizedData, userContext } = params;
-    return `Recherche tout modèle inhabituel ou anomalie dans ces données personnelles : RÉPONDS IMPÉRATIVEMENT EN FRANÇAIS.
+    return `Agis en tant que détective comportemental de bien-être personnel.
+Recherche tout modèle inhabituel, dérive ou anomalie dans ces données personnelles de santé et de rituel.
+
+⚠️ DIRECTIVES IMPORTANTES DE TON ET DE STYLE :
+1. TUTOIER L'UTILISATEUR ABSOLUMENT : Adresse-toi directement à lui en utilisant exclusivement le tutoiement ("tu", "toi", "ton", "ta"). Ne dis jamais "vous".
+2. RESPECT DU CONTEXTE : Évalue les anomalies à l'aune de ses objectifs de son contexte.
+3. FORMAT : Sois direct et réponds en français sous forme de constat analytique.
 
 Période : ${sanitizedData.dateRange}
 Entrées récentes : ${sanitizedData.totalLogs}
 
-${userContext ? `[CONTEXTE UTILISATEUR IMPORTANT À RESPECTER : ${userContext}]\n` : ''}
-Données :
-${sanitizedData.fieldSummaries.map((f) => `- ${f.fieldName}: ${f.avgValue || f.values?.join(', ') || 'N/A'}`).join('\n')}
+${userContext ? `[CONTEXTE PERSONNEL ET CONFIGURATION DE L'UTILISATEUR] :\n${userContext}\n` : ''}
 
-Si des anomalies sont détectées :
-1. Décris ce qui semble inhabituel
-2. Suggère des causes possibles
-3. Recommande un point de contrôle en douceur
+Données récoltées :
+${sanitizedData.fieldSummaries.map((f) => `- ${f.fieldName} : ${f.avgValue || f.values?.join(', ') || 'N/A'}`).join('\n')}
 
-Si tout semble normal, affirme-le brièvement. Garde la réponse sous les 100 mots.`;
+Si tu détectes des anomalies ou signaux faibles :
+1. Décris précisément ce qui semble inhabituel ou incohérent d'après ses indicateurs
+2. Propose des explications potentielles en lien avec ses contraintes
+3. Recommande un petit réajustement ou point de vigilance amical
+
+Si tout semble parfaitement aligné et sain, félicite-le chaleureusement et brièvement.`;
   }
 
   generatePrompt(type: InsightType, params: PromptParams): string {

@@ -6,7 +6,7 @@ import OpenAI from 'openai';
 export class LLMService {
   private readonly logger = new Logger(LLMService.name);
   private readonly client: OpenAI;
-  private readonly model = 'gpt-4o-mini';
+  private readonly model = 'gpt-4o';
 
   constructor(private readonly configService: ConfigService) {
     const apiKey = this.configService.getOrThrow<string>('OPENAI_API_KEY');

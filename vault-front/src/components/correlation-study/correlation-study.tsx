@@ -17,6 +17,7 @@ import {
 import { ResponsiveContainer } from "recharts";
 import { CustomField, DailyLog, FieldType } from "@/types";
 import { calculatePearsonCorrelation, getCorrelationColor } from "@/utils/math";
+import { formatHourlyValue } from "@/utils/time-converter";
 
 import { CorrelationMatrix } from "./correlation-matrix";
 import { CorrelationDetail } from "./correlation-detail";
@@ -218,6 +219,9 @@ export const CorrelationStudy: React.FC<CorrelationStudyProps> = ({ fields, logs
     const field = fields.find(f => f.id === fieldId);
     if (!field) return val;
     if (field.fieldType === FieldType.BOOLEAN) return Number(val) === 1 ? "Oui" : "Non";
+    if (field.fieldType === FieldType.NUMBER && (field.optionsOrder || []).includes("isHourly")) {
+      return formatHourlyValue(val);
+    }
     if (field.fieldType === FieldType.STRING) {
       const mapping = fieldMappings[fieldId];
       if (mapping) {

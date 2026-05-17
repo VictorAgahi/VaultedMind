@@ -9,12 +9,15 @@ import {
   TableHead,
   TableRow,
   IconButton,
-  Typography
+  Typography,
+  Box
 } from "@mui/material";
 import EditIcon from "@mui/icons-material/Edit";
 import DeleteIcon from "@mui/icons-material/Delete";
 import { DailyLog, CustomField, FieldType } from "@/types";
 import { ClientOnlyDate } from "../ui/client-only-date";
+import { formatHourlyValue } from "@/utils/time-converter";
+import AccessTimeIcon from "@mui/icons-material/AccessTime";
 
 interface LogTableProps {
   logs: DailyLog[];
@@ -30,9 +33,17 @@ export const LogTable: React.FC<LogTableProps> = ({ logs, activeFields, onEdit, 
         <TableHead>
           <TableRow>
             <TableCell sx={{ fontWeight: 700 }}>Date</TableCell>
-            {activeFields.map((f) => (
-              <TableCell key={f.id} sx={{ fontWeight: 700 }}>{f.name}</TableCell>
-            ))}
+            {activeFields.map((f) => {
+              const isHourly = f.fieldType === FieldType.NUMBER && (f.optionsOrder || []).includes("isHourly");
+              return (
+                <TableCell key={f.id} sx={{ fontWeight: 700 }}>
+                  <Box sx={{ display: "flex", alignItems: "center", gap: 0.5 }}>
+                    {f.name}
+                    {isHourly && <AccessTimeIcon sx={{ fontSize: 16, color: "primary.main", opacity: 0.8 }} />}
+                  </Box>
+                </TableCell>
+              );
+            })}
             <TableCell sx={{ fontWeight: 700 }}>Notes</TableCell>
             <TableCell align="right" sx={{ fontWeight: 700 }}>Actions</TableCell>
           </TableRow>
@@ -49,6 +60,8 @@ export const LogTable: React.FC<LogTableProps> = ({ logs, activeFields, onEdit, 
                 if (fieldValue) {
                   if (field.fieldType === FieldType.BOOLEAN) {
                     displayValue = fieldValue.value === "true" ? "Oui" : "Non";
+                  } else if (field.fieldType === FieldType.NUMBER && (field.optionsOrder || []).includes("isHourly")) {
+                    displayValue = formatHourlyValue(fieldValue.value);
                   } else {
                     displayValue = fieldValue.value;
                   }

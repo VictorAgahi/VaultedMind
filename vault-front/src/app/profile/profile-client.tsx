@@ -23,7 +23,8 @@ import {
   DeleteForever as DeleteIcon,
   Shield as ShieldIcon,
   SmartToy as SmartToyIcon,
-  Save as SaveIcon
+  Save as SaveIcon,
+  AutoAwesome as AutoAwesomeIcon
 } from "@mui/icons-material";
 import { useAuth } from "@/context/auth-context";
 import { Navbar } from "@/components/navbar/navbar";
@@ -40,6 +41,7 @@ interface ProfileState {
   aiContext: string;
   aiContextSaved: boolean;
   isSavingContext: boolean;
+  isOptimizingContext: boolean;
   isAiEnabled: boolean;
   loadingStatus: boolean;
 }
@@ -56,6 +58,9 @@ type ProfileAction =
   | { type: "SAVE_CONTEXT_SUCCESS" }
   | { type: "SAVE_CONTEXT_SAVED_CLEARED" }
   | { type: "SAVE_CONTEXT_FAILURE"; payload: string }
+  | { type: "OPTIMIZE_CONTEXT_START" }
+  | { type: "OPTIMIZE_CONTEXT_SUCCESS"; payload: string }
+  | { type: "OPTIMIZE_CONTEXT_FAILURE"; payload: string }
   | { type: "CLEAR_ERROR" }
   | { type: "SET_ERROR"; payload: string };
 
@@ -66,6 +71,7 @@ const initialState: ProfileState = {
   aiContext: "",
   aiContextSaved: false,
   isSavingContext: false,
+  isOptimizingContext: false,
   isAiEnabled: false,
   loadingStatus: true,
 };
@@ -134,6 +140,24 @@ function profileReducer(state: ProfileState, action: ProfileAction): ProfileStat
         isSavingContext: false,
         error: action.payload,
       };
+    case "OPTIMIZE_CONTEXT_START":
+      return {
+        ...state,
+        isOptimizingContext: true,
+        error: null,
+      };
+    case "OPTIMIZE_CONTEXT_SUCCESS":
+      return {
+        ...state,
+        isOptimizingContext: false,
+        aiContext: action.payload,
+      };
+    case "OPTIMIZE_CONTEXT_FAILURE":
+      return {
+        ...state,
+        isOptimizingContext: false,
+        error: action.payload,
+      };
     case "CLEAR_ERROR":
       return {
         ...state,
@@ -160,6 +184,7 @@ export default function ProfilePage() {
     aiContext,
     aiContextSaved,
     isSavingContext,
+    isOptimizingContext,
     isAiEnabled,
     loadingStatus,
   } = state;
@@ -195,6 +220,24 @@ export default function ProfilePage() {
     } catch (err) {
       console.error("Failed to save AI context", err);
       dispatch({ type: "SAVE_CONTEXT_FAILURE", payload: "Échec de l'enregistrement du contexte." });
+    }
+  };
+
+  const handleOptimizeAiContext = async () => {
+    if (!aiContext || aiContext.trim() === "") {
+      dispatch({ type: "SET_ERROR", payload: "Veuillez d'abord saisir un contexte de base à optimiser." });
+      return;
+    }
+    dispatch({ type: "OPTIMIZE_CONTEXT_START" });
+    try {
+      const res = await apiService.post<{ optimized: string }, { context: string }>(
+        "/health/ai-insights/context/optimize",
+        { context: aiContext }
+      );
+      dispatch({ type: "OPTIMIZE_CONTEXT_SUCCESS", payload: res.optimized });
+    } catch (err) {
+      console.error("Failed to optimize AI context", err);
+      dispatch({ type: "OPTIMIZE_CONTEXT_FAILURE", payload: "Échec de l'optimisation par l'IA." });
     }
   };
 
@@ -360,17 +403,31 @@ export default function ProfilePage() {
               sx={{ mb: 2 }}
             />
 
-            <Button
-              variant="contained"
-              color="primary"
-              fullWidth
-              onClick={handleSaveAiContext}
-              disabled={isSavingContext}
-              startIcon={isSavingContext ? <CircularProgress size={20} color="inherit" /> : <SaveIcon />}
-              sx={{ borderRadius: 3, py: 1.2, textTransform: "none", fontWeight: 600 }}
-            >
-              {aiContextSaved ? "Contexte sauvegardé !" : "Enregistrer le contexte"}
-            </Button>
+            <Stack direction={{ xs: "column", sm: "row" }} spacing={2} sx={{ mt: 1 }}>
+              <Button
+                variant="outlined"
+                color="secondary"
+                fullWidth
+                onClick={handleOptimizeAiContext}
+                disabled={isOptimizingContext || !aiContext || aiContext.trim() === ""}
+                startIcon={isOptimizingContext ? <CircularProgress size={20} color="inherit" /> : <AutoAwesomeIcon />}
+                sx={{ borderRadius: 3, py: 1.2, textTransform: "none", fontWeight: 600 }}
+              >
+                {isOptimizingContext ? "Optimisation..." : "Optimiser via l'IA 💡"}
+              </Button>
+
+              <Button
+                variant="contained"
+                color="primary"
+                fullWidth
+                onClick={handleSaveAiContext}
+                disabled={isSavingContext}
+                startIcon={isSavingContext ? <CircularProgress size={20} color="inherit" /> : <SaveIcon />}
+                sx={{ borderRadius: 3, py: 1.2, textTransform: "none", fontWeight: 600 }}
+              >
+                {aiContextSaved ? "Contexte sauvegardé !" : "Enregistrer le contexte"}
+              </Button>
+            </Stack>
           </Paper>
         )}
 

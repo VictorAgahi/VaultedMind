@@ -15,6 +15,8 @@ import {
   Box,
   Typography,
   IconButton,
+  FormControlLabel,
+  Switch,
 } from "@mui/material";
 import DeleteIcon from "@mui/icons-material/Delete";
 import AddIcon from "@mui/icons-material/Add";
@@ -31,6 +33,7 @@ export interface FieldFormData {
   name: string;
   fieldType: FieldType;
   optionsOrder: OptionItem[];
+  isHourly?: boolean;
 }
 
 interface FieldDialogProps {
@@ -122,6 +125,27 @@ export const FieldDialog: React.FC<FieldDialogProps> = ({
                 <MenuItem value={FieldType.BOOLEAN}>Oui / Non</MenuItem>
               </Select>
             </FormControl>
+
+            {formData.fieldType === FieldType.NUMBER && (
+              <FormControlLabel
+                control={
+                  <Switch
+                    checked={!!formData.isHourly}
+                    onChange={(e) => setFormData((prev) => ({ ...prev, isHourly: e.target.checked }))}
+                    color="primary"
+                  />
+                }
+                label={
+                  <Box>
+                    <Typography variant="body2" sx={{ fontWeight: 600 }}>Format horaire</Typography>
+                    <Typography variant="caption" color="text.secondary">
+                      Permet de saisir des valeurs sous la forme &quot;6h30&quot; ou &quot;06:30&quot;, converties automatiquement en 6.5 pour les analyses.
+                    </Typography>
+                  </Box>
+                }
+                sx={{ ml: 0, mt: 1 }}
+              />
+            )}
 
             {formData.fieldType === FieldType.STRING && (
               <Box sx={{ mt: 1 }}>
