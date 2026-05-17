@@ -1,10 +1,4 @@
-import {
-  Controller,
-  Post,
-  Body,
-  UseGuards,
-  Request,
-} from '@nestjs/common';
+import { Controller, Post, Body, UseGuards, Request } from '@nestjs/common';
 import { AIChatService } from '../../application/services/ai-chat.service.js';
 import { JwtAuthGuard } from '../../../auth/infrastructure/guards/jwt-auth.guard.js';
 import { AuthUser } from '../../../auth/domain/interfaces/auth-user.interface.js';
@@ -22,7 +16,10 @@ export class AIChatController {
     if (!message) {
       return { response: "Je n'ai pas reçu de message." };
     }
-    const response = await this.aiChatService.getChatResponse(req.user.id, message);
+    const response = await this.aiChatService.getChatResponse(
+      req.user.id,
+      message,
+    );
     return { response };
   }
 }

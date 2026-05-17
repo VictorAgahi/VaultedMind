@@ -22,7 +22,7 @@ export class AIInsightService {
     private readonly dataSanitizer: DataSanitizerService,
     private readonly promptService: PromptService,
     private readonly llmService: LLMService,
-  ) {}
+  ) { }
 
   async generateInsightForUser(userId: string): Promise<AIInsight | null> {
     try {
@@ -68,7 +68,7 @@ export class AIInsightService {
 
       const prompt = this.promptService.generatePrompt(
         insightType,
-        promptParams as any, // Will fix PromptService next
+        promptParams,
       );
 
       this.logger.log(

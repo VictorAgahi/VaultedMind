@@ -15,7 +15,7 @@ export class AIChatService {
     private readonly userRepository: UserRepository,
     private readonly dataSanitizer: DataSanitizerService,
     private readonly llmService: LLMService,
-  ) { }
+  ) {}
 
   async getChatResponse(userId: string, userMessage: string): Promise<string> {
     try {
@@ -42,7 +42,9 @@ export class AIChatService {
       }
 
       const user = await this.userRepository.findUserById(userId);
-      const userContext = user.aiContext ? `\n[CONTEXTE PERSONNALISÉ À RESPECTER : ${user.aiContext}]\n` : '';
+      const userContext = user.aiContext
+        ? `\n[CONTEXTE PERSONNALISÉ À RESPECTER : ${user.aiContext}]\n`
+        : '';
 
       const systemPrompt = `Tu es l'assistant IA de VaultedMind, une application de suivi du bien-être mental. 
 Ton rôle est d'aider l'utilisateur à comprendre ses données, à identifier des modèles et à lui donner des conseils bienveillants.
@@ -57,10 +59,13 @@ CONSIGNES :
 
       const prompt = `Message de l'utilisateur : "${userMessage}"\n\nAssistant, réponds à l'utilisateur :`;
 
-      return await this.llmService.generateText(`${systemPrompt}\n\n${prompt}`, 500);
+      return await this.llmService.generateText(
+        `${systemPrompt}\n\n${prompt}`,
+        500,
+      );
     } catch (error) {
       this.logger.error(`Error in AIChatService for user ${userId}:`, error);
-      return "Désolé, je rencontre une petite difficulté technique pour analyser vos données. Réessayez dans un instant.";
+      return 'Désolé, je rencontre une petite difficulté technique pour analyser vos données. Réessayez dans un instant.';
     }
   }
 }

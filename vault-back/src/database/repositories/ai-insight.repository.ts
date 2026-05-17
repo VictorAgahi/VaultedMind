@@ -60,7 +60,7 @@ export class AIInsightRepository extends AbstractBaseRepository<AIInsightModel> 
   }
 
   async delete(id: string, userId: string): Promise<void> {
-    const result = await this.repository.softDelete({ id, userId } as any);
+    const result = await this.repository.softDelete({ id, userId });
     if (result.affected === 0) {
       this.logger.warn(
         `Insight ${id} not found for user ${userId} or already deleted`,

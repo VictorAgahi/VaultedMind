@@ -16,7 +16,7 @@ import { Body } from '@nestjs/common';
 
 @Controller('health/ai-insights')
 export class AIInsightController {
-  constructor(private readonly aiInsightService: AIInsightService) {}
+  constructor(private readonly aiInsightService: AIInsightService) { }
 
   @UseGuards(JwtAuthGuard)
   @Get()
@@ -81,7 +81,9 @@ export class AIInsightController {
   @UseGuards(JwtAuthGuard)
   @Get('status')
   async getStatus(@Request() req: { user: AuthUser }) {
-    const enabled = await this.aiInsightService.getAIInsightsStatus(req.user.id);
+    const enabled = await this.aiInsightService.getAIInsightsStatus(
+      req.user.id,
+    );
     return { enabled };
   }
 
