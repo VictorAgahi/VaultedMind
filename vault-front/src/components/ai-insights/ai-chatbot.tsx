@@ -82,12 +82,13 @@ const MessageList: React.FC<MessageListProps> = ({ messages, isPending, scrollRe
     ref={scrollRef}
     sx={{
       flexGrow: 1,
-      p: 2,
+      p: { xs: 1.5, sm: 2 },
       overflowY: "auto",
       bgcolor: "#f9fafb",
       display: "flex",
       flexDirection: "column",
       gap: 2,
+      WebkitOverflowScrolling: "touch",
     }}
   >
     <List sx={{ p: 0 }}>
@@ -169,11 +170,12 @@ interface ChatInputProps {
 
 const ChatInput: React.FC<ChatInputProps> = ({ value, onChange, onSend, disabled }) => (
   <Box sx={{
-    p: 2,
-    pb: { xs: "calc(env(safe-area-inset-bottom, 0px) + 16px)", sm: 2 },
+    px: 1.5,
+    pt: 1.5,
+    pb: { xs: "calc(env(safe-area-inset-bottom, 0px) + 72px)", sm: 1.5 },
     bgcolor: "white",
     borderTop: "1px solid #e5e7eb",
-    flexShrink: 0
+    flexShrink: 0,
   }}>
     <Box sx={{ display: "flex", gap: 1, alignItems: "flex-end" }}>
       <TextField
@@ -181,7 +183,7 @@ const ChatInput: React.FC<ChatInputProps> = ({ value, onChange, onSend, disabled
         size="small"
         multiline
         maxRows={4}
-        placeholder="Posez votre question..."
+        placeholder="Posez votre question…"
         value={value}
         onChange={(e) => onChange(e.target.value)}
         onKeyDown={(e) => {
@@ -193,45 +195,46 @@ const ChatInput: React.FC<ChatInputProps> = ({ value, onChange, onSend, disabled
         sx={{
           "& .MuiOutlinedInput-root": {
             borderRadius: 3,
-            bgcolor: "white",
-            border: "1px solid #e5e7eb",
+            bgcolor: "#f8fafc",
+            border: "1px solid #e2e8f0",
             transition: "all 0.2s",
             minHeight: 44,
-            alignItems: "center",
+            alignItems: "flex-end",
+            pb: "10px",
             "& fieldset": { border: "none" },
             "&.Mui-focused": {
+              bgcolor: "white",
               border: "1px solid",
               borderColor: "primary.main",
-              boxShadow: "0 0 0 2px rgba(99, 102, 241, 0.1)"
-            }
+              boxShadow: "0 0 0 3px rgba(216,24,50,0.08)",
+            },
           },
           "& .MuiInputBase-input": {
-            py: 0.5,
-          }
+            py: 0,
+            fontSize: { xs: "0.9rem", sm: "0.875rem" },
+            lineHeight: 1.5,
+          },
         }}
       />
       <IconButton
         onClick={onSend}
         disabled={disabled}
         sx={{
-          bgcolor: value.trim() ? "primary.main" : "transparent",
-          color: value.trim() ? "white" : "#9ca3af",
+          bgcolor: value.trim() ? "primary.main" : "#f1f5f9",
+          color: value.trim() ? "white" : "#94a3b8",
           transition: "all 0.2s ease-in-out",
+          flexShrink: 0,
+          mb: "2px",
           "&:hover": {
-            bgcolor: value.trim() ? "primary.dark" : "transparent",
-            transform: value.trim() ? "scale(1.05)" : "none"
+            bgcolor: value.trim() ? "primary.dark" : "#e2e8f0",
+            transform: value.trim() ? "scale(1.05)" : "none",
           },
           "&.Mui-disabled": {
-            bgcolor: "transparent",
-            color: "#d1d5db"
+            bgcolor: "#f1f5f9",
+            color: "#cbd5e1",
           },
           width: 44,
           height: 44,
-          flexShrink: 0,
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          p: 0,
         }}
       >
         <SendIcon fontSize="small" />

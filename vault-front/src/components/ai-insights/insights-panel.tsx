@@ -66,9 +66,9 @@ function insightsReducer(state: InsightsState, action: InsightsAction): Insights
 
 const insightTypeLabels: Record<string, string> = {
   DAILY_SUMMARY: "Résumé quotidien",
-  WEEKLY_TREND: "Tendances hebdomadaires",
-  ANOMALY: "Anomalie détectée",
-  RECOMMENDATION: "Recommandation",
+  WEEKLY_TREND: "Tendances hebdo",
+  ANOMALY: "Anomalie",
+  RECOMMENDATION: "Conseil",
 };
 
 // ─── Markdown renderer ────────────────────────────────────────────────────────
@@ -136,7 +136,6 @@ function parseMarkdown(content: string): MdToken[] {
 }
 
 function renderInline(text: string): React.ReactNode {
-  // Handle **bold**, *italic*, `code`
   const parts = text.split(/(\*\*[^*]+\*\*|\*[^*]+\*|`[^`]+`)/g);
   return parts.map((part, idx) => {
     if (part.startsWith("**") && part.endsWith("**"))
@@ -162,21 +161,21 @@ function MarkdownRenderer({ content }: { content: string }) {
 
         if (token.type === "h1")
           return (
-            <Typography key={key} variant="h6" sx={{ fontWeight: 900, color: "#0f172a", mt: 1, lineHeight: 1.3 }}>
+            <Typography key={key} variant="h6" sx={{ fontWeight: 900, color: "#0f172a", mt: 1, lineHeight: 1.3, fontSize: { xs: "1rem", sm: "1.1rem" } }}>
               {renderInline(token.text)}
             </Typography>
           );
 
         if (token.type === "h2")
           return (
-            <Typography key={key} variant="subtitle1" sx={{ fontWeight: 800, color: "#1e293b", mt: 0.5, lineHeight: 1.4 }}>
+            <Typography key={key} variant="subtitle1" sx={{ fontWeight: 800, color: "#1e293b", mt: 0.5, lineHeight: 1.4, fontSize: { xs: "0.9rem", sm: "1rem" } }}>
               {renderInline(token.text)}
             </Typography>
           );
 
         if (token.type === "h3")
           return (
-            <Typography key={key} variant="subtitle2" sx={{ fontWeight: 700, color: "#334155", textTransform: "uppercase", letterSpacing: "0.04em", fontSize: "0.78rem", mt: 0.5 }}>
+            <Typography key={key} variant="subtitle2" sx={{ fontWeight: 700, color: "#334155", textTransform: "uppercase", letterSpacing: "0.04em", fontSize: "0.75rem", mt: 0.5 }}>
               {renderInline(token.text)}
             </Typography>
           );
@@ -187,13 +186,13 @@ function MarkdownRenderer({ content }: { content: string }) {
               key={key}
               sx={{
                 borderLeft: "3px solid #6366f1",
-                pl: 2,
+                pl: 1.5,
                 py: 0.5,
                 bgcolor: "rgba(99,102,241,0.04)",
                 borderRadius: "0 8px 8px 0",
               }}
             >
-              <Typography variant="body2" sx={{ color: "#475569", fontStyle: "italic", lineHeight: 1.6 }}>
+              <Typography variant="body2" sx={{ color: "#475569", fontStyle: "italic", lineHeight: 1.6, fontSize: { xs: "0.82rem", sm: "0.875rem" } }}>
                 {renderInline(token.text)}
               </Typography>
             </Box>
@@ -201,10 +200,10 @@ function MarkdownRenderer({ content }: { content: string }) {
 
         if (token.type === "bullet-list")
           return (
-            <Box key={key} component="ul" sx={{ m: 0, pl: 2.5, display: "flex", flexDirection: "column", gap: 0.5 }}>
+            <Box key={key} component="ul" sx={{ m: 0, pl: 2, display: "flex", flexDirection: "column", gap: 0.5 }}>
               {token.items.map((item, ii) => (
                 <Box key={ii} component="li" sx={{ color: "#475569" }}>
-                  <Typography variant="body2" component="span" sx={{ lineHeight: 1.6, fontSize: "0.875rem" }}>
+                  <Typography variant="body2" component="span" sx={{ lineHeight: 1.6, fontSize: { xs: "0.82rem", sm: "0.875rem" } }}>
                     {renderInline(item)}
                   </Typography>
                 </Box>
@@ -223,19 +222,19 @@ function MarkdownRenderer({ content }: { content: string }) {
                       color: "white",
                       fontWeight: 800,
                       borderRadius: "50%",
-                      minWidth: 22,
-                      height: 22,
+                      minWidth: 20,
+                      height: 20,
                       display: "flex",
                       alignItems: "center",
                       justifyContent: "center",
-                      fontSize: "0.7rem",
+                      fontSize: "0.65rem",
                       flexShrink: 0,
                       mt: 0.2,
                     }}
                   >
                     {ii + 1}
                   </Box>
-                  <Typography variant="body2" sx={{ color: "#475569", lineHeight: 1.6, fontSize: "0.875rem" }}>
+                  <Typography variant="body2" sx={{ color: "#475569", lineHeight: 1.6, fontSize: { xs: "0.82rem", sm: "0.875rem" } }}>
                     {renderInline(item)}
                   </Typography>
                 </Box>
@@ -243,9 +242,8 @@ function MarkdownRenderer({ content }: { content: string }) {
             </Box>
           );
 
-        // paragraph
         return (
-          <Typography key={key} variant="body2" sx={{ color: "#475569", lineHeight: 1.7, fontSize: "0.875rem" }}>
+          <Typography key={key} variant="body2" sx={{ color: "#475569", lineHeight: 1.7, fontSize: { xs: "0.82rem", sm: "0.875rem" } }}>
             {renderInline(token.text)}
           </Typography>
         );
@@ -267,10 +265,10 @@ function InsightCard({
   onDelete: (id: string) => void;
   isEnabled: boolean;
 }) {
-  const [expanded, setExpanded] = useState(true);
+  const [expanded, setExpanded] = useState(false);
 
   const dateStr = isMounted
-    ? `${new Date(insight.createdAt).toLocaleDateString()} ${new Date(insight.createdAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}`
+    ? new Date(insight.createdAt).toLocaleDateString("fr-FR", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" })
     : "";
 
   const handleAskAI = () => {
@@ -283,59 +281,58 @@ function InsightCard({
       sx={{
         border: "1px solid #e2e8f0",
         boxShadow: "0 1px 3px rgba(0,0,0,0.04)",
-        borderRadius: 4,
+        borderRadius: { xs: 3, sm: 4 },
         bgcolor: "white",
         "&:hover": { boxShadow: "0 4px 12px rgba(0,0,0,0.08)", borderColor: "#cbd5e1" },
         transition: "box-shadow 0.2s, border-color 0.2s",
       }}
     >
-      <CardContent sx={{ p: 3 }}>
-        {/* Header row */}
-        <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", mb: 2, gap: 2 }}>
-          <Typography variant="subtitle1" sx={{ fontWeight: 800, color: "#1e293b", flexGrow: 1 }}>
-            {insight.title}
+      <CardContent sx={{ p: { xs: 2, sm: 3 }, "&:last-child": { pb: { xs: 2, sm: 3 } } }}>
+        {/* Badge + delete row */}
+        <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", mb: 1 }}>
+          <Typography
+            variant="caption"
+            sx={{
+              bgcolor: "rgba(99,102,241,0.08)",
+              color: "#4f46e5",
+              fontWeight: 700,
+              px: 1.2,
+              py: 0.4,
+              borderRadius: 2,
+              fontSize: "0.7rem",
+            }}
+          >
+            {insightTypeLabels[insight.type] || insight.type.replace(/_/g, " ")}
           </Typography>
-          <Box sx={{ display: "flex", alignItems: "center", gap: 1, flexShrink: 0 }}>
-            <Typography
-              variant="caption"
-              sx={{
-                bgcolor: "rgba(99,102,241,0.08)",
-                color: "#4f46e5",
-                fontWeight: 700,
-                px: 1.5,
-                py: 0.5,
-                borderRadius: 2,
-                fontSize: "0.72rem",
-                whiteSpace: "nowrap",
-              }}
-            >
-              {insightTypeLabels[insight.type] || insight.type.replace(/_/g, " ")}
-            </Typography>
-            <IconButton
-              size="small"
-              onClick={() => onDelete(insight.id)}
-              sx={{ color: "#9ca3af", p: 0.5, "&:hover": { color: "#ef4444", bgcolor: "rgba(239,68,68,0.05)" } }}
-            >
-              <DeleteIcon fontSize="small" />
-            </IconButton>
-          </Box>
+          <IconButton
+            size="small"
+            onClick={() => onDelete(insight.id)}
+            sx={{ color: "#9ca3af", p: 0.5, "&:hover": { color: "#ef4444", bgcolor: "rgba(239,68,68,0.05)" } }}
+          >
+            <DeleteIcon sx={{ fontSize: "1rem" }} />
+          </IconButton>
         </Box>
 
-        {/* Content — collapsible when long */}
-        <Collapse in={expanded} collapsedSize={120}>
+        {/* Title */}
+        <Typography variant="subtitle1" sx={{ fontWeight: 800, color: "#1e293b", mb: 1.5, fontSize: { xs: "0.95rem", sm: "1rem" }, lineHeight: 1.35 }}>
+          {insight.title}
+        </Typography>
+
+        {/* Content — collapsible */}
+        <Collapse in={expanded} collapsedSize={80}>
           <MarkdownRenderer content={insight.content} />
         </Collapse>
 
-        {/* Footer row */}
-        <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", mt: 1.5, gap: 1, flexWrap: "wrap" }}>
-          <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-            <Typography variant="caption" sx={{ color: "#9ca3af" }}>
-              {dateStr}
-            </Typography>
+        {/* Footer */}
+        <Box sx={{ mt: 1.5, display: "flex", flexDirection: { xs: "column", sm: "row" }, gap: { xs: 1, sm: 0 }, justifyContent: "space-between", alignItems: { xs: "stretch", sm: "center" } }}>
+          <Typography variant="caption" sx={{ color: "#94a3b8", fontSize: "0.72rem" }}>
+            {dateStr}
+          </Typography>
+          <Box sx={{ display: "flex", gap: 1, justifyContent: { xs: "space-between", sm: "flex-end" } }}>
             {isEnabled && (
               <Button
                 size="small"
-                startIcon={<ChatIcon sx={{ fontSize: "0.85rem !important" }} />}
+                startIcon={<ChatIcon sx={{ fontSize: "0.8rem !important" }} />}
                 onClick={handleAskAI}
                 sx={{
                   color: "#4f46e5",
@@ -344,23 +341,30 @@ function InsightCard({
                   textTransform: "none",
                   bgcolor: "rgba(99,102,241,0.06)",
                   borderRadius: 2,
-                  px: 1,
-                  py: 0.4,
+                  px: 1.2,
+                  py: 0.5,
+                  flex: { xs: 1, sm: "none" },
                   "&:hover": { bgcolor: "rgba(99,102,241,0.12)" },
                 }}
               >
                 Demander à l&apos;IA
               </Button>
             )}
+            <Button
+              size="small"
+              onClick={() => setExpanded((v) => !v)}
+              endIcon={expanded ? <ExpandLessIcon sx={{ fontSize: "0.9rem !important" }} /> : <ExpandMoreIcon sx={{ fontSize: "0.9rem !important" }} />}
+              sx={{
+                color: "#6366f1",
+                fontWeight: 700,
+                fontSize: "0.72rem",
+                textTransform: "none",
+                flex: { xs: 1, sm: "none" },
+              }}
+            >
+              {expanded ? "Réduire" : "Tout lire"}
+            </Button>
           </Box>
-          <Button
-            size="small"
-            onClick={() => setExpanded((v) => !v)}
-            endIcon={expanded ? <ExpandLessIcon fontSize="small" /> : <ExpandMoreIcon fontSize="small" />}
-            sx={{ color: "#6366f1", fontWeight: 700, fontSize: "0.75rem", textTransform: "none", minWidth: 0 }}
-          >
-            {expanded ? "Réduire" : "Tout afficher"}
-          </Button>
         </Box>
       </CardContent>
     </Card>
@@ -441,24 +445,24 @@ export function InsightsPanel() {
     <Box
       sx={{
         width: "100%",
-        mt: 4,
+        mt: 3,
         bgcolor: "#f8fafc",
-        borderRadius: 4,
+        borderRadius: { xs: 3, sm: 4 },
         border: "1px solid #e2e8f0",
         p: { xs: 2, sm: 3 },
       }}
     >
       {/* Header */}
-      <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", mb: 1.5 }}>
+      <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", mb: 1, flexWrap: "wrap", gap: 1 }}>
         <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-          <EmojiEventsIcon sx={{ color: "#f59e0b" }} />
-          <Typography variant="h6" sx={{ fontWeight: 700, color: "#0f172a" }}>
+          <EmojiEventsIcon sx={{ color: "#f59e0b", fontSize: { xs: "1.2rem", sm: "1.5rem" } }} />
+          <Typography variant="h6" sx={{ fontWeight: 700, color: "#0f172a", fontSize: { xs: "1rem", sm: "1.1rem" } }}>
             Analyses par IA
           </Typography>
           {state.insights.length > 0 && (
-            <Typography variant="caption" sx={{ bgcolor: "rgba(0,0,0,0.06)", color: "text.secondary", fontWeight: 700, px: 1.2, py: 0.3, borderRadius: 10, fontSize: "0.72rem" }}>
+            <Box sx={{ bgcolor: "rgba(0,0,0,0.07)", color: "#475569", fontWeight: 700, px: 1, py: 0.2, borderRadius: 10, fontSize: "0.7rem" }}>
               {state.insights.length}
-            </Typography>
+            </Box>
           )}
         </Box>
         <FormControlLabel
@@ -469,26 +473,28 @@ export function InsightsPanel() {
               size="small"
             />
           }
-          label={state.enabled ? "Activé" : "Désactivé"}
+          label={
+            <Typography variant="caption" sx={{ fontWeight: 600, color: state.enabled ? "#16a34a" : "#94a3b8" }}>
+              {state.enabled ? "Activé" : "Désactivé"}
+            </Typography>
+          }
+          sx={{ mr: 0 }}
         />
       </Box>
 
       {/* Contexte limites */}
-      <Box sx={{ display: "flex", alignItems: "flex-start", gap: 0.75, mb: 2 }}>
-        <InfoOutlinedIcon sx={{ fontSize: "0.9rem", color: "#94a3b8", mt: "2px", flexShrink: 0 }} />
-        <Typography variant="caption" sx={{ color: "#64748b", lineHeight: 1.5 }}>
-          Les analyses sont générées automatiquement chaque jour à <strong>2h00 UTC</strong> à partir de vos journaux récents.
-          {" "}Une analyse par type est conservée (résumé, tendances, anomalies, recommandations).
-          {" "}Vous pouvez aussi en générer une manuellement ci-dessous.
-        </Typography>
-        <Tooltip title="L'IA analyse vos 30 derniers journaux et produit des insights personnalisés. Les anciennes analyses du même type sont remplacées automatiquement." arrow>
-          <InfoOutlinedIcon sx={{ fontSize: "0.85rem", color: "#cbd5e1", mt: "2px", flexShrink: 0, cursor: "help" }} />
+      <Box sx={{ display: "flex", alignItems: "flex-start", gap: 0.75, mb: 2, bgcolor: "rgba(148,163,184,0.08)", borderRadius: 2, p: 1.2 }}>
+        <Tooltip title="L'IA analyse vos 30 derniers journaux. Une analyse par type est conservée ; les suivantes remplacent les précédentes." arrow>
+          <InfoOutlinedIcon sx={{ fontSize: "0.85rem", color: "#94a3b8", mt: "1px", flexShrink: 0, cursor: "help" }} />
         </Tooltip>
+        <Typography variant="caption" sx={{ color: "#64748b", lineHeight: 1.5, fontSize: "0.72rem" }}>
+          Générées chaque jour à <strong>2h UTC</strong> · une analyse par type · basées sur vos 30 derniers journaux
+        </Typography>
       </Box>
 
       {!state.enabled && (
-        <Alert severity="info" sx={{ mb: 2, bgcolor: "#eff6ff", border: "1px solid #bfdbfe", "& .MuiAlert-icon": { color: "#3b82f6" } }}>
-          Les analyses par IA sont actuellement désactivées. Activez-les pour recevoir une analyse personnalisée de votre bien-être.
+        <Alert severity="info" sx={{ mb: 2, bgcolor: "#eff6ff", border: "1px solid #bfdbfe", fontSize: { xs: "0.82rem", sm: "0.875rem" }, "& .MuiAlert-icon": { color: "#3b82f6" } }}>
+          Activez les analyses pour recevoir un suivi personnalisé de votre bien-être.
         </Alert>
       )}
 
@@ -496,6 +502,7 @@ export function InsightsPanel() {
         <Button
           variant="outlined"
           size="small"
+          fullWidth
           onClick={async () => {
             try {
               dispatch({ type: "FETCH_START" });
@@ -506,7 +513,7 @@ export function InsightsPanel() {
               dispatch({ type: "FETCH_ERROR", error: getErrorMessage(error) });
             }
           }}
-          sx={{ mb: 2, borderColor: "#cbd5e1", color: "#475569", "&:hover": { borderColor: "#94a3b8", bgcolor: "#f1f5f9" } }}
+          sx={{ mb: 2, borderColor: "#cbd5e1", color: "#475569", fontSize: "0.82rem", "&:hover": { borderColor: "#94a3b8", bgcolor: "#f1f5f9" } }}
         >
           Générer maintenant
         </Button>
@@ -514,16 +521,16 @@ export function InsightsPanel() {
 
       {state.loading ? (
         <Box sx={{ display: "flex", justifyContent: "center", py: 4 }}>
-          <CircularProgress />
+          <CircularProgress size={28} />
         </Box>
       ) : state.error ? (
-        <Alert severity="error">{state.error}</Alert>
+        <Alert severity="error" sx={{ fontSize: "0.82rem" }}>{state.error}</Alert>
       ) : state.insights.length === 0 ? (
-        <Alert severity="info" sx={{ bgcolor: "#eff6ff", border: "1px solid #bfdbfe", "& .MuiAlert-icon": { color: "#3b82f6" } }}>
-          Pas encore d&apos;analyses. Elles sont générées quotidiennement à 2h00 UTC.
+        <Alert severity="info" sx={{ bgcolor: "#eff6ff", border: "1px solid #bfdbfe", fontSize: "0.82rem", "& .MuiAlert-icon": { color: "#3b82f6" } }}>
+          Pas encore d&apos;analyses. Elles sont générées chaque jour à 2h UTC.
         </Alert>
       ) : (
-        <Stack spacing={2}>
+        <Stack spacing={1.5}>
           {state.insights.map((insight) => (
             <InsightCard
               key={insight.id}
@@ -537,9 +544,9 @@ export function InsightsPanel() {
       )}
 
       <Dialog open={openConfirm} onClose={() => setOpenConfirm(false)} maxWidth="sm" fullWidth>
-        <DialogTitle sx={{ fontWeight: 700 }}>Activer les analyses par IA</DialogTitle>
+        <DialogTitle sx={{ fontWeight: 700, fontSize: { xs: "1rem", sm: "1.1rem" } }}>Activer les analyses par IA</DialogTitle>
         <DialogContent>
-          <DialogContentText sx={{ mb: 2, fontSize: "0.95rem", color: "text.primary" }}>
+          <DialogContentText sx={{ mb: 2, fontSize: { xs: "0.85rem", sm: "0.95rem" }, color: "text.primary" }}>
             Pour activer les analyses personnalisées, vous devez accepter les conditions de partage de contenu avec OpenAI.
           </DialogContentText>
           <Box
@@ -548,9 +555,9 @@ export function InsightsPanel() {
               p: 2,
               borderRadius: 1,
               border: "1px solid #e5e7eb",
-              maxHeight: 200,
+              maxHeight: 180,
               overflowY: "auto",
-              fontSize: "0.85rem",
+              fontSize: "0.8rem",
               fontStyle: "italic",
               color: "text.secondary",
             }}
@@ -562,9 +569,9 @@ export function InsightsPanel() {
             You also represent and warrant that you have the rights, licenses, and permissions necessary – including as applicable that you have provided any notice to End Users, and collected any relevant consent from End Users (&quot;Notice&quot;) – to provide the Input to the Services for the Development Purposes. You agree that you and your End Users will not provide any information as Input to the Services that you or your End Users do not want to be used for Development Purposes, such as sensitive, confidential, or proprietary information. You also agree that you will not use the Services to process (a) any data that includes or constitutes &quot;Protected Health Information,&quot; as defined under the HIPAA Privacy Rule (45 C.F.R. Section 160.103), or (b) any Personal Data of children under 13 or the applicable age of digital consent. You also agree that you will provide OpenAI a copy of your Notice upon OpenAI&apos;s request.
           </Box>
         </DialogContent>
-        <DialogActions sx={{ p: 3 }}>
-          <Button onClick={() => setOpenConfirm(false)} color="inherit">Annuler</Button>
-          <Button onClick={confirmEnable} variant="contained">J&apos;accepte et j&apos;active</Button>
+        <DialogActions sx={{ p: { xs: 2, sm: 3 }, flexDirection: { xs: "column-reverse", sm: "row" }, gap: { xs: 1, sm: 0 } }}>
+          <Button onClick={() => setOpenConfirm(false)} color="inherit" fullWidth={false} sx={{ width: { xs: "100%", sm: "auto" } }}>Annuler</Button>
+          <Button onClick={confirmEnable} variant="contained" sx={{ width: { xs: "100%", sm: "auto" } }}>J&apos;accepte et j&apos;active</Button>
         </DialogActions>
       </Dialog>
     </Box>
