@@ -22,7 +22,7 @@ export class AIInsightService {
     private readonly dataSanitizer: DataSanitizerService,
     private readonly promptService: PromptService,
     private readonly llmService: LLMService,
-  ) { }
+  ) {}
 
   async generateInsightForUser(userId: string): Promise<AIInsight | null> {
     try {
@@ -56,7 +56,7 @@ export class AIInsightService {
 
       const sanitizedData = this.dataSanitizer.sanitizeLogsForAI(
         recentLogs,
-        fields,
+        activeFields,
       );
 
       const today = new Date().getDay();
@@ -70,15 +70,34 @@ export class AIInsightService {
         userContext: user.aiContext || undefined,
       };
 
-      const prompt = this.promptService.generatePrompt(
+      const analysisPrompt = this.promptService.generateAnalysisBriefPrompt(
         insightType,
         promptParams,
       );
 
       this.logger.log(
-        `Generating ${insightType} insight for user ${userId}...`,
+        `Generating ${insightType} analysis brief for user ${userId}...`,
       );
-      const content = await this.llmService.generateText(prompt, 400);
+      const analysisBrief = await this.llmService.generateText(
+        analysisPrompt,
+        350,
+        this.llmService.getAnalysisModel(),
+      );
+
+      const finalPrompt = this.promptService.generateInsightNarrativePrompt(
+        insightType,
+        promptParams,
+        analysisBrief,
+      );
+
+      this.logger.log(
+        `Synthesizing ${insightType} insight for user ${userId}...`,
+      );
+      const content = await this.llmService.generateText(
+        finalPrompt,
+        450,
+        this.llmService.getSynthesisModel(),
+      );
 
       const title =
         insightType === InsightType.WEEKLY_TREND
@@ -150,12 +169,16 @@ L'utilisateur a saisi le contexte personnel suivant pour personnaliser ses analy
 ---
 "${context}"
 ---
-Optimise et structure ce texte de manière extrêmement claire, professionnelle, et percutante pour un grand modèle de langage (LLM). 
-Rédige le résultat directement sous forme de profil structuré en français (par exemple avec des sections comme "Profil", "Objectifs", "Style de communication souhaité"). 
+Optimise et structure ce texte de manière extrêmement claire, professionnelle, et percutante pour un grand modèle de langage (LLM).
+Rédige le résultat directement sous forme de profil structuré en français (par exemple avec des sections comme "Profil", "Objectifs", "Style de communication souhaité").
 Conserve absolument toutes les informations de base fournies par l'utilisateur mais enrichis-les pour que l'IA comprenne parfaitement son état d'esprit, ses contraintes et ses buts.
 Ne mets aucune introduction ni conclusion, renvoie UNIQUEMENT le texte optimisé final prêt à être enregistré.`;
 
-    const optimized = await this.llmService.generateText(prompt, 500);
+    const optimized = await this.llmService.generateText(
+      prompt,
+      500,
+      this.llmService.getAnalysisModel(),
+    );
     return optimized.trim();
   }
 

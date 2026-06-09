@@ -7,7 +7,9 @@ interface SanitizedData {
   fieldSummaries: Array<{
     fieldName: string;
     fieldType: string;
+    valueKind?: 'duration' | 'date' | 'numeric' | 'categorical' | 'boolean';
     avgValue?: number;
+    displayAvgValue?: string;
     trend?: string;
     values?: string[];
   }>;
@@ -19,118 +21,212 @@ interface PromptParams {
   userContext?: string;
 }
 
+interface FieldSummaryLine {
+  fieldName: string;
+  fieldType: string;
+  valueKind?: 'duration' | 'date' | 'numeric' | 'categorical' | 'boolean';
+  avgValue?: number;
+  displayAvgValue?: string;
+  trend?: string;
+  values?: string[];
+}
+
 @Injectable()
 export class PromptService {
   generateDailySummaryPrompt(params: PromptParams): string {
-    const { logs: sanitizedData, userContext } = params;
-    const fieldText = sanitizedData.fieldSummaries
-      .map((f) => {
-        let desc = `- ${f.fieldName} (${f.fieldType})`;
-        if (f.avgValue !== undefined) {
-          desc += `: moyenne de ${f.avgValue}`;
-          if (f.trend) desc += ` (tendance : ${f.trend})`;
-        } else if (f.values) {
-          desc += `: ${f.values.join(', ')}`;
-        }
-        return desc;
-      })
-      .join('\n');
-
-    return `Agis en tant que coach de bien-être expert, ingénieur en sciences du comportement et analyste de données de santé de pointe.
-Analyse les données du journal de bord personnel de l'utilisateur ci-dessous et fournis un rapport d'analyse quotidien ultra-poussé, structuré, bienveillant et perspicace.
-
-⚠️ DIRECTIVES IMPORTANTES DE TON ET DE STYLE :
-1. TUTOIER L'UTILISATEUR ABSOLUMENT : Adresse-toi directement à lui en utilisant exclusivement le tutoiement ("tu", "toi", "ton", "ta"). Ne dis jamais "vous".
-2. RESPECT DU CONTEXTE : Basse-toi impérativement sur le contexte de vie et les objectifs personnels de l'utilisateur ci-dessous pour personnaliser tes retours et analyses de manière pertinente.
-3. ANALYSE PROFONDE ET CROISÉE : Ne te contente pas de redire les chiffres. Mets en relation les différentes variables pour identifier des corrélations sous-jacentes (ex: l'impact d'une habitude sur le sommeil, le niveau de stress ou l'humeur).
-4. FORMAT : Rédige une analyse détaillée, structurée avec des paragraphes aérés (environ 150-250 mots). RÉPONDS IMPÉRATIVEMENT EN FRANÇAIS.
-
-Période des données : ${sanitizedData.dateRange}
-Nombre d'entrées analysées : ${sanitizedData.totalLogs}
-
-${userContext ? `[CONTEXTE PERSONNEL ET CONFIGURATION DE L'UTILISATEUR] :\n${userContext}\n` : ''}
-
-Résumé des indicateurs suivis :
-${fieldText}
-
-Structure ton retour ainsi :
-- 🔍 Analyse comportementale & Observations croisées : Analyse de manière poussée ce que révèlent ses indicateurs, en faisant des liens malins avec son contexte de vie.
-- 💡 Recommandations concrètes : Suggère 1 ou 2 pistes d'action immédiates, actionnables et bienveillantes, en phase avec ses objectifs.`;
+    return this.generateInsightNarrativePrompt(
+      InsightType.DAILY_SUMMARY,
+      params,
+      null,
+    );
   }
 
   generateWeeklyTrendPrompt(params: PromptParams): string {
-    const { logs: sanitizedData, userContext } = params;
-    const fieldText = sanitizedData.fieldSummaries
-      .map((f) => {
-        let desc = `- ${f.fieldName}`;
-        if (f.avgValue !== undefined) {
-          desc += ` (moyenne : ${f.avgValue})`;
-          if (f.trend) desc += `, tendance : ${f.trend}`;
-        } else if (f.values) {
-          desc += `: ${f.values.join(', ')}`;
-        }
-        return desc;
-      })
-      .join('\n');
-
-    return `Agis en tant que data analyste et coach comportemental personnel.
-Analyse les données de bien-être de la semaine et fournis un bilan hebdomadaire complet, profond et structuré.
-
-⚠️ DIRECTIVES IMPORTANTES DE TON ET DE STYLE :
-1. TUTOIER L'UTILISATEUR ABSOLUMENT : Adresse-toi directement à lui en utilisant exclusivement le tutoiement ("tu", "toi", "ton", "ta"). Ne dis jamais "vous".
-2. RESPECT DU CONTEXTE : Oriente l'analyse hebdomadaire pour l'aider à atteindre les objectifs décrits dans son contexte personnel.
-3. FORMAT : Structure ton analyse de manière claire avec des sections lisibles en français.
-
-Période : ${sanitizedData.dateRange}
-Entrées cette semaine : ${sanitizedData.totalLogs}
-
-${userContext ? `[CONTEXTE PERSONNEL ET CONFIGURATION DE L'UTILISATEUR] :\n${userContext}\n` : ''}
-
-Données hebdomadaires consolidées :
-${fieldText}
-
-Fournis :
-- 📈 Les 3 principales tendances marquantes observées cette semaine (bonnes habitudes à fêter ou alertes sur lesquelles être vigilant)
-- 🎯 L'adéquation avec ses objectifs personnels formulés dans son contexte de vie
-- 🚀 Un plan d'action ou un défi stimulant pour la semaine à venir`;
+    return this.generateInsightNarrativePrompt(
+      InsightType.WEEKLY_TREND,
+      params,
+      null,
+    );
   }
 
   generateAnomalyPrompt(params: PromptParams): string {
+    return this.generateInsightNarrativePrompt(
+      InsightType.ANOMALY,
+      params,
+      null,
+    );
+  }
+
+  generateAnalysisBriefPrompt(type: InsightType, params: PromptParams): string {
     const { logs: sanitizedData, userContext } = params;
-    return `Agis en tant que détective comportemental de bien-être personnel.
-Recherche tout modèle inhabituel, dérive ou anomalie dans ces données personnelles de santé et de rituel.
+    const fieldText = this.formatFieldSummaries(sanitizedData.fieldSummaries);
+    const contextBlock = userContext
+      ? `\n[CONTEXTE PERSONNEL À PRENDRE EN COMPTE]\n${userContext}\n`
+      : '';
 
-⚠️ DIRECTIVES IMPORTANTES DE TON ET DE STYLE :
-1. TUTOIER L'UTILISATEUR ABSOLUMENT : Adresse-toi directement à lui en utilisant exclusivement le tutoiement ("tu", "toi", "ton", "ta"). Ne dis jamais "vous".
-2. RESPECT DU CONTEXTE : Évalue les anomalies à l'aune de ses objectifs de son contexte.
-3. FORMAT : Sois direct et réponds en français sous forme de constat analytique.
+    const title = this.getAnalysisTitle(type);
+    return `Tu es le premier agent d'analyse de VaultedMind. Ton travail est de produire un dossier de preuve analytique, pas une réponse finale.
 
-Période : ${sanitizedData.dateRange}
-Entrées récentes : ${sanitizedData.totalLogs}
+Objectif: ${title}
 
-${userContext ? `[CONTEXTE PERSONNEL ET CONFIGURATION DE L'UTILISATEUR] :\n${userContext}\n` : ''}
+Règles non négociables:
+1. Ne confonds jamais corrélation et causalité.
+2. N'invente aucune relation statistique qui n'est pas visible dans les données fournies.
+3. Si le contexte personnel mentionne une pathologie, un traitement, un trouble, une situation de vie lourde ou un facteur externe, traite-le comme un confondant possible, jamais comme une preuve.
+4. Si une mesure semble être une durée ou une heure, écris toujours le format humain, par exemple 5h30, jamais 5.5 h.
+5. Réponds uniquement en français.
 
-Données récoltées :
-${sanitizedData.fieldSummaries.map((f) => `- ${f.fieldName} : ${f.avgValue || f.values?.join(', ') || 'N/A'}`).join('\n')}
+Période: ${sanitizedData.dateRange}
+Nombre d'entrées: ${sanitizedData.totalLogs}
+${contextBlock}
+Indicateurs consolidés:
+${fieldText}
 
-Si tu détectes des anomalies ou signaux faibles :
-1. Décris précisément ce qui semble inhabituel ou incohérent d'après ses indicateurs
-2. Propose des explications potentielles en lien avec ses contraintes
-3. Recommande un petit réajustement ou point de vigilance amical
+Produit exactement ce plan, avec des puces courtes:
+## Faits observés
+## Corrélations plausibles et niveau de confiance
+## Facteurs de contexte / confondants à mentionner
+## Ce qu'il ne faut pas conclure
+## Pistes de lecture pour le second agent
 
-Si tout semble parfaitement aligné et sain, félicite-le chaleureusement et brièvement.`;
+Le contenu doit rester prudent, factuel, et centré sur les éléments soutenus par les données.`;
+  }
+
+  generateInsightNarrativePrompt(
+    type: InsightType,
+    params: PromptParams,
+    evidenceBrief: string | null,
+  ): string {
+    const { logs: sanitizedData, userContext } = params;
+    const fieldText = this.formatFieldSummaries(sanitizedData.fieldSummaries);
+    const contextBlock = userContext
+      ? `\n[CONTEXTE PERSONNEL ET CONFIGURATION DE L'UTILISATEUR]\n${userContext}\n`
+      : '';
+
+    const briefBlock = evidenceBrief
+      ? `\n[DOSSIER ANALYTIQUE DU PREMIER AGENT]\n${evidenceBrief}\n`
+      : '';
+
+    const title = this.getAnalysisTitle(type);
+    const header = this.getNarrativeHeader(type);
+
+    return `${header}
+
+Tu es le second agent. Tu reçois un dossier de preuve et tu dois le transformer en réponse utile pour l'utilisateur.
+
+Règles non négociables:
+1. N'ajoute aucune corrélation nouvelle qui n'est pas déjà soutenue par le dossier analytique.
+2. Si le dossier est incertain, reformule-le comme hypothèse, pas comme vérité.
+3. Intègre le contexte personnel comme facteur de nuance, en particulier pour les pathologies, traitements, troubles ou événements de vie.
+4. Quand une durée apparaît, écris-la en format humain: 5h30, 2h15, 45 min. Jamais 5.5 h.
+5. Réponds en français, avec un ton empathique mais précis.
+
+Type d'analyse: ${title}
+Période: ${sanitizedData.dateRange}
+Nombre d'entrées: ${sanitizedData.totalLogs}
+${contextBlock}
+${briefBlock}
+Base de données consolidée:
+${fieldText}
+
+Format attendu:
+- un titre court si pertinent
+- une section d'analyse claire et concise
+- une section "Ce que ça suggère" ou équivalent si utile
+- 1 à 2 recommandations concrètes maximum
+
+Si tu détectes une possible confusion liée au contexte personnel, dis-le explicitement.`;
   }
 
   generatePrompt(type: InsightType, params: PromptParams): string {
     switch (type) {
       case InsightType.DAILY_SUMMARY:
-        return this.generateDailySummaryPrompt(params);
+        return this.generateInsightNarrativePrompt(type, params, null);
       case InsightType.WEEKLY_TREND:
-        return this.generateWeeklyTrendPrompt(params);
+        return this.generateInsightNarrativePrompt(type, params, null);
       case InsightType.ANOMALY:
-        return this.generateAnomalyPrompt(params);
+        return this.generateInsightNarrativePrompt(type, params, null);
       default:
-        return this.generateDailySummaryPrompt(params);
+        return this.generateInsightNarrativePrompt(
+          InsightType.DAILY_SUMMARY,
+          params,
+          null,
+        );
+    }
+  }
+
+  formatFieldSummaries(fieldSummaries: FieldSummaryLine[]): string {
+    return fieldSummaries
+      .map((field) => this.formatFieldSummary(field))
+      .join('\n');
+  }
+
+  private formatFieldSummary(field: FieldSummaryLine): string {
+    const valueKindLabel = field.valueKind
+      ? `, interprété comme ${field.valueKind}`
+      : '';
+    let description = `- ${field.fieldName} (${field.fieldType}${valueKindLabel})`;
+
+    if (field.avgValue !== undefined) {
+      const displayedAverage =
+        field.displayAvgValue ??
+        this.formatNumericValue(field.avgValue, field.valueKind);
+      description += `: moyenne de ${displayedAverage}`;
+      if (field.trend) {
+        description += ` (tendance : ${field.trend})`;
+      }
+      return description;
+    }
+
+    if (field.values && field.values.length > 0) {
+      description += `: ${field.values.join(', ')}`;
+    }
+
+    return description;
+  }
+
+  private formatNumericValue(
+    value: number,
+    valueKind?: FieldSummaryLine['valueKind'],
+  ): string {
+    if (valueKind !== 'duration') {
+      return value.toLocaleString('fr-FR', { maximumFractionDigits: 2 });
+    }
+
+    const absoluteValue = Math.abs(value);
+    const hours = Math.floor(absoluteValue);
+    const minutes = Math.round((absoluteValue - hours) * 60);
+    const normalizedMinutes = minutes === 60 ? 0 : minutes;
+    const normalizedHours = minutes === 60 ? hours + 1 : hours;
+    const formattedDuration =
+      normalizedMinutes === 0
+        ? `${normalizedHours}h`
+        : `${normalizedHours}h${normalizedMinutes.toString().padStart(2, '0')}`;
+
+    return value < 0 ? `-${formattedDuration}` : formattedDuration;
+  }
+
+  private getAnalysisTitle(type: InsightType): string {
+    switch (type) {
+      case InsightType.WEEKLY_TREND:
+        return 'Analyse hebdomadaire du bien-être';
+      case InsightType.ANOMALY:
+        return "Détection d'anomalies";
+      case InsightType.DAILY_SUMMARY:
+      default:
+        return 'Résumé quotidien du bien-être';
+    }
+  }
+
+  private getNarrativeHeader(type: InsightType): string {
+    switch (type) {
+      case InsightType.WEEKLY_TREND:
+        return 'Agis comme un analyste comportemental et un coach de suivi longitudinal.';
+      case InsightType.ANOMALY:
+        return 'Agis comme un analyste prudent spécialisé dans les anomalies et les signaux faibles.';
+      case InsightType.DAILY_SUMMARY:
+      default:
+        return 'Agis comme un coach de bien-être expert et un analyste de données comportementales.';
     }
   }
 }
