@@ -101,6 +101,22 @@ const LogCalendarView: React.FC<LogCalendarViewProps> = ({
   calendarDays,
   handleCalendarCellClick
 }) => {
+  const handlePrevMonth = () => {
+    setCalendarDate(new Date(calendarDate.getFullYear(), calendarDate.getMonth() - 1, 1));
+  };
+
+  const handleNextMonth = () => {
+    setCalendarDate(new Date(calendarDate.getFullYear(), calendarDate.getMonth() + 1, 1));
+  };
+
+  const getTooltipTitle = (day: typeof calendarDays[number]) => {
+    if (!day.dateStr || day.dayNum === 0) return "";
+    const formattedDate = new Date(day.dateStr).toLocaleDateString("fr-FR");
+    return day.isLogged
+      ? `Modifier le journal du ${formattedDate}`
+      : `Ajouter un journal pour le ${formattedDate}`;
+  };
+
   return (
     <Box sx={{ mb: 2 }}>
       {/* Month Selector Panel */}
@@ -116,23 +132,19 @@ const LogCalendarView: React.FC<LogCalendarViewProps> = ({
       }}>
         <IconButton
           size="small"
-          onClick={() => {
-            setCalendarDate(new Date(calendarDate.getFullYear(), calendarDate.getMonth() - 1, 1));
-          }}
+          onClick={handlePrevMonth}
           sx={{ bgcolor: "background.paper", border: "1px solid rgba(0,0,0,0.05)", boxShadow: "0 2px 4px rgba(0,0,0,0.02)" }}
         >
           <ChevronLeftIcon />
         </IconButton>
 
-        <Typography variant="subtitle1" sx={{ fontWeight: 900, color: "#142949", textTransform: "capitalize" }}>
+        <Typography suppressHydrationWarning variant="subtitle1" sx={{ fontWeight: 900, color: "#142949", textTransform: "capitalize" }}>
           {calendarDate.toLocaleDateString("fr-FR", { month: "long", year: "numeric" })}
         </Typography>
 
         <IconButton
           size="small"
-          onClick={() => {
-            setCalendarDate(new Date(calendarDate.getFullYear(), calendarDate.getMonth() + 1, 1));
-          }}
+          onClick={handleNextMonth}
           sx={{ bgcolor: "background.paper", border: "1px solid rgba(0,0,0,0.05)", boxShadow: "0 2px 4px rgba(0,0,0,0.02)" }}
         >
           <ChevronRightIcon />
@@ -171,7 +183,7 @@ const LogCalendarView: React.FC<LogCalendarViewProps> = ({
           return (
             <Tooltip
               key={day.dateStr}
-              title={day.isLogged ? `Modifier le journal du ${new Date(day.dateStr).toLocaleDateString("fr-FR")}` : `Ajouter un journal pour le ${new Date(day.dateStr).toLocaleDateString("fr-FR")}`}
+              title={getTooltipTitle(day)}
               arrow
             >
               <Box
@@ -605,15 +617,11 @@ export const DailyLogsManager: React.FC = () => {
 
   const { loading, error, dialog, formData } = state;
 
-  if (!mounted) {
-    return (
-      <Paper sx={{ p: { xs: 2, md: 4 }, borderRadius: 4, mt: 4, display: "flex", justifyContent: "center", alignItems: "center", minHeight: 400 }}>
-        <CircularProgress />
-      </Paper>
-    );
-  }
-
-  return (
+  return !mounted ? (
+    <Paper sx={{ p: { xs: 2, md: 4 }, borderRadius: 4, mt: 4, display: "flex", justifyContent: "center", alignItems: "center", minHeight: 400 }}>
+      <CircularProgress />
+    </Paper>
+  ) : (
     <Paper sx={{ p: { xs: 2, md: 4 }, borderRadius: 4, mt: 4 }}>
       <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", mb: 4, flexWrap: "wrap", gap: 2 }}>
         <Box sx={{ display: "flex", alignItems: "center", gap: 2, flexWrap: "wrap" }}>

@@ -28,8 +28,8 @@ interface LogTableProps {
 
 export const LogTable: React.FC<LogTableProps> = ({ logs, activeFields, onEdit, onDelete }) => {
   return (
-    <TableContainer>
-      <Table size="small">
+    <TableContainer sx={{ overflowX: "auto", WebkitOverflowScrolling: "touch" }}>
+      <Table size="small" sx={{ minWidth: { xs: 480, sm: "unset" } }}>
         <TableHead>
           <TableRow>
             <TableCell sx={{ fontWeight: 700 }}>Date</TableCell>
@@ -69,7 +69,7 @@ export const LogTable: React.FC<LogTableProps> = ({ logs, activeFields, onEdit, 
                 return <TableCell key={field.id}>{displayValue}</TableCell>;
               })}
               <TableCell>
-                <Typography variant="body2" sx={{ maxWidth: 200, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                <Typography variant="body2" sx={{ maxWidth: { xs: 100, sm: 150, md: 200 }, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
                   {log.notes || "-"}
                 </Typography>
               </TableCell>

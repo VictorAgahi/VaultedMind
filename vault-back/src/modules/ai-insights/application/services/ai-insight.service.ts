@@ -80,7 +80,7 @@ export class AIInsightService {
       );
       const analysisBrief = await this.llmService.generateText(
         analysisPrompt,
-        350,
+        1500,
         this.llmService.getAnalysisModel(),
       );
 
@@ -95,7 +95,7 @@ export class AIInsightService {
       );
       const content = await this.llmService.generateText(
         finalPrompt,
-        450,
+        3000,
         this.llmService.getSynthesisModel(),
       );
 

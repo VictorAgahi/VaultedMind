@@ -55,7 +55,7 @@ export const RegisterForm: React.FC = () => {
     <Paper
       elevation={0}
       sx={{
-        p: 4,
+        p: { xs: 3, sm: 4 },
         width: "100%",
         maxWidth: 500,
         borderRadius: 4,
@@ -66,7 +66,7 @@ export const RegisterForm: React.FC = () => {
         <Box sx={{ display: "flex", justifyContent: "center", mb: 3 }}>
           <Image src="/assets/logo.png" alt="VaultedMind Logo" width={64} height={64} priority />
         </Box>
-        <Typography variant="h4" component="h1" gutterBottom align="center" sx={{ fontWeight: 700 }}>
+        <Typography variant="h4" component="h1" gutterBottom align="center" sx={{ fontWeight: 700, fontSize: { xs: "1.6rem", sm: "2.125rem" } }}>
           Créer un compte
         </Typography>
         <Typography variant="body1" color="text.secondary" align="center" sx={{ mb: 4 }}>
@@ -79,23 +79,26 @@ export const RegisterForm: React.FC = () => {
           </Alert>
         )}
 
-        <TextField
-          label="Email"
-          name="email"
-          type="email"
-          value={formData.email}
-          onChange={updateFormField}
-          required
-        />
-
-        <TextField
-          label="Mot de passe"
-          name="password"
-          type="password"
-          value={formData.password}
-          onChange={updateFormField}
-          required
-        />
+        <Box sx={{ display: "flex", flexDirection: "column", gap: 2, mb: 1 }}>
+          <TextField
+            label="Email"
+            name="email"
+            type="email"
+            fullWidth
+            value={formData.email}
+            onChange={updateFormField}
+            required
+          />
+          <TextField
+            label="Mot de passe"
+            name="password"
+            type="password"
+            fullWidth
+            value={formData.password}
+            onChange={updateFormField}
+            required
+          />
+        </Box>
 
         <FormControlLabel
           control={

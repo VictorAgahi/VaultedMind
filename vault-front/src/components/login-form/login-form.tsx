@@ -51,7 +51,7 @@ export const LoginForm: React.FC = () => {
     <Paper
       elevation={0}
       sx={{
-        p: 4,
+        p: { xs: 3, sm: 4 },
         width: "100%",
         maxWidth: 400,
         borderRadius: 4,
@@ -62,7 +62,7 @@ export const LoginForm: React.FC = () => {
         <Box sx={{ display: "flex", justifyContent: "center", mb: 3 }}>
           <Image src="/assets/logo.png" alt="VaultedMind Logo" width={64} height={64} priority />
         </Box>
-        <Typography variant="h4" component="h1" gutterBottom align="center" sx={{ fontWeight: 700 }}>
+        <Typography variant="h4" component="h1" gutterBottom align="center" sx={{ fontWeight: 700, fontSize: { xs: "1.6rem", sm: "2.125rem" } }}>
           Bon retour
         </Typography>
         <Typography variant="body1" color="text.secondary" align="center" sx={{ mb: 4 }}>
@@ -97,7 +97,7 @@ export const LoginForm: React.FC = () => {
             disabled={isLoggingIn}
           />
 
-          <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+          <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 1 }}>
             <FormControlLabel
               control={<Checkbox size="small" color="primary" defaultChecked />}
               label={<Typography variant="body2">Se souvenir de moi</Typography>}

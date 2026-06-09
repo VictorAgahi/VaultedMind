@@ -27,7 +27,7 @@ export const Navbar: React.FC = () => {
   return (
     <AppBar position="static" color="inherit" elevation={1}>
       <Toolbar sx={{ justifyContent: "space-between", px: { xs: 2, md: 8 } }}>
-        <Box sx={{ display: "flex", alignItems: "center", gap: 4 }}>
+        <Box sx={{ display: "flex", alignItems: "center", gap: { xs: 1.5, md: 4 } }}>
           <Box component={Link} href="/dashboard" sx={{ display: "flex", alignItems: "center", gap: 1.5, textDecoration: "none" }}>
             <Image src="/assets/logo.png" alt="VaultedMind Logo" width={40} height={40} priority />
             <Typography variant="h6" sx={{ fontWeight: 800, color: "primary.main", letterSpacing: "-0.02em" }}>
@@ -94,12 +94,21 @@ export const Navbar: React.FC = () => {
           </Box>
         </Box>
 
-        <Box sx={{ display: "flex", alignItems: "center", gap: 3 }}>
-          <Box component={Link} href="/profile" sx={{ textDecoration: "none", color: "inherit", display: "flex", alignItems: "center", gap: 2 }}>
-            <Typography variant="body2" sx={{ display: { xs: "none", sm: "block" } }}>
+        <Box sx={{ display: "flex", alignItems: "center", gap: { xs: 1, sm: 3 } }}>
+          <Box component={Link} href="/profile" sx={{ textDecoration: "none", color: "inherit", display: "flex", alignItems: "center", gap: { xs: 1, sm: 2 } }}>
+            <Typography
+              variant="body2"
+              sx={{
+                display: { xs: "none", sm: "block" },
+                maxWidth: { sm: 180, md: 280 },
+                overflow: "hidden",
+                textOverflow: "ellipsis",
+                whiteSpace: "nowrap",
+              }}
+            >
               Bienvenue, <strong>{user?.email || "Utilisateur"}</strong>
             </Typography>
-            <Avatar sx={{ bgcolor: "primary.light", width: 32, height: 32, display: { xs: "none", sm: "flex" } }}>
+            <Avatar sx={{ bgcolor: "primary.light", width: 32, height: 32 }}>
               {user?.email?.[0].toUpperCase() || "U"}
             </Avatar>
           </Box>
@@ -107,9 +116,11 @@ export const Navbar: React.FC = () => {
             variant="outlined"
             size="small"
             onClick={logout}
-            startIcon={<LogoutIcon />}
+            startIcon={<LogoutIcon sx={{ display: { xs: "none", sm: "inline-flex" } }} />}
+            sx={{ minWidth: { xs: 36, sm: "auto" }, px: { xs: 1, sm: 1.5 } }}
           >
-            Déconnexion
+            <Box component="span" sx={{ display: { xs: "none", sm: "inline" } }}>Déconnexion</Box>
+            <LogoutIcon sx={{ display: { xs: "inline-flex", sm: "none" }, fontSize: 18 }} />
           </Button>
         </Box>
       </Toolbar>

@@ -17,9 +17,11 @@ export class LLMService {
     this.defaultModel =
       this.configService.get<string>('OPENAI_MODEL')?.trim() || defaultFallback;
     this.analysisModel =
-      this.configService.get<string>('OPENAI_ANALYSIS_MODEL')?.trim() || defaultFallback;
+      this.configService.get<string>('OPENAI_ANALYSIS_MODEL')?.trim() ||
+      defaultFallback;
     this.synthesisModel =
-      this.configService.get<string>('OPENAI_SYNTHESIS_MODEL')?.trim() || defaultFallback;
+      this.configService.get<string>('OPENAI_SYNTHESIS_MODEL')?.trim() ||
+      defaultFallback;
 
     this.client = new OpenAI({ apiKey });
   }
@@ -41,16 +43,31 @@ export class LLMService {
     try {
       this.logger.debug(`Calling OpenAI API with model: ${targetModel}...`);
 
-      const completion = await this.client.chat.completions.create({
+      const body: OpenAI.Chat.ChatCompletionCreateParamsNonStreaming = {
         model: targetModel,
-        max_tokens: maxTokens,
         messages: [
           {
             role: 'user',
             content: prompt,
           },
         ],
-      });
+      };
+
+      if (
+        targetModel.includes('gpt-5') ||
+        targetModel.startsWith('o1') ||
+        targetModel.startsWith('o3')
+      ) {
+        body.max_completion_tokens = maxTokens;
+
+        if (targetModel.includes('pro')) {
+          body.reasoning_effort = 'high';
+        }
+      } else {
+        body.max_tokens = maxTokens;
+      }
+
+      const completion = await this.client.chat.completions.create(body);
 
       const content = completion.choices[0]?.message?.content;
       if (!content) {

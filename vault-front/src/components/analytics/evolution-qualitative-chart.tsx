@@ -10,7 +10,9 @@ import {
   Select,
   MenuItem,
   Tooltip as MuiTooltip,
-  MenuProps
+  MenuProps,
+  useTheme,
+  useMediaQuery,
 } from "@mui/material";
 import InfoIcon from "@mui/icons-material/Info";
 import {
@@ -58,6 +60,8 @@ export const EvolutionQualitativeChart: React.FC<EvolutionQualitativeChartProps>
   ChartContainer,
   menuProps
 }) => {
+  const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down("sm"));
   const reverseMap = Object.entries(valueMap).reduce((acc, [k, v]) => ({ ...acc, [v]: k }), {} as Record<number, string>);
   
   const field = stringFields.find(f => f.id === selectedField);
@@ -102,7 +106,7 @@ export const EvolutionQualitativeChart: React.FC<EvolutionQualitativeChartProps>
  
       <Box sx={{ flexGrow: 1 }}>
         <ChartContainer aspect={1.5} mobileAspect={1.0} minHeight={350} fullHeight>
-          <LineChart data={data} margin={{ top: 35, right: 20, left: 20, bottom: 20 }}>
+          <LineChart data={data} margin={isMobile ? { top: 15, right: 8, left: 0, bottom: 10 } : { top: 35, right: 20, left: 20, bottom: 20 }}>
             <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="rgba(0,0,0,0.05)" />
             <XAxis 
               dataKey="dateDisplay" 
@@ -126,7 +130,7 @@ export const EvolutionQualitativeChart: React.FC<EvolutionQualitativeChartProps>
                 const text = reverseMap[val] || val.toString();
                 return text.length > 12 ? text.substring(0, 10) + '...' : text;
               }}
-              width={70}
+              width={isMobile ? 50 : 70}
             />
             <Tooltip
               contentStyle={{ borderRadius: 12, border: "none", boxShadow: "0 10px 15px -3px rgba(0,0,0,0.1)" }}

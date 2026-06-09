@@ -10,7 +10,7 @@ export const Footer: React.FC = () => {
     <Box
       component="footer"
       sx={{
-        py: 6,
+        py: { xs: 4, md: 6 },
         px: 2,
         mt: "auto",
         backgroundColor: "background.default",
@@ -40,7 +40,7 @@ export const Footer: React.FC = () => {
             VaultedMind
           </Typography>
 
-          <Box sx={{ display: "flex", gap: 3 }}>
+          <Box sx={{ display: "flex", gap: { xs: 1.5, sm: 3 }, flexWrap: "wrap", justifyContent: "center" }}>
             <MuiLink component={Link} href="/privacy" color="text.secondary" variant="body2" sx={{ textDecoration: "none" }}>
               Politique de confidentialité
             </MuiLink>

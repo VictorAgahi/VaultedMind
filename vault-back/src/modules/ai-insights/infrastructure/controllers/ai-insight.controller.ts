@@ -25,7 +25,7 @@ export class AIInsightController {
   ): Promise<AIInsightResponseDto[]> {
     const insights = await this.aiInsightService.getInsightsForUser(
       req.user.id,
-      5,
+      1000,
     );
     return insights.map((insight) => ({
       id: insight.id,

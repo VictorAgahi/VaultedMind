@@ -14,7 +14,8 @@ import {
   useTheme,
   useMediaQuery,
   Tooltip as MuiTooltip,
-  MenuProps
+  MenuProps,
+  CircularProgress
 } from "@mui/material";
 import InfoIcon from "@mui/icons-material/Info";
 import TrendingUpIcon from "@mui/icons-material/TrendingUp";
@@ -51,17 +52,24 @@ interface AdvancedAnalysesProps {
   menuProps?: Partial<MenuProps>;
 }
 
-export const AdvancedAnalyses: React.FC<AdvancedAnalysesProps> = ({
-  fields,
-  logs,
-  activeAdvField,
-  setAdvSelectedField,
-  ChartContainer,
-  menuProps
-}) => {
-  const theme = useTheme();
-  const isMobile = useMediaQuery(theme.breakpoints.down("sm"));
+interface UseAdvancedAnalysesReturn {
+  advFieldMappings: Record<string, Record<string, number>>;
+  weeklyProfileData: Array<{ subject: string; A: number }>;
+  statsSummary: { mean: string; min: number; max: number; volatility: string } | null;
+  weekdaySpreadData: Array<{ name: string; range: [number, number]; avg: number; min: number; max: number }>;
+  streakStats: { currentStreak: number; maxStreak: number; completionRate: number };
+  heatmapData: Array<{ date: Date; dateStr: string; logged: boolean; value: number | null; displayLabel: string; dayNum: number; formattedDate: string }>;
+  activeFieldObj: CustomField | undefined;
+  expertRecommendation: string;
+  autoDiscoveryInsight: { fieldA: CustomField; fieldB: CustomField; correlation: number } | null;
+  getAdvVal: (log: DailyLog, fieldId: string) => number | null;
+}
 
+const useAdvancedAnalyses = (
+  fields: CustomField[],
+  logs: DailyLog[],
+  activeAdvField: string
+): UseAdvancedAnalysesReturn => {
   // Helper maps for STRING fields
   const advFieldMappings = useMemo(() => {
     const mappings: Record<string, Record<string, number>> = {};
@@ -165,7 +173,7 @@ export const AdvancedAnalyses: React.FC<AdvancedAnalysesProps> = ({
     return days.map((label, index) => {
       const vals = dayTotals[index];
       if (vals.length === 0) {
-        return { name: label, range: [0, 0], avg: 0, min: 0, max: 0 };
+        return { name: label, range: [0, 0] as [number, number], avg: 0, min: 0, max: 0 };
       }
       const min = Math.min(...vals);
       const max = Math.max(...vals);
@@ -173,7 +181,7 @@ export const AdvancedAnalyses: React.FC<AdvancedAnalysesProps> = ({
       const avg = parseFloat((sum / vals.length).toFixed(2));
       return {
         name: label,
-        range: [min, max],
+        range: [min, max] as [number, number],
         avg,
         min,
         max
@@ -268,7 +276,13 @@ export const AdvancedAnalyses: React.FC<AdvancedAnalysesProps> = ({
         dateStr: dStr,
         logged: !!log,
         value: val,
-        displayLabel: fieldValuesByDate.get(dStr) ?? "-"
+        displayLabel: fieldValuesByDate.get(dStr) ?? "-",
+        dayNum: d.getDate(),
+        formattedDate: d.toLocaleDateString("fr-FR", {
+          weekday: "long",
+          day: "numeric",
+          month: "long"
+        })
       });
     }
     return result;
@@ -330,6 +344,52 @@ export const AdvancedAnalyses: React.FC<AdvancedAnalysesProps> = ({
     return bestPair;
   }, [fields, logs, getAdvVal]);
 
+  return {
+    advFieldMappings,
+    weeklyProfileData,
+    statsSummary,
+    weekdaySpreadData,
+    streakStats,
+    heatmapData,
+    activeFieldObj,
+    expertRecommendation,
+    autoDiscoveryInsight,
+    getAdvVal
+  };
+};
+
+export const AdvancedAnalyses: React.FC<AdvancedAnalysesProps> = ({
+  fields,
+  logs,
+  activeAdvField,
+  setAdvSelectedField,
+  ChartContainer,
+  menuProps
+}) => {
+  const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down("sm"));
+
+  const [mounted, setMounted] = React.useState(false);
+  React.useEffect(() => {
+    let active = true;
+    requestAnimationFrame(() => {
+      if (active) setMounted(true);
+    });
+    return () => { active = false; };
+  }, []);
+
+  const {
+    advFieldMappings,
+    weeklyProfileData,
+    statsSummary,
+    weekdaySpreadData,
+    streakStats,
+    heatmapData,
+    activeFieldObj,
+    expertRecommendation,
+    autoDiscoveryInsight
+  } = useAdvancedAnalyses(fields, logs, activeAdvField);
+
   const refinedPaperStyle = {
     p: { xs: 3, md: 4 },
     borderRadius: 6,
@@ -341,7 +401,11 @@ export const AdvancedAnalyses: React.FC<AdvancedAnalysesProps> = ({
     flexDirection: "column" as const
   };
 
-  return (
+  return !mounted ? (
+    <Box sx={{ display: "flex", justifyContent: "center", alignItems: "center", minHeight: 400 }}>
+      <CircularProgress />
+    </Box>
+  ) : (
     <Grid container spacing={4}>
       {/* Top Filter Selection Panel */}
       <Grid size={{ xs: 12 }}>
@@ -421,12 +485,12 @@ export const AdvancedAnalyses: React.FC<AdvancedAnalysesProps> = ({
                 💡 La Découverte Majeure de VaultedMind
               </Typography>
               <Typography variant="body2" sx={{ color: "text.primary", lineHeight: 1.6 }}>
-                Nous avons analysé l&apos;intégralité de vos journaux et découvert une liaison statistique remarquable : 
-                votre indicateur <strong>{autoDiscoveryInsight.fieldA.name}</strong> et votre indicateur <strong>{autoDiscoveryInsight.fieldB.name}</strong> sont fortement connectés, 
+                Nous avons analysé l&apos;intégralité de vos journaux et découvert une liaison statistique remarquable :
+                votre indicateur <strong>{autoDiscoveryInsight.fieldA.name}</strong> et votre indicateur <strong>{autoDiscoveryInsight.fieldB.name}</strong> sont fortement connectés,
                 avec un coefficient de corrélation de <strong>{Math.round(autoDiscoveryInsight.correlation * 100)}%</strong>.
               </Typography>
               <Typography variant="caption" color="text.secondary" sx={{ display: "block", mt: 1, fontWeight: 700 }}>
-                {autoDiscoveryInsight.correlation >= 0 
+                {autoDiscoveryInsight.correlation >= 0
                   ? "📈 Corrélation Positive : Lorsque l'une de ces variables augmente, l'autre a une très forte tendance statistique à s'élever également. C'est un levier d'action extraordinaire pour structurer votre routine !"
                   : "📉 Corrélation Inverse : Ces deux facteurs évoluent en sens inverse. Quand l'un augmente, l'autre diminue. Vous pouvez agir sur l'un pour tempérer l'autre."}
               </Typography>
@@ -660,11 +724,7 @@ export const AdvancedAnalyses: React.FC<AdvancedAnalysesProps> = ({
               }
 
               // Pretty-format dates
-              const formattedDate = new Date(day.dateStr).toLocaleDateString("fr-FR", {
-                weekday: "long",
-                day: "numeric",
-                month: "long"
-              });
+              const formattedDate = day.formattedDate;
 
               const formatVal = (v: any) => {
                 if (v === null || v === undefined) return "Aucun log";
@@ -706,7 +766,7 @@ export const AdvancedAnalyses: React.FC<AdvancedAnalysesProps> = ({
                     }}
                   >
                     <Typography sx={{ fontSize: { xs: 8, md: 10 }, fontWeight: 700, opacity: day.logged ? 0.9 : 0.4, color: day.logged ? "#fff" : "text.secondary" }}>
-                      {new Date(day.dateStr).getDate()}
+                      {day.dayNum}
                     </Typography>
                   </Box>
                 </MuiTooltip>

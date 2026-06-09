@@ -18,21 +18,19 @@ import {
   DialogContent,
   DialogContentText,
   DialogActions,
+  Collapse,
 } from "@mui/material";
 import DeleteIcon from "@mui/icons-material/Delete";
+import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
+import ExpandLessIcon from "@mui/icons-material/ExpandLess";
 import { apiService } from "@/services/api.service";
 import { AIInsightResponseDto } from "@/types";
 import EmojiEventsIcon from "@mui/icons-material/EmojiEvents";
-import PsychologyIcon from "@mui/icons-material/Psychology";
-import LightbulbIcon from "@mui/icons-material/Lightbulb";
 
 function getErrorMessage(error: unknown): string {
-  if (error instanceof Error) {
-    return error.message;
-  }
-  if (typeof error === "object" && error !== null && "message" in error) {
+  if (error instanceof Error) return error.message;
+  if (typeof error === "object" && error !== null && "message" in error)
     return String((error as { message: unknown }).message);
-  }
   return "Une erreur inattendue est survenue";
 }
 
@@ -53,20 +51,13 @@ type InsightsAction =
 
 function insightsReducer(state: InsightsState, action: InsightsAction): InsightsState {
   switch (action.type) {
-    case "FETCH_START":
-      return { ...state, loading: true, error: null };
-    case "FETCH_SUCCESS":
-      return { ...state, insights: action.insights, loading: false, error: null };
-    case "FETCH_STATUS":
-      return { ...state, enabled: action.enabled, loading: false };
-    case "FETCH_ERROR":
-      return { ...state, loading: false, error: action.error };
-    case "SET_ENABLED":
-      return { ...state, enabled: action.enabled };
-    case "DELETE_INSIGHT":
-      return { ...state, insights: state.insights.filter((i) => i.id !== action.id) };
-    default:
-      return state;
+    case "FETCH_START": return { ...state, loading: true, error: null };
+    case "FETCH_SUCCESS": return { ...state, insights: action.insights, loading: false, error: null };
+    case "FETCH_STATUS": return { ...state, enabled: action.enabled, loading: false };
+    case "FETCH_ERROR": return { ...state, loading: false, error: action.error };
+    case "SET_ENABLED": return { ...state, enabled: action.enabled };
+    case "DELETE_INSIGHT": return { ...state, insights: state.insights.filter((i) => i.id !== action.id) };
+    default: return state;
   }
 }
 
@@ -77,155 +68,182 @@ const insightTypeLabels: Record<string, string> = {
   RECOMMENDATION: "Recommandation",
 };
 
-function InsightContent({ text }: { text: string }) {
-  if (!text) return null;
+// ─── Markdown renderer ────────────────────────────────────────────────────────
 
-  // Split by newlines
-  const lines = text.split("\n").flatMap((l) => {
-    const trimmed = l.trim();
-    return trimmed ? [trimmed] : [];
+type MdToken =
+  | { type: "h1" | "h2" | "h3"; text: string }
+  | { type: "paragraph"; text: string }
+  | { type: "bullet-list"; items: string[] }
+  | { type: "numbered-list"; items: string[] }
+  | { type: "blockquote"; text: string }
+  | { type: "hr" };
+
+function parseMarkdown(content: string): MdToken[] {
+  const lines = content.split("\n");
+  const tokens: MdToken[] = [];
+  let i = 0;
+
+  while (i < lines.length) {
+    const raw = lines[i];
+    const line = raw.trim();
+
+    if (!line) { i++; continue; }
+
+    if (/^-{3,}$/.test(line) || /^\*{3,}$/.test(line)) {
+      tokens.push({ type: "hr" });
+      i++;
+      continue;
+    }
+
+    if (line.startsWith("### ")) { tokens.push({ type: "h3", text: line.slice(4) }); i++; continue; }
+    if (line.startsWith("## ")) { tokens.push({ type: "h2", text: line.slice(3) }); i++; continue; }
+    if (line.startsWith("# ")) { tokens.push({ type: "h1", text: line.slice(2) }); i++; continue; }
+
+    if (line.startsWith("> ")) {
+      tokens.push({ type: "blockquote", text: line.slice(2) });
+      i++;
+      continue;
+    }
+
+    if (/^[-*+] /.test(line)) {
+      const items: string[] = [];
+      while (i < lines.length && /^[-*+] /.test(lines[i].trim())) {
+        items.push(lines[i].trim().slice(2));
+        i++;
+      }
+      tokens.push({ type: "bullet-list", items });
+      continue;
+    }
+
+    if (/^\d+\. /.test(line)) {
+      const items: string[] = [];
+      while (i < lines.length && /^\d+\. /.test(lines[i].trim())) {
+        items.push(lines[i].trim().replace(/^\d+\.\s*/, ""));
+        i++;
+      }
+      tokens.push({ type: "numbered-list", items });
+      continue;
+    }
+
+    tokens.push({ type: "paragraph", text: line });
+    i++;
+  }
+
+  return tokens;
+}
+
+function renderInline(text: string): React.ReactNode {
+  // Handle **bold**, *italic*, `code`
+  const parts = text.split(/(\*\*[^*]+\*\*|\*[^*]+\*|`[^`]+`)/g);
+  return parts.map((part, idx) => {
+    if (part.startsWith("**") && part.endsWith("**"))
+      return <Box key={idx} component="span" sx={{ fontWeight: 800, color: "#1e293b" }}>{part.slice(2, -2)}</Box>;
+    if (part.startsWith("*") && part.endsWith("*"))
+      return <Box key={idx} component="span" sx={{ fontStyle: "italic" }}>{part.slice(1, -1)}</Box>;
+    if (part.startsWith("`") && part.endsWith("`"))
+      return <Box key={idx} component="code" sx={{ bgcolor: "rgba(0,0,0,0.06)", borderRadius: 1, px: 0.5, fontFamily: "monospace", fontSize: "0.85em" }}>{part.slice(1, -1)}</Box>;
+    return part;
   });
+}
+
+function MarkdownRenderer({ content }: { content: string }) {
+  const tokens = parseMarkdown(content);
 
   return (
-    <Box sx={{ display: "flex", flexDirection: "column", gap: 2, mb: 2 }}>
-      {lines.map((line, idx) => {
-        // Parse bold text helper
-        const parseBoldText = (str: string) => {
-          const parts = str.split(/\*\*([^*]+)\*\*/g);
-          return parts.map((part, i) => {
-            if (i % 2 === 1) {
-              return (
-                <Box key={i} component="span" sx={{ fontWeight: 800, color: "#0f172a" }}>
-                  {part}
-                </Box>
-              );
-            }
-            return part;
-          });
-        };
+    <Box sx={{ display: "flex", flexDirection: "column", gap: 1.5 }}>
+      {tokens.map((token, idx) => {
+        const key = `md-${idx}`;
 
-        // Section: Analysis
-        if (line.includes("🔍") || line.toLowerCase().includes("analyse comportementale")) {
-          const cleanText = line.replace(/🔍\s*(\*\*([^*]+)\*\*|[^:]+):?/, "").trim();
-          return (
-            <Box 
-              key={idx} 
-              sx={{ 
-                p: 2, 
-                borderRadius: 3, 
-                bgcolor: "rgba(99, 102, 241, 0.03)", 
-                borderLeft: "4px solid #6366f1",
-                mt: 0.5
-              }}
-            >
-              <Typography 
-                variant="subtitle2" 
-                sx={{ 
-                  fontWeight: 900, 
-                  color: "#4f46e5", 
-                  display: "flex", 
-                  alignItems: "center", 
-                  mb: 1,
-                  fontSize: "0.85rem",
-                  textTransform: "uppercase",
-                  letterSpacing: "0.05em"
-                }}
-              >
-                <PsychologyIcon sx={{ fontSize: 20, color: "#4f46e5", mr: 1 }} />
-                Analyse comportementale & Observations
-              </Typography>
-              <Typography variant="body2" sx={{ color: "#475569", lineHeight: 1.7, fontSize: "0.9rem" }}>
-                {parseBoldText(cleanText)}
-              </Typography>
-            </Box>
-          );
-        }
+        if (token.type === "hr")
+          return <Box key={key} sx={{ borderTop: "1px solid #e5e7eb", my: 0.5 }} />;
 
-        // Section: Recommendations header
-        if (line.includes("💡") || line.toLowerCase().includes("recommandations concrètes")) {
+        if (token.type === "h1")
           return (
-            <Typography 
-              key={idx}
-              variant="subtitle2" 
-              sx={{ 
-                fontWeight: 900, 
-                color: "#d97706", 
-                display: "flex", 
-                alignItems: "center", 
-                mt: 1.5,
-                mb: 0.5,
-                fontSize: "0.85rem",
-                textTransform: "uppercase",
-                letterSpacing: "0.05em"
-              }}
-            >
-              <LightbulbIcon sx={{ fontSize: 18, color: "#d97706", mr: 1 }} />
-              Recommandations concrètes
+            <Typography key={key} variant="h6" sx={{ fontWeight: 900, color: "#0f172a", mt: 1, lineHeight: 1.3 }}>
+              {renderInline(token.text)}
             </Typography>
           );
-        }
 
-        // Recommendation Items (e.g. "1. **Routine...**")
-        const matchListItem = line.match(/^(\d+)\.\s*(.*)/);
-        if (matchListItem) {
-          const number = matchListItem[1];
-          const itemText = matchListItem[2];
+        if (token.type === "h2")
           return (
-            <Box 
-              key={idx} 
-              sx={{ 
-                display: "flex", 
-                gap: 1.5, 
-                p: 1.5, 
-                borderRadius: 2.5, 
-                bgcolor: "rgba(245, 158, 11, 0.02)", 
-                borderLeft: "3px solid #f59e0b",
-                alignItems: "flex-start"
+            <Typography key={key} variant="subtitle1" sx={{ fontWeight: 800, color: "#1e293b", mt: 0.5, lineHeight: 1.4 }}>
+              {renderInline(token.text)}
+            </Typography>
+          );
+
+        if (token.type === "h3")
+          return (
+            <Typography key={key} variant="subtitle2" sx={{ fontWeight: 700, color: "#334155", textTransform: "uppercase", letterSpacing: "0.04em", fontSize: "0.78rem", mt: 0.5 }}>
+              {renderInline(token.text)}
+            </Typography>
+          );
+
+        if (token.type === "blockquote")
+          return (
+            <Box
+              key={key}
+              sx={{
+                borderLeft: "3px solid #6366f1",
+                pl: 2,
+                py: 0.5,
+                bgcolor: "rgba(99,102,241,0.04)",
+                borderRadius: "0 8px 8px 0",
               }}
             >
-              <Box 
-                sx={{ 
-                  bgcolor: "#f59e0b", 
-                  color: "white", 
-                  fontWeight: 800, 
-                  borderRadius: "50%", 
-                  width: 20, 
-                  height: 20, 
-                  display: "flex", 
-                  alignItems: "center", 
-                  justifyContent: "center", 
-                  fontSize: "0.7rem",
-                  flexShrink: 0,
-                  mt: 0.2
-                }}
-              >
-                {number}
-              </Box>
-              <Typography variant="body2" sx={{ color: "#475569", lineHeight: 1.6, fontSize: "0.875rem" }}>
-                {parseBoldText(itemText)}
+              <Typography variant="body2" sx={{ color: "#475569", fontStyle: "italic", lineHeight: 1.6 }}>
+                {renderInline(token.text)}
               </Typography>
             </Box>
           );
-        }
 
-        // Standard text
+        if (token.type === "bullet-list")
+          return (
+            <Box key={key} component="ul" sx={{ m: 0, pl: 2.5, display: "flex", flexDirection: "column", gap: 0.5 }}>
+              {token.items.map((item, ii) => (
+                <Box key={ii} component="li" sx={{ color: "#475569" }}>
+                  <Typography variant="body2" component="span" sx={{ lineHeight: 1.6, fontSize: "0.875rem" }}>
+                    {renderInline(item)}
+                  </Typography>
+                </Box>
+              ))}
+            </Box>
+          );
+
+        if (token.type === "numbered-list")
+          return (
+            <Box key={key} sx={{ display: "flex", flexDirection: "column", gap: 0.75 }}>
+              {token.items.map((item, ii) => (
+                <Box key={ii} sx={{ display: "flex", gap: 1.5, alignItems: "flex-start" }}>
+                  <Box
+                    sx={{
+                      bgcolor: "#6366f1",
+                      color: "white",
+                      fontWeight: 800,
+                      borderRadius: "50%",
+                      minWidth: 22,
+                      height: 22,
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      fontSize: "0.7rem",
+                      flexShrink: 0,
+                      mt: 0.2,
+                    }}
+                  >
+                    {ii + 1}
+                  </Box>
+                  <Typography variant="body2" sx={{ color: "#475569", lineHeight: 1.6, fontSize: "0.875rem" }}>
+                    {renderInline(item)}
+                  </Typography>
+                </Box>
+              ))}
+            </Box>
+          );
+
+        // paragraph
         return (
-          <Typography 
-            key={idx} 
-            variant="body2" 
-            sx={{ 
-              color: "#475569", 
-              lineHeight: 1.6, 
-              fontSize: "0.875rem",
-              fontStyle: line.startsWith("Souviens-toi") || line.startsWith("Ces petits") || line.startsWith("Chaque petite") || line.startsWith("chaque petite") ? "italic" : "normal",
-              bgcolor: line.startsWith("Souviens-toi") || line.startsWith("Ces petits") || line.startsWith("Chaque petite") || line.startsWith("chaque petite") ? "rgba(0,0,0,0.01)" : "transparent",
-              p: line.startsWith("Souviens-toi") || line.startsWith("Ces petits") || line.startsWith("Chaque petite") || line.startsWith("chaque petite") ? 1.5 : 0,
-              borderRadius: 2,
-              borderLeft: line.startsWith("Souviens-toi") || line.startsWith("Ces petits") || line.startsWith("Chaque petite") || line.startsWith("chaque petite") ? "2px solid rgba(0,0,0,0.1)" : "none",
-              mt: 0.5
-            }}
-          >
-            {parseBoldText(line)}
+          <Typography key={key} variant="body2" sx={{ color: "#475569", lineHeight: 1.7, fontSize: "0.875rem" }}>
+            {renderInline(token.text)}
           </Typography>
         );
       })}
@@ -233,13 +251,22 @@ function InsightContent({ text }: { text: string }) {
   );
 }
 
-function InsightCard({ insight, isMounted, onDelete }: { insight: AIInsightResponseDto, isMounted: boolean, onDelete: (id: string) => void }) {
-  const dateStr = isMounted ? `${new Date(insight.createdAt).toLocaleDateString()} ${new Date(
-    insight.createdAt
-  ).toLocaleTimeString([], {
-    hour: "2-digit",
-    minute: "2-digit",
-  })}` : "";
+// ─── InsightCard ──────────────────────────────────────────────────────────────
+
+function InsightCard({
+  insight,
+  isMounted,
+  onDelete,
+}: {
+  insight: AIInsightResponseDto;
+  isMounted: boolean;
+  onDelete: (id: string) => void;
+}) {
+  const [expanded, setExpanded] = useState(true);
+
+  const dateStr = isMounted
+    ? `${new Date(insight.createdAt).toLocaleDateString()} ${new Date(insight.createdAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}`
+    : "";
 
   return (
     <Card
@@ -247,34 +274,28 @@ function InsightCard({ insight, isMounted, onDelete }: { insight: AIInsightRespo
         border: "1px solid #e5e7eb",
         boxShadow: "none",
         borderRadius: 4,
-        "&:hover": { boxShadow: "0 2px 8px rgba(0,0,0,0.1)" },
+        "&:hover": { boxShadow: "0 2px 8px rgba(0,0,0,0.08)" },
+        transition: "box-shadow 0.2s",
       }}
     >
       <CardContent sx={{ p: 3 }}>
-        <Box
-          sx={{
-            display: "flex",
-            justifyContent: "space-between",
-            alignItems: "flex-start",
-            mb: 2.5,
-            gap: 2
-          }}
-        >
+        {/* Header row */}
+        <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", mb: 2, gap: 2 }}>
           <Typography variant="subtitle1" sx={{ fontWeight: 800, color: "#1e293b", flexGrow: 1 }}>
             {insight.title}
           </Typography>
-          <Box sx={{ display: "flex", flexDirection: "row", alignItems: "center", gap: 1.5, flexShrink: 0 }}>
+          <Box sx={{ display: "flex", alignItems: "center", gap: 1, flexShrink: 0 }}>
             <Typography
               variant="caption"
               sx={{
-                bgcolor: "rgba(99, 102, 241, 0.08)",
+                bgcolor: "rgba(99,102,241,0.08)",
                 color: "#4f46e5",
                 fontWeight: 700,
                 px: 1.5,
                 py: 0.5,
                 borderRadius: 2,
-                fontSize: "0.75rem",
-                whiteSpace: "nowrap"
+                fontSize: "0.72rem",
+                whiteSpace: "nowrap",
               }}
             >
               {insightTypeLabels[insight.type] || insight.type.replace(/_/g, " ")}
@@ -282,29 +303,38 @@ function InsightCard({ insight, isMounted, onDelete }: { insight: AIInsightRespo
             <IconButton
               size="small"
               onClick={() => onDelete(insight.id)}
-              sx={{
-                color: "#9ca3af",
-                p: 0.5,
-                "&:hover": { color: "#ef4444", bgcolor: "rgba(239, 68, 68, 0.05)" },
-              }}
+              sx={{ color: "#9ca3af", p: 0.5, "&:hover": { color: "#ef4444", bgcolor: "rgba(239,68,68,0.05)" } }}
             >
               <DeleteIcon fontSize="small" />
             </IconButton>
           </Box>
         </Box>
-        
-        <InsightContent text={insight.content} />
 
-        <Typography
-          variant="caption"
-          sx={{ color: "#9ca3af", minHeight: "1em", display: "block" }}
-        >
-          {dateStr}
-        </Typography>
+        {/* Content — collapsible when long */}
+        <Collapse in={expanded} collapsedSize={120}>
+          <MarkdownRenderer content={insight.content} />
+        </Collapse>
+
+        {/* Show more/less toggle */}
+        <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", mt: 1.5 }}>
+          <Typography variant="caption" sx={{ color: "#9ca3af" }}>
+            {dateStr}
+          </Typography>
+          <Button
+            size="small"
+            onClick={() => setExpanded((v) => !v)}
+            endIcon={expanded ? <ExpandLessIcon fontSize="small" /> : <ExpandMoreIcon fontSize="small" />}
+            sx={{ color: "#6366f1", fontWeight: 700, fontSize: "0.75rem", textTransform: "none", minWidth: 0 }}
+          >
+            {expanded ? "Réduire" : "Tout afficher"}
+          </Button>
+        </Box>
       </CardContent>
     </Card>
   );
 }
+
+// ─── InsightsPanel ────────────────────────────────────────────────────────────
 
 export function InsightsPanel() {
   const [state, dispatch] = useReducer(insightsReducer, {
@@ -316,7 +346,7 @@ export function InsightsPanel() {
   const [openConfirm, setOpenConfirm] = useState(false);
 
   const isMounted = useSyncExternalStore(
-    () => () => { },
+    () => () => {},
     () => true,
     () => false
   );
@@ -325,22 +355,16 @@ export function InsightsPanel() {
     const init = async () => {
       try {
         dispatch({ type: "FETCH_START" });
-        const { enabled } = await apiService.get<{ enabled: boolean }>(
-          "/health/ai-insights/status"
-        );
+        const { enabled } = await apiService.get<{ enabled: boolean }>("/health/ai-insights/status");
         dispatch({ type: "FETCH_STATUS", enabled });
-
         if (enabled) {
-          const insights = await apiService.get<AIInsightResponseDto[]>(
-            "/health/ai-insights"
-          );
+          const insights = await apiService.get<AIInsightResponseDto[]>("/health/ai-insights");
           dispatch({ type: "FETCH_SUCCESS", insights });
         }
       } catch (error: unknown) {
         dispatch({ type: "FETCH_ERROR", error: getErrorMessage(error) });
       }
     };
-
     init();
   }, []);
 
@@ -364,9 +388,7 @@ export function InsightsPanel() {
       dispatch({ type: "SET_ENABLED", enabled: true });
       window.dispatchEvent(new CustomEvent("ai-insights-status-changed", { detail: { enabled: true } }));
       setOpenConfirm(false);
-      const insights = await apiService.get<AIInsightResponseDto[]>(
-        "/health/ai-insights"
-      );
+      const insights = await apiService.get<AIInsightResponseDto[]>("/health/ai-insights");
       dispatch({ type: "FETCH_SUCCESS", insights });
     } catch (error: unknown) {
       console.error("Erreur lors de l'activation :", getErrorMessage(error));
@@ -384,19 +406,17 @@ export function InsightsPanel() {
 
   return (
     <Box sx={{ width: "100%", mt: 4 }}>
-      <Box
-        sx={{
-          display: "flex",
-          justifyContent: "space-between",
-          alignItems: "center",
-          mb: 3,
-        }}
-      >
+      <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", mb: 3 }}>
         <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
           <EmojiEventsIcon sx={{ color: "#f59e0b" }} />
           <Typography variant="h6" sx={{ fontWeight: 600 }}>
             Analyses par IA
           </Typography>
+          {state.insights.length > 0 && (
+            <Typography variant="caption" sx={{ bgcolor: "rgba(0,0,0,0.06)", color: "text.secondary", fontWeight: 700, px: 1.2, py: 0.3, borderRadius: 10, fontSize: "0.72rem" }}>
+              {state.insights.length}
+            </Typography>
+          )}
         </Box>
         <FormControlLabel
           control={
@@ -410,11 +430,11 @@ export function InsightsPanel() {
         />
       </Box>
 
-      {!state.enabled ? (
+      {!state.enabled && (
         <Alert severity="info" sx={{ mb: 2 }}>
           Les analyses par IA sont actuellement désactivées. Activez-les pour recevoir une analyse personnalisée de votre bien-être.
         </Alert>
-      ) : null}
+      )}
 
       {state.enabled && (
         <Button
@@ -424,9 +444,7 @@ export function InsightsPanel() {
             try {
               dispatch({ type: "FETCH_START" });
               await apiService.post("/health/ai-insights/generate");
-              const insights = await apiService.get<AIInsightResponseDto[]>(
-                "/health/ai-insights"
-              );
+              const insights = await apiService.get<AIInsightResponseDto[]>("/health/ai-insights");
               dispatch({ type: "FETCH_SUCCESS", insights });
             } catch (error: unknown) {
               dispatch({ type: "FETCH_ERROR", error: getErrorMessage(error) });
@@ -450,52 +468,46 @@ export function InsightsPanel() {
         </Alert>
       ) : (
         <Stack spacing={2}>
-          {state.insights.slice(0, 3).map((insight) => {
-            return (
-              <InsightCard key={insight.id} insight={insight} isMounted={isMounted} onDelete={deleteInsight} />
-            );
-          })}
+          {state.insights.map((insight) => (
+            <InsightCard
+              key={insight.id}
+              insight={insight}
+              isMounted={isMounted}
+              onDelete={deleteInsight}
+            />
+          ))}
         </Stack>
       )}
 
-      <Dialog
-        open={openConfirm}
-        onClose={() => setOpenConfirm(false)}
-        maxWidth="sm"
-        fullWidth
-      >
-        <DialogTitle sx={{ fontWeight: 700 }}>
-          Activer les analyses par IA
-        </DialogTitle>
+      <Dialog open={openConfirm} onClose={() => setOpenConfirm(false)} maxWidth="sm" fullWidth>
+        <DialogTitle sx={{ fontWeight: 700 }}>Activer les analyses par IA</DialogTitle>
         <DialogContent>
           <DialogContentText sx={{ mb: 2, fontSize: "0.95rem", color: "text.primary" }}>
             Pour activer les analyses personnalisées, vous devez accepter les conditions de partage de contenu avec OpenAI.
           </DialogContentText>
-          <Box sx={{
-            bgcolor: "#f9fafb",
-            p: 2,
-            borderRadius: 1,
-            border: "1px solid #e5e7eb",
-            maxHeight: 200,
-            overflowY: "auto",
-            fontSize: "0.85rem",
-            fontStyle: "italic",
-            color: "text.secondary"
-          }}>
-            This Content Sharing Agreement is between OpenAI, L.L.C. (“us” or “we”) and you (“Customer”). This Content Sharing Agreement is incorporated into the terms located at https://openai.com/policies/business-terms unless the parties have negotiated a separate agreement for the Services, in which case such agreement will govern (the “Business Terms”). Capitalized terms not defined here are defined in the Business Terms or the Data Processing Agreement between the parties in connection with the Services (the “DPA”). This Content Sharing Agreement takes precedence in the event of any conflict.
+          <Box
+            sx={{
+              bgcolor: "#f9fafb",
+              p: 2,
+              borderRadius: 1,
+              border: "1px solid #e5e7eb",
+              maxHeight: 200,
+              overflowY: "auto",
+              fontSize: "0.85rem",
+              fontStyle: "italic",
+              color: "text.secondary",
+            }}
+          >
+            This Content Sharing Agreement is between OpenAI, L.L.C. (&quot;us&quot; or &quot;we&quot;) and you (&quot;Customer&quot;). This Content Sharing Agreement is incorporated into the terms located at https://openai.com/policies/business-terms unless the parties have negotiated a separate agreement for the Services, in which case such agreement will govern (the &quot;Business Terms&quot;). Capitalized terms not defined here are defined in the Business Terms or the Data Processing Agreement between the parties in connection with the Services (the &quot;DPA&quot;). This Content Sharing Agreement takes precedence in the event of any conflict.
             <br /><br />
-            Notwithstanding anything set forth in the Business Terms, we may use Customer Content that is designated by your organization owner in your account (“Designated Content”) to develop and improve the Services, including for training our models and other research, development, evaluation, and testing purposes (“Development Purposes”). You expressly agree that use of Designated Content for the Development Purposes is not subject to the provisions of the DPA nor is it subject to the security measures, auditing, or other obligations applicable to Customer Content that is not Designated Content for the Development Purposes. OpenAI will process such Designated Content for Development Purposes as an independent Data Controller. You are responsible for all Input provided by you and your End Users.
+            Notwithstanding anything set forth in the Business Terms, we may use Customer Content that is designated by your organization owner in your account (&quot;Designated Content&quot;) to develop and improve the Services, including for training our models and other research, development, evaluation, and testing purposes (&quot;Development Purposes&quot;). You expressly agree that use of Designated Content for the Development Purposes is not subject to the provisions of the DPA nor is it subject to the security measures, auditing, or other obligations applicable to Customer Content that is not Designated Content for the Development Purposes. OpenAI will process such Designated Content for Development Purposes as an independent Data Controller. You are responsible for all Input provided by you and your End Users.
             <br /><br />
-            You also represent and warrant that you have the rights, licenses, and permissions necessary – including as applicable that you have provided any notice to End Users, and collected any relevant consent from End Users (“Notice”) – to provide the Input to the Services for the Development Purposes. You agree that you and your End Users will not provide any information as Input to the Services that you or your End Users do not want to be used for Development Purposes, such as sensitive, confidential, or proprietary information. You also agree that you will not use the Services to process (a) any data that includes or constitutes “Protected Health Information,” as defined under the HIPAA Privacy Rule (45 C.F.R. Section 160.103), or (b) any Personal Data of children under 13 or the applicable age of digital consent. You also agree that you will provide OpenAI a copy of your Notice upon OpenAI&apos;s request.
+            You also represent and warrant that you have the rights, licenses, and permissions necessary – including as applicable that you have provided any notice to End Users, and collected any relevant consent from End Users (&quot;Notice&quot;) – to provide the Input to the Services for the Development Purposes. You agree that you and your End Users will not provide any information as Input to the Services that you or your End Users do not want to be used for Development Purposes, such as sensitive, confidential, or proprietary information. You also agree that you will not use the Services to process (a) any data that includes or constitutes &quot;Protected Health Information,&quot; as defined under the HIPAA Privacy Rule (45 C.F.R. Section 160.103), or (b) any Personal Data of children under 13 or the applicable age of digital consent. You also agree that you will provide OpenAI a copy of your Notice upon OpenAI&apos;s request.
           </Box>
         </DialogContent>
         <DialogActions sx={{ p: 3 }}>
-          <Button onClick={() => setOpenConfirm(false)} color="inherit">
-            Annuler
-          </Button>
-          <Button onClick={confirmEnable} variant="contained">
-            J&apos;accepte et j&apos;active
-          </Button>
+          <Button onClick={() => setOpenConfirm(false)} color="inherit">Annuler</Button>
+          <Button onClick={confirmEnable} variant="contained">J&apos;accepte et j&apos;active</Button>
         </DialogActions>
       </Dialog>
     </Box>

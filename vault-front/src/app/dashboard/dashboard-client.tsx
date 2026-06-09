@@ -4,13 +4,15 @@ import {
   Box,
   Typography,
   Container,
-  Grid
+  Grid,
+  CircularProgress,
+  Stack,
 } from "@mui/material";
 import { DailyLogsManager } from "@/components/daily-logs-manager/daily-logs-manager";
 import { InsightsPanel } from "@/components/ai-insights/insights-panel";
+import { WellnessScoreCard } from "@/components/dashboard/wellness-score-card";
 import { Navbar } from "@/components/navbar/navbar";
 import { useAuth } from "@/context/auth-context";
-import { CircularProgress, Stack } from "@mui/material";
 
 export default function DashboardPage() {
   const { user, loading } = useAuth();
@@ -23,7 +25,7 @@ export default function DashboardPage() {
           bgcolor: "#ede5d9",
           display: "flex",
           alignItems: "center",
-          justifyContent: "center"
+          justifyContent: "center",
         }}
       >
         <CircularProgress />
@@ -31,30 +33,32 @@ export default function DashboardPage() {
     );
   }
 
-  if (!user) {
-    return null;
-  }
+  if (!user) return null;
 
   return (
     <Box sx={{ minHeight: "100vh", bgcolor: "#ede5d9" }}>
       <Navbar />
 
-      <Container maxWidth="lg" sx={{ py: 8 }}>
+      <Container maxWidth="lg" sx={{ py: { xs: 4, md: 8 }, px: { xs: 2, sm: 3 } }}>
         <Box sx={{ mb: 6 }}>
-          <Typography variant="h3" component="h1" gutterBottom sx={{ fontWeight: 800 }}>
-            Votre tableau de bord sécurisé
+          <Typography variant="h3" component="h1" gutterBottom sx={{ fontWeight: 800, fontSize: { xs: "1.8rem", sm: "2.5rem", md: "3rem" } }}>
+            Tableau de bord
           </Typography>
           <Typography variant="h6" color="text.secondary">
-            Ceci est une zone protégée. Seuls les utilisateurs authentifiés peuvent voir ceci.
+            Bienvenue{user.firstName ? `, ${user.firstName}` : ""}.
           </Typography>
         </Box>
 
-        <Grid size={{ xs: 12 }}>
-          <DailyLogsManager />
-        </Grid>
+        {/* Wellness Score Card — spectacular feature */}
+        <WellnessScoreCard />
 
-        <Grid size={{ xs: 12 }}>
-          <InsightsPanel />
+        <Grid container spacing={0}>
+          <Grid size={{ xs: 12 }}>
+            <DailyLogsManager />
+          </Grid>
+          <Grid size={{ xs: 12 }}>
+            <InsightsPanel />
+          </Grid>
         </Grid>
       </Container>
     </Box>

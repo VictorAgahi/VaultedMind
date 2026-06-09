@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useCallback, useMemo } from "react";
+import React, { useEffect, useCallback, useMemo, useState } from "react";
 import {
   Box,
   Typography,
@@ -11,8 +11,14 @@ import {
   CircularProgress,
   Alert,
   Paper,
-  useTheme
+  useTheme,
+  ToggleButtonGroup,
+  ToggleButton,
+  Collapse,
+  TextField,
+  Button,
 } from "@mui/material";
+import TuneIcon from "@mui/icons-material/Tune";
 import { Navbar } from "@/components/navbar/navbar";
 import { apiService } from "@/services/api.service";
 import { DailyLog, CustomField, FieldType } from "@/types";
@@ -25,8 +31,9 @@ import { AdvancedAnalyses } from "@/components/analytics/advanced-analyses";
 import { HabitImpactStudy } from "@/components/analytics/habit-impact-study";
 import { ResponsiveContainer } from "recharts";
 import { formatHourlyValue } from "@/utils/time-converter";
-
 import { Fade, useMediaQuery } from "@mui/material";
+
+// ─── ChartContainer ───────────────────────────────────────────────────────────
 
 interface ChartContainerProps {
   children: React.ReactNode;
@@ -36,39 +43,50 @@ interface ChartContainerProps {
   fullHeight?: boolean;
 }
 
-const ChartContainer: React.FC<ChartContainerProps> = ({ children, aspect, mobileAspect, minHeight, fullHeight }) => {
+const ChartContainer: React.FC<ChartContainerProps> = ({
+  children,
+  aspect,
+  mobileAspect,
+  minHeight,
+  fullHeight,
+}) => {
   const ref = React.useRef<HTMLDivElement>(null);
   const [width, setWidth] = React.useState(0);
   const theme = useTheme();
-  const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
+  const isMobile = useMediaQuery(theme.breakpoints.down("sm"));
 
   useEffect(() => {
     if (!ref.current) return;
-    const observeTarget = ref.current;
-    const resizeObserver = new ResizeObserver((entries) => {
+    const target = ref.current;
+    const ro = new ResizeObserver((entries) => {
       if (entries[0]) setWidth(entries[0].contentRect.width);
     });
-    resizeObserver.observe(observeTarget);
-    return () => resizeObserver.unobserve(observeTarget);
+    ro.observe(target);
+    return () => ro.unobserve(target);
   }, []);
 
   const finalAspect = isMobile && mobileAspect ? mobileAspect : aspect;
+  // On mobile, reduce aspect ratio for better readability
+  const mobileSafeAspect = isMobile ? Math.min(finalAspect, 1.2) : finalAspect;
 
   return (
-    <Box ref={ref} sx={{
-      width: "100%",
-      minWidth: 0,
-      minHeight,
-      flexGrow: fullHeight ? 1 : 0,
-      height: fullHeight && !isMobile ? "100%" : "auto",
-      display: fullHeight ? "flex" : "block",
-      flexDirection: "column"
-    }}>
+    <Box
+      ref={ref}
+      sx={{
+        width: "100%",
+        minWidth: 0,
+        minHeight,
+        flexGrow: fullHeight ? 1 : 0,
+        height: fullHeight && !isMobile ? "100%" : "auto",
+        display: fullHeight ? "flex" : "block",
+        flexDirection: "column",
+      }}
+    >
       {width > 0 && (
         <ResponsiveContainer
           width={width}
           height={fullHeight && !isMobile ? "100%" : undefined}
-          aspect={fullHeight && !isMobile ? undefined : finalAspect}
+          aspect={fullHeight && !isMobile ? undefined : mobileSafeAspect}
           debounce={50}
         >
           {children as React.ReactElement}
@@ -77,6 +95,134 @@ const ChartContainer: React.FC<ChartContainerProps> = ({ children, aspect, mobil
     </Box>
   );
 };
+
+// ─── Date filter ─────────────────────────────────────────────────────────────
+
+type DatePreset = "7d" | "30d" | "90d" | "all" | "custom";
+
+interface DateFilterState {
+  preset: DatePreset;
+  customStart: string; // yyyy-MM-dd
+  customEnd: string;   // yyyy-MM-dd
+}
+
+function todayStr() {
+  return new Date().toISOString().split("T")[0];
+}
+
+function nDaysAgoStr(n: number) {
+  const d = new Date();
+  d.setDate(d.getDate() - n);
+  return d.toISOString().split("T")[0];
+}
+
+interface DateFilterBarProps {
+  filter: DateFilterState;
+  onChange: (f: DateFilterState) => void;
+}
+
+function DateFilterBar({ filter, onChange }: DateFilterBarProps) {
+  const [showCustom, setShowCustom] = useState(filter.preset === "custom");
+  const [localStart, setLocalStart] = useState(filter.customStart || nDaysAgoStr(30));
+  const [localEnd, setLocalEnd] = useState(filter.customEnd || todayStr());
+
+  const handlePreset = (_: React.MouseEvent<HTMLElement>, value: DatePreset | null) => {
+    if (!value) return;
+    if (value === "custom") {
+      setShowCustom(true);
+      onChange({ preset: "custom", customStart: localStart, customEnd: localEnd });
+    } else {
+      setShowCustom(false);
+      onChange({ preset: value, customStart: "", customEnd: "" });
+    }
+  };
+
+  const applyCustom = () => {
+    onChange({ preset: "custom", customStart: localStart, customEnd: localEnd });
+  };
+
+  return (
+    <Box sx={{ mb: 4 }}>
+      <Box sx={{ display: "flex", alignItems: "center", gap: 2, flexWrap: "wrap" }}>
+        <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+          <TuneIcon sx={{ fontSize: 18, color: "text.secondary" }} />
+          <Typography variant="body2" sx={{ fontWeight: 700, color: "text.secondary", whiteSpace: "nowrap" }}>
+            Période
+          </Typography>
+        </Box>
+        <ToggleButtonGroup
+          value={filter.preset}
+          exclusive
+          onChange={handlePreset}
+          size="small"
+          sx={{
+            "& .MuiToggleButton-root": {
+              fontWeight: 700,
+              fontSize: "0.8rem",
+              px: { xs: 1.2, sm: 2 },
+              py: 0.6,
+              border: "1px solid rgba(0,0,0,0.1)",
+              textTransform: "none",
+              "&.Mui-selected": {
+                bgcolor: "#6366f1",
+                color: "white",
+                "&:hover": { bgcolor: "#4f46e5" },
+              },
+            },
+          }}
+        >
+          <ToggleButton value="7d">7 j</ToggleButton>
+          <ToggleButton value="30d">30 j</ToggleButton>
+          <ToggleButton value="90d">90 j</ToggleButton>
+          <ToggleButton value="all">Tout</ToggleButton>
+          <ToggleButton value="custom">Perso.</ToggleButton>
+        </ToggleButtonGroup>
+      </Box>
+
+      <Collapse in={showCustom} timeout={200}>
+        <Box
+          sx={{
+            mt: 2, p: 2,
+            bgcolor: "rgba(99,102,241,0.04)", borderRadius: 3, border: "1px solid rgba(99,102,241,0.12)",
+            display: "flex", flexDirection: { xs: "column", sm: "row" }, gap: 1.5,
+            alignItems: { xs: "stretch", sm: "center" },
+          }}
+        >
+          <TextField
+            label="Du"
+            type="date"
+            size="small"
+            value={localStart}
+            onChange={(e) => setLocalStart(e.target.value)}
+            slotProps={{ inputLabel: { shrink: true } }}
+            sx={{ minWidth: 150 }}
+          />
+          <Typography variant="body2" sx={{ color: "text.secondary", px: 0.5, display: { xs: "none", sm: "block" } }}>→</Typography>
+          <TextField
+            label="Au"
+            type="date"
+            size="small"
+            value={localEnd}
+            onChange={(e) => setLocalEnd(e.target.value)}
+            slotProps={{ inputLabel: { shrink: true } }}
+            sx={{ minWidth: 150 }}
+          />
+          <Button
+            variant="contained"
+            size="small"
+            onClick={applyCustom}
+            disableElevation
+            sx={{ bgcolor: "#6366f1", "&:hover": { bgcolor: "#4f46e5" }, fontWeight: 700, borderRadius: 2, px: 2.5 }}
+          >
+            Appliquer
+          </Button>
+        </Box>
+      </Collapse>
+    </Box>
+  );
+}
+
+// ─── Analytics hook ───────────────────────────────────────────────────────────
 
 interface ChartDataPoint {
   key: string;
@@ -87,7 +233,7 @@ interface ChartDataPoint {
 
 interface AnalyticsState {
   fields: CustomField[];
-  logs: DailyLog[];
+  logs: (DailyLog & { _ts?: number; _day?: number })[];
   loading: boolean;
   error: string | null;
   tabValue: number;
@@ -98,7 +244,7 @@ interface AnalyticsState {
 }
 
 type AnalyticsAction =
-  | { type: "SET_DATA"; fields: CustomField[]; logs: DailyLog[]; defaults: Partial<AnalyticsState> }
+  | { type: "SET_DATA"; fields: CustomField[]; logs: (DailyLog & { _ts?: number; _day?: number })[]; defaults: Partial<AnalyticsState> }
   | { type: "SET_LOADING"; loading: boolean }
   | { type: "SET_ERROR"; error: string | null }
   | { type: "SET_TAB"; value: number }
@@ -115,10 +261,48 @@ const analyticsReducer = (state: AnalyticsState, action: AnalyticsAction): Analy
   }
 };
 
-export default function AnalyticsClient() {
-  const theme = useTheme();
-  const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
+function filterLogsByDateFilter(
+  logs: (DailyLog & { _ts?: number; _day?: number })[],
+  filter: DateFilterState
+): (DailyLog & { _ts?: number; _day?: number })[] {
+  if (filter.preset === "all") return logs;
 
+  if (filter.preset === "custom") {
+    if (!filter.customStart || !filter.customEnd) return logs;
+    const start = new Date(filter.customStart).getTime();
+    const end = new Date(filter.customEnd + "T23:59:59").getTime();
+    return logs.filter((l) => {
+      const ts = l._ts ?? new Date(l.logDate).getTime();
+      return ts >= start && ts <= end;
+    });
+  }
+
+  const days = filter.preset === "7d" ? 7 : filter.preset === "30d" ? 30 : 90;
+  const cutoff = Date.now() - days * 24 * 60 * 60 * 1000;
+  return logs.filter((l) => (l._ts ?? 0) >= cutoff);
+}
+
+interface UseAnalyticsReturn {
+  state: AnalyticsState;
+  dispatch: React.Dispatch<AnalyticsAction>;
+  fields: CustomField[];
+  logs: (DailyLog & { _ts?: number; _day?: number })[];
+  filteredLogs: (DailyLog & { _ts?: number; _day?: number })[];
+  loading: boolean;
+  error: string | null;
+  tabValue: number;
+  selectedTrendField: string;
+  selectedFreqField: string;
+  selectedStringField: string;
+  trendData: ChartDataPoint[];
+  freqData: Array<{ name: string; count: number }>;
+  qualitativeData: { data: ChartDataPoint[]; valueMap: Record<string, number> };
+  multiTrendData: Record<string, string | number | boolean | null>[];
+}
+
+const useAnalytics = (
+  filter: DateFilterState
+): UseAnalyticsReturn => {
   const [state, dispatch] = React.useReducer(analyticsReducer, {
     fields: [],
     logs: [],
@@ -128,7 +312,7 @@ export default function AnalyticsClient() {
     selectedTrendField: "",
     selectedFreqField: "",
     selectedStringField: "",
-    advSelectedField: ""
+    advSelectedField: "",
   });
 
   const { fields, logs, loading, error, tabValue, selectedTrendField, selectedFreqField, selectedStringField } = state;
@@ -137,35 +321,31 @@ export default function AnalyticsClient() {
     try {
       const [fieldsData, logsData] = await Promise.all([
         apiService.get<CustomField[]>("/health/custom-fields", { signal }),
-        apiService.get<DailyLog[]>("/health/daily-logs", { signal })
+        apiService.get<DailyLog[]>("/health/daily-logs", { signal }),
       ]);
 
       const defaults: Partial<AnalyticsState> = {};
-      const numF = fieldsData.filter(f => f.fieldType === FieldType.NUMBER || f.fieldType === FieldType.BOOLEAN);
+      const numF = fieldsData.filter((f) => f.fieldType === FieldType.NUMBER || f.fieldType === FieldType.BOOLEAN);
       if (numF.length) defaults.selectedTrendField = numF[0].id;
 
-      const strF = fieldsData.filter(f => f.fieldType === FieldType.STRING || f.fieldType === FieldType.NUMBER);
+      const strF = fieldsData.filter((f) => f.fieldType === FieldType.STRING || f.fieldType === FieldType.NUMBER);
       if (strF.length) defaults.selectedStringField = strF[0].id;
 
-      const freqF = fieldsData.filter(f => f.fieldType === FieldType.STRING || f.fieldType === FieldType.BOOLEAN);
+      const freqF = fieldsData.filter((f) => f.fieldType === FieldType.STRING || f.fieldType === FieldType.BOOLEAN);
       if (freqF.length) defaults.selectedFreqField = freqF[0].id;
 
       if (fieldsData.length) defaults.advSelectedField = fieldsData[0].id;
 
-      const logsWithData = logsData.map(log => {
+      const logsWithData = logsData.map((log) => {
         const dateObj = new Date(log.logDate);
-        return {
-          ...log,
-          _ts: dateObj.getTime(),
-          _day: dateObj.getDay()
-        };
+        return { ...log, _ts: dateObj.getTime(), _day: dateObj.getDay() };
       });
 
       dispatch({
         type: "SET_DATA",
         fields: fieldsData,
         logs: logsWithData.sort((a, b) => a._ts - b._ts),
-        defaults
+        defaults,
       });
     } catch (err: unknown) {
       if ((err as Error).name !== "AbortError") dispatch({ type: "SET_ERROR", error: "Échec du chargement" });
@@ -178,23 +358,25 @@ export default function AnalyticsClient() {
     return () => controller.abort();
   }, [fetchData]);
 
-  const fieldsMap = useMemo(() => new Map(fields.map(f => [f.id, f])), [fields]);
+  const filteredLogs = useMemo(() => filterLogsByDateFilter(logs, filter), [logs, filter]);
+
+  const fieldsMap = useMemo(() => new Map(fields.map((f) => [f.id, f])), [fields]);
 
   const trendData = useMemo<ChartDataPoint[]>(() => {
-    if (!selectedTrendField || !logs.length) return [];
+    if (!selectedTrendField || !filteredLogs.length) return [];
     const field = fieldsMap.get(selectedTrendField);
     if (!field) return [];
 
     const result: ChartDataPoint[] = [];
     const logsByDate = new Map<string, DailyLog[]>();
-    logs.forEach(log => {
+    filteredLogs.forEach((log) => {
       const d = new Date(log.logDate).toISOString().split("T")[0];
       if (!logsByDate.has(d)) logsByDate.set(d, []);
       logsByDate.get(d)?.push(log);
     });
 
-    const minDate = new Date(logs[0].logDate);
-    const maxDate = new Date(logs[logs.length - 1].logDate);
+    const minDate = new Date(filteredLogs[0].logDate);
+    const maxDate = new Date(filteredLogs[filteredLogs.length - 1].logDate);
 
     for (let d = new Date(minDate); d <= maxDate; d.setDate(d.getDate() + 1)) {
       const dStr = d.toISOString().split("T")[0];
@@ -207,7 +389,7 @@ export default function AnalyticsClient() {
       }
 
       const lastLog = dayLogs[dayLogs.length - 1];
-      const fieldValueMap = new Map(lastLog.fieldValues?.map(fv => [fv.customFieldId, fv.value]));
+      const fieldValueMap = new Map(lastLog.fieldValues?.map((fv) => [fv.customFieldId, fv.value]));
       const v = fieldValueMap.get(selectedTrendField);
 
       if (v === undefined) {
@@ -219,27 +401,27 @@ export default function AnalyticsClient() {
       }
     }
     return result;
-  }, [logs, selectedTrendField, fieldsMap]);
+  }, [filteredLogs, selectedTrendField, fieldsMap]);
 
   const freqData = useMemo(() => {
-    if (!selectedFreqField || !logs.length) return [];
+    if (!selectedFreqField || !filteredLogs.length) return [];
     const field = fieldsMap.get(selectedFreqField);
     if (!field) return [];
 
     const counts: Record<string, number> = {};
-    logs.forEach(log => {
-      const v = log.fieldValues?.find(fv => fv.customFieldId === selectedFreqField)?.value;
+    filteredLogs.forEach((log) => {
+      const v = log.fieldValues?.find((fv) => fv.customFieldId === selectedFreqField)?.value;
       if (v) counts[v] = (counts[v] || 0) + 1;
     });
 
     return Object.entries(counts).map(([name, count]) => ({
       name: field.fieldType === FieldType.BOOLEAN ? (name === "true" ? "Oui" : "Non") : name,
-      count
+      count,
     }));
-  }, [logs, selectedFreqField, fieldsMap]);
+  }, [filteredLogs, selectedFreqField, fieldsMap]);
 
   const qualitativeData = useMemo(() => {
-    if (!selectedStringField || !logs.length) return { data: [], valueMap: {} };
+    if (!selectedStringField || !filteredLogs.length) return { data: [], valueMap: {} };
     const field = fieldsMap.get(selectedStringField);
     if (!field) return { data: [], valueMap: {} };
 
@@ -247,14 +429,17 @@ export default function AnalyticsClient() {
     const isNumeric = field.fieldType === FieldType.NUMBER;
 
     if (isNumeric) {
-      const uniqueVals = Array.from(new Set(logs.flatMap(l => {
-        const v = l.fieldValues?.find(fv => fv.customFieldId === selectedStringField)?.value;
-        const num = parseFloat(v || "");
-        return !isNaN(num) ? [num] : [];
-      }))) as number[];
+      const uniqueVals = Array.from(
+        new Set(
+          filteredLogs.flatMap((l) => {
+            const v = l.fieldValues?.find((fv) => fv.customFieldId === selectedStringField)?.value;
+            const num = parseFloat(v || "");
+            return !isNaN(num) ? [num] : [];
+          })
+        )
+      ) as number[];
       uniqueVals.sort((a, b) => a - b);
-
-      uniqueVals.forEach(v => {
+      uniqueVals.forEach((v) => {
         const isHourly = (field.optionsOrder || []).includes("isHourly");
         const label = isHourly ? formatHourlyValue(v.toString()) : v.toString();
         valueMap[label] = v;
@@ -263,20 +448,23 @@ export default function AnalyticsClient() {
       if (field.optionsOrder?.length) {
         field.optionsOrder.forEach((opt, i) => { valueMap[opt] = i; });
       } else {
-        const uniqueVals = Array.from(new Set(logs.flatMap(l => {
-          const v = l.fieldValues?.find(fv => fv.customFieldId === selectedStringField)?.value;
-          return v ? [v] : [];
-        }))) as string[];
+        const uniqueVals = Array.from(
+          new Set(
+            filteredLogs.flatMap((l) => {
+              const v = l.fieldValues?.find((fv) => fv.customFieldId === selectedStringField)?.value;
+              return v ? [v] : [];
+            })
+          )
+        ) as string[];
         uniqueVals.sort().forEach((v, i) => { valueMap[v] = i; });
       }
     }
 
-    const data = logs.reduce<ChartDataPoint[]>((acc, log) => {
-      const v = log.fieldValues?.find(fv => fv.customFieldId === selectedStringField)?.value;
+    const data = filteredLogs.reduce<ChartDataPoint[]>((acc, log) => {
+      const v = log.fieldValues?.find((fv) => fv.customFieldId === selectedStringField)?.value;
       if (v && v !== "-") {
         const dateStr = new Date(log.logDate).toISOString().split("T")[0];
         const isHourly = isNumeric && (field.optionsOrder || []).includes("isHourly");
-
         let numericValue: number | null = null;
         let displayLabel = v;
 
@@ -290,44 +478,43 @@ export default function AnalyticsClient() {
           numericValue = valueMap[v] ?? null;
         }
 
-        acc.push({
-          key: dateStr,
-          dateDisplay: new Date(log.logDate).toLocaleDateString(),
-          value: numericValue,
-          label: displayLabel
-        });
+        acc.push({ key: dateStr, dateDisplay: new Date(log.logDate).toLocaleDateString(), value: numericValue, label: displayLabel });
       }
       return acc;
     }, []);
 
     return { data, valueMap };
-  }, [logs, selectedStringField, fieldsMap]);
+  }, [filteredLogs, selectedStringField, fieldsMap]);
 
   const multiTrendData = useMemo(() => {
-    if (!logs.length) return [];
+    if (!filteredLogs.length) return [];
 
     const logsByDate = new Map<string, DailyLog[]>();
-    logs.forEach(log => {
+    filteredLogs.forEach((log) => {
       const d = new Date(log.logDate).toISOString().split("T")[0];
       if (!logsByDate.has(d)) logsByDate.set(d, []);
       logsByDate.get(d)?.push(log);
     });
 
-    const minDate = new Date(logs[0].logDate);
-    const maxDate = new Date(logs[logs.length - 1].logDate);
+    const minDate = new Date(filteredLogs[0].logDate);
+    const maxDate = new Date(filteredLogs[filteredLogs.length - 1].logDate);
     const result: Record<string, string | number | boolean | null>[] = [];
 
     const stringFieldMaps = new Map<string, Record<string, number>>();
-    fields.forEach(field => {
+    fields.forEach((field) => {
       if (field.fieldType === FieldType.STRING) {
         const valueMap: Record<string, number> = {};
         if (field.optionsOrder?.length) {
           field.optionsOrder.forEach((opt, i) => { valueMap[opt] = i; });
         } else {
-          const uniqueVals = Array.from(new Set(logs.flatMap(l => {
-            const v = l.fieldValues?.find(fv => fv.customFieldId === field.id)?.value;
-            return v && v !== "-" ? [v] : [];
-          }))) as string[];
+          const uniqueVals = Array.from(
+            new Set(
+              filteredLogs.flatMap((l) => {
+                const v = l.fieldValues?.find((fv) => fv.customFieldId === field.id)?.value;
+                return v && v !== "-" ? [v] : [];
+              })
+            )
+          ) as string[];
           uniqueVals.sort().forEach((v, i) => { valueMap[v] = i; });
         }
         stringFieldMaps.set(field.id, valueMap);
@@ -339,36 +526,22 @@ export default function AnalyticsClient() {
       const dayLogs = logsByDate.get(dStr);
       const disp = d.toLocaleDateString();
 
-      const point: Record<string, string | number | boolean | null> = {
-        dateDisplay: disp,
-        dateStr: dStr
-      };
-
+      const point: Record<string, string | number | boolean | null> = { dateDisplay: disp, dateStr: dStr };
       const lastLog = dayLogs ? dayLogs[dayLogs.length - 1] : null;
       const fvMap = new Map<string, string>();
-      if (lastLog && lastLog.fieldValues) {
-        lastLog.fieldValues.forEach(fv => {
-          fvMap.set(fv.customFieldId, fv.value);
-        });
-      }
+      if (lastLog?.fieldValues) lastLog.fieldValues.forEach((fv) => fvMap.set(fv.customFieldId, fv.value));
 
-      fields.forEach(field => {
+      fields.forEach((field) => {
         if (!lastLog) {
           point[field.id] = null;
         } else {
           const val = fvMap.get(field.id);
           if (val !== undefined && val !== "" && val !== "-") {
-            if (field.fieldType === FieldType.BOOLEAN) {
-              point[field.id] = val === "true" ? 1 : 0;
-            } else if (field.fieldType === FieldType.NUMBER) {
-              point[field.id] = parseFloat(val);
-            } else if (field.fieldType === FieldType.STRING) {
-              const valueMap = stringFieldMaps.get(field.id);
-              if (valueMap && val in valueMap) {
-                point[field.id] = valueMap[val];
-              } else {
-                point[field.id] = null;
-              }
+            if (field.fieldType === FieldType.BOOLEAN) point[field.id] = val === "true" ? 1 : 0;
+            else if (field.fieldType === FieldType.NUMBER) point[field.id] = parseFloat(val);
+            else if (field.fieldType === FieldType.STRING) {
+              const vm = stringFieldMaps.get(field.id);
+              point[field.id] = vm && val in vm ? vm[val] : null;
             } else {
               point[field.id] = null;
             }
@@ -377,38 +550,117 @@ export default function AnalyticsClient() {
           }
         }
       });
-
       result.push(point);
     }
     return result;
-  }, [logs, fields]);
+  }, [filteredLogs, fields]);
+
+  return {
+    state,
+    dispatch,
+    fields,
+    logs,
+    filteredLogs,
+    loading,
+    error,
+    tabValue,
+    selectedTrendField,
+    selectedFreqField,
+    selectedStringField,
+    trendData,
+    freqData,
+    qualitativeData,
+    multiTrendData,
+  };
+};
+
+// ─── AnalyticsClient ──────────────────────────────────────────────────────────
+
+export default function AnalyticsClient() {
+  const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down("sm"));
+
+  const [dateFilter, setDateFilter] = useState<DateFilterState>({
+    preset: "all",
+    customStart: "",
+    customEnd: "",
+  });
+
+  const {
+    state,
+    dispatch,
+    fields,
+    logs,
+    filteredLogs,
+    loading,
+    error,
+    tabValue,
+    selectedTrendField,
+    selectedFreqField,
+    selectedStringField,
+    trendData,
+    freqData,
+    qualitativeData,
+    multiTrendData,
+  } = useAnalytics(dateFilter);
 
   const SELECT_MENU_PROPS = {
     slotProps: {
       paper: {
         sx: {
           maxHeight: 300,
-          '&::-webkit-scrollbar': { width: '8px' },
-          '&::-webkit-scrollbar-thumb': { backgroundColor: 'rgba(0,0,0,0.1)', borderRadius: '4px' }
-        }
-      }
-    }
+          "&::-webkit-scrollbar": { width: "8px" },
+          "&::-webkit-scrollbar-thumb": { backgroundColor: "rgba(0,0,0,0.1)", borderRadius: "4px" },
+        },
+      },
+    },
   };
 
-  if (loading) return <Box sx={{ display: "flex", justifyContent: "center", alignItems: "center", height: "100vh" }}><CircularProgress size={60} thickness={4} /></Box>;
+  if (loading)
+    return (
+      <Box sx={{ display: "flex", justifyContent: "center", alignItems: "center", height: "100vh" }}>
+        <CircularProgress size={60} thickness={4} />
+      </Box>
+    );
 
   return (
     <Box sx={{ minHeight: "100vh" }}>
       <Navbar />
       <Container maxWidth={false} sx={{ py: 6, px: { xs: 2, md: 3, lg: 4 } }}>
-        <Box sx={{ mb: 6 }}>
-          <Typography variant="h4" sx={{ fontWeight: 900, mb: 1, color: "#142949", letterSpacing: "-0.02em" }}>Analyses</Typography>
-          <Typography variant="h6" color="text.secondary">Visualisez vos progrès et découvrez des corrélations.</Typography>
+        <Box sx={{ mb: 4 }}>
+          <Typography variant="h4" sx={{ fontWeight: 900, mb: 1, color: "#142949", letterSpacing: "-0.02em" }}>
+            Analyses
+          </Typography>
+          <Typography variant="h6" color="text.secondary">
+            Visualisez vos progrès et découvrez des corrélations.
+          </Typography>
         </Box>
 
         {error && <Alert severity="error" sx={{ mb: 4, borderRadius: 3 }}>{error}</Alert>}
 
-        <Paper elevation={0} sx={{ borderRadius: 6, overflow: "hidden", mb: 6, border: "1px solid rgba(0,0,0,0.05)", boxShadow: "0 10px 15px -3px rgba(0,0,0,0.05)" }}>
+        {/* Date filter */}
+        <DateFilterBar filter={dateFilter} onChange={setDateFilter} />
+
+        {/* Count badge */}
+        {dateFilter.preset !== "all" && (
+          <Box sx={{ mb: 3 }}>
+            <Typography variant="caption" sx={{ color: "text.secondary", fontWeight: 600 }}>
+              {filteredLogs.length} entrée{filteredLogs.length !== 1 ? "s" : ""} affichée{filteredLogs.length !== 1 ? "s" : ""}
+              {" "}sur {logs.length} au total
+            </Typography>
+          </Box>
+        )}
+
+        <Paper
+          elevation={0}
+          sx={{
+            borderRadius: 6,
+            overflow: "hidden",
+            mb: 6,
+            border: "1px solid rgba(0,0,0,0.05)",
+            boxShadow: "0 10px 15px -3px rgba(0,0,0,0.05)",
+          }}
+        >
           <Tabs
             value={tabValue}
             onChange={(_, v) => dispatch({ type: "SET_TAB", value: v })}
@@ -416,9 +668,9 @@ export default function AnalyticsClient() {
             scrollButtons={isMobile ? "auto" : undefined}
             allowScrollButtonsMobile
             sx={{
-              '& .MuiTab-root': { fontWeight: 700, py: 2, fontSize: '0.9rem' },
-              '& .Mui-selected': { color: '#6366f1' },
-              '& .MuiTabs-indicator': { backgroundColor: '#6366f1', height: 3 }
+              "& .MuiTab-root": { fontWeight: 700, py: 2, fontSize: { xs: "0.8rem", sm: "0.9rem" } },
+              "& .Mui-selected": { color: "#6366f1" },
+              "& .MuiTabs-indicator": { backgroundColor: "#6366f1", height: 3 },
             }}
           >
             <Tab label="Tendances" />
@@ -438,7 +690,7 @@ export default function AnalyticsClient() {
                     valueMap={qualitativeData.valueMap}
                     selectedField={selectedStringField}
                     setSelectedField={(id) => dispatch({ type: "SET_FIELD", key: "selectedStringField", id })}
-                    stringFields={fields.filter(f => f.fieldType === FieldType.STRING || f.fieldType === FieldType.NUMBER)}
+                    stringFields={fields.filter((f) => f.fieldType === FieldType.STRING || f.fieldType === FieldType.NUMBER)}
                     ChartContainer={ChartContainer}
                     menuProps={SELECT_MENU_PROPS}
                   />
@@ -465,7 +717,7 @@ export default function AnalyticsClient() {
                   <MultiTrendChart
                     data={multiTrendData}
                     fields={fields}
-                    logs={logs}
+                    logs={filteredLogs}
                     ChartContainer={ChartContainer}
                   />
                 </Grid>
@@ -476,7 +728,7 @@ export default function AnalyticsClient() {
           {tabValue === 1 && (
             <Fade in={tabValue === 1} timeout={400}>
               <Box>
-                <CorrelationStudy fields={fields} logs={logs} />
+                <CorrelationStudy fields={fields} logs={filteredLogs} />
               </Box>
             </Fade>
           )}
@@ -486,7 +738,7 @@ export default function AnalyticsClient() {
               <Box>
                 <AdvancedAnalyses
                   fields={fields}
-                  logs={logs}
+                  logs={filteredLogs}
                   activeAdvField={state.advSelectedField || (fields.length > 0 ? fields[0].id : "")}
                   setAdvSelectedField={(id) => dispatch({ type: "SET_FIELD", key: "advSelectedField", id })}
                   ChartContainer={ChartContainer}
@@ -498,11 +750,7 @@ export default function AnalyticsClient() {
           {tabValue === 3 && (
             <Fade in={tabValue === 3} timeout={400}>
               <Box>
-                <HabitImpactStudy
-                  fields={fields}
-                  logs={logs}
-                  ChartContainer={ChartContainer}
-                />
+                <HabitImpactStudy fields={fields} logs={filteredLogs} ChartContainer={ChartContainer} />
               </Box>
             </Fade>
           )}

@@ -10,7 +10,9 @@ import {
   Select,
   MenuItem,
   Tooltip as MuiTooltip,
-  MenuProps
+  MenuProps,
+  useTheme,
+  useMediaQuery,
 } from "@mui/material";
 import InfoIcon from "@mui/icons-material/Info";
 
@@ -57,6 +59,8 @@ export const TrendNumericalChart: React.FC<TrendNumericalChartProps> = ({
   ChartContainer,
   menuProps
 }) => {
+  const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down("sm"));
   const currentField = React.useMemo(() => fields.find(f => f.id === selectedField), [fields, selectedField]);
   const numberAndBoolFields = React.useMemo(() =>
     fields.filter(f => f.fieldType === FieldType.NUMBER || f.fieldType === FieldType.BOOLEAN),
@@ -104,7 +108,7 @@ export const TrendNumericalChart: React.FC<TrendNumericalChartProps> = ({
  
       <Box sx={{ flexGrow: 1 }}>
         <ChartContainer aspect={1.5} mobileAspect={1.0} minHeight={350} fullHeight>
-          <AreaChart data={data} margin={{ top: 35, right: 20, left: 20, bottom: 20 }}>
+          <AreaChart data={data} margin={isMobile ? { top: 15, right: 8, left: 0, bottom: 10 } : { top: 35, right: 20, left: 20, bottom: 20 }}>
             <defs>
               <linearGradient id="colorValue" x1="0" y1="0" x2="0" y2="1">
                 <stop offset="5%" stopColor="#10b981" stopOpacity={0.3} />
@@ -133,7 +137,7 @@ export const TrendNumericalChart: React.FC<TrendNumericalChartProps> = ({
                 }
                 return val;
               }}
-              width={50}
+              width={isMobile ? 40 : 50}
             />
             <Tooltip
               contentStyle={{ borderRadius: 12, border: "none", boxShadow: "0 10px 15px -3px rgba(0,0,0,0.1)" }}

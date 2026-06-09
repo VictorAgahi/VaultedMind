@@ -403,7 +403,7 @@ export function AIChatBot() {
         onClick={() => dispatch({ type: "SET_OPEN", payload: !isOpen })}
         sx={{
           position: "fixed",
-          bottom: { xs: 110, sm: 24 },
+          bottom: { xs: "calc(env(safe-area-inset-bottom, 0px) + 72px)", sm: 24 },
           right: { xs: 16, sm: 24 },
           boxShadow: "0 8px 24px rgba(216, 24, 50, 0.3)",
           zIndex: 1100,

@@ -15,7 +15,9 @@ import {
   InputLabel,
   Select,
   MenuItem,
-  Autocomplete
+  Autocomplete,
+  useMediaQuery,
+  useTheme,
 } from "@mui/material";
 import { CustomField, FieldType } from "@/types";
 
@@ -50,6 +52,9 @@ export const LogEntryDialog: React.FC<LogEntryDialogProps> = ({
   activeFields,
   historicalValues
 }) => {
+  const theme = useTheme();
+  const fullScreen = useMediaQuery(theme.breakpoints.down("sm"));
+
   const renderFieldInput = (field: CustomField) => {
     const value = fieldValuesMap[field.id] || "";
 
@@ -154,7 +159,7 @@ export const LogEntryDialog: React.FC<LogEntryDialogProps> = ({
   };
 
   return (
-    <Dialog open={open} onClose={onClose} fullWidth maxWidth="md">
+    <Dialog open={open} onClose={onClose} fullWidth maxWidth="md" fullScreen={fullScreen}>
       <form onSubmit={onSubmit}>
         <DialogTitle>{isEditing ? "Modifier le journal" : "Nouveau journal"}</DialogTitle>
         <DialogContent dividers>
@@ -190,7 +195,7 @@ export const LogEntryDialog: React.FC<LogEntryDialogProps> = ({
           ) : (
             <Box
               sx={{
-                maxHeight: 320,
+                maxHeight: { xs: "40vh", sm: 320 },
                 overflowY: "auto",
                 pr: 1,
                 "&::-webkit-scrollbar": { width: 6 },
