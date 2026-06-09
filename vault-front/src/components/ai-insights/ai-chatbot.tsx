@@ -175,7 +175,7 @@ const ChatInput: React.FC<ChatInputProps> = ({ value, onChange, onSend, disabled
     borderTop: "1px solid #e5e7eb",
     flexShrink: 0
   }}>
-    <Box sx={{ display: "flex", gap: 1, alignItems: "center" }}>
+    <Box sx={{ display: "flex", gap: 1, alignItems: "flex-end" }}>
       <TextField
         fullWidth
         size="small"
@@ -197,8 +197,7 @@ const ChatInput: React.FC<ChatInputProps> = ({ value, onChange, onSend, disabled
             border: "1px solid #e5e7eb",
             transition: "all 0.2s",
             minHeight: 44,
-            alignItems: "flex-end",
-            pb: 1,
+            alignItems: "center",
             "& fieldset": { border: "none" },
             "&.Mui-focused": {
               border: "1px solid",
@@ -337,9 +336,17 @@ export function AIChatBot() {
       dispatch({ type: "SET_ENABLED", payload: customEvent.detail.enabled });
     };
 
+    const handleOpenWithMessage = (e: Event) => {
+      const customEvent = e as CustomEvent<{ message: string }>;
+      dispatch({ type: "SET_OPEN", payload: true });
+      dispatch({ type: "SET_INPUT_VALUE", payload: customEvent.detail.message });
+    };
+
     window.addEventListener("ai-insights-status-changed", handleStatusChange);
+    window.addEventListener("ai-chat-open-with-message", handleOpenWithMessage);
     return () => {
       window.removeEventListener("ai-insights-status-changed", handleStatusChange);
+      window.removeEventListener("ai-chat-open-with-message", handleOpenWithMessage);
     };
   }, [isAuthenticated]);
 

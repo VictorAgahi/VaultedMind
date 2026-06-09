@@ -19,10 +19,13 @@ import {
   DialogContentText,
   DialogActions,
   Collapse,
+  Tooltip,
 } from "@mui/material";
 import DeleteIcon from "@mui/icons-material/Delete";
 import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
 import ExpandLessIcon from "@mui/icons-material/ExpandLess";
+import ChatIcon from "@mui/icons-material/Chat";
+import InfoOutlinedIcon from "@mui/icons-material/InfoOutlined";
 import { apiService } from "@/services/api.service";
 import { AIInsightResponseDto } from "@/types";
 import EmojiEventsIcon from "@mui/icons-material/EmojiEvents";
@@ -257,10 +260,12 @@ function InsightCard({
   insight,
   isMounted,
   onDelete,
+  isEnabled,
 }: {
   insight: AIInsightResponseDto;
   isMounted: boolean;
   onDelete: (id: string) => void;
+  isEnabled: boolean;
 }) {
   const [expanded, setExpanded] = useState(true);
 
@@ -268,14 +273,20 @@ function InsightCard({
     ? `${new Date(insight.createdAt).toLocaleDateString()} ${new Date(insight.createdAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}`
     : "";
 
+  const handleAskAI = () => {
+    const question = `En te basant sur cette analyse "${insight.title}", peux-tu m'expliquer davantage et me donner des conseils pratiques ?`;
+    window.dispatchEvent(new CustomEvent("ai-chat-open-with-message", { detail: { message: question } }));
+  };
+
   return (
     <Card
       sx={{
-        border: "1px solid #e5e7eb",
-        boxShadow: "none",
+        border: "1px solid #e2e8f0",
+        boxShadow: "0 1px 3px rgba(0,0,0,0.04)",
         borderRadius: 4,
-        "&:hover": { boxShadow: "0 2px 8px rgba(0,0,0,0.08)" },
-        transition: "box-shadow 0.2s",
+        bgcolor: "white",
+        "&:hover": { boxShadow: "0 4px 12px rgba(0,0,0,0.08)", borderColor: "#cbd5e1" },
+        transition: "box-shadow 0.2s, border-color 0.2s",
       }}
     >
       <CardContent sx={{ p: 3 }}>
@@ -315,11 +326,33 @@ function InsightCard({
           <MarkdownRenderer content={insight.content} />
         </Collapse>
 
-        {/* Show more/less toggle */}
-        <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", mt: 1.5 }}>
-          <Typography variant="caption" sx={{ color: "#9ca3af" }}>
-            {dateStr}
-          </Typography>
+        {/* Footer row */}
+        <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", mt: 1.5, gap: 1, flexWrap: "wrap" }}>
+          <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+            <Typography variant="caption" sx={{ color: "#9ca3af" }}>
+              {dateStr}
+            </Typography>
+            {isEnabled && (
+              <Button
+                size="small"
+                startIcon={<ChatIcon sx={{ fontSize: "0.85rem !important" }} />}
+                onClick={handleAskAI}
+                sx={{
+                  color: "#4f46e5",
+                  fontWeight: 700,
+                  fontSize: "0.72rem",
+                  textTransform: "none",
+                  bgcolor: "rgba(99,102,241,0.06)",
+                  borderRadius: 2,
+                  px: 1,
+                  py: 0.4,
+                  "&:hover": { bgcolor: "rgba(99,102,241,0.12)" },
+                }}
+              >
+                Demander à l&apos;IA
+              </Button>
+            )}
+          </Box>
           <Button
             size="small"
             onClick={() => setExpanded((v) => !v)}
@@ -405,11 +438,21 @@ export function InsightsPanel() {
   };
 
   return (
-    <Box sx={{ width: "100%", mt: 4 }}>
-      <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", mb: 3 }}>
+    <Box
+      sx={{
+        width: "100%",
+        mt: 4,
+        bgcolor: "#f8fafc",
+        borderRadius: 4,
+        border: "1px solid #e2e8f0",
+        p: { xs: 2, sm: 3 },
+      }}
+    >
+      {/* Header */}
+      <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", mb: 1.5 }}>
         <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
           <EmojiEventsIcon sx={{ color: "#f59e0b" }} />
-          <Typography variant="h6" sx={{ fontWeight: 600 }}>
+          <Typography variant="h6" sx={{ fontWeight: 700, color: "#0f172a" }}>
             Analyses par IA
           </Typography>
           {state.insights.length > 0 && (
@@ -430,8 +473,21 @@ export function InsightsPanel() {
         />
       </Box>
 
+      {/* Contexte limites */}
+      <Box sx={{ display: "flex", alignItems: "flex-start", gap: 0.75, mb: 2 }}>
+        <InfoOutlinedIcon sx={{ fontSize: "0.9rem", color: "#94a3b8", mt: "2px", flexShrink: 0 }} />
+        <Typography variant="caption" sx={{ color: "#64748b", lineHeight: 1.5 }}>
+          Les analyses sont générées automatiquement chaque jour à <strong>2h00 UTC</strong> à partir de vos journaux récents.
+          {" "}Une analyse par type est conservée (résumé, tendances, anomalies, recommandations).
+          {" "}Vous pouvez aussi en générer une manuellement ci-dessous.
+        </Typography>
+        <Tooltip title="L'IA analyse vos 30 derniers journaux et produit des insights personnalisés. Les anciennes analyses du même type sont remplacées automatiquement." arrow>
+          <InfoOutlinedIcon sx={{ fontSize: "0.85rem", color: "#cbd5e1", mt: "2px", flexShrink: 0, cursor: "help" }} />
+        </Tooltip>
+      </Box>
+
       {!state.enabled && (
-        <Alert severity="info" sx={{ mb: 2 }}>
+        <Alert severity="info" sx={{ mb: 2, bgcolor: "#eff6ff", border: "1px solid #bfdbfe", "& .MuiAlert-icon": { color: "#3b82f6" } }}>
           Les analyses par IA sont actuellement désactivées. Activez-les pour recevoir une analyse personnalisée de votre bien-être.
         </Alert>
       )}
@@ -450,7 +506,7 @@ export function InsightsPanel() {
               dispatch({ type: "FETCH_ERROR", error: getErrorMessage(error) });
             }
           }}
-          sx={{ mb: 2 }}
+          sx={{ mb: 2, borderColor: "#cbd5e1", color: "#475569", "&:hover": { borderColor: "#94a3b8", bgcolor: "#f1f5f9" } }}
         >
           Générer maintenant
         </Button>
@@ -463,7 +519,7 @@ export function InsightsPanel() {
       ) : state.error ? (
         <Alert severity="error">{state.error}</Alert>
       ) : state.insights.length === 0 ? (
-        <Alert severity="info">
+        <Alert severity="info" sx={{ bgcolor: "#eff6ff", border: "1px solid #bfdbfe", "& .MuiAlert-icon": { color: "#3b82f6" } }}>
           Pas encore d&apos;analyses. Elles sont générées quotidiennement à 2h00 UTC.
         </Alert>
       ) : (
@@ -474,6 +530,7 @@ export function InsightsPanel() {
               insight={insight}
               isMounted={isMounted}
               onDelete={deleteInsight}
+              isEnabled={state.enabled}
             />
           ))}
         </Stack>
