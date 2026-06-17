@@ -1,6 +1,16 @@
 import { Injectable } from '@nestjs/common';
 import { InsightType } from '../../domain/enums/insight-type.enum.js';
 
+interface DailyEntry {
+  date: string;
+  notes?: string;
+  fieldValues: Array<{
+    fieldName: string;
+    value: string;
+    fieldType: string;
+  }>;
+}
+
 interface SanitizedData {
   dateRange: string;
   totalLogs: number;
@@ -13,6 +23,7 @@ interface SanitizedData {
     trend?: string;
     values?: string[];
   }>;
+  dailyEntries: DailyEntry[];
   lastEntryDate?: string;
 }
 
@@ -60,6 +71,7 @@ export class PromptService {
   generateAnalysisBriefPrompt(type: InsightType, params: PromptParams): string {
     const { logs: sanitizedData, userContext } = params;
     const fieldText = this.formatFieldSummaries(sanitizedData.fieldSummaries);
+    const dailyLogsText = this.formatDailyEntries(sanitizedData.dailyEntries);
     const contextBlock = userContext
       ? `\n[CONTEXTE PERSONNEL À PRENDRE EN COMPTE]\n${userContext}\n`
       : '';
@@ -70,24 +82,30 @@ export class PromptService {
 Objectif: ${title}
 
 Règles non négociables:
-1. Ne confonds jamais corrélation et causalité.
-2. N'invente aucune relation statistique qui n'est pas visible dans les données fournies.
-3. Si le contexte personnel mentionne une pathologie, un traitement, un trouble, une situation de vie lourde ou un facteur externe, traite-le comme un confondant possible, jamais comme une preuve.
-4. Si une mesure semble être une durée ou une heure, écris toujours le format humain, par exemple 5h30, jamais 5.5 h.
-5. Réponds uniquement en français.
+1. NE TE LIMITE PAS à faire des calculs de moyennes arithmétiques simples (comme "vous dormez en moyenne 7h"). Les statistiques basiques brutes n'ont aucune valeur pour l'utilisateur.
+2. Va plus loin dans le raisonnement : cherche des corrélations, des tendances, des variations et des liens de cause à effet potentiels entre les différents indicateurs mesurés et les notes quotidiennes rédigées par l'utilisateur.
+3. Utilise le contexte personnel de l'utilisateur (ses notes de profil, antécédents, conditions comme les migraines, etc.) pour éclairer les variations des données. Par exemple, si l'utilisateur note une baisse d'humeur ou de sommeil, regarde si cela coïncide avec des événements, symptômes ou facteurs mentionnés dans son profil.
+4. Ne confonds jamais corrélation et causalité, mais propose des hypothèses claires et constructives basées sur la coïncidence temporelle des faits.
+5. N'invente aucune relation statistique qui n'est pas visible dans les données fournies.
+6. Si une mesure semble être une durée ou une heure, écris toujours le format humain, par exemple 5h30, jamais 5.5 h.
+7. Réponds uniquement en français.
 
 Période: ${sanitizedData.dateRange}
 Nombre d'entrées: ${sanitizedData.totalLogs}
 ${contextBlock}
-Indicateurs consolidés:
+
+Journaux quotidiens et notes de l'utilisateur :
+${dailyLogsText}
+
+Indicateurs consolidés :
 ${fieldText}
 
-Produit exactement ce plan, avec des puces courtes:
-## Faits observés
-## Corrélations plausibles et niveau de confiance
-## Facteurs de contexte / confondants à mentionner
+Produit exactement ce plan, avec des puces courtes et pertinentes :
+## Faits observés (Comportements récurrents, patterns temporels, variations notables - pas de simples moyennes arithmétiques)
+## Corrélations plausibles et niveau de confiance (Liens entre les indicateurs physiques/habitudes et l'état mental/notes quotidiennes de l'utilisateur)
+## Facteurs de contexte / confondants à mentionner (Croisement avec le profil de l'utilisateur, ex: migraines, stress, traitements)
 ## Ce qu'il ne faut pas conclure
-## Pistes de lecture pour le second agent
+## Pistes de lecture pour le second agent (Suggestions d'explications psychologiques ou comportementales pour guider le second agent)
 
 Le contenu doit rester prudent, factuel, et centré sur les éléments soutenus par les données.`;
   }
@@ -99,6 +117,7 @@ Le contenu doit rester prudent, factuel, et centré sur les éléments soutenus 
   ): string {
     const { logs: sanitizedData, userContext } = params;
     const fieldText = this.formatFieldSummaries(sanitizedData.fieldSummaries);
+    const dailyLogsText = this.formatDailyEntries(sanitizedData.dailyEntries);
     const contextBlock = userContext
       ? `\n[CONTEXTE PERSONNEL ET CONFIGURATION DE L'UTILISATEUR]\n${userContext}\n`
       : '';
@@ -112,30 +131,36 @@ Le contenu doit rester prudent, factuel, et centré sur les éléments soutenus 
 
     return `${header}
 
-Tu es le second agent. Tu reçois un dossier de preuve et tu dois le transformer en réponse utile pour l'utilisateur.
+Tu es le second agent de VaultedMind. Tu reçois un dossier de preuve préparé par le premier agent et ton rôle est de le transformer en insights précieux, en faits marquants personnalisés et en conseils concrets pour l'utilisateur.
 
 Règles non négociables:
-1. N'ajoute aucune corrélation nouvelle qui n'est pas déjà soutenue par le dossier analytique.
-2. Si le dossier est incertain, reformule-le comme hypothèse, pas comme vérité.
-3. Intègre le contexte personnel comme facteur de nuance, en particulier pour les pathologies, traitements, troubles ou événements de vie.
-4. Quand une durée apparaît, écris-la en format humain: 5h30, 2h15, 45 min. Jamais 5.5 h.
-5. Réponds en français, avec un ton empathique mais précis.
+1. BANNIS LES PHRASES BANALES ET LES STATISTIQUES SIMPLES SANS VALEUR AJOUTÉE (ex: "Vous dormez en moyenne X heures"). L'utilisateur connaît déjà ses moyennes. Donne-lui plutôt des faits marquants sur sa propre personne (ex: "Votre sommeil chute drastiquement de 2h les jours précédant vos épisodes de migraine").
+2. Connecte les données chiffrées aux notes quotidiennes et au contexte personnel (migraines, stress, habitudes) pour formuler des hypothèses de corrélation intelligentes et des conseils d'hygiène de vie adaptés.
+3. Propose des conseils et recommandations extrêmement personnalisés, concrets et actionnables. Évite les conseils génériques évidents (comme "dormez plus" ou "buvez de l'eau").
+4. N'ajoute aucune corrélation nouvelle qui n'est pas déjà soutenue par le dossier analytique ou les données fournies.
+5. Si le dossier ou la corrélation est incertaine, présente-la comme une hypothèse intéressante à explorer ou à surveiller ("Il semblerait que...", "Vous pourriez observer si...").
+6. Quand une durée apparaît, écris-la en format humain: 5h30, 2h15, 45 min. Jamais 5.5 h.
+7. Réponds en français, avec un ton empathique, engageant et précis.
 
 Type d'analyse: ${title}
 Période: ${sanitizedData.dateRange}
 Nombre d'entrées: ${sanitizedData.totalLogs}
 ${contextBlock}
 ${briefBlock}
+
+Journaux quotidiens et notes de l'utilisateur :
+${dailyLogsText}
+
 Base de données consolidée:
 ${fieldText}
 
-Format attendu:
-- un titre court si pertinent
-- une section d'analyse claire et concise
-- une section "Ce que ça suggère" ou équivalent si utile
-- 1 à 2 recommandations concrètes maximum
+Format attendu (sans mentionner les noms des sections mais en respectant cette structure de pensée) :
+- **Un titre accrocheur, personnalisé et bienveillant** (qui résume la découverte principale de la période)
+- **Faits & Analyses sur vous** : Révèle des observations profondes de corrélations ou de patterns (ex: impact du sommeil sur l'humeur, lien entre les notes de migraine/maux de tête et les indicateurs physiques).
+- **Ce que cela suggère** : Une lecture comportementale ou d'hygiène de vie basée sur le profil de l'utilisateur.
+- **1 à 2 conseils personnalisés actionnables** : Recommandations précises basées sur les observations pour aider l'utilisateur à améliorer son quotidien.
 
-Si tu détectes une possible confusion liée au contexte personnel, dis-le explicitement.`;
+Garde un ton qui valorise la curiosité et l'auto-observation, sans faire de diagnostic médical mais en étant un vrai compagnon analytique de son bien-être.`;
   }
 
   generatePrompt(type: InsightType, params: PromptParams): string {
@@ -158,6 +183,24 @@ Si tu détectes une possible confusion liée au contexte personnel, dis-le expli
   formatFieldSummaries(fieldSummaries: FieldSummaryLine[]): string {
     return fieldSummaries
       .map((field) => this.formatFieldSummary(field))
+      .join('\n');
+  }
+
+  formatDailyEntries(dailyEntries?: DailyEntry[]): string {
+    if (!dailyEntries || dailyEntries.length === 0) {
+      return 'Aucun journal quotidien disponible.';
+    }
+    return dailyEntries
+      .map((entry) => {
+        const fieldsStr = entry.fieldValues
+          .map((fv) => `${fv.fieldName} = ${fv.value}`)
+          .join(', ');
+        const fieldsBlock = fieldsStr ? ` [${fieldsStr}]` : '';
+        const noteBlock = entry.notes
+          ? ` | Note de l'utilisateur : "${entry.notes}"`
+          : '';
+        return `- ${entry.date} :${fieldsBlock}${noteBlock}`;
+      })
       .join('\n');
   }
 

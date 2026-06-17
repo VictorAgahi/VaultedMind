@@ -22,6 +22,7 @@ import SmartToyIcon from "@mui/icons-material/SmartToy";
 import PersonIcon from "@mui/icons-material/Person";
 import { apiService } from "@/services/api.service";
 import { useAuth } from "@/context/auth-context";
+import { MarkdownRenderer } from "./insights-panel";
 
 interface Message {
   id: string;
@@ -36,27 +37,37 @@ interface ChatHeaderProps {
 const ChatHeader: React.FC<ChatHeaderProps> = ({ onClose }) => (
   <Box
     sx={{
-      pt: { xs: "calc(env(safe-area-inset-top, 0px) + 16px)", sm: 2 },
-      pb: 2,
-      px: 2,
-      bgcolor: "primary.main",
+      pt: { xs: "calc(env(safe-area-inset-top, 0px) + 16px)", sm: 2.5 },
+      pb: 2.5,
+      px: 2.5,
+      background: "linear-gradient(135deg, #4f46e5 0%, #6366f1 100%)",
       color: "white",
       display: "flex",
       alignItems: "center",
       justifyContent: "space-between",
       gap: 1.5,
       flexShrink: 0,
+      boxShadow: "0 4px 20px rgba(79, 70, 229, 0.15)",
     }}
   >
     <Box sx={{ display: "flex", alignItems: "center", gap: 1.5 }}>
-      <Avatar sx={{ bgcolor: "rgba(255,255,255,0.2)" }}>
+      <Avatar sx={{ bgcolor: "rgba(255,255,255,0.2)", width: 40, height: 40 }}>
         <SmartToyIcon />
       </Avatar>
       <Box>
-        <Typography variant="subtitle1" sx={{ fontWeight: 600, lineHeight: 1.2 }}>
-          Assistant VaultedMind
-        </Typography>
-        <Typography variant="caption" sx={{ opacity: 0.8 }}>
+        <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+          <Typography variant="subtitle1" sx={{ fontWeight: 800, lineHeight: 1.2, letterSpacing: "-0.01em" }}>
+            Assistant VaultedMind
+          </Typography>
+          <Box sx={{
+            width: 8,
+            height: 8,
+            borderRadius: "50%",
+            bgcolor: "#10b981",
+            boxShadow: "0 0 8px #10b981",
+          }} />
+        </Box>
+        <Typography variant="caption" sx={{ opacity: 0.85, fontSize: "0.75rem", mt: 0.2, display: "block" }}>
           Toujours là pour vous écouter
         </Typography>
       </Box>
@@ -74,21 +85,29 @@ const ChatHeader: React.FC<ChatHeaderProps> = ({ onClose }) => (
 interface MessageListProps {
   messages: Message[];
   isPending: boolean;
+  thinkingMessage: string;
   scrollRef: React.RefObject<HTMLDivElement | null>;
 }
 
-const MessageList: React.FC<MessageListProps> = ({ messages, isPending, scrollRef }) => (
+const MessageList: React.FC<MessageListProps> = ({ messages, isPending, thinkingMessage, scrollRef }) => (
   <Box
     ref={scrollRef}
     sx={{
       flexGrow: 1,
-      p: { xs: 1.5, sm: 2 },
+      p: { xs: 2, sm: 2.5 },
       overflowY: "auto",
-      bgcolor: "#f9fafb",
+      bgcolor: "#f8fafc",
       display: "flex",
       flexDirection: "column",
       gap: 2,
       WebkitOverflowScrolling: "touch",
+      "&::-webkit-scrollbar": { width: 6 },
+      "&::-webkit-scrollbar-track": { bgcolor: "transparent" },
+      "&::-webkit-scrollbar-thumb": {
+        bgcolor: "rgba(0,0,0,0.06)",
+        borderRadius: 3,
+        "&:hover": { bgcolor: "rgba(0,0,0,0.12)" }
+      }
     }}
   >
     <List sx={{ p: 0 }}>
@@ -106,8 +125,8 @@ const MessageList: React.FC<MessageListProps> = ({ messages, isPending, scrollRe
             sx={{
               display: "flex",
               flexDirection: msg.sender === "user" ? "row-reverse" : "row",
-              alignItems: "flex-end",
-              gap: 1,
+              alignItems: "flex-start",
+              gap: 1.2,
               maxWidth: "85%",
             }}
           >
@@ -117,6 +136,7 @@ const MessageList: React.FC<MessageListProps> = ({ messages, isPending, scrollRe
                 height: 28,
                 bgcolor: msg.sender === "user" ? "secondary.main" : "primary.main",
                 fontSize: "0.8rem",
+                mt: 0.5
               }}
             >
               {msg.sender === "user" ? <PersonIcon fontSize="small" /> : <SmartToyIcon fontSize="small" />}
@@ -125,34 +145,56 @@ const MessageList: React.FC<MessageListProps> = ({ messages, isPending, scrollRe
               elevation={0}
               sx={{
                 p: 1.5,
-                borderRadius: 2,
+                px: 2,
+                borderRadius: msg.sender === "user" ? "16px 16px 0px 16px" : "16px 16px 16px 0px",
                 bgcolor: msg.sender === "user" ? "primary.main" : "white",
                 color: msg.sender === "user" ? "white" : "text.primary",
-                border: msg.sender === "user" ? "none" : "1px solid #e5e7eb",
-                borderBottomLeftRadius: msg.sender === "ai" ? 0 : 2,
-                borderBottomRightRadius: msg.sender === "user" ? 0 : 2,
+                border: msg.sender === "user" ? "none" : "1px solid #e2e8f0",
                 wordBreak: "break-word",
                 overflowWrap: "anywhere",
+                boxShadow: msg.sender === "user" ? "0 4px 12px rgba(99, 102, 241, 0.15)" : "0 2px 4px rgba(0,0,0,0.02)"
               }}
             >
-              <Typography variant="body2" sx={{ whiteSpace: "pre-wrap", lineHeight: 1.5 }}>
-                {msg.text}
-              </Typography>
+              {msg.sender === "user" ? (
+                <Typography variant="body2" sx={{ whiteSpace: "pre-wrap", lineHeight: 1.5 }}>
+                  {msg.text}
+                </Typography>
+              ) : (
+                <MarkdownRenderer content={msg.text} />
+              )}
             </Paper>
           </Box>
         </ListItem>
       ))}
       {isPending && (
         <ListItem sx={{ p: 0, mb: 2 }}>
-          <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-            <Avatar sx={{ width: 28, height: 28, bgcolor: "primary.main" }}>
+          <Box sx={{ display: "flex", alignItems: "flex-start", gap: 1, width: "100%" }}>
+            <Avatar sx={{ width: 28, height: 28, bgcolor: "primary.main", mt: 0.5 }}>
               <SmartToyIcon fontSize="small" />
             </Avatar>
             <Paper
               elevation={0}
-              sx={{ p: 1.5, borderRadius: 2, bgcolor: "white", border: "1px solid #e5e7eb" }}
+              sx={{
+                p: 2,
+                borderRadius: "16px 16px 16px 0px",
+                bgcolor: "white",
+                border: "1px solid #e2e8f0",
+                display: "flex",
+                flexDirection: "column",
+                gap: 1.5,
+                maxWidth: "80%",
+                boxShadow: "0 2px 4px rgba(0,0,0,0.02)"
+              }}
             >
-              <CircularProgress size={16} thickness={5} />
+              <Box sx={{ display: "flex", alignItems: "center", gap: 1.5 }}>
+                <CircularProgress size={14} thickness={6} sx={{ color: "primary.main" }} />
+                <Typography variant="caption" sx={{ color: "text.secondary", fontWeight: 800 }}>
+                  Pensée artificielle...
+                </Typography>
+              </Box>
+              <Typography variant="caption" sx={{ color: "text.secondary", fontStyle: "italic", lineHeight: 1.4 }}>
+                {thinkingMessage}
+              </Typography>
             </Paper>
           </Box>
         </ListItem>
@@ -170,14 +212,14 @@ interface ChatInputProps {
 
 const ChatInput: React.FC<ChatInputProps> = ({ value, onChange, onSend, disabled }) => (
   <Box sx={{
-    px: 1.5,
-    pt: 1.5,
-    pb: { xs: "calc(env(safe-area-inset-bottom, 0px) + 72px)", sm: 1.5 },
+    px: 2,
+    pt: 2,
+    pb: { xs: "calc(env(safe-area-inset-bottom, 0px) + 72px)", sm: 2 },
     bgcolor: "white",
-    borderTop: "1px solid #e5e7eb",
+    borderTop: "1px solid #e2e8f0",
     flexShrink: 0,
   }}>
-    <Box sx={{ display: "flex", gap: 1, alignItems: "flex-end" }}>
+    <Box sx={{ display: "flex", gap: 1.2, alignItems: "flex-end" }}>
       <TextField
         fullWidth
         size="small"
@@ -194,7 +236,7 @@ const ChatInput: React.FC<ChatInputProps> = ({ value, onChange, onSend, disabled
         }}
         sx={{
           "& .MuiOutlinedInput-root": {
-            borderRadius: 3,
+            borderRadius: 4,
             bgcolor: "#f8fafc",
             border: "1px solid #e2e8f0",
             transition: "all 0.2s",
@@ -206,7 +248,7 @@ const ChatInput: React.FC<ChatInputProps> = ({ value, onChange, onSend, disabled
               bgcolor: "white",
               border: "1px solid",
               borderColor: "primary.main",
-              boxShadow: "0 0 0 3px rgba(216,24,50,0.08)",
+              boxShadow: "0 0 0 3px rgba(99, 102, 241, 0.12)",
             },
           },
           "& .MuiInputBase-input": {
@@ -303,6 +345,17 @@ function chatReducer(state: ChatState, action: ChatAction): ChatState {
       return state;
   }
 }
+const JOKES = [
+  "L'IA réfléchit... (sans caféine, elle a du mérite)",
+  "Analyse de vos données... (promis, je ne juge pas votre heure de coucher)",
+  "Calcul des corrélations... Est-ce que le café explique tout ?",
+  "Recherche de patterns... (Mes neurones surchauffent un peu, un instant)",
+  "Consultation de la data... (Presque plus rapide qu'un médecin, et sans salle d'attente)",
+  "Déchiffrement de vos journaux... (Vos notes sont passionnantes !)",
+  "Croisement des variables... Est-ce les migraines ou la pleine lune ?",
+  "Un instant, j'interroge ma base de connaissances neuronale...",
+  "Traitement en cours... (Et non, je ne lis pas dans vos pensées, seulement vos logs)"
+];
 
 export function AIChatBot() {
   const { isAuthenticated } = useAuth();
@@ -310,8 +363,21 @@ export function AIChatBot() {
   const [state, dispatch] = React.useReducer(chatReducer, initialChatState);
   const [isPending, startTransition] = useTransition();
   const scrollRef = useRef<HTMLDivElement>(null);
+  
+  const [thinkingMessage, setThinkingMessage] = React.useState("L'IA réfléchit...");
 
   const { isOpen, isEnabled, loading, messages, inputValue } = state;
+
+  useEffect(() => {
+    if (isPending) {
+      const interval = setInterval(() => {
+        const nextJoke = JOKES[Math.floor(Math.random() * JOKES.length)];
+        setThinkingMessage(nextJoke);
+      }, 3500);
+
+      return () => clearInterval(interval);
+    }
+  }, [isPending]);
 
   useEffect(() => {
     if (scrollRef.current) {
@@ -370,6 +436,9 @@ export function AIChatBot() {
 
   const handleSendMessage = async () => {
     if (!inputValue.trim() || isPending) return;
+
+    const randomJoke = JOKES[Math.floor(Math.random() * JOKES.length)];
+    setThinkingMessage(randomJoke);
 
     const userMsg: Message = {
       id: Date.now().toString(),
@@ -437,20 +506,21 @@ export function AIChatBot() {
             bottom: { xs: 0, sm: 96 },
             right: { xs: 0, sm: 24 },
             width: { xs: "100%", sm: 380 },
-            height: { xs: "100%", sm: 500 },
-            maxHeight: { xs: "none", sm: 600 },
+            height: { xs: "100%", sm: 550 },
+            maxHeight: { xs: "none", sm: 650 },
             display: "flex",
             flexDirection: "column",
-            borderRadius: { xs: 0, sm: 3 },
+            borderRadius: { xs: 0, sm: "24px" },
             overflow: "hidden",
             zIndex: 1050,
-            boxShadow: { xs: "none", sm: "0 12px 48px rgba(0,0,0,0.15)" },
+            boxShadow: { xs: "none", sm: "0 20px 48px rgba(0,0,0,0.15)" },
             top: { xs: 0, sm: "auto" },
             left: { xs: 0, sm: "auto" },
+            border: { xs: "none", sm: "1px solid rgba(0,0,0,0.06)" }
           }}
         >
           <ChatHeader onClose={() => dispatch({ type: "SET_OPEN", payload: false })} />
-          <MessageList messages={messages} isPending={isPending} scrollRef={scrollRef} />
+          <MessageList messages={messages} isPending={isPending} thinkingMessage={thinkingMessage} scrollRef={scrollRef} />
           <ChatInput
             value={inputValue}
             onChange={(val) => dispatch({ type: "SET_INPUT_VALUE", payload: val })}

@@ -13,7 +13,7 @@ export class LLMService {
   constructor(private readonly configService: ConfigService) {
     const apiKey = this.configService.getOrThrow<string>('OPENAI_API_KEY');
 
-    const defaultFallback = 'gpt-4o';
+    const defaultFallback = 'gpt-5.5';
     this.defaultModel =
       this.configService.get<string>('OPENAI_MODEL')?.trim() || defaultFallback;
     this.analysisModel =
@@ -58,7 +58,7 @@ export class LLMService {
         targetModel.startsWith('o1') ||
         targetModel.startsWith('o3')
       ) {
-        body.max_completion_tokens = maxTokens;
+        body.max_completion_tokens = Math.max(maxTokens, 100000);
 
         if (targetModel.includes('pro')) {
           body.reasoning_effort = 'high';

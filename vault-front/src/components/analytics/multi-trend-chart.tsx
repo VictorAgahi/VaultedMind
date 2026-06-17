@@ -120,42 +120,40 @@ export const MultiTrendChart: React.FC<MultiTrendChartProps> = ({
           </Box>
           
           <Box sx={{ width: { xs: "100%", md: 400 } }}>
-            <Autocomplete
-              {...({
-                multiple: true,
-                size: "small",
-                options: selectableFields,
-                getOptionLabel: (option: CustomField) => option.name,
-                value: selectedFields,
-                onChange: (_: any, newValue: any) => setSelectedFields(newValue),
-                renderInput: (params: any) => (
-                  <TextField 
-                    {...params} 
-                    variant="outlined" 
-                    label="Indicateurs à comparer" 
-                    placeholder="Ajouter..."
-                  />
-                ),
-                renderTags: (tagValue: CustomField[], getTagProps: any) =>
-                  tagValue.map((option, index) => {
-                    // eslint-disable-next-line @typescript-eslint/no-unused-vars
-                    const { key: _key, ...tagProps } = getTagProps({ index });
-                    return (
-                      <Chip
-                        key={option.id}
-                        label={option.name}
-                        size="small"
-                        sx={{ 
-                          bgcolor: `${LINE_COLORS[index % LINE_COLORS.length]}20`,
-                          color: LINE_COLORS[index % LINE_COLORS.length],
-                          fontWeight: 700,
-                          border: `1px solid ${LINE_COLORS[index % LINE_COLORS.length]}40`
-                        }}
-                        {...tagProps}
-                      />
-                    );
-                  })
-              } as any)}
+            <Autocomplete<CustomField, true, false, false>
+              multiple
+              size="small"
+              options={selectableFields}
+              getOptionLabel={(option) => option.name}
+              value={selectedFields}
+              onChange={(_, newValue) => setSelectedFields(newValue as CustomField[])}
+              renderInput={(params) => (
+                <TextField 
+                  {...params} 
+                  variant="outlined" 
+                  label="Indicateurs à comparer" 
+                  placeholder="Ajouter..."
+                />
+              )}
+              renderValue={(tagValue, getTagProps) =>
+                tagValue.map((option, index) => {
+                  const { key, ...tagProps } = getTagProps({ index });
+                  return (
+                    <Chip
+                      key={option.id}
+                      label={option.name}
+                      size="small"
+                      sx={{ 
+                        bgcolor: `${LINE_COLORS[index % LINE_COLORS.length]}20`,
+                        color: LINE_COLORS[index % LINE_COLORS.length],
+                        fontWeight: 700,
+                        border: `1px solid ${LINE_COLORS[index % LINE_COLORS.length]}40`
+                      }}
+                      {...tagProps}
+                    />
+                  );
+                })
+              }
             />
           </Box>
         </Box>

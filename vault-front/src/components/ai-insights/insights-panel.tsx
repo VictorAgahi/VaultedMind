@@ -148,7 +148,7 @@ function renderInline(text: string): React.ReactNode {
   });
 }
 
-function MarkdownRenderer({ content }: { content: string }) {
+export function MarkdownRenderer({ content }: { content: string }) {
   const tokens = parseMarkdown(content);
 
   return (

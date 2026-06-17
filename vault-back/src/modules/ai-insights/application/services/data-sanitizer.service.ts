@@ -10,6 +10,16 @@ type SanitizedValueKind =
   | 'categorical'
   | 'boolean';
 
+interface DailyEntry {
+  date: string;
+  notes?: string;
+  fieldValues: Array<{
+    fieldName: string;
+    value: string;
+    fieldType: string;
+  }>;
+}
+
 interface SanitizedData {
   dateRange: string;
   totalLogs: number;
@@ -22,6 +32,7 @@ interface SanitizedData {
     trend?: string;
     values?: string[];
   }>;
+  dailyEntries: DailyEntry[];
   lastEntryDate?: string;
 }
 
@@ -33,6 +44,7 @@ export class DataSanitizerService {
         dateRange: 'No data',
         totalLogs: 0,
         fieldSummaries: [],
+        dailyEntries: [],
       };
     }
 
@@ -118,10 +130,41 @@ export class DataSanitizerService {
       fieldSummaries.push(summary);
     }
 
+    const dailyEntries: DailyEntry[] = [];
+    for (const log of sortedLogs) {
+      const entryFieldValues: Array<{
+        fieldName: string;
+        value: string;
+        fieldType: string;
+      }> = [];
+
+      for (const field of fields) {
+        if (!field.isActive) continue;
+
+        const fieldValue = log.fieldValues?.find(
+          (fv) => fv.customFieldId === field.id,
+        );
+        if (fieldValue) {
+          entryFieldValues.push({
+            fieldName: field.name,
+            value: fieldValue.value,
+            fieldType: field.fieldType,
+          });
+        }
+      }
+
+      dailyEntries.push({
+        date: dateFormatter.format(new Date(log.logDate)),
+        notes: log.notes || undefined,
+        fieldValues: entryFieldValues,
+      });
+    }
+
     return {
       dateRange: `${dateFormatter.format(minDate)} au ${dateFormatter.format(maxDate)}`,
       totalLogs: logs.length,
       fieldSummaries,
+      dailyEntries,
       lastEntryDate: dateFormatter.format(maxDate),
     };
   }
