@@ -23,7 +23,7 @@ spec:
         - name: ghcr-login
       initContainers:
       - name: migrations
-        image: ghcr.io/victoragahi/vault-backend:fc06e0f1f8c2afa43a3df85289e237e7e1aaf064
+        image: ghcr.io/victoragahi/vault-backend:a171d0f64219e5a61fc5e432df2015ebd080384c
         imagePullPolicy: Always
         securityContext:
           allowPrivilegeEscalation: false
@@ -50,7 +50,7 @@ spec:
           value: vaultedmind_db
       containers:
       - name: backend
-        image: ghcr.io/victoragahi/vault-backend:fc06e0f1f8c2afa43a3df85289e237e7e1aaf064
+        image: ghcr.io/victoragahi/vault-backend:a171d0f64219e5a61fc5e432df2015ebd080384c
         securityContext:
           allowPrivilegeEscalation: false
           capabilities:
