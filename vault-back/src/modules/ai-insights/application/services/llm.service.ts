@@ -151,7 +151,7 @@ export class LLMService {
         targetModel.startsWith('o4')
       ) {
         // GPT-5.x / o-series: use max_completion_tokens
-        body.max_completion_tokens = Math.max(maxTokens, 100000);
+        body.max_completion_tokens = Math.max(maxTokens, 25000);
 
         if (targetModel.includes('gpt-5.6') || targetModel.startsWith('o')) {
           body.reasoning_effort =
