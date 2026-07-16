@@ -44,7 +44,7 @@ const LINE_COLORS = [
   "#f43f5e", // Rose
   "#f59e0b", // Amber
   "#06b6d4", // Cyan
-  "#8b5cf6", // Purple
+  "#8b5cf6", // Violet
   "#ec4899", // Pink
   "#3b82f6"  // Blue
 ];
