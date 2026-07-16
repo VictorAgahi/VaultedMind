@@ -153,16 +153,7 @@ export class LLMService {
         // GPT-5.x / o-series: use max_completion_tokens
         body.max_completion_tokens = Math.max(maxTokens, 100000);
 
-        if (targetModel.includes('gpt-5.6')) {
-          // GPT-5.6 specific reasoning API
-          Object.assign(body, {
-            reasoning: {
-              effort: reasoningEffort,
-              ...(proMode ? { mode: 'pro' } : {}),
-            },
-          });
-        } else if (targetModel.startsWith('o')) {
-          // Legacy/current o-series reasoning effort
+        if (targetModel.includes('gpt-5.6') || targetModel.startsWith('o')) {
           body.reasoning_effort =
             reasoningEffort === 'max' ? 'high' : reasoningEffort;
         }

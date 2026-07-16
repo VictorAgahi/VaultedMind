@@ -3,32 +3,68 @@ import { Box, Typography } from "@mui/material";
 
 export const WhackABardella = () => {
   const [score, setScore] = React.useState(0);
-  const [activeMole, setActiveMole] = React.useState<number>(-1);
+  const [activeMole, setActiveMole] = React.useState<{ index: number, type: 'bardella' | 'macron' | 'melenchon' | 'attal' } | null>(null);
 
   React.useEffect(() => {
+    // La vitesse augmente (le délai diminue) au fur et à mesure que le score monte
+    const speed = Math.max(350, 700 - score * 15);
+    
     const interval = setInterval(() => {
-      setActiveMole(Math.floor(Math.random() * 9));
-    }, 700);
+      const rand = Math.random();
+      let type: 'bardella' | 'macron' | 'melenchon' | 'attal' = 'bardella';
+      
+      if (rand < 0.15) {
+        type = 'macron';
+      } else if (rand < 0.25) {
+        type = 'melenchon';
+      } else if (rand < 0.35) {
+        type = 'attal';
+      }
+
+      setActiveMole({
+        index: Math.floor(Math.random() * 9),
+        type
+      });
+    }, speed);
+    
     return () => clearInterval(interval);
-  }, []);
+  }, [score]);
+
+  const getMessage = () => {
+    if (score >= 40) return " Vous êtes le nouveau Premier Ministre ! 👑";
+    if (score >= 30) return " Cohabitation difficile... 🥊";
+    if (score >= 15) return " Dissolution en cours... 🌪️";
+    if (score >= 5) return " La République vous remercie ! 🇫🇷";
+    return "";
+  };
 
   return (
     <Box sx={{ mt: 1, p: 1.5, bgcolor: "#f1f5f9", borderRadius: 2, textAlign: "center", userSelect: "none" }}>
       <Typography variant="caption" sx={{ fontWeight: 800, mb: 1, display: "block", color: "primary.main" }}>
         Mini-jeu politique pour patienter 🕹️
       </Typography>
+      <Typography variant="caption" sx={{ display: "block", color: "text.secondary" }}>
+        Tapez sur Bardella, <strong>évitez Macron !</strong>
+      </Typography>
       <Typography variant="caption" sx={{ mb: 1.5, display: "block", color: "text.secondary" }}>
-        Tapez sur Bardella ! Score : <strong>{score}</strong>
-        {score >= 10 && " (La République vous remercie ! 🇫🇷)"}
+        Score : <strong>{score}</strong>
+        <span style={{ color: score >= 5 ? "#e11d48" : "inherit", fontWeight: score >= 5 ? "bold" : "normal" }}>
+          {getMessage()}
+        </span>
       </Typography>
       <Box sx={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 1, maxWidth: 180, mx: "auto" }}>
         {[0, 1, 2, 3, 4, 5, 6, 7, 8].map((i) => (
           <Box
             key={i}
             onClick={() => {
-              if (activeMole === i) {
-                setScore(s => s + 1);
-                setActiveMole(-1);
+              if (activeMole?.index === i) {
+                if (activeMole.type === 'bardella') {
+                  setScore(s => s + 1);
+                } else {
+                  // Piège ! On perd 3 points et l'écran tremble un peu si on veut
+                  setScore(s => Math.max(0, s - 3));
+                }
+                setActiveMole(null);
               }
             }}
             sx={{
@@ -39,21 +75,24 @@ export const WhackABardella = () => {
               display: "flex",
               alignItems: "center",
               justifyContent: "center",
-              cursor: activeMole === i ? "pointer" : "default",
+              cursor: activeMole?.index === i ? "pointer" : "default",
               fontSize: "1.5rem",
               transition: "transform 0.05s",
               boxShadow: "inset 0 -2px 0 rgba(0,0,0,0.05)",
               touchAction: "manipulation",
               "&:active": {
-                transform: activeMole === i ? "scale(0.85)" : "none",
+                transform: activeMole?.index === i ? "scale(0.85)" : "none",
                 boxShadow: "none",
               }
             }}
           >
-            {activeMole === i ? (
+            {activeMole?.index === i ? (
               <img 
-                src="https://upload.wikimedia.org/wikipedia/commons/thumb/8/87/Jordan_Bardella_2022.jpg/400px-Jordan_Bardella_2022.jpg" 
-                alt="Bardella" 
+                src={activeMole.type === 'bardella' 
+                  ? "https://upload.wikimedia.org/wikipedia/commons/thumb/8/87/Jordan_Bardella_2022.jpg/400px-Jordan_Bardella_2022.jpg"
+                  : "https://upload.wikimedia.org/wikipedia/commons/thumb/f/f4/Emmanuel_Macron_in_2023.jpg/400px-Emmanuel_Macron_in_2023.jpg"
+                }
+                alt={activeMole.type} 
                 style={{ width: "100%", height: "100%", objectFit: "cover", borderRadius: "3px", pointerEvents: "none" }} 
               />
             ) : ""}
