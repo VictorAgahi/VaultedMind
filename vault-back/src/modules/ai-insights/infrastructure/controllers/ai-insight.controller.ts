@@ -16,7 +16,7 @@ import { Body } from '@nestjs/common';
 
 @Controller('health/ai-insights')
 export class AIInsightController {
-  constructor(private readonly aiInsightService: AIInsightService) { }
+  constructor(private readonly aiInsightService: AIInsightService) {}
 
   @UseGuards(JwtAuthGuard)
   @Get()

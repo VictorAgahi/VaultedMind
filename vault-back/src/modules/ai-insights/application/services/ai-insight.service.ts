@@ -7,7 +7,7 @@ import { UserRepository } from '../../../../database/repositories/user.repositor
 import { AIInsight } from '../../domain/entities/ai-insight.entity.js';
 import { InsightType } from '../../domain/enums/insight-type.enum.js';
 import { DataSanitizerService } from './data-sanitizer.service.js';
-import { PromptService } from './prompt.service.js';
+import { PromptService, AgentEvidenceBundle } from './prompt.service.js';
 import { LLMService } from './llm.service.js';
 
 @Injectable()
@@ -23,6 +23,10 @@ export class AIInsightService {
     private readonly promptService: PromptService,
     private readonly llmService: LLMService,
   ) {}
+
+  // ════════════════════════════════════════════════════════════════════════════
+  //  MAIN PIPELINE — 6 AGENTS ORCHESTRATION
+  // ════════════════════════════════════════════════════════════════════════════
 
   async generateInsightForUser(userId: string): Promise<AIInsight | null> {
     try {
@@ -70,35 +74,71 @@ export class AIInsightService {
         userContext: user.aiContext || undefined,
       };
 
-      const analysisPrompt = this.promptService.generateAnalysisBriefPrompt(
-        insightType,
-        promptParams,
+      const startTime = Date.now();
+      this.logger.log(
+        `🚀 Starting 6-agent pipeline for user ${userId} (${insightType})...`,
+      );
+
+      // ── PHASE 1 : PARALLEL — Agents 1 + 2 + 3 ────────────────────────────
+      this.logger.log(`[Phase 1] Launching agents 1-3 in parallel...`);
+
+      const [analysisBrief, correlationBrief, contextBrief] = await Promise.all(
+        [
+          this.runAgent1DataAnalyst(insightType, promptParams),
+          this.runAgent2CorrelationEngine(promptParams),
+          this.runAgent3ContextInterpreter(promptParams),
+        ],
       );
 
       this.logger.log(
-        `Generating ${insightType} analysis brief for user ${userId}...`,
-      );
-      const analysisBrief = await this.llmService.generateText(
-        analysisPrompt,
-        1500,
-        this.llmService.getAnalysisModel(),
+        `[Phase 1] Complete — ${((Date.now() - startTime) / 1000).toFixed(1)}s`,
       );
 
-      const finalPrompt = this.promptService.generateInsightNarrativePrompt(
-        insightType,
-        promptParams,
+      const evidence: AgentEvidenceBundle = {
         analysisBrief,
+        correlationBrief,
+        contextBrief,
+      };
+
+      // ── PHASE 2 : SEQUENTIAL — Agent 4 (Prediction) ──────────────────────
+      this.logger.log(`[Phase 2] Agent 4 — Prediction Strategist...`);
+
+      evidence.predictionBrief = await this.runAgent4PredictionStrategist(
+        promptParams,
+        evidence,
       );
 
       this.logger.log(
-        `Synthesizing ${insightType} insight for user ${userId}...`,
-      );
-      const content = await this.llmService.generateText(
-        finalPrompt,
-        3000,
-        this.llmService.getSynthesisModel(),
+        `[Phase 2] Complete — ${((Date.now() - startTime) / 1000).toFixed(1)}s`,
       );
 
+      // ── PHASE 3 : SEQUENTIAL — Agent 5 (Quality Gate) ────────────────────
+      this.logger.log(`[Phase 3] Agent 5 — Quality Gate...`);
+
+      evidence.qualityReview = await this.runAgent5QualityGate(
+        promptParams,
+        evidence,
+      );
+
+      this.logger.log(
+        `[Phase 3] Complete — ${((Date.now() - startTime) / 1000).toFixed(1)}s`,
+      );
+
+      // ── PHASE 4 : SEQUENTIAL — Agent 6 (Narrative Synthesizer) ────────────
+      this.logger.log(`[Phase 4] Agent 6 — Narrative Synthesizer...`);
+
+      const content = await this.runAgent6NarrativeSynthesizer(
+        insightType,
+        promptParams,
+        evidence,
+      );
+
+      const totalTime = ((Date.now() - startTime) / 1000).toFixed(1);
+      this.logger.log(
+        `✅ 6-agent pipeline complete for user ${userId} in ${totalTime}s`,
+      );
+
+      // ── SAVE INSIGHT ──────────────────────────────────────────────────────
       const title =
         insightType === InsightType.WEEKLY_TREND
           ? 'Analyse hebdomadaire du bien-être'
@@ -110,7 +150,13 @@ export class AIInsightService {
         insightType,
         title,
         content,
-        { logsAnalyzed: recentLogs.length },
+        {
+          logsAnalyzed: recentLogs.length,
+          agentsPipelineVersion: '2.0',
+          agentsUsed: 6,
+          pipelineDurationSeconds: parseFloat(totalTime),
+          model: 'gpt-5.6-sol',
+        },
         new Date(),
         new Date(),
       );
@@ -124,6 +170,117 @@ export class AIInsightService {
       return null;
     }
   }
+
+  // ════════════════════════════════════════════════════════════════════════════
+  //  INDIVIDUAL AGENT RUNNERS
+  // ════════════════════════════════════════════════════════════════════════════
+
+  private async runAgent1DataAnalyst(
+    insightType: InsightType,
+    promptParams: { logs: unknown; userContext?: string },
+  ): Promise<string> {
+    const prompt = this.promptService.generateAnalysisBriefPrompt(
+      insightType,
+      promptParams as Parameters<
+        typeof this.promptService.generateAnalysisBriefPrompt
+      >[1],
+    );
+    return this.llmService.generateTextWithConfig(prompt, {
+      model: this.llmService.getAnalysisModel(),
+      maxTokens: 150000,
+      reasoningEffort: 'max',
+    });
+  }
+
+  private async runAgent2CorrelationEngine(promptParams: {
+    logs: unknown;
+    userContext?: string;
+  }): Promise<string> {
+    const prompt = this.promptService.generateCorrelationPrompt(
+      promptParams as Parameters<
+        typeof this.promptService.generateCorrelationPrompt
+      >[0],
+    );
+    return this.llmService.generateTextWithConfig(prompt, {
+      model: this.llmService.getCorrelationModel(),
+      maxTokens: 150000,
+      reasoningEffort: 'max',
+    });
+  }
+
+  private async runAgent3ContextInterpreter(promptParams: {
+    logs: unknown;
+    userContext?: string;
+  }): Promise<string> {
+    const prompt = this.promptService.generateContextInterpretationPrompt(
+      promptParams as Parameters<
+        typeof this.promptService.generateContextInterpretationPrompt
+      >[0],
+    );
+    return this.llmService.generateTextWithConfig(prompt, {
+      model: this.llmService.getContextModel(),
+      maxTokens: 100000,
+      reasoningEffort: 'high',
+    });
+  }
+
+  private async runAgent4PredictionStrategist(
+    promptParams: { logs: unknown; userContext?: string },
+    evidence: AgentEvidenceBundle,
+  ): Promise<string> {
+    const prompt = this.promptService.generatePredictionPrompt(
+      promptParams as Parameters<
+        typeof this.promptService.generatePredictionPrompt
+      >[0],
+      evidence,
+    );
+    return this.llmService.generateTextWithConfig(prompt, {
+      model: this.llmService.getPredictionModel(),
+      maxTokens: 150000,
+      reasoningEffort: 'max',
+    });
+  }
+
+  private async runAgent5QualityGate(
+    promptParams: { logs: unknown; userContext?: string },
+    evidence: AgentEvidenceBundle,
+  ): Promise<string> {
+    const prompt = this.promptService.generateQualityGatePrompt(
+      promptParams as Parameters<
+        typeof this.promptService.generateQualityGatePrompt
+      >[0],
+      evidence,
+    );
+    return this.llmService.generateTextWithConfig(prompt, {
+      model: this.llmService.getQualityModel(),
+      maxTokens: 100000,
+      reasoningEffort: 'high',
+    });
+  }
+
+  private async runAgent6NarrativeSynthesizer(
+    insightType: InsightType,
+    promptParams: { logs: unknown; userContext?: string },
+    evidence: AgentEvidenceBundle,
+  ): Promise<string> {
+    const prompt = this.promptService.generateInsightNarrativePrompt(
+      insightType,
+      promptParams as Parameters<
+        typeof this.promptService.generateInsightNarrativePrompt
+      >[1],
+      null,
+      evidence,
+    );
+    return this.llmService.generateTextWithConfig(prompt, {
+      model: this.llmService.getSynthesisModel(),
+      maxTokens: 150000,
+      reasoningEffort: 'max',
+    });
+  }
+
+  // ════════════════════════════════════════════════════════════════════════════
+  //  CRUD OPERATIONS (unchanged)
+  // ════════════════════════════════════════════════════════════════════════════
 
   async getInsightsForUser(
     userId: string,
@@ -174,11 +331,11 @@ Rédige le résultat directement sous forme de profil structuré en français (p
 Conserve absolument toutes les informations de base fournies par l'utilisateur mais enrichis-les pour que l'IA comprenne parfaitement son état d'esprit, ses contraintes et ses buts.
 Ne mets aucune introduction ni conclusion, renvoie UNIQUEMENT le texte optimisé final prêt à être enregistré.`;
 
-    const optimized = await this.llmService.generateText(
-      prompt,
-      500,
-      this.llmService.getAnalysisModel(),
-    );
+    const optimized = await this.llmService.generateTextWithConfig(prompt, {
+      model: this.llmService.getAnalysisModel(),
+      maxTokens: 100000,
+      reasoningEffort: 'high',
+    });
     return optimized.trim();
   }
 

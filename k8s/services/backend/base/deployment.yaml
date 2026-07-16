@@ -108,6 +108,24 @@ spec:
             secretKeyRef:
               name: vault-backend-secret
               key: openai-api-key
+        - name: OPENAI_MODEL
+          value: "gpt-5.6-sol"
+        - name: OPENAI_ANALYSIS_MODEL
+          value: "gpt-5.6-sol"
+        - name: OPENAI_CORRELATION_MODEL
+          value: "gpt-5.6-sol"
+        - name: OPENAI_CONTEXT_MODEL
+          value: "gpt-5.6-sol"
+        - name: OPENAI_PREDICTION_MODEL
+          value: "gpt-5.6-sol"
+        - name: OPENAI_QUALITY_MODEL
+          value: "gpt-5.6-sol"
+        - name: OPENAI_SYNTHESIS_MODEL
+          value: "gpt-5.6-sol"
+        - name: OPENAI_REASONING_EFFORT
+          value: "max"
+        - name: OPENAI_PRO_MODE
+          value: "true"
         - name: COOKIE_DOMAIN
           value: ".cyrus-ag.com"
         ports:

@@ -42,31 +42,23 @@ interface FieldSummaryLine {
   values?: string[];
 }
 
+/**
+ * Multi-agent evidence bundle produced by the first 3 parallel agents
+ * and enriched by subsequent agents.
+ */
+export interface AgentEvidenceBundle {
+  analysisBrief?: string;
+  correlationBrief?: string;
+  contextBrief?: string;
+  predictionBrief?: string;
+  qualityReview?: string;
+}
+
 @Injectable()
 export class PromptService {
-  generateDailySummaryPrompt(params: PromptParams): string {
-    return this.generateInsightNarrativePrompt(
-      InsightType.DAILY_SUMMARY,
-      params,
-      null,
-    );
-  }
-
-  generateWeeklyTrendPrompt(params: PromptParams): string {
-    return this.generateInsightNarrativePrompt(
-      InsightType.WEEKLY_TREND,
-      params,
-      null,
-    );
-  }
-
-  generateAnomalyPrompt(params: PromptParams): string {
-    return this.generateInsightNarrativePrompt(
-      InsightType.ANOMALY,
-      params,
-      null,
-    );
-  }
+  // ════════════════════════════════════════════════════════════════════════════
+  //  AGENT 1 — DATA ANALYST
+  // ════════════════════════════════════════════════════════════════════════════
 
   generateAnalysisBriefPrompt(type: InsightType, params: PromptParams): string {
     const { logs: sanitizedData, userContext } = params;
@@ -110,10 +102,257 @@ Produit exactement ce plan, avec des puces courtes et pertinentes :
 Le contenu doit rester prudent, factuel, et centré sur les éléments soutenus par les données.`;
   }
 
+  // ════════════════════════════════════════════════════════════════════════════
+  //  AGENT 2 — CORRELATION ENGINE
+  // ════════════════════════════════════════════════════════════════════════════
+
+  generateCorrelationPrompt(params: PromptParams): string {
+    const { logs: sanitizedData, userContext } = params;
+    const fieldText = this.formatFieldSummaries(sanitizedData.fieldSummaries);
+    const dailyLogsText = this.formatDailyEntries(sanitizedData.dailyEntries);
+    const contextBlock = userContext
+      ? `\n[CONTEXTE PERSONNEL]\n${userContext}\n`
+      : '';
+
+    return `Tu es l'agent spécialisé en CORRÉLATION DE DONNÉES de VaultedMind. Tu es un statisticien comportemental expert.
+
+TON UNIQUE MISSION : Identifier et quantifier les corrélations entre TOUTES les variables mesurées par l'utilisateur.
+
+Période: ${sanitizedData.dateRange}
+Nombre d'entrées: ${sanitizedData.totalLogs}
+${contextBlock}
+
+Journaux quotidiens avec notes :
+${dailyLogsText}
+
+Indicateurs consolidés :
+${fieldText}
+
+INSTRUCTIONS PRÉCISES :
+
+1. MATRICE DE CORRÉLATION : Pour chaque paire d'indicateurs numériques, évalue la force de la corrélation (forte positive, modérée positive, faible, modérée négative, forte négative) basée sur la co-variation temporelle dans les données.
+
+2. CORRÉLATIONS TEMPORELLES DÉCALÉES : Cherche les effets retardés. Par exemple :
+   - Est-ce que le sommeil de J affecte l'humeur de J+1 ?
+   - Est-ce qu'un indicateur en hausse la veille prédit une baisse d'un autre le lendemain ?
+   - Y a-t-il un effet cumulatif (ex: 3 jours de mauvais sommeil → chute d'humeur) ?
+
+3. CLUSTERS D'ÉVÉNEMENTS : Identifie les jours qui se ressemblent (profil similaire sur plusieurs variables) et nomme ces clusters (ex: "jour optimal", "jour sous pression", "jour de récupération").
+
+4. SIGNAUX DANS LES NOTES : Croise les notes textuelles de l'utilisateur avec les variations des indicateurs numériques. Quand l'utilisateur mentionne un événement, un symptôme ou une émotion dans ses notes, est-ce corrélé à des changements mesurables ?
+
+5. NIVEAU DE CONFIANCE : Pour chaque corrélation identifiée, attribue un niveau de confiance :
+   - 🔴 HAUTE (pattern très visible, N > 5 occurrences)
+   - 🟡 MOYENNE (pattern probable, N = 3-5 occurrences)
+   - ⚪ EXPLORATOIRE (signal faible, N < 3, à surveiller)
+
+FORMAT DE SORTIE (respecte EXACTEMENT cette structure) :
+## Corrélations directes (même jour)
+## Corrélations temporelles décalées (J-1, J-2, effet cumulatif)
+## Clusters de profils journaliers
+## Signaux notes-données
+## Résumé des corrélations les plus fiables (top 5 avec niveau de confiance)
+
+Réponds en français. Sois rigoureux. N'invente rien qui n'est pas soutenu par les données.`;
+  }
+
+  // ════════════════════════════════════════════════════════════════════════════
+  //  AGENT 3 — CONTEXT INTERPRETER
+  // ════════════════════════════════════════════════════════════════════════════
+
+  generateContextInterpretationPrompt(params: PromptParams): string {
+    const { logs: sanitizedData, userContext } = params;
+    const dailyLogsText = this.formatDailyEntries(sanitizedData.dailyEntries);
+    const contextBlock = userContext
+      ? `\n[PROFIL ET CONTEXTE PERSONNEL DE L'UTILISATEUR]\n${userContext}\n`
+      : '';
+
+    return `Tu es l'agent INTERPRÈTE DE CONTEXTE de VaultedMind. Tu es un expert en analyse sémantique et en psychologie comportementale.
+
+TON UNIQUE MISSION : Extraire un maximum d'intelligence des notes quotidiennes de l'utilisateur et de son profil personnel.
+
+Période: ${sanitizedData.dateRange}
+Nombre d'entrées: ${sanitizedData.totalLogs}
+${contextBlock}
+
+Journaux quotidiens avec notes :
+${dailyLogsText}
+
+INSTRUCTIONS PRÉCISES :
+
+1. ANALYSE SÉMANTIQUE DES NOTES :
+   - Identifie les thèmes récurrents dans les notes (santé, travail, social, émotions, loisirs, alimentation, sport, etc.)
+   - Repère les changements de ton et de vocabulaire au fil du temps
+   - Détecte les expressions de satisfaction, frustration, fatigue, motivation, anxiété
+
+2. SIGNAUX FAIBLES :
+   - Identifie les signaux subtils que l'utilisateur ne verbalise pas explicitement mais qui transparaissent dans ses notes
+   - Exemples : raccourcissement progressif des notes (désengagement ?), disparition d'un sujet habituellement mentionné, apparition d'un nouveau vocabulaire
+
+3. CROISEMENT PROFIL ↔ NOTES :
+   - Si l'utilisateur a mentionné des conditions médicales (migraines, insomnie, etc.) dans son profil, cherche quand ces sujets apparaissent dans les notes
+   - Identifie les contradictions potentielles entre le profil et les notes quotidiennes
+
+4. CHRONOLOGIE NARRATIVE :
+   - Construis une mini-timeline des événements significatifs extraits des notes
+   - Identifie les points de rupture ou de transition
+
+FORMAT DE SORTIE :
+## Thèmes récurrents et leur fréquence
+## Signaux faibles détectés
+## Croisement profil ↔ notes quotidiennes
+## Timeline des événements clés
+## Hypothèses comportementales à explorer
+
+Réponds en français. Sois précis et empathique. Ne projette aucune interprétation qui ne soit soutenue par le texte réel des notes.`;
+  }
+
+  // ════════════════════════════════════════════════════════════════════════════
+  //  AGENT 4 — PREDICTION STRATEGIST
+  // ════════════════════════════════════════════════════════════════════════════
+
+  generatePredictionPrompt(
+    params: PromptParams,
+    evidence: AgentEvidenceBundle,
+  ): string {
+    const { logs: sanitizedData, userContext } = params;
+    const fieldText = this.formatFieldSummaries(sanitizedData.fieldSummaries);
+    const dailyLogsText = this.formatDailyEntries(sanitizedData.dailyEntries);
+    const contextBlock = userContext
+      ? `\n[CONTEXTE PERSONNEL]\n${userContext}\n`
+      : '';
+
+    return `Tu es l'agent STRATÈGE DE PRÉDICTION de VaultedMind. Tu utilises l'analyse de données, les corrélations et l'interprétation contextuelle produites par les agents précédents pour formuler des scénarios prédictifs.
+
+TON UNIQUE MISSION : Créer des scénarios de prédiction COURT TERME (7 jours) et LONG TERME (30 jours) basés sur les tendances et corrélations observées.
+
+Période analysée: ${sanitizedData.dateRange}
+Nombre d'entrées: ${sanitizedData.totalLogs}
+${contextBlock}
+
+[DOSSIER DE L'AGENT 1 — ANALYSE STATISTIQUE]
+${evidence.analysisBrief || 'Non disponible'}
+
+[DOSSIER DE L'AGENT 2 — CORRÉLATIONS]
+${evidence.correlationBrief || 'Non disponible'}
+
+[DOSSIER DE L'AGENT 3 — INTERPRÉTATION CONTEXTUELLE]
+${evidence.contextBrief || 'Non disponible'}
+
+Données brutes consolidées :
+${fieldText}
+
+Dernières entrées :
+${dailyLogsText}
+
+INSTRUCTIONS PRÉCISES :
+
+1. SCÉNARIOS COURT TERME (7 prochains jours) :
+   - Basé sur les tendances actuelles, les corrélations temporelles décalées et les patterns hebdomadaires détectés
+   - Scénario OPTIMISTE : si les tendances positives se maintiennent, que peut-on attendre ?
+   - Scénario RÉALISTE : projection linéaire des tendances actuelles
+   - Scénario À RISQUE : si les signaux faibles négatifs se confirment, quels indicateurs pourraient se dégrader ?
+   - Pour chaque scénario, identifie les indicateurs les plus susceptibles de varier et dans quelle direction
+
+2. SCÉNARIOS LONG TERME (30 prochains jours) :
+   - Basé sur les tendances de fond, les cycles détectés et les corrélations structurelles
+   - Identifie les trajectoires probables pour les 2-3 indicateurs les plus importants
+   - Formule des hypothèses sur les points de basculement potentiels
+
+3. FACTEURS DÉCLENCHEURS :
+   - Identifie les "leviers" que l'utilisateur peut actionner pour influencer positivement ses indicateurs
+   - Basé sur les corrélations les plus fortes détectées par l'Agent 2
+
+4. ALERTES PRÉVENTIVES :
+   - Si des patterns à risque sont en cours de formation, signale-les
+   - Ex: "Si votre sommeil continue de baisser au même rythme, dans X jours vous serez sous le seuil critique observé le [date]"
+
+NIVEAU DE CONFIANCE : Chaque prédiction doit porter un niveau de confiance (🔴 haute, 🟡 moyenne, ⚪ exploratoire)
+
+FORMAT DE SORTIE :
+## Scénarios Court Terme (7 jours)
+### Optimiste
+### Réaliste
+### À risque
+## Scénarios Long Terme (30 jours)
+## Facteurs déclencheurs (leviers d'action)
+## Alertes préventives
+
+Réponds en français. Sois ambitieux dans les prédictions mais toujours honnête sur les limites. Ne confonds jamais prédiction et certitude.`;
+  }
+
+  // ════════════════════════════════════════════════════════════════════════════
+  //  AGENT 5 — QUALITY GATE / META-REVIEWER
+  // ════════════════════════════════════════════════════════════════════════════
+
+  generateQualityGatePrompt(
+    params: PromptParams,
+    evidence: AgentEvidenceBundle,
+  ): string {
+    const { logs: sanitizedData } = params;
+
+    return `Tu es l'agent QUALITY GATE de VaultedMind. Tu es le dernier rempart avant que les insights soient présentés à l'utilisateur.
+
+TON UNIQUE MISSION : Relire, vérifier et noter la qualité de tout ce qui a été produit par les 4 agents précédents. Tu élimines les hallucinations, les corrélations douteuses et les prédictions non fondées.
+
+Période analysée: ${sanitizedData.dateRange}
+Nombre d'entrées: ${sanitizedData.totalLogs}
+
+[DOSSIER AGENT 1 — ANALYSE STATISTIQUE]
+${evidence.analysisBrief || 'Non disponible'}
+
+[DOSSIER AGENT 2 — CORRÉLATIONS]
+${evidence.correlationBrief || 'Non disponible'}
+
+[DOSSIER AGENT 3 — INTERPRÉTATION CONTEXTUELLE]
+${evidence.contextBrief || 'Non disponible'}
+
+[DOSSIER AGENT 4 — PRÉDICTIONS]
+${evidence.predictionBrief || 'Non disponible'}
+
+INSTRUCTIONS PRÉCISES :
+
+1. VÉRIFICATION DES FAITS :
+   - Chaque affirmation chiffrée est-elle cohérente avec les ${sanitizedData.totalLogs} entrées sur la période ${sanitizedData.dateRange} ?
+   - Y a-t-il des contradictions entre les agents ?
+   - Des corrélations ont-elles été inventées ou exagérées ?
+
+2. ANTI-HALLUCINATION :
+   - Repère tout insight qui ne peut PAS être dérivé des données fournies
+   - Signale les prédictions qui extrapolent trop loin des tendances observées
+   - Marque les affirmations qui ressemblent à des conseils médicaux non fondés
+
+3. SCORING DE CONFIANCE GLOBAL :
+   - Note chaque section produite par les agents sur 10
+   - Score global de l'insight final
+   - Identifie les 3 insights les plus fiables et les 3 les plus risqués
+
+4. RECOMMANDATIONS POUR L'AGENT FINAL :
+   - Quels éléments doivent absolument apparaître dans le résumé final ?
+   - Quels éléments doivent être atténués ou supprimés ?
+   - Quel ton adopter (prudent, encourageant, alertant) ?
+
+FORMAT DE SORTIE :
+## Vérification des faits (OK / ⚠️ problème identifié)
+## Hallucinations détectées (le cas échéant)
+## Scoring par section (/10)
+## Score de confiance global (/10)
+## Top 3 insights les plus fiables
+## Top 3 insights les plus risqués
+## Recommandations pour l'agent de synthèse finale
+
+Réponds en français. Sois impitoyable sur la rigueur.`;
+  }
+
+  // ════════════════════════════════════════════════════════════════════════════
+  //  AGENT 6 — NARRATIVE SYNTHESIZER (enrichi)
+  // ════════════════════════════════════════════════════════════════════════════
+
   generateInsightNarrativePrompt(
     type: InsightType,
     params: PromptParams,
     evidenceBrief: string | null,
+    evidence?: AgentEvidenceBundle,
   ): string {
     const { logs: sanitizedData, userContext } = params;
     const fieldText = this.formatFieldSummaries(sanitizedData.fieldSummaries);
@@ -122,31 +361,53 @@ Le contenu doit rester prudent, factuel, et centré sur les éléments soutenus 
       ? `\n[CONTEXTE PERSONNEL ET CONFIGURATION DE L'UTILISATEUR]\n${userContext}\n`
       : '';
 
-    const briefBlock = evidenceBrief
-      ? `\n[DOSSIER ANALYTIQUE DU PREMIER AGENT]\n${evidenceBrief}\n`
-      : '';
+    // Build multi-agent evidence blocks
+    let evidenceBlocks = '';
+    if (evidence) {
+      if (evidence.analysisBrief) {
+        evidenceBlocks += `\n[DOSSIER AGENT 1 — ANALYSE STATISTIQUE]\n${evidence.analysisBrief}\n`;
+      }
+      if (evidence.correlationBrief) {
+        evidenceBlocks += `\n[DOSSIER AGENT 2 — CORRÉLATIONS]\n${evidence.correlationBrief}\n`;
+      }
+      if (evidence.contextBrief) {
+        evidenceBlocks += `\n[DOSSIER AGENT 3 — INTERPRÉTATION CONTEXTUELLE]\n${evidence.contextBrief}\n`;
+      }
+      if (evidence.predictionBrief) {
+        evidenceBlocks += `\n[DOSSIER AGENT 4 — PRÉDICTIONS]\n${evidence.predictionBrief}\n`;
+      }
+      if (evidence.qualityReview) {
+        evidenceBlocks += `\n[DOSSIER AGENT 5 — QUALITY GATE]\n${evidence.qualityReview}\n`;
+      }
+    } else if (evidenceBrief) {
+      // Backward compatibility: single evidence brief
+      evidenceBlocks = `\n[DOSSIER ANALYTIQUE DU PREMIER AGENT]\n${evidenceBrief}\n`;
+    }
 
     const title = this.getAnalysisTitle(type);
     const header = this.getNarrativeHeader(type);
 
     return `${header}
 
-Tu es le second agent de VaultedMind. Tu reçois un dossier de preuve préparé par le premier agent et ton rôle est de le transformer en insights précieux, en faits marquants personnalisés et en conseils concrets pour l'utilisateur.
+Tu es l'agent final de synthèse de VaultedMind. Tu reçois les dossiers de 5 agents spécialisés (analyse statistique, corrélation, interprétation contextuelle, prédictions, quality gate) et ton rôle est de les transformer en un insight EXCEPTIONNEL, profondément personnalisé et actionnable.
 
 Règles non négociables:
 1. BANNIS LES PHRASES BANALES ET LES STATISTIQUES SIMPLES SANS VALEUR AJOUTÉE (ex: "Vous dormez en moyenne X heures"). L'utilisateur connaît déjà ses moyennes. Donne-lui plutôt des faits marquants sur sa propre personne (ex: "Votre sommeil chute drastiquement de 2h les jours précédant vos épisodes de migraine").
 2. Connecte les données chiffrées aux notes quotidiennes et au contexte personnel (migraines, stress, habitudes) pour formuler des hypothèses de corrélation intelligentes et des conseils d'hygiène de vie adaptés.
-3. Propose des conseils et recommandations extrêmement personnalisés, concrets et actionnables. Évite les conseils génériques évidents (comme "dormez plus" ou "buvez de l'eau").
-4. N'ajoute aucune corrélation nouvelle qui n'est pas déjà soutenue par le dossier analytique ou les données fournies.
-5. Si le dossier ou la corrélation est incertaine, présente-la comme une hypothèse intéressante à explorer ou à surveiller ("Il semblerait que...", "Vous pourriez observer si...").
-6. Quand une durée apparaît, écris-la en format humain: 5h30, 2h15, 45 min. Jamais 5.5 h.
-7. Réponds en français, avec un ton empathique, engageant et précis.
+3. INTÈGRE LES PRÉDICTIONS : Présente les scénarios court terme et long terme de manière engageante et motivante, pas alarmiste.
+4. INTÈGRE LES CORRÉLATIONS : Mets en valeur les corrélations les plus fortes et les plus surprenantes découvertes par l'agent de corrélation.
+5. RESPECTE LE QUALITY GATE : Suis les recommandations de l'agent quality gate. N'inclus PAS les insights marqués comme hallucinations ou trop risqués.
+6. Propose des conseils et recommandations extrêmement personnalisés, concrets et actionnables. Évite les conseils génériques évidents (comme "dormez plus" ou "buvez de l'eau").
+7. N'ajoute aucune corrélation nouvelle qui n'est pas déjà soutenue par les dossiers des agents ou les données fournies.
+8. Si le dossier ou la corrélation est incertaine, présente-la comme une hypothèse intéressante à explorer ou à surveiller ("Il semblerait que...", "Vous pourriez observer si...").
+9. Quand une durée apparaît, écris-la en format humain: 5h30, 2h15, 45 min. Jamais 5.5 h.
+10. Réponds en français, avec un ton empathique, engageant et précis.
 
 Type d'analyse: ${title}
 Période: ${sanitizedData.dateRange}
 Nombre d'entrées: ${sanitizedData.totalLogs}
 ${contextBlock}
-${briefBlock}
+${evidenceBlocks}
 
 Journaux quotidiens et notes de l'utilisateur :
 ${dailyLogsText}
@@ -156,11 +417,40 @@ ${fieldText}
 
 Format attendu (sans mentionner les noms des sections mais en respectant cette structure de pensée) :
 - **Un titre accrocheur, personnalisé et bienveillant** (qui résume la découverte principale de la période)
-- **Faits & Analyses sur vous** : Révèle des observations profondes de corrélations ou de patterns (ex: impact du sommeil sur l'humeur, lien entre les notes de migraine/maux de tête et les indicateurs physiques).
-- **Ce que cela suggère** : Une lecture comportementale ou d'hygiène de vie basée sur le profil de l'utilisateur.
-- **1 à 2 conseils personnalisés actionnables** : Recommandations précises basées sur les observations pour aider l'utilisateur à améliorer son quotidien.
+- **Faits & Corrélations sur vous** : Révèle les observations les plus profondes issues de la corrélation croisée des données. Mets en avant les patterns les plus surprenants et les liens causaux potentiels.
+- **Ce que cela prédit pour vous** : Résumé des scénarios court terme (7j) et long terme (30j) les plus probables. Présente-les de manière engageante, pas comme un bulletin météo.
+- **Ce que cela suggère** : Une lecture comportementale ou d'hygiène de vie basée sur le profil de l'utilisateur et les corrélations détectées.
+- **2 à 3 actions concrètes** : Recommandations ultra-personnalisées basées sur les corrélations et prédictions. Chaque action doit être liée à un levier identifié dans les données (ex: "Les jours où vous [action], votre [indicateur] s'améliore de [X]%").
 
 Garde un ton qui valorise la curiosité et l'auto-observation, sans faire de diagnostic médical mais en étant un vrai compagnon analytique de son bien-être.`;
+  }
+
+  // ════════════════════════════════════════════════════════════════════════════
+  //  LEGACY WRAPPERS (backward compat)
+  // ════════════════════════════════════════════════════════════════════════════
+
+  generateDailySummaryPrompt(params: PromptParams): string {
+    return this.generateInsightNarrativePrompt(
+      InsightType.DAILY_SUMMARY,
+      params,
+      null,
+    );
+  }
+
+  generateWeeklyTrendPrompt(params: PromptParams): string {
+    return this.generateInsightNarrativePrompt(
+      InsightType.WEEKLY_TREND,
+      params,
+      null,
+    );
+  }
+
+  generateAnomalyPrompt(params: PromptParams): string {
+    return this.generateInsightNarrativePrompt(
+      InsightType.ANOMALY,
+      params,
+      null,
+    );
   }
 
   generatePrompt(type: InsightType, params: PromptParams): string {
@@ -179,6 +469,10 @@ Garde un ton qui valorise la curiosité et l'auto-observation, sans faire de dia
         );
     }
   }
+
+  // ════════════════════════════════════════════════════════════════════════════
+  //  FORMATTING HELPERS
+  // ════════════════════════════════════════════════════════════════════════════
 
   formatFieldSummaries(fieldSummaries: FieldSummaryLine[]): string {
     return fieldSummaries

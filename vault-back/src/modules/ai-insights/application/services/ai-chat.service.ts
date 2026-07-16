@@ -55,13 +55,19 @@ CONSIGNES :
 1. Réponds de manière empathique, chaleureuse et professionnelle.
 2. Basse tes réponses sur les données de l'utilisateur fournies ci-dessus si elles sont pertinentes pour sa question.
 3. Sois concis et évite le jargon médical. Rappelle que tu n'es pas un médecin si nécessaire.
-4. RÉPONDS TOUJOURS EN FRANÇAIS.`;
+4. RÉPONDS TOUJOURS EN FRANÇAIS.
+5. Quand tu cites des corrélations ou des tendances, sois précis sur les données qui les soutiennent.
+6. N'hésite pas à proposer des hypothèses de corrélation entre les indicateurs si les données les soutiennent.
+7. Quand une durée apparaît, écris-la en format humain : 5h30, 2h15, 45 min. Jamais 5.5 h.`;
 
       const prompt = `Message de l'utilisateur : "${userMessage}"\n\nAssistant, réponds à l'utilisateur :`;
 
-      return await this.llmService.generateText(
+      return await this.llmService.generateTextWithConfig(
         `${systemPrompt}\n\n${prompt}`,
-        500,
+        {
+          maxTokens: 100000,
+          reasoningEffort: 'high',
+        },
       );
     } catch (error) {
       this.logger.error(`Error in AIChatService for user ${userId}:`, error);
