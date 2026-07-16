@@ -9,7 +9,6 @@ import {
   Stack,
 } from "@mui/material";
 import { DailyLogsManager } from "@/components/daily-logs-manager/daily-logs-manager";
-import { InsightsPanel } from "@/components/ai-insights/insights-panel";
 import { WellnessScoreCard } from "@/components/dashboard/wellness-score-card";
 import { Navbar } from "@/components/navbar/navbar";
 import { useAuth } from "@/context/auth-context";
@@ -55,9 +54,6 @@ export default function DashboardPage() {
         <Grid container spacing={0}>
           <Grid size={{ xs: 12 }}>
             <DailyLogsManager />
-          </Grid>
-          <Grid size={{ xs: 12 }}>
-            <InsightsPanel />
           </Grid>
         </Grid>
       </Container>

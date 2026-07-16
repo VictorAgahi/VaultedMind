@@ -6,13 +6,14 @@ import DashboardIcon from "@mui/icons-material/Dashboard";
 import BarChartIcon from "@mui/icons-material/BarChart";
 import SettingsIcon from "@mui/icons-material/Settings";
 import PersonIcon from "@mui/icons-material/Person";
+import AutoAwesomeIcon from "@mui/icons-material/AutoAwesome";
 import { usePathname, useRouter } from "next/navigation";
 
 export const BottomNav: React.FC = () => {
   const pathname = usePathname();
   const { push } = useRouter();
 
-  const authRoutes = ["/dashboard", "/import", "/fields", "/analytics", "/profile"];
+  const authRoutes = ["/dashboard", "/import", "/fields", "/analytics", "/profile", "/ai"];
 
   if (!authRoutes.includes(pathname)) {
     return null;
@@ -21,13 +22,14 @@ export const BottomNav: React.FC = () => {
   const getValue = () => {
     if (pathname === "/dashboard") return 0;
     if (pathname === "/analytics") return 1;
-    if (pathname === "/fields") return 2;
-    if (pathname === "/profile") return 3;
+    if (pathname === "/ai") return 2;
+    if (pathname === "/fields") return 3;
+    if (pathname === "/profile") return 4;
     return 0;
   };
 
   const navigateToTab = (newValue: number) => {
-    const paths = ["/dashboard", "/analytics", "/fields", "/profile"];
+    const paths = ["/dashboard", "/analytics", "/ai", "/fields", "/profile"];
     push(paths[newValue]);
   };
 
@@ -61,6 +63,7 @@ export const BottomNav: React.FC = () => {
       >
         <BottomNavigationAction icon={<DashboardIcon />} label="Accueil" />
         <BottomNavigationAction icon={<BarChartIcon />} label="Analyses" />
+        <BottomNavigationAction icon={<AutoAwesomeIcon />} label="IA" />
         <BottomNavigationAction icon={<SettingsIcon />} label="Champs" />
         <BottomNavigationAction icon={<PersonIcon />} label="Profil" />
       </BottomNavigation>
