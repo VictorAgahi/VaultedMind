@@ -23,6 +23,7 @@ import PersonIcon from "@mui/icons-material/Person";
 import { apiService } from "@/services/api.service";
 import { useAuth } from "@/context/auth-context";
 import { MarkdownRenderer } from "./insights-panel";
+import { WhackABardella } from "./whack-a-bardella";
 
 interface Message {
   id: string;
@@ -81,6 +82,8 @@ const ChatHeader: React.FC<ChatHeaderProps> = ({ onClose }) => (
     </IconButton>
   </Box>
 );
+
+
 
 interface MessageListProps {
   messages: Message[];
@@ -195,6 +198,7 @@ const MessageList: React.FC<MessageListProps> = ({ messages, isPending, thinking
               <Typography variant="caption" sx={{ color: "text.secondary", fontStyle: "italic", lineHeight: 1.4 }}>
                 {thinkingMessage}
               </Typography>
+              <WhackABardella />
             </Paper>
           </Box>
         </ListItem>

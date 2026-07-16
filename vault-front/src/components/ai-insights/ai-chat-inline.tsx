@@ -19,6 +19,7 @@ import SendIcon from "@mui/icons-material/Send";
 import { apiService } from "@/services/api.service";
 import { useAuth } from "@/context/auth-context";
 import { MarkdownRenderer } from "./insights-panel";
+import { WhackABardella } from "./whack-a-bardella";
 
 interface Message {
   id: string;
@@ -332,6 +333,7 @@ export function AIChatInline() {
                   <Typography variant="body2" sx={{ color: "text.secondary", fontStyle: "italic", lineHeight: 1.4 }}>
                     {thinkingMessage}
                   </Typography>
+                  <WhackABardella />
                 </Paper>
               </Box>
             </ListItem>
