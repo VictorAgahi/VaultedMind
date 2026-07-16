@@ -13,7 +13,7 @@ export const WhackABardella = () => {
   }, []);
 
   return (
-    <Box sx={{ mt: 1, p: 1.5, bgcolor: "#f1f5f9", borderRadius: 2, textAlign: "center" }}>
+    <Box sx={{ mt: 1, p: 1.5, bgcolor: "#f1f5f9", borderRadius: 2, textAlign: "center", userSelect: "none" }}>
       <Typography variant="caption" sx={{ fontWeight: 800, mb: 1, display: "block", color: "primary.main" }}>
         Mini-jeu politique pour patienter 🕹️
       </Typography>
@@ -21,7 +21,7 @@ export const WhackABardella = () => {
         Tapez sur Bardella ! Score : <strong>{score}</strong>
         {score >= 10 && " (La République vous remercie ! 🇫🇷)"}
       </Typography>
-      <Box sx={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 1, maxWidth: 160, mx: "auto" }}>
+      <Box sx={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 1, maxWidth: 180, mx: "auto" }}>
         {[0, 1, 2, 3, 4, 5, 6, 7, 8].map((i) => (
           <Box
             key={i}
@@ -32,7 +32,7 @@ export const WhackABardella = () => {
               }
             }}
             sx={{
-              height: 44,
+              height: 52,
               bgcolor: "white",
               borderRadius: 1,
               border: "1px solid #cbd5e1",
@@ -43,6 +43,7 @@ export const WhackABardella = () => {
               fontSize: "1.5rem",
               transition: "transform 0.05s",
               boxShadow: "inset 0 -2px 0 rgba(0,0,0,0.05)",
+              touchAction: "manipulation",
               "&:active": {
                 transform: activeMole === i ? "scale(0.85)" : "none",
                 boxShadow: "none",
@@ -53,7 +54,7 @@ export const WhackABardella = () => {
               <img 
                 src="https://upload.wikimedia.org/wikipedia/commons/thumb/8/87/Jordan_Bardella_2022.jpg/400px-Jordan_Bardella_2022.jpg" 
                 alt="Bardella" 
-                style={{ width: "100%", height: "100%", objectFit: "cover", borderRadius: "4px" }} 
+                style={{ width: "100%", height: "100%", objectFit: "cover", borderRadius: "3px", pointerEvents: "none" }} 
               />
             ) : ""}
           </Box>
