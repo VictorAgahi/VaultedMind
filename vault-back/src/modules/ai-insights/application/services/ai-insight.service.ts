@@ -187,7 +187,7 @@ export class AIInsightService {
     );
     return this.llmService.generateTextWithConfig(prompt, {
       model: this.llmService.getAnalysisModel(),
-      maxTokens: 150000,
+      maxTokens: 100000,
       reasoningEffort: 'max',
     });
   }
@@ -203,7 +203,7 @@ export class AIInsightService {
     );
     return this.llmService.generateTextWithConfig(prompt, {
       model: this.llmService.getCorrelationModel(),
-      maxTokens: 150000,
+      maxTokens: 100000,
       reasoningEffort: 'max',
     });
   }
@@ -236,7 +236,7 @@ export class AIInsightService {
     );
     return this.llmService.generateTextWithConfig(prompt, {
       model: this.llmService.getPredictionModel(),
-      maxTokens: 150000,
+      maxTokens: 100000,
       reasoningEffort: 'max',
     });
   }
@@ -273,7 +273,7 @@ export class AIInsightService {
     );
     return this.llmService.generateTextWithConfig(prompt, {
       model: this.llmService.getSynthesisModel(),
-      maxTokens: 150000,
+      maxTokens: 100000,
       reasoningEffort: 'max',
     });
   }
