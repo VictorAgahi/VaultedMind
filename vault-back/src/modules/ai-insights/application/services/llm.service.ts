@@ -150,11 +150,22 @@ export class LLMService {
         targetModel.startsWith('o3') ||
         targetModel.startsWith('o4')
       ) {
-        // GPT-5.x / o-series: use max_completion_tokens + reasoning_effort
+        // GPT-5.x / o-series: use max_completion_tokens
         body.max_completion_tokens = Math.max(maxTokens, 100000);
-        // Map internal 'max' to OpenAI's 'high' (max = high + maximum token budget)
-        body.reasoning_effort =
-          reasoningEffort === 'max' ? 'high' : reasoningEffort;
+
+        if (targetModel.includes('gpt-5.6')) {
+          // GPT-5.6 specific reasoning API
+          Object.assign(body, {
+            reasoning: {
+              effort: reasoningEffort,
+              ...(proMode ? { mode: 'pro' } : {}),
+            },
+          });
+        } else if (targetModel.startsWith('o')) {
+          // Legacy/current o-series reasoning effort
+          body.reasoning_effort =
+            reasoningEffort === 'max' ? 'high' : reasoningEffort;
+        }
       } else {
         body.max_tokens = maxTokens;
       }

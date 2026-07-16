@@ -381,6 +381,7 @@ export function InsightsPanel() {
     enabled: false,
   });
   const [openConfirm, setOpenConfirm] = useState(false);
+  const [isGenerating, setIsGenerating] = useState(false);
 
   const isMounted = useSyncExternalStore(
     () => () => {},
@@ -499,24 +500,54 @@ export function InsightsPanel() {
       )}
 
       {state.enabled && (
-        <Button
-          variant="outlined"
-          size="small"
-          fullWidth
-          onClick={async () => {
-            try {
-              dispatch({ type: "FETCH_START" });
-              await apiService.post("/health/ai-insights/generate");
-              const insights = await apiService.get<AIInsightResponseDto[]>("/health/ai-insights");
-              dispatch({ type: "FETCH_SUCCESS", insights });
-            } catch (error: unknown) {
-              dispatch({ type: "FETCH_ERROR", error: getErrorMessage(error) });
-            }
-          }}
-          sx={{ mb: 2, borderColor: "#cbd5e1", color: "#475569", fontSize: "0.82rem", "&:hover": { borderColor: "#94a3b8", bgcolor: "#f1f5f9" } }}
-        >
-          Générer maintenant
-        </Button>
+        <Box sx={{ display: "flex", gap: 1.5, mb: 2 }}>
+          <Button
+            variant="outlined"
+            size="small"
+            fullWidth
+            disabled={isGenerating}
+            onClick={() => {
+              setIsGenerating(true);
+              // Fire and forget the generation
+              apiService.post("/health/ai-insights/generate")
+                .catch((error: unknown) => {
+                  console.error("Erreur de génération :", getErrorMessage(error));
+                })
+                .finally(() => setIsGenerating(false));
+            }}
+            sx={{
+              borderColor: "#cbd5e1",
+              color: "#475569",
+              fontSize: "0.82rem",
+              "&:hover": { borderColor: "#94a3b8", bgcolor: "#f1f5f9" }
+            }}
+          >
+            {isGenerating ? "Génération en cours..." : "Lancer l'analyse"}
+          </Button>
+          
+          <Button
+            variant="outlined"
+            size="small"
+            fullWidth
+            onClick={async () => {
+              try {
+                dispatch({ type: "FETCH_START" });
+                const insights = await apiService.get<AIInsightResponseDto[]>("/health/ai-insights");
+                dispatch({ type: "FETCH_SUCCESS", insights });
+              } catch (error: unknown) {
+                dispatch({ type: "FETCH_ERROR", error: getErrorMessage(error) });
+              }
+            }}
+            sx={{
+              borderColor: "#cbd5e1",
+              color: "#475569",
+              fontSize: "0.82rem",
+              "&:hover": { borderColor: "#94a3b8", bgcolor: "#f1f5f9" }
+            }}
+          >
+            Actualiser
+          </Button>
+        </Box>
       )}
 
       {state.loading ? (
