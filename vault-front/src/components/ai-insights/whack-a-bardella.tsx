@@ -38,13 +38,23 @@ export const WhackABardella = () => {
     return "";
   };
 
+  const getImageUrl = (type: string) => {
+    switch (type) {
+      case 'bardella': return "https://upload.wikimedia.org/wikipedia/commons/thumb/8/87/Jordan_Bardella_2022.jpg/400px-Jordan_Bardella_2022.jpg";
+      case 'macron': return "https://upload.wikimedia.org/wikipedia/commons/thumb/f/f4/Emmanuel_Macron_in_2023.jpg/400px-Emmanuel_Macron_in_2023.jpg";
+      case 'melenchon': return "https://upload.wikimedia.org/wikipedia/commons/thumb/5/5a/Jean-Luc_M%C3%A9lenchon_2022.jpg/400px-Jean-Luc_M%C3%A9lenchon_2022.jpg";
+      case 'attal': return "https://upload.wikimedia.org/wikipedia/commons/thumb/7/77/Gabriel_Attal_2024_%28cropped%29.jpg/400px-Gabriel_Attal_2024_%28cropped%29.jpg";
+      default: return "";
+    }
+  };
+
   return (
     <Box sx={{ mt: 1, p: 1.5, bgcolor: "#f1f5f9", borderRadius: 2, textAlign: "center", userSelect: "none" }}>
       <Typography variant="caption" sx={{ fontWeight: 800, mb: 1, display: "block", color: "primary.main" }}>
         Mini-jeu politique pour patienter 🕹️
       </Typography>
       <Typography variant="caption" sx={{ display: "block", color: "text.secondary" }}>
-        Tapez sur Bardella, <strong>évitez Macron !</strong>
+        Tapez sur Bardella, <strong>évitez les autres !</strong>
       </Typography>
       <Typography variant="caption" sx={{ mb: 1.5, display: "block", color: "text.secondary" }}>
         Score : <strong>{score}</strong>
@@ -61,7 +71,7 @@ export const WhackABardella = () => {
                 if (activeMole.type === 'bardella') {
                   setScore(s => s + 1);
                 } else {
-                  // Piège ! On perd 3 points et l'écran tremble un peu si on veut
+                  // Piège ! On perd 3 points
                   setScore(s => Math.max(0, s - 3));
                 }
                 setActiveMole(null);
@@ -88,10 +98,7 @@ export const WhackABardella = () => {
           >
             {activeMole?.index === i ? (
               <img 
-                src={activeMole.type === 'bardella' 
-                  ? "https://upload.wikimedia.org/wikipedia/commons/thumb/8/87/Jordan_Bardella_2022.jpg/400px-Jordan_Bardella_2022.jpg"
-                  : "https://upload.wikimedia.org/wikipedia/commons/thumb/f/f4/Emmanuel_Macron_in_2023.jpg/400px-Emmanuel_Macron_in_2023.jpg"
-                }
+                src={getImageUrl(activeMole.type)}
                 alt={activeMole.type} 
                 style={{ width: "100%", height: "100%", objectFit: "cover", borderRadius: "3px", pointerEvents: "none" }} 
               />
