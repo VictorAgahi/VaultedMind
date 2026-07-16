@@ -137,7 +137,7 @@ export const MultiTrendChart: React.FC<MultiTrendChartProps> = ({
               )}
               renderValue={(tagValue, getTagProps) =>
                 tagValue.map((option, index) => {
-                  const { key, ...tagProps } = getTagProps({ index });
+                  const { key: _key, ...tagProps } = getTagProps({ index });
                   return (
                     <Chip
                       key={option.id}

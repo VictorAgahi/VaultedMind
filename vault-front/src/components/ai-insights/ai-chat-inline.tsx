@@ -350,7 +350,7 @@ export function AIChatInline() {
             fullWidth
             multiline
             maxRows={5}
-            placeholder="Posez votre question à l'IA..."
+            placeholder="Posez votre question à l&apos;IA..."
             value={inputValue}
             onChange={(e) => dispatch({ type: "SET_INPUT_VALUE", payload: e.target.value })}
             onKeyDown={(e) => {
