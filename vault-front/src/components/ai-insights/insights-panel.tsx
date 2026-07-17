@@ -29,6 +29,7 @@ import InfoOutlinedIcon from "@mui/icons-material/InfoOutlined";
 import { apiService } from "@/services/api.service";
 import { AIInsightResponseDto } from "@/types";
 import EmojiEventsIcon from "@mui/icons-material/EmojiEvents";
+import { WhackABardella } from "./whack-a-bardella";
 
 function getErrorMessage(error: unknown): string {
   if (error instanceof Error) return error.message;
@@ -42,23 +43,26 @@ interface InsightsState {
   loading: boolean;
   error: string | null;
   enabled: boolean;
+  isGenerating: boolean;
 }
 
 type InsightsAction =
   | { type: "FETCH_START" }
   | { type: "FETCH_SUCCESS"; insights: AIInsightResponseDto[] }
-  | { type: "FETCH_STATUS"; enabled: boolean }
+  | { type: "FETCH_STATUS"; enabled: boolean; isGenerating: boolean }
   | { type: "FETCH_ERROR"; error: string }
   | { type: "SET_ENABLED"; enabled: boolean }
+  | { type: "SET_GENERATING"; isGenerating: boolean }
   | { type: "DELETE_INSIGHT"; id: string };
 
 function insightsReducer(state: InsightsState, action: InsightsAction): InsightsState {
   switch (action.type) {
     case "FETCH_START": return { ...state, loading: true, error: null };
     case "FETCH_SUCCESS": return { ...state, insights: action.insights, loading: false, error: null };
-    case "FETCH_STATUS": return { ...state, enabled: action.enabled, loading: false };
+    case "FETCH_STATUS": return { ...state, enabled: action.enabled, isGenerating: action.isGenerating, loading: false };
     case "FETCH_ERROR": return { ...state, loading: false, error: action.error };
     case "SET_ENABLED": return { ...state, enabled: action.enabled };
+    case "SET_GENERATING": return { ...state, isGenerating: action.isGenerating };
     case "DELETE_INSIGHT": return { ...state, insights: state.insights.filter((i) => i.id !== action.id) };
     default: return state;
   }
@@ -379,6 +383,7 @@ export function InsightsPanel() {
     loading: true,
     error: null,
     enabled: false,
+    isGenerating: false,
   });
   const [openConfirm, setOpenConfirm] = useState(false);
 
@@ -392,8 +397,8 @@ export function InsightsPanel() {
     const init = async () => {
       try {
         dispatch({ type: "FETCH_START" });
-        const { enabled } = await apiService.get<{ enabled: boolean }>("/health/ai-insights/status");
-        dispatch({ type: "FETCH_STATUS", enabled });
+        const { enabled, isGenerating } = await apiService.get<{ enabled: boolean, isGenerating: boolean }>("/health/ai-insights/status");
+        dispatch({ type: "FETCH_STATUS", enabled, isGenerating });
         if (enabled) {
           const insights = await apiService.get<AIInsightResponseDto[]>("/health/ai-insights");
           dispatch({ type: "FETCH_SUCCESS", insights });
@@ -404,6 +409,26 @@ export function InsightsPanel() {
     };
     init();
   }, []);
+
+  // Poll generation status if it's currently generating
+  useEffect(() => {
+    let interval: NodeJS.Timeout;
+    if (state.isGenerating) {
+      interval = setInterval(async () => {
+        try {
+          const { isGenerating } = await apiService.get<{ isGenerating: boolean }>("/health/ai-insights/status");
+          if (!isGenerating) {
+            dispatch({ type: "SET_GENERATING", isGenerating: false });
+            const insights = await apiService.get<AIInsightResponseDto[]>("/health/ai-insights");
+            dispatch({ type: "FETCH_SUCCESS", insights });
+          }
+        } catch (error) {
+          console.error("Erreur polling status:", error);
+        }
+      }, 5000);
+    }
+    return () => clearInterval(interval);
+  }, [state.isGenerating]);
 
   const toggleAIInsights = async (value: boolean) => {
     if (value) {
@@ -440,6 +465,12 @@ export function InsightsPanel() {
       console.error("Erreur lors de la suppression :", getErrorMessage(error));
     }
   };
+
+  const hasGeneratedToday = state.insights.some(i => {
+    const d = new Date(i.createdAt);
+    const today = new Date();
+    return d.getDate() === today.getDate() && d.getMonth() === today.getMonth() && d.getFullYear() === today.getFullYear();
+  });
 
   return (
     <Box
@@ -504,6 +535,29 @@ export function InsightsPanel() {
             variant="outlined"
             size="small"
             fullWidth
+            disabled={state.isGenerating || hasGeneratedToday}
+            onClick={() => {
+              dispatch({ type: "SET_GENERATING", isGenerating: true });
+              apiService.post("/health/ai-insights/generate")
+                .catch((error: unknown) => {
+                  console.error("Erreur de génération :", getErrorMessage(error));
+                  dispatch({ type: "SET_GENERATING", isGenerating: false });
+                });
+            }}
+            sx={{
+              borderColor: "#cbd5e1",
+              color: "#475569",
+              fontSize: "0.82rem",
+              "&:hover": { borderColor: "#94a3b8", bgcolor: "#f1f5f9" }
+            }}
+          >
+            {state.isGenerating ? "Génération en cours..." : hasGeneratedToday ? "Déjà générée aujourd'hui" : "Lancer l'analyse"}
+          </Button>
+
+          <Button
+            variant="outlined"
+            size="small"
+            fullWidth
             onClick={() => {
               window.dispatchEvent(new CustomEvent("ai-chat-open-with-message", { detail: { message: "" } }));
             }}
@@ -543,7 +597,11 @@ export function InsightsPanel() {
         </Box>
       )}
 
-
+      {state.isGenerating && (
+        <Box sx={{ mb: 2 }}>
+          <WhackABardella />
+        </Box>
+      )}
 
       {state.loading ? (
         <Box sx={{ display: "flex", justifyContent: "center", py: 4 }}>

@@ -22,6 +22,9 @@ export class UserModel extends BaseModel {
   @Column({ name: 'ai_context', type: 'text', nullable: true })
   aiContext?: string;
 
+  @Column({ name: 'is_generating_insights', type: 'boolean', default: false })
+  isGeneratingInsights!: boolean;
+
   @OneToMany(() => CustomFieldModel, (customField) => customField.user)
   customFields?: Relation<CustomFieldModel>[];
 

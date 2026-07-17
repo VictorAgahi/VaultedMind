@@ -11,6 +11,7 @@ export class User {
     public readonly updatedAt: Date,
     public aiInsightsEnabled: boolean = false,
     public aiContext?: string,
+    public isGeneratingInsights: boolean = false,
     public readonly deletedAt?: Date,
   ) {}
 
