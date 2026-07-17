@@ -28,7 +28,6 @@ import ChatIcon from "@mui/icons-material/Chat";
 import InfoOutlinedIcon from "@mui/icons-material/InfoOutlined";
 import { apiService } from "@/services/api.service";
 import { AIInsightResponseDto } from "@/types";
-import { WhackABardella } from "./whack-a-bardella";
 import EmojiEventsIcon from "@mui/icons-material/EmojiEvents";
 
 function getErrorMessage(error: unknown): string {

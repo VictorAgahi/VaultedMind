@@ -1,5 +1,5 @@
 import { Injectable, Logger } from '@nestjs/common';
-import { Cron, CronExpression } from '@nestjs/schedule';
+import { Cron } from '@nestjs/schedule';
 import { UserRepository } from '../../../../database/repositories/user.repository.js';
 import { AIInsightService } from '../../application/services/ai-insight.service.js';
 
