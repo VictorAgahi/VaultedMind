@@ -65,6 +65,7 @@ CONSIGNES :
       return await this.llmService.generateTextWithConfig(
         `${systemPrompt}\n\n${prompt}`,
         {
+          model: 'o4',
           maxTokens: 100000,
           reasoningEffort: 'high',
         },

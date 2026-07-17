@@ -382,7 +382,6 @@ export function InsightsPanel() {
     enabled: false,
   });
   const [openConfirm, setOpenConfirm] = useState(false);
-  const [isGenerating, setIsGenerating] = useState(false);
 
   const isMounted = useSyncExternalStore(
     () => () => {},
@@ -490,7 +489,7 @@ export function InsightsPanel() {
           <InfoOutlinedIcon sx={{ fontSize: "0.85rem", color: "#94a3b8", mt: "1px", flexShrink: 0, cursor: "help" }} />
         </Tooltip>
         <Typography variant="caption" sx={{ color: "#64748b", lineHeight: 1.5, fontSize: "0.72rem" }}>
-          Générées chaque jour à <strong>2h UTC</strong> · une analyse par type · basées sur vos 30 derniers journaux
+          Générées chaque jeudi à <strong>21h</strong> · une analyse par type · basées sur vos 30 derniers journaux
         </Typography>
       </Box>
 
@@ -506,24 +505,18 @@ export function InsightsPanel() {
             variant="outlined"
             size="small"
             fullWidth
-            disabled={isGenerating}
             onClick={() => {
-              setIsGenerating(true);
-              // Fire and forget the generation
-              apiService.post("/health/ai-insights/generate")
-                .catch((error: unknown) => {
-                  console.error("Erreur de génération :", getErrorMessage(error));
-                })
-                .finally(() => setIsGenerating(false));
+              window.dispatchEvent(new CustomEvent("ai-chat-open-with-message", { detail: { message: "" } }));
             }}
             sx={{
-              borderColor: "#cbd5e1",
-              color: "#475569",
+              borderColor: "#4f46e5",
+              color: "#4f46e5",
+              fontWeight: 700,
               fontSize: "0.82rem",
-              "&:hover": { borderColor: "#94a3b8", bgcolor: "#f1f5f9" }
+              "&:hover": { borderColor: "#4338ca", bgcolor: "rgba(79,70,229,0.04)" }
             }}
           >
-            {isGenerating ? "Génération en cours..." : "Lancer l'analyse"}
+            Discuter avec l&apos;IA
           </Button>
           
           <Button
@@ -551,11 +544,7 @@ export function InsightsPanel() {
         </Box>
       )}
 
-      {isGenerating && (
-        <Box sx={{ mb: 2 }}>
-          <WhackABardella />
-        </Box>
-      )}
+
 
       {state.loading ? (
         <Box sx={{ display: "flex", justifyContent: "center", py: 4 }}>
@@ -565,7 +554,7 @@ export function InsightsPanel() {
         <Alert severity="error" sx={{ fontSize: "0.82rem" }}>{state.error}</Alert>
       ) : state.insights.length === 0 ? (
         <Alert severity="info" sx={{ bgcolor: "#eff6ff", border: "1px solid #bfdbfe", fontSize: "0.82rem", "& .MuiAlert-icon": { color: "#3b82f6" } }}>
-          Pas encore d&apos;analyses. Elles sont générées chaque jour à 2h UTC.
+          Pas encore d&apos;analyses. Elles sont générées chaque jeudi à 21h.
         </Alert>
       ) : (
         <Stack spacing={1.5}>
