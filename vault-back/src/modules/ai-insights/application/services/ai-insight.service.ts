@@ -178,10 +178,8 @@ export class AIInsightService {
       );
       if (match && match[1]) {
         try {
-          suggestedFields = JSON.parse(match[1].trim()) as Record<
-            string,
-            unknown
-          >[];
+          const jsonStr = match[1].replace(/```(?:json)?/gi, '').trim();
+          suggestedFields = JSON.parse(jsonStr) as Record<string, unknown>[];
           // Remove the tag from the final content
           finalContent = content
             .replace(/<suggested_fields>[\s\S]*?<\/suggested_fields>/, '')
