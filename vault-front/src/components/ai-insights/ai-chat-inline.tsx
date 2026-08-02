@@ -21,10 +21,20 @@ import { useAuth } from "@/context/auth-context";
 import { MarkdownRenderer } from "./insights-panel";
 import { WhackABardella } from "./whack-a-bardella";
 
+export interface ChatSuggestedAction {
+  type: "CREATE_FIELD" | "DEACTIVATE_FIELD" | "UPDATE_CATEGORY";
+  id?: string;
+  name: string;
+  fieldType?: string;
+  category?: string;
+  reason?: string;
+}
+
 interface Message {
   id: string;
   text: string;
   sender: "user" | "ai";
+  suggestedActions?: ChatSuggestedAction[];
 }
 
 interface ChatState {
@@ -94,6 +104,74 @@ const JOKES = [
   "Un instant, j'interroge ma base de connaissances neuronale...",
   "Traitement en cours... (Et non, je ne lis pas dans vos pensées, seulement vos logs)"
 ];
+
+function ChatSuggestedActionsList({ actions }: { actions: ChatSuggestedAction[] }) {
+  const [completed, setCompleted] = React.useState<string[]>([]);
+  
+  const handleApply = async (action: ChatSuggestedAction, idx: number) => {
+    try {
+      if (action.type === "CREATE_FIELD") {
+        await apiService.post("/health/custom-fields", {
+          name: action.name,
+          fieldType: action.fieldType || "NUMBER",
+          category: action.category || "Général",
+          rememberLastValue: true,
+        });
+      } else if (action.type === "DEACTIVATE_FIELD" && action.id) {
+        await apiService.patch(`/health/custom-fields/${action.id}`, {
+          isActive: false,
+        });
+      } else if (action.type === "UPDATE_CATEGORY" && action.id) {
+        await apiService.patch(`/health/custom-fields/${action.id}`, {
+          category: action.category,
+        });
+      }
+      setCompleted(prev => [...prev, String(idx)]);
+      window.dispatchEvent(new CustomEvent("custom-fields-updated"));
+    } catch (e) {
+      console.error("Failed to apply AI action:", e);
+      alert("Erreur lors de l'application de l'action.");
+    }
+  };
+
+  if (!actions || actions.length === 0) return null;
+
+  return (
+    <Box sx={{ mt: 2, display: "flex", flexDirection: "column", gap: 1 }}>
+      <Typography variant="caption" sx={{ fontWeight: 700, color: "primary.main", textTransform: "uppercase" }}>
+        ✨ Actions Suggérées
+      </Typography>
+      {actions.map((action, idx) => {
+        const isDone = completed.includes(String(idx));
+        if (isDone) return null;
+        
+        return (
+          <Paper key={idx} variant="outlined" sx={{ p: 1.5, borderRadius: 2, bgcolor: "#f8fafc", display: "flex", justifyContent: "space-between", alignItems: "center", gap: 2 }}>
+            <Box>
+              <Typography variant="body2" sx={{ fontWeight: 700, color: "#1e293b" }}>
+                {action.type === "CREATE_FIELD" && `Créer le champ : ${action.name}`}
+                {action.type === "DEACTIVATE_FIELD" && `Désactiver : ${action.name}`}
+                {action.type === "UPDATE_CATEGORY" && `Déplacer ${action.name} vers ${action.category}`}
+              </Typography>
+              {action.reason && (
+                <Typography variant="caption" sx={{ color: "#64748b", display: "block", lineHeight: 1.2 }}>
+                  {action.reason}
+                </Typography>
+              )}
+            </Box>
+            <IconButton
+              size="small"
+              onClick={() => handleApply(action, idx)}
+              sx={{ bgcolor: "primary.main", color: "white", "&:hover": { bgcolor: "primary.dark" } }}
+            >
+              <SendIcon sx={{ fontSize: "1rem" }} />
+            </IconButton>
+          </Paper>
+        );
+      })}
+    </Box>
+  );
+}
 
 export function AIChatInline() {
   const { isAuthenticated } = useAuth();
@@ -175,7 +253,7 @@ export function AIChatInline() {
 
     startTransition(async () => {
       try {
-        const { response } = await apiService.post<{ response: string }>(
+        const { response, suggestedActions } = await apiService.post<{ response: string; suggestedActions?: ChatSuggestedAction[] }>(
           "/health/ai-chat",
           { message: inputValue }
         );
@@ -184,6 +262,7 @@ export function AIChatInline() {
           id: (Date.now() + 1).toString(),
           text: response,
           sender: "ai",
+          suggestedActions,
         };
 
         dispatch({ type: "SEND_MESSAGE_SUCCESS", payload: aiMsg });
@@ -221,7 +300,8 @@ export function AIChatInline() {
       sx={{
         display: "flex",
         flexDirection: "column",
-        height: { xs: "calc(100vh - 250px)", md: "600px" },
+        height: { xs: "calc(100dvh - 160px - env(safe-area-inset-top) - env(safe-area-inset-bottom))", md: "600px" },
+        mt: { xs: "env(safe-area-inset-top)", md: 0 },
         border: "1px solid #e2e8f0",
         borderRadius: { xs: 3, sm: 4 },
         overflow: "hidden",
@@ -298,6 +378,7 @@ export function AIChatInline() {
                   ) : (
                     <Box sx={{ "& p": { m: 0, mb: 1, "&:last-child": { mb: 0 } }, "& ul, & ol": { mt: 0, mb: 1, pl: 2 } }}>
                       <MarkdownRenderer content={msg.text} />
+                      {msg.suggestedActions && <ChatSuggestedActionsList actions={msg.suggestedActions} />}
                     </Box>
                   )}
                 </Paper>
@@ -343,7 +424,9 @@ export function AIChatInline() {
 
       {/* Input area */}
       <Box sx={{
-        p: 2,
+        px: 2,
+        pt: 2,
+        pb: { xs: "calc(env(safe-area-inset-bottom) + 16px)", md: 2 },
         bgcolor: "white",
         borderTop: "1px solid #e2e8f0",
       }}>

@@ -402,6 +402,8 @@ Règles non négociables:
 8. Si le dossier ou la corrélation est incertaine, présente-la comme une hypothèse intéressante à explorer ou à surveiller ("Il semblerait que...", "Vous pourriez observer si...").
 9. Quand une durée apparaît, écris-la en format humain: 5h30, 2h15, 45 min. Jamais 5.5 h.
 10. Réponds en français, avec un ton empathique, engageant et précis.
+11. SUGGESTION DE CHAMPS : Analyse s'il manque des données pertinentes à suivre (ex: l'utilisateur parle souvent de café, mais ne le traque pas).
+12. Si tu suggères de nouveaux champs, inclus OBLIGATOIREMENT à la TOUTE FIN de ta réponse une balise <suggested_fields> contenant un tableau JSON valide. Exemple: <suggested_fields>[{"name": "Cafés", "fieldType": "NUMBER", "category": "Alimentation", "reason": "Pour voir l'impact sur le sommeil"}]</suggested_fields>. N'ajoute RIEN d'autre après cette balise.
 
 Type d'analyse: ${title}
 Période: ${sanitizedData.dateRange}

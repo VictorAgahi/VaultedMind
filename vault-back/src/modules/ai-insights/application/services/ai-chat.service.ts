@@ -17,7 +17,13 @@ export class AIChatService {
     private readonly llmService: LLMService,
   ) {}
 
-  async getChatResponse(userId: string, userMessage: string): Promise<string> {
+  async getChatResponse(
+    userId: string,
+    userMessage: string,
+  ): Promise<{
+    response: string;
+    suggestedActions?: Record<string, unknown>[];
+  }> {
     try {
       // Fetch recent logs for context (last 60 days for more depth)
       const allLogs = await this.dailyLogRepository.findByUserId(userId);
@@ -58,21 +64,78 @@ CONSIGNES :
 4. RÉPONDS TOUJOURS EN FRANÇAIS.
 5. Quand tu cites des corrélations ou des tendances, sois précis sur les données qui les soutiennent.
 6. N'hésite pas à proposer des hypothèses de corrélation entre les indicateurs si les données les soutiennent.
-7. Quand une durée apparaît, écris-la en format humain : 5h30, 2h15, 45 min. Jamais 5.5 h.`;
+7. Quand une durée apparaît, écris-la en format humain : 5h30, 2h15, 45 min. Jamais 5.5 h.
+
+ACTIONS PROACTIVES :
+Tu peux suggérer des modifications au formulaire de l'utilisateur pour mieux organiser ses données ou tracker de nouvelles habitudes.
+Si tu détectes des champs redondants, inutilisés, ou qu'il manque des champs pertinents, ou si l'utilisateur te demande de l'aide pour s'organiser, tu DOIS générer à la toute fin de ta réponse un bloc JSON encadré par <action_suggestions> et </action_suggestions>.
+
+Exemple de format :
+<action_suggestions>
+[
+  {
+    "type": "CREATE_FIELD",
+    "name": "Nouveau champ",
+    "fieldType": "NUMBER",
+    "category": "Catégorie suggérée",
+    "reason": "Explication de pourquoi créer ce champ"
+  },
+  {
+    "type": "DEACTIVATE_FIELD",
+    "id": "id-du-champ-existant",
+    "name": "Nom du champ",
+    "reason": "Il n'est jamais rempli"
+  },
+  {
+    "type": "UPDATE_CATEGORY",
+    "id": "id-du-champ-existant",
+    "name": "Nom du champ",
+    "category": "Nouvelle catégorie",
+    "reason": "Pour mieux organiser les données"
+  }
+]
+</action_suggestions>`;
 
       const prompt = `Message de l'utilisateur : "${userMessage}"\n\nAssistant, réponds à l'utilisateur :`;
 
-      return await this.llmService.generateTextWithConfig(
+      const rawResponse = await this.llmService.generateTextWithConfig(
         `${systemPrompt}\n\n${prompt}`,
         {
-          model: 'o4',
-          maxTokens: 100000,
-          reasoningEffort: 'high',
+          model: 'gpt-5.5',
+          maxTokens: 2000,
         },
       );
+
+      // Parse action suggestions
+      let suggestedActions: Record<string, unknown>[] | undefined = undefined;
+      let cleanResponse = rawResponse;
+
+      const suggestionRegex =
+        /<action_suggestions>([\s\S]*?)<\/action_suggestions>/;
+      const match = rawResponse.match(suggestionRegex);
+
+      if (match && match[1]) {
+        try {
+          suggestedActions = JSON.parse(match[1].trim()) as Record<
+            string,
+            unknown
+          >[];
+          cleanResponse = rawResponse.replace(suggestionRegex, '').trim();
+        } catch (e) {
+          this.logger.warn(
+            'Failed to parse suggested actions JSON from AI response',
+            e,
+          );
+        }
+      }
+
+      return { response: cleanResponse, suggestedActions };
     } catch (error) {
       this.logger.error(`Error in AIChatService for user ${userId}:`, error);
-      return 'Désolé, je rencontre une petite difficulté technique pour analyser vos données. Réessayez dans un instant.';
+      return {
+        response:
+          'Désolé, je rencontre une petite difficulté technique pour analyser vos données. Réessayez dans un instant.',
+      };
     }
   }
 }

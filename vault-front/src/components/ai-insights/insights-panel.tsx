@@ -256,6 +256,74 @@ export function MarkdownRenderer({ content }: { content: string }) {
   );
 }
 
+// ─── Suggested Fields ─────────────────────────────────────────────────────────
+
+interface SuggestedField {
+  name: string;
+  fieldType?: "STRING" | "NUMBER" | "BOOLEAN" | "DATE";
+  category?: string;
+  reason?: string;
+}
+
+function SuggestedFieldsList({ suggestedFields, onAccept }: { suggestedFields: SuggestedField[]; onAccept: (field: SuggestedField) => void }) {
+  if (!suggestedFields || suggestedFields.length === 0) return null;
+
+  const grouped = suggestedFields.reduce((acc, field) => {
+    const cat = field.category || "Général";
+    if (!acc[cat]) acc[cat] = [];
+    acc[cat].push(field);
+    return acc;
+  }, {} as Record<string, SuggestedField[]>);
+
+  return (
+    <Box sx={{ mt: 3, pt: 2, borderTop: "1px dashed #cbd5e1" }}>
+      <Typography variant="subtitle2" sx={{ fontWeight: 700, color: "#334155", mb: 1, fontSize: "0.85rem", display: "flex", alignItems: "center", gap: 0.5 }}>
+        ✨ L&apos;IA vous suggère d&apos;ajouter ces champs :
+      </Typography>
+      <Stack spacing={2}>
+        {Object.entries(grouped).map(([category, fieldsList]) => {
+          const fields = fieldsList as SuggestedField[];
+          return (
+            <Box key={category}>
+              <Typography variant="caption" sx={{ fontWeight: 800, color: "#64748b", textTransform: "uppercase", letterSpacing: "0.05em", mb: 1, display: "block" }}>
+                {category}
+              </Typography>
+              <Stack spacing={1}>
+                {fields.map((field, idx) => (
+                <Box key={idx} sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", bgcolor: "#f1f5f9", p: 1.5, borderRadius: 2 }}>
+                  <Box>
+                    <Typography variant="body2" sx={{ fontWeight: 700, color: "#1e293b" }}>{field.name}</Typography>
+                    <Typography variant="caption" sx={{ color: "#64748b", display: "block", lineHeight: 1.2 }}>{field.reason}</Typography>
+                  </Box>
+                  <Button
+                    variant="contained"
+                    size="small"
+                    onClick={() => onAccept(field)}
+                    sx={{
+                      bgcolor: "#4f46e5",
+                      color: "white",
+                      fontSize: "0.7rem",
+                      px: 1.5,
+                      py: 0.5,
+                      borderRadius: 2,
+                      textTransform: "none",
+                      boxShadow: "none",
+                      "&:hover": { bgcolor: "#4338ca", boxShadow: "none" }
+                    }}
+                  >
+                    Accepter
+                  </Button>
+                </Box>
+              ))}
+            </Stack>
+          </Box>
+          );
+        })}
+      </Stack>
+    </Box>
+  );
+}
+
 // ─── InsightCard ──────────────────────────────────────────────────────────────
 
 function InsightCard({
@@ -270,6 +338,27 @@ function InsightCard({
   isEnabled: boolean;
 }) {
   const [expanded, setExpanded] = useState(false);
+  const [acceptedFields, setAcceptedFields] = useState<string[]>([]);
+
+  const handleAcceptField = async (field: SuggestedField) => {
+    try {
+      // Map AI suggested field to DTO format
+      const dto = {
+        name: field.name,
+        fieldType: field.fieldType || "NUMBER",
+        category: field.category || "Général",
+        rememberLastValue: true, // Default to true for ease of use
+      };
+      await apiService.post("/health/custom-fields", dto);
+      setAcceptedFields((prev) => [...prev, field.name]);
+      
+      // Dispatch event to refresh custom fields in other components
+      window.dispatchEvent(new CustomEvent("custom-fields-updated"));
+    } catch (error) {
+      console.error("Failed to accept field:", error);
+      alert("Erreur lors de l'ajout du champ.");
+    }
+  };
 
   const dateStr = isMounted
     ? new Date(insight.createdAt).toLocaleDateString("fr-FR", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" })
@@ -325,6 +414,16 @@ function InsightCard({
         {/* Content — collapsible */}
         <Collapse in={expanded} collapsedSize={80}>
           <MarkdownRenderer content={insight.content} />
+          {expanded && !!insight.metadata?.suggestedFields && (
+            <SuggestedFieldsList
+              suggestedFields={
+                Array.isArray(insight.metadata.suggestedFields)
+                  ? insight.metadata.suggestedFields.filter((f: SuggestedField) => !acceptedFields.includes(f.name))
+                  : []
+              }
+              onAccept={handleAcceptField}
+            />
+          )}
         </Collapse>
 
         {/* Footer */}

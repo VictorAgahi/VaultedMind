@@ -12,12 +12,12 @@ export class AIInsightsCronService {
     private readonly aiInsightService: AIInsightService,
   ) {}
 
-  @Cron('0 21 * * 4', {
+  @Cron('0 21 * * *', {
     name: 'generate-daily-ai-insights',
     timeZone: 'Europe/Paris',
   })
   async generateDailyInsights() {
-    this.logger.log('Starting weekly AI insights generation (Thursday 21h)...');
+    this.logger.log('Starting daily AI insights generation (21h)...');
 
     try {
       const [users] = await this.userRepository.findAll();

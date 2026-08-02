@@ -28,7 +28,10 @@ export class AIInsightService {
   //  MAIN PIPELINE — 6 AGENTS ORCHESTRATION
   // ════════════════════════════════════════════════════════════════════════════
 
-  async generateInsightForUser(userId: string): Promise<AIInsight | null> {
+  async generateInsightForUser(
+    userId: string,
+    forceInsightType?: InsightType,
+  ): Promise<AIInsight | null> {
     try {
       const user = await this.userRepository.findUserById(userId);
       if (!user.aiInsightsEnabled) {
@@ -87,9 +90,9 @@ export class AIInsightService {
       user.isGeneratingInsights = true;
       await this.userRepository.saveUser(user);
 
-      let insightType = InsightType.DAILY_SUMMARY;
+      let insightType = forceInsightType || InsightType.DAILY_SUMMARY;
       const today = new Date();
-      if (today.getDate() === 1) {
+      if (!forceInsightType && today.getDate() === 1) {
         insightType = InsightType.MONTHLY_TREND;
       }
 
@@ -167,6 +170,27 @@ export class AIInsightService {
         `✅ 6-agent pipeline complete for user ${userId} in ${totalTime}s`,
       );
 
+      // ── EXTRACT SUGGESTED FIELDS ──────────────────────────────────────────
+      let finalContent = content;
+      let suggestedFields: Record<string, unknown>[] = [];
+      const match = content.match(
+        /<suggested_fields>([\s\S]*?)<\/suggested_fields>/,
+      );
+      if (match && match[1]) {
+        try {
+          suggestedFields = JSON.parse(match[1].trim()) as Record<
+            string,
+            unknown
+          >[];
+          // Remove the tag from the final content
+          finalContent = content
+            .replace(/<suggested_fields>[\s\S]*?<\/suggested_fields>/, '')
+            .trim();
+        } catch (e) {
+          this.logger.error('Failed to parse suggested fields JSON', e);
+        }
+      }
+
       // ── SAVE INSIGHT ──────────────────────────────────────────────────────
       const title =
         insightType === InsightType.MONTHLY_TREND
@@ -178,13 +202,15 @@ export class AIInsightService {
         userId,
         insightType,
         title,
-        content,
+        finalContent,
         {
           logsAnalyzed: recentLogs.length,
           agentsPipelineVersion: '2.0',
           agentsUsed: 6,
           pipelineDurationSeconds: parseFloat(totalTime),
           model: useGpt55 ? 'gpt-5.5' : 'gpt-5.6-sol',
+          suggestedFields:
+            suggestedFields.length > 0 ? suggestedFields : undefined,
         },
         new Date(),
         new Date(),
