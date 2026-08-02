@@ -117,10 +117,7 @@ Exemple de format :
       if (match && match[1]) {
         try {
           const jsonStr = match[1].replace(/```(?:json)?/gi, '').trim();
-          suggestedActions = JSON.parse(jsonStr) as Record<
-            string,
-            unknown
-          >[];
+          suggestedActions = JSON.parse(jsonStr) as Record<string, unknown>[];
           cleanResponse = rawResponse.replace(suggestionRegex, '').trim();
         } catch (e) {
           this.logger.warn(

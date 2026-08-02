@@ -229,8 +229,6 @@ export function AIChatInline() {
     const handleOpenWithMessage = (e: Event) => {
       const customEvent = e as CustomEvent<{ message: string }>;
       dispatch({ type: "SET_INPUT_VALUE", payload: customEvent.detail.message });
-      // On inline chat, we might want to auto-send it if they click "Ask AI" from an insight.
-      // For now, let's just populate the input.
     };
 
     window.addEventListener("ai-insights-status-changed", handleStatusChange);
@@ -240,8 +238,6 @@ export function AIChatInline() {
       window.removeEventListener("ai-chat-open-with-message", handleOpenWithMessage);
     };
   }, [isAuthenticated]);
-
-  if (!isAuthenticated) return null;
 
   const handleSendMessage = async (overrideMessage?: string) => {
     const textToSend = overrideMessage || inputValue;
@@ -291,7 +287,12 @@ export function AIChatInline() {
       dispatch({ type: "SET_INPUT_VALUE", payload: initialPrompt });
       handleSendMessage(initialPrompt);
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isEnabled, initialPrompt]);
+
+  if (!isAuthenticated) return null;
+
+
 
   if (loading) {
     return (

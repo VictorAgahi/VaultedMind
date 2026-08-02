@@ -137,6 +137,7 @@ export const MultiTrendChart: React.FC<MultiTrendChartProps> = ({
               )}
               renderValue={(tagValue, getTagProps) =>
                 tagValue.map((option, index) => {
+                  // eslint-disable-next-line @typescript-eslint/no-unused-vars
                   const { key: _key, ...tagProps } = getTagProps({ index });
                   return (
                     <Chip

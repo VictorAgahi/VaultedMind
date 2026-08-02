@@ -45,9 +45,7 @@ const StringFieldGridModal: React.FC<StringFieldGridModalProps> = ({
 }) => {
   const [search, setSearch] = React.useState("");
   
-  React.useEffect(() => {
-    if (open) setSearch("");
-  }, [open]);
+
 
   const filtered = options.filter(o => o.toLowerCase().includes(search.toLowerCase()));
 
@@ -130,10 +128,10 @@ const StringFieldGridModal: React.FC<StringFieldGridModalProps> = ({
             {filtered.length === 0 && search.trim() !== "" && (
               <Box sx={{ gridColumn: "1 / -1", textAlign: "center", py: 2 }}>
                 <Typography color="text.secondary" gutterBottom>
-                  "{search}" introuvable.
+                  &quot;{search}&quot; introuvable.
                 </Typography>
                 <Button variant="outlined" size="small" onClick={() => { onSelect(search.trim()); onClose(); }}>
-                  Ajouter "{search}"
+                  Ajouter &quot;{search}&quot;
                 </Button>
               </Box>
             )}
@@ -336,6 +334,7 @@ export const LogEntryDialog: React.FC<LogEntryDialogProps> = ({
             }}
           />
           <StringFieldGridModal
+            key={`modal-${field.id}-${stringModalOpenId === field.id}`}
             open={stringModalOpenId === field.id}
             onClose={() => setStringModalOpenId(null)}
             options={options}
