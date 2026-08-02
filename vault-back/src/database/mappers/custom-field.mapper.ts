@@ -12,6 +12,10 @@ export class CustomFieldMapper {
       model.createdAt,
       model.updatedAt,
       model.optionsOrder,
+      model.category,
+      model.rememberLastValue,
+      model.min,
+      model.max,
     );
   }
 
@@ -25,6 +29,10 @@ export class CustomFieldMapper {
     model.createdAt = entity.createdAt;
     model.updatedAt = entity.updatedAt;
     model.optionsOrder = entity.optionsOrder;
+    model.category = entity.category;
+    model.rememberLastValue = entity.rememberLastValue;
+    model.min = entity.min;
+    model.max = entity.max;
     return model;
   }
 }

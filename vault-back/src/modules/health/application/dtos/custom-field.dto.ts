@@ -1,4 +1,10 @@
-import { IsString, IsEnum, IsOptional, IsBoolean } from 'class-validator';
+import {
+  IsString,
+  IsEnum,
+  IsOptional,
+  IsBoolean,
+  IsNumber,
+} from 'class-validator';
 import { FieldType } from '../../domain/enums/field-type.enum.js';
 
 export class CreateCustomFieldDto {
@@ -11,6 +17,22 @@ export class CreateCustomFieldDto {
   @IsOptional()
   @IsString({ each: true })
   optionsOrder?: string[];
+
+  @IsOptional()
+  @IsString()
+  category?: string;
+
+  @IsOptional()
+  @IsBoolean()
+  rememberLastValue?: boolean;
+
+  @IsOptional()
+  @IsNumber()
+  min?: number;
+
+  @IsOptional()
+  @IsNumber()
+  max?: number;
 }
 
 export class UpdateCustomFieldDto {
@@ -25,6 +47,22 @@ export class UpdateCustomFieldDto {
   @IsOptional()
   @IsString({ each: true })
   optionsOrder?: string[];
+
+  @IsOptional()
+  @IsString()
+  category?: string;
+
+  @IsOptional()
+  @IsBoolean()
+  rememberLastValue?: boolean;
+
+  @IsOptional()
+  @IsNumber()
+  min?: number;
+
+  @IsOptional()
+  @IsNumber()
+  max?: number;
 }
 
 export class CustomFieldResponseDto {
@@ -33,5 +71,9 @@ export class CustomFieldResponseDto {
   fieldType!: FieldType;
   isActive!: boolean;
   optionsOrder?: string[];
+  category?: string;
+  rememberLastValue!: boolean;
+  min?: number;
+  max?: number;
   createdAt!: Date;
 }

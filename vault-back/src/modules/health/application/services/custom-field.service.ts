@@ -41,7 +41,18 @@ export class CustomFieldService {
   async updateField(
     id: string,
     requestingUserId: string,
-    updates: Partial<Pick<CustomField, 'name' | 'isActive' | 'optionsOrder'>>,
+    updates: Partial<
+      Pick<
+        CustomField,
+        | 'name'
+        | 'isActive'
+        | 'optionsOrder'
+        | 'category'
+        | 'rememberLastValue'
+        | 'min'
+        | 'max'
+      >
+    >,
   ): Promise<CustomField> {
     await this.findById(id, requestingUserId);
     return this.customFieldRepository.updateDomain(id, updates);

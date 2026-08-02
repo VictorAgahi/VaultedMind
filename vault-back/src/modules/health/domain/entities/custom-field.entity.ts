@@ -11,5 +11,9 @@ export class CustomField {
     public readonly createdAt: Date,
     public readonly updatedAt: Date,
     public readonly optionsOrder?: string[],
+    public readonly category?: string,
+    public readonly rememberLastValue: boolean = false,
+    public readonly min?: number,
+    public readonly max?: number,
   ) {}
 }

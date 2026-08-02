@@ -21,6 +21,18 @@ export class CustomFieldModel extends BaseModel {
   @Column({ name: 'is_active', type: 'boolean', default: true })
   isActive!: boolean;
 
+  @Column({ type: 'varchar', nullable: true })
+  category?: string;
+
+  @Column({ name: 'remember_last_value', type: 'boolean', default: false })
+  rememberLastValue!: boolean;
+
+  @Column({ type: 'float', nullable: true })
+  min?: number;
+
+  @Column({ type: 'float', nullable: true })
+  max?: number;
+
   @Column({ name: 'options_order', type: 'json', nullable: true })
   optionsOrder?: string[];
 

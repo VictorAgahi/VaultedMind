@@ -45,6 +45,10 @@ export interface CustomField {
   fieldType: FieldType;
   isActive: boolean;
   optionsOrder?: string[];
+  category?: string;
+  rememberLastValue: boolean;
+  min?: number;
+  max?: number;
   createdAt: string;
 }
 

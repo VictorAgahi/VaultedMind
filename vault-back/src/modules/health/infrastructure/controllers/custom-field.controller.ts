@@ -41,6 +41,10 @@ export class CustomFieldController {
       new Date(),
       new Date(),
       dto.optionsOrder,
+      dto.category,
+      dto.rememberLastValue || false,
+      dto.min,
+      dto.max,
     );
 
     const saved = await this.customFieldService.createField(entity);
@@ -94,6 +98,10 @@ export class CustomFieldController {
       fieldType: entity.fieldType,
       isActive: entity.isActive,
       optionsOrder: entity.optionsOrder,
+      category: entity.category,
+      rememberLastValue: entity.rememberLastValue,
+      min: entity.min,
+      max: entity.max,
       createdAt: entity.createdAt,
     };
   }

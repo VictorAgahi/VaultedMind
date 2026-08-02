@@ -431,8 +431,17 @@ const useDailyLogs = (): UseDailyLogsReturn => {
       });
     } else {
       const defaultFvMap: Record<string, string> = {};
+      const mostRecentLog = [...logs].sort((a, b) => new Date(b.logDate).getTime() - new Date(a.logDate).getTime())[0];
+
       activeFields.forEach(field => {
-        if (field.fieldType === FieldType.NUMBER && (field.optionsOrder || []).includes("isHourly")) {
+        if (field.rememberLastValue && mostRecentLog) {
+          const lastFv = mostRecentLog.fieldValues?.find(fv => fv.customFieldId === field.id);
+          if (lastFv) {
+            defaultFvMap[field.id] = lastFv.value;
+          }
+        }
+        
+        if (!defaultFvMap[field.id] && field.fieldType === FieldType.NUMBER && (field.optionsOrder || []).includes("isHourly")) {
           defaultFvMap[field.id] = "08:00";
         }
       });
@@ -549,8 +558,17 @@ const useDailyLogs = (): UseDailyLogsReturn => {
       handleOpen(day.log);
     } else {
       const defaultFvMap: Record<string, string> = {};
+      const mostRecentLog = [...logs].sort((a, b) => new Date(b.logDate).getTime() - new Date(a.logDate).getTime())[0];
+
       activeFields.forEach(field => {
-        if (field.fieldType === FieldType.NUMBER && (field.optionsOrder || []).includes("isHourly")) {
+        if (field.rememberLastValue && mostRecentLog) {
+          const lastFv = mostRecentLog.fieldValues?.find(fv => fv.customFieldId === field.id);
+          if (lastFv) {
+            defaultFvMap[field.id] = lastFv.value;
+          }
+        }
+
+        if (!defaultFvMap[field.id] && field.fieldType === FieldType.NUMBER && (field.optionsOrder || []).includes("isHourly")) {
           defaultFvMap[field.id] = "08:00";
         }
       });
