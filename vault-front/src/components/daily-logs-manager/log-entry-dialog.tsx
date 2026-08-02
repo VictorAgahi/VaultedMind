@@ -20,8 +20,129 @@ import {
   ToggleButton,
   ToggleButtonGroup,
   Slider,
+  InputAdornment,
+  IconButton,
+  Paper
 } from "@mui/material";
+import SearchIcon from "@mui/icons-material/Search";
+import CloseIcon from "@mui/icons-material/Close";
 import { CustomField, FieldType } from "@/types";
+
+interface StringFieldGridModalProps {
+  open: boolean;
+  onClose: () => void;
+  options: string[];
+  onSelect: (value: string) => void;
+  fieldName: string;
+}
+
+const StringFieldGridModal: React.FC<StringFieldGridModalProps> = ({
+  open,
+  onClose,
+  options,
+  onSelect,
+  fieldName,
+}) => {
+  const [search, setSearch] = React.useState("");
+  
+  React.useEffect(() => {
+    if (open) setSearch("");
+  }, [open]);
+
+  const filtered = options.filter(o => o.toLowerCase().includes(search.toLowerCase()));
+
+  return (
+    <Dialog open={open} onClose={onClose} fullWidth maxWidth="sm" sx={{ "& .MuiDialog-paper": { borderRadius: 3, p: 1 } }}>
+      <DialogTitle sx={{ pb: 1, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+        <Typography variant="h6" sx={{ fontWeight: 700 }}>
+          {fieldName}
+        </Typography>
+        <IconButton onClick={onClose} size="small">
+          <CloseIcon />
+        </IconButton>
+      </DialogTitle>
+      <DialogContent>
+        <TextField
+          fullWidth
+          placeholder="Rechercher ou saisir une nouvelle valeur..."
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          variant="outlined"
+          sx={{ mb: 3, mt: 1 }}
+          slotProps={{
+            input: {
+              startAdornment: (
+                <InputAdornment position="start">
+                  <SearchIcon color="action" />
+                </InputAdornment>
+              ),
+            }
+          }}
+          onKeyDown={(e) => {
+            if (e.key === "Enter" && search.trim() !== "") {
+              onSelect(search.trim());
+              onClose();
+            }
+          }}
+        />
+        {options.length === 0 ? (
+          <Typography color="text.secondary" align="center" sx={{ py: 4 }}>
+            Aucune valeur précédente. Saisissez-en une ci-dessus et appuyez sur Entrée.
+          </Typography>
+        ) : (
+          <Box
+            sx={{
+              display: "grid",
+              gridTemplateColumns: "repeat(auto-fill, minmax(120px, 1fr))",
+              gap: 1.5,
+              maxHeight: "40vh",
+              overflowY: "auto",
+              p: 0.5
+            }}
+          >
+            {filtered.map((opt, idx) => (
+              <Paper
+                key={idx}
+                variant="outlined"
+                onClick={() => {
+                  onSelect(opt);
+                  onClose();
+                }}
+                sx={{
+                  p: 1.5,
+                  textAlign: "center",
+                  cursor: "pointer",
+                  borderRadius: 2,
+                  transition: "all 0.2s",
+                  borderColor: "divider",
+                  "&:hover": {
+                    borderColor: "primary.main",
+                    bgcolor: "primary.50",
+                    transform: "translateY(-2px)"
+                  }
+                }}
+              >
+                <Typography variant="body2" sx={{ fontWeight: 500, wordBreak: "break-word" }}>
+                  {opt}
+                </Typography>
+              </Paper>
+            ))}
+            {filtered.length === 0 && search.trim() !== "" && (
+              <Box sx={{ gridColumn: "1 / -1", textAlign: "center", py: 2 }}>
+                <Typography color="text.secondary" gutterBottom>
+                  "{search}" introuvable.
+                </Typography>
+                <Button variant="outlined" size="small" onClick={() => { onSelect(search.trim()); onClose(); }}>
+                  Ajouter "{search}"
+                </Button>
+              </Box>
+            )}
+          </Box>
+        )}
+      </DialogContent>
+    </Dialog>
+  );
+};
 
 interface LogEntryDialogProps {
   open: boolean;
@@ -58,6 +179,7 @@ export const LogEntryDialog: React.FC<LogEntryDialogProps> = ({
   const fullScreen = useMediaQuery(theme.breakpoints.down("sm"));
 
   const [activeStep, setActiveStep] = React.useState(0);
+  const [stringModalOpenId, setStringModalOpenId] = React.useState<string | null>(null);
 
   React.useEffect(() => {
     if (open) {
@@ -194,6 +316,35 @@ export const LogEntryDialog: React.FC<LogEntryDialogProps> = ({
     }
 
     const options = historicalValues[field.id] || [];
+
+    if (field.fieldType === FieldType.STRING) {
+      return (
+        <Box key={field.id} sx={{ mb: 2 }}>
+          <TextField
+            margin="dense"
+            label={field.name}
+            type="text"
+            fullWidth
+            variant="outlined"
+            value={value}
+            onClick={() => setStringModalOpenId(field.id)}
+            slotProps={{
+              input: {
+                readOnly: true,
+                style: { cursor: "pointer" }
+              }
+            }}
+          />
+          <StringFieldGridModal
+            open={stringModalOpenId === field.id}
+            onClose={() => setStringModalOpenId(null)}
+            options={options}
+            fieldName={field.name}
+            onSelect={(val) => onFieldValueChange(field.id, val)}
+          />
+        </Box>
+      );
+    }
 
     return (
       <Autocomplete
