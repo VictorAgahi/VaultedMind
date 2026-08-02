@@ -34,6 +34,16 @@ export class DailyLogRepository extends AbstractBaseRepository<DailyLogModel> {
     return models.map((model) => DailyLogMapper.toDomain(model));
   }
 
+  async hasLoggedToday(userId: string): Promise<boolean> {
+    const today = new Date().toISOString().split('T')[0];
+    const count = await this.repository
+      .createQueryBuilder('log')
+      .where('log.userId = :userId', { userId })
+      .andWhere('log.logDate = :today', { today })
+      .getCount();
+    return count > 0;
+  }
+
   async saveDomain(entity: DailyLog): Promise<DailyLog> {
     const model = DailyLogMapper.toPersistence(entity);
     if (model.notes) {

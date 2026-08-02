@@ -22,6 +22,10 @@ export class DailyLogService {
     return this.dailyLogRepository.findByUserId(userId);
   }
 
+  async hasLoggedToday(userId: string): Promise<boolean> {
+    return this.dailyLogRepository.hasLoggedToday(userId);
+  }
+
   async findById(id: string, userId: string): Promise<DailyLog> {
     try {
       const log = await this.dailyLogRepository.findDomainById(id);

@@ -68,7 +68,10 @@ export class AIInsightService {
       );
 
       // Check if an insight was already generated today
-      const recentInsights = await this.aiInsightRepository.findByUserId(userId, 1);
+      const recentInsights = await this.aiInsightRepository.findByUserId(
+        userId,
+        1,
+      );
       if (recentInsights.length > 0) {
         const lastInsightDate = new Date(recentInsights[0].createdAt);
         const todayDate = new Date();
@@ -77,7 +80,7 @@ export class AIInsightService {
           lastInsightDate.getMonth() === todayDate.getMonth() &&
           lastInsightDate.getFullYear() === todayDate.getFullYear()
         ) {
-          throw new Error('Vous avez déjà généré une analyse aujourd\'hui.');
+          throw new Error("Vous avez déjà généré une analyse aujourd'hui.");
         }
       }
 

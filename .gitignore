@@ -76,3 +76,7 @@ Thumbs.db
 
 # Analytics
 .cache/
+
+# Graphify
+.graphify/
+graphify-out/
