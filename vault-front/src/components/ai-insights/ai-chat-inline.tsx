@@ -173,11 +173,17 @@ function ChatSuggestedActionsList({ actions }: { actions: ChatSuggestedAction[] 
   );
 }
 
+import { useSearchParams } from "next/navigation";
+
 export function AIChatInline() {
   const { isAuthenticated } = useAuth();
+  const searchParams = useSearchParams();
+  const initialPrompt = searchParams.get("prompt");
   const [state, dispatch] = React.useReducer(chatReducer, initialChatState);
   const [isPending, startTransition] = useTransition();
   const scrollRef = useRef<HTMLDivElement>(null);
+  
+  const hasAutoPrompted = useRef(false);
   
   const [thinkingMessage, setThinkingMessage] = React.useState("L'IA réfléchit...");
 
@@ -237,15 +243,16 @@ export function AIChatInline() {
 
   if (!isAuthenticated) return null;
 
-  const handleSendMessage = async () => {
-    if (!inputValue.trim() || isPending) return;
+  const handleSendMessage = async (overrideMessage?: string) => {
+    const textToSend = overrideMessage || inputValue;
+    if (!textToSend.trim() || isPending) return;
 
     const randomJoke = JOKES[Math.floor(Math.random() * JOKES.length)];
     setThinkingMessage(randomJoke);
 
     const userMsg: Message = {
       id: Date.now().toString(),
-      text: inputValue,
+      text: textToSend,
       sender: "user",
     };
 
@@ -255,7 +262,7 @@ export function AIChatInline() {
       try {
         const { response, suggestedActions } = await apiService.post<{ response: string; suggestedActions?: ChatSuggestedAction[] }>(
           "/health/ai-chat",
-          { message: inputValue }
+          { message: textToSend }
         );
 
         const aiMsg: Message = {
@@ -277,6 +284,14 @@ export function AIChatInline() {
       }
     });
   };
+
+  useEffect(() => {
+    if (isEnabled && initialPrompt && !hasAutoPrompted.current) {
+      hasAutoPrompted.current = true;
+      dispatch({ type: "SET_INPUT_VALUE", payload: initialPrompt });
+      handleSendMessage(initialPrompt);
+    }
+  }, [isEnabled, initialPrompt]);
 
   if (loading) {
     return (
@@ -460,7 +475,7 @@ export function AIChatInline() {
             }}
           />
           <IconButton
-            onClick={handleSendMessage}
+            onClick={() => handleSendMessage()}
             disabled={!inputValue.trim() || isPending}
             sx={{
               bgcolor: inputValue.trim() ? "primary.main" : "#f1f5f9",

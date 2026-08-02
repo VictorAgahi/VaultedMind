@@ -9,12 +9,17 @@ import {
   CircularProgress,
   Chip,
   Stack,
+  Button,
+  Tooltip,
+  IconButton
 } from "@mui/material";
 import LocalFireDepartmentIcon from "@mui/icons-material/LocalFireDepartment";
 import TrendingUpIcon from "@mui/icons-material/TrendingUp";
 import TrendingDownIcon from "@mui/icons-material/TrendingDown";
 import TrendingFlatIcon from "@mui/icons-material/TrendingFlat";
 import AutoAwesomeIcon from "@mui/icons-material/AutoAwesome";
+import InfoOutlinedIcon from "@mui/icons-material/InfoOutlined";
+import { useRouter } from "next/navigation";
 import { apiService } from "@/services/api.service";
 import { CustomField, DailyLog, FieldType } from "@/types";
 import { calculatePearsonCorrelation } from "@/utils/math";
@@ -202,6 +207,7 @@ function ScoreRing({ score }: { score: number }) {
 }
 
 export function WellnessScoreCard() {
+  const router = useRouter();
   const [state, dispatch] = useReducer(wellnessReducer, { fields: [], logs: [], loading: true });
 
   useEffect(() => {
@@ -242,6 +248,7 @@ export function WellnessScoreCard() {
   const topCorrelation = findTopCorrelation(logs, fields);
 
   const delta = thisScore !== null && lastScore !== null ? thisScore - lastScore : null;
+  const shadowColor = thisScore ? (thisScore >= 70 ? "rgba(16,185,129,0.3)" : thisScore >= 45 ? "rgba(245,158,11,0.3)" : "rgba(239,68,68,0.3)") : "rgba(0,0,0,0.12)";
 
   if (thisScore === null) {
     return (
@@ -260,19 +267,50 @@ export function WellnessScoreCard() {
       sx={{
         borderRadius: 4,
         overflow: "hidden",
-        boxShadow: "0 20px 40px -12px rgba(0,0,0,0.12)",
-        border: "none",
+        boxShadow: `0 20px 40px -12px ${shadowColor}`,
+        border: "1px solid rgba(255,255,255,0.1)",
         mb: 4,
-        background: "linear-gradient(135deg, #0f172a 0%, #1e293b 60%, #0f2444 100%)",
+        background: "linear-gradient(135deg, #020617 0%, #0f172a 50%, #1e293b 100%)",
+        position: "relative"
       }}
     >
+      <Box sx={{ position: "absolute", top: 0, left: 0, right: 0, height: "1px", background: "linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent)" }} />
       <CardContent sx={{ p: { xs: 2.5, sm: 4 } }}>
         {/* Header */}
-        <Box sx={{ display: "flex", alignItems: "center", gap: 1, mb: 3 }}>
-          <AutoAwesomeIcon sx={{ color: "#f59e0b", fontSize: 20 }} />
-          <Typography variant="subtitle1" sx={{ fontWeight: 800, color: "white", letterSpacing: "-0.01em" }}>
-            Score de Bien-être — Cette semaine
-          </Typography>
+        <Box sx={{ display: "flex", alignItems: "center", justifyContent: "space-between", mb: 3 }}>
+          <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+            <AutoAwesomeIcon sx={{ color: "#f59e0b", fontSize: 22 }} />
+            <Typography variant="subtitle1" sx={{ fontWeight: 800, color: "white", letterSpacing: "-0.01em" }}>
+              Score de Bien-être
+            </Typography>
+            <Tooltip 
+              title={
+                <Typography variant="body2" sx={{ p: 1 }}>
+                  Le score est calculé en normalisant toutes vos données numériques de la semaine par rapport à vos records historiques (min/max). Une moyenne de ces indicateurs pondérés forme votre score de 0 à 100.
+                </Typography>
+              } 
+              arrow 
+              placement="top"
+            >
+              <IconButton size="small" sx={{ color: "rgba(255,255,255,0.6)" }}>
+                <InfoOutlinedIcon fontSize="small" />
+              </IconButton>
+            </Tooltip>
+          </Box>
+          <Button 
+            variant="outlined" 
+            size="small" 
+            onClick={() => router.push("/ai?prompt=Comment puis-je améliorer mon score de bien-être ?")}
+            sx={{ 
+              color: "white", 
+              borderColor: "rgba(255,255,255,0.3)", 
+              textTransform: "none", 
+              borderRadius: 3,
+              '&:hover': { borderColor: "white", bgcolor: "rgba(255,255,255,0.1)" }
+            }}
+          >
+            Corriger le TIR 🤖
+          </Button>
         </Box>
 
         {/* Main content */}

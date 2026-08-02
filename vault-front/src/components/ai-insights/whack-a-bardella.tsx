@@ -3,7 +3,7 @@ import { Box, Typography } from "@mui/material";
 
 export const WhackABardella = () => {
   const [score, setScore] = React.useState(0);
-  const [activeMole, setActiveMole] = React.useState<{ index: number, type: 'bardella' | 'macron' | 'melenchon' | 'attal' } | null>(null);
+  const [activeMole, setActiveMole] = React.useState<{ index: number, type: 'bardella' | 'attal' } | null>(null);
 
   React.useEffect(() => {
     // La vitesse augmente (le délai diminue) au fur et à mesure que le score monte
@@ -11,13 +11,9 @@ export const WhackABardella = () => {
     
     const interval = setInterval(() => {
       const rand = Math.random();
-      let type: 'bardella' | 'macron' | 'melenchon' | 'attal' = 'bardella';
+      let type: 'bardella' | 'attal' = 'bardella';
       
-      if (rand < 0.15) {
-        type = 'macron';
-      } else if (rand < 0.25) {
-        type = 'melenchon';
-      } else if (rand < 0.35) {
+      if (rand < 0.25) {
         type = 'attal';
       }
 
@@ -40,10 +36,8 @@ export const WhackABardella = () => {
 
   const getImageUrl = (type: string) => {
     switch (type) {
-      case 'bardella': return "https://upload.wikimedia.org/wikipedia/commons/thumb/8/87/Jordan_Bardella_2022.jpg/400px-Jordan_Bardella_2022.jpg";
-      case 'macron': return "https://upload.wikimedia.org/wikipedia/commons/thumb/f/f4/Emmanuel_Macron_in_2023.jpg/400px-Emmanuel_Macron_in_2023.jpg";
-      case 'melenchon': return "https://upload.wikimedia.org/wikipedia/commons/thumb/5/5a/Jean-Luc_M%C3%A9lenchon_2022.jpg/400px-Jean-Luc_M%C3%A9lenchon_2022.jpg";
-      case 'attal': return "https://upload.wikimedia.org/wikipedia/commons/thumb/7/77/Gabriel_Attal_2024_%28cropped%29.jpg/400px-Gabriel_Attal_2024_%28cropped%29.jpg";
+      case 'bardella': return "/assets/bardella.jpeg";
+      case 'attal': return "/assets/Gabriel_Attal_2025_(close_crop).jpg";
       default: return "";
     }
   };
