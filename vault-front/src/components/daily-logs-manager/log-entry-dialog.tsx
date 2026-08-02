@@ -217,7 +217,13 @@ export const LogEntryDialog: React.FC<LogEntryDialogProps> = ({
   };
 
   return (
-    <Dialog open={open} onClose={onClose} fullWidth maxWidth="md" fullScreen={fullScreen}>
+    <Dialog 
+      open={open} 
+      onClose={onClose} 
+      fullWidth 
+      maxWidth="md" 
+      fullScreen={fullScreen}
+    >
       <form onSubmit={(e) => {
         e.preventDefault();
         if (activeStep === steps.length - 1) {
@@ -226,7 +232,9 @@ export const LogEntryDialog: React.FC<LogEntryDialogProps> = ({
           handleNext();
         }
       }}>
-        <DialogTitle>{isEditing ? "Modifier le journal" : "Nouveau journal"}</DialogTitle>
+        <DialogTitle sx={{ pt: { xs: 'calc(16px + env(safe-area-inset-top))', sm: 2 } }}>
+          {isEditing ? "Modifier le journal" : "Nouveau journal"}
+        </DialogTitle>
         <DialogContent dividers>
           
           <Stepper activeStep={activeStep} alternativeLabel sx={{ mb: 4, display: { xs: 'none', sm: 'flex' } }}>
@@ -287,7 +295,7 @@ export const LogEntryDialog: React.FC<LogEntryDialogProps> = ({
           </Box>
 
         </DialogContent>
-        <DialogActions sx={{ p: 2, justifyContent: 'space-between' }}>
+        <DialogActions sx={{ p: 2, pb: { xs: 'calc(16px + env(safe-area-inset-bottom))', sm: 2 }, justifyContent: 'space-between' }}>
           <Button onClick={onClose} color="inherit">Annuler</Button>
           <Box>
             <Button

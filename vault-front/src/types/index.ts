@@ -56,12 +56,20 @@ export interface CreateCustomFieldDto {
   name: string;
   fieldType: FieldType;
   optionsOrder?: string[];
+  category?: string;
+  rememberLastValue?: boolean;
+  min?: number;
+  max?: number;
 }
 
 export interface UpdateCustomFieldDto {
   name?: string;
   isActive?: boolean;
   optionsOrder?: string[];
+  category?: string;
+  rememberLastValue?: boolean;
+  min?: number;
+  max?: number;
 }
 
 interface FieldValue {

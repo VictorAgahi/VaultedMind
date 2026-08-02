@@ -63,7 +63,7 @@ const customFieldsReducer = (state: CustomFieldsState, action: CustomFieldsActio
     case "OPEN_DIALOG": return {
       ...state,
       dialog: { ...state.dialog, open: true, isEditing: action.isEditing, id: action.id || null },
-      formData: action.formData || { name: "", fieldType: FieldType.NUMBER, optionsOrder: [], isHourly: false }
+      formData: action.formData || { name: "", fieldType: FieldType.NUMBER, optionsOrder: [], isHourly: false, category: "", rememberLastValue: false, min: "", max: "" }
     };
     case "CLOSE_DIALOG": return { ...state, dialog: { ...state.dialog, open: false } };
     case "SET_SUBMITTING": return { ...state, dialog: { ...state.dialog, submitting: action.submitting } };
@@ -82,7 +82,7 @@ export const CustomFieldsManager: React.FC = () => {
     loading: true,
     error: null,
     dialog: { open: false, isEditing: false, id: null, submitting: false },
-    formData: { name: "", fieldType: FieldType.NUMBER, optionsOrder: [], isHourly: false }
+    formData: { name: "", fieldType: FieldType.NUMBER, optionsOrder: [], isHourly: false, category: "", rememberLastValue: false, min: "", max: "" }
   });
 
   const { fields, loading, error, dialog, formData } = state;
@@ -113,7 +113,11 @@ export const CustomFieldsManager: React.FC = () => {
           name: field.name,
           fieldType: field.fieldType,
           optionsOrder: field.fieldType === FieldType.NUMBER ? [] : (field.optionsOrder || []).map(opt => ({ id: Math.random().toString(36).substr(2, 9), value: opt })),
-          isHourly: field.fieldType === FieldType.NUMBER && (field.optionsOrder || []).includes("isHourly")
+          isHourly: field.fieldType === FieldType.NUMBER && (field.optionsOrder || []).includes("isHourly"),
+          category: field.category || "",
+          rememberLastValue: field.rememberLastValue || false,
+          min: field.min !== undefined && field.min !== null ? field.min : "",
+          max: field.max !== undefined && field.max !== null ? field.max : ""
         }
       });
     } else {
@@ -138,14 +142,22 @@ export const CustomFieldsManager: React.FC = () => {
       if (dialog.isEditing && dialog.id) {
         const updatePayload: UpdateCustomFieldDto = {
           name: formData.name,
-          optionsOrder: optionsArray
+          optionsOrder: optionsArray,
+          category: formData.category,
+          rememberLastValue: formData.rememberLastValue,
+          min: formData.min === "" ? undefined : formData.min,
+          max: formData.max === "" ? undefined : formData.max
         };
         await apiService.patch<CustomField, UpdateCustomFieldDto>(`/health/custom-fields/${dialog.id}`, updatePayload);
       } else {
         const createPayload: CreateCustomFieldDto = {
           name: formData.name,
           fieldType: formData.fieldType,
-          optionsOrder: optionsArray
+          optionsOrder: optionsArray,
+          category: formData.category,
+          rememberLastValue: formData.rememberLastValue,
+          min: formData.min === "" ? undefined : formData.min,
+          max: formData.max === "" ? undefined : formData.max
         };
         await apiService.post<CustomField, CreateCustomFieldDto>("/health/custom-fields", createPayload);
       }

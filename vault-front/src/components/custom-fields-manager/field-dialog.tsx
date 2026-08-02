@@ -34,6 +34,10 @@ export interface FieldFormData {
   fieldType: FieldType;
   optionsOrder: OptionItem[];
   isHourly?: boolean;
+  category?: string;
+  rememberLastValue: boolean;
+  min?: number | "";
+  max?: number | "";
 }
 
 interface FieldDialogProps {
@@ -102,6 +106,33 @@ export const FieldDialog: React.FC<FieldDialogProps> = ({
               placeholder="Ex: Humeur, Sommeil, Poids..."
             />
 
+            <TextField
+              label="Catégorie (optionnel)"
+              fullWidth
+              value={formData.category || ""}
+              onChange={(e) => setFormData((prev) => ({ ...prev, category: e.target.value }))}
+              placeholder="Ex: Général, Sommeil, Sport..."
+            />
+
+            <FormControlLabel
+              control={
+                <Switch
+                  checked={formData.rememberLastValue}
+                  onChange={(e) => setFormData((prev) => ({ ...prev, rememberLastValue: e.target.checked }))}
+                  color="primary"
+                />
+              }
+              label={
+                <Box>
+                  <Typography variant="body2" sx={{ fontWeight: 600 }}>Mémoriser la dernière valeur</Typography>
+                  <Typography variant="caption" color="text.secondary">
+                    Pré-remplit ce champ avec la valeur du dernier journal (idéal pour le poids, etc.)
+                  </Typography>
+                </Box>
+              }
+              sx={{ ml: 0 }}
+            />
+
             <FormControl fullWidth disabled={isEditing}>
               <InputLabel>Type de donnée</InputLabel>
               <Select
@@ -127,24 +158,47 @@ export const FieldDialog: React.FC<FieldDialogProps> = ({
             </FormControl>
 
             {formData.fieldType === FieldType.NUMBER && (
-              <FormControlLabel
-                control={
-                  <Switch
-                    checked={!!formData.isHourly}
-                    onChange={(e) => setFormData((prev) => ({ ...prev, isHourly: e.target.checked }))}
-                    color="primary"
-                  />
-                }
-                label={
-                  <Box>
-                    <Typography variant="body2" sx={{ fontWeight: 600 }}>Format horaire</Typography>
-                    <Typography variant="caption" color="text.secondary">
-                      Permet de saisir des valeurs sous la forme &quot;6h30&quot; ou &quot;06:30&quot;, converties automatiquement en 6.5 pour les analyses.
-                    </Typography>
+              <>
+                <FormControlLabel
+                  control={
+                    <Switch
+                      checked={!!formData.isHourly}
+                      onChange={(e) => setFormData((prev) => ({ ...prev, isHourly: e.target.checked }))}
+                      color="primary"
+                    />
+                  }
+                  label={
+                    <Box>
+                      <Typography variant="body2" sx={{ fontWeight: 600 }}>Format horaire</Typography>
+                      <Typography variant="caption" color="text.secondary">
+                        Permet de saisir des valeurs sous la forme &quot;6h30&quot; ou &quot;06:30&quot;, converties automatiquement en 6.5 pour les analyses.
+                      </Typography>
+                    </Box>
+                  }
+                  sx={{ ml: 0, mt: 1 }}
+                />
+
+                {!formData.isHourly && (
+                  <Box sx={{ display: "flex", gap: 2, mt: 1 }}>
+                    <TextField
+                      label="Valeur Min (optionnel)"
+                      type="number"
+                      fullWidth
+                      value={formData.min !== undefined ? formData.min : ""}
+                      onChange={(e) => setFormData((prev) => ({ ...prev, min: e.target.value === "" ? "" : Number(e.target.value) }))}
+                      placeholder="Ex: 0"
+                    />
+                    <TextField
+                      label="Valeur Max (optionnel)"
+                      type="number"
+                      fullWidth
+                      value={formData.max !== undefined ? formData.max : ""}
+                      onChange={(e) => setFormData((prev) => ({ ...prev, max: e.target.value === "" ? "" : Number(e.target.value) }))}
+                      placeholder="Ex: 100"
+                    />
                   </Box>
-                }
-                sx={{ ml: 0, mt: 1 }}
-              />
+                )}
+              </>
             )}
 
             {formData.fieldType === FieldType.STRING && (
