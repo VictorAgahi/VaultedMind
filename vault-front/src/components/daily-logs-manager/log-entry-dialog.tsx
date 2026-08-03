@@ -355,7 +355,7 @@ export const LogEntryDialog: React.FC<LogEntryDialogProps> = ({
         options={options}
         value={value}
         onInputChange={(_, newInputValue) => onFieldValueChange(field.id, newInputValue)}
-        renderInput={(params) => (
+        renderInput={(params: any) => (
           <TextField
             {...params}
             margin="dense"
@@ -363,9 +363,12 @@ export const LogEntryDialog: React.FC<LogEntryDialogProps> = ({
             type={field.fieldType === FieldType.NUMBER && !isHourly ? "number" : "text"}
             fullWidth
             variant="outlined"
-            inputProps={{
-              ...params.inputProps,
-              inputMode: field.fieldType === FieldType.NUMBER && !isHourly ? "decimal" : "text"
+            slotProps={{
+              ...params.slotProps,
+              htmlInput: {
+                ...(params.slotProps?.htmlInput || params.inputProps),
+                inputMode: field.fieldType === FieldType.NUMBER && !isHourly ? "decimal" : "text"
+              }
             }}
           />
         )}
