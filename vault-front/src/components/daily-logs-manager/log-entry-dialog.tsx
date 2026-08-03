@@ -383,7 +383,7 @@ export const LogEntryDialog: React.FC<LogEntryDialogProps> = ({
         }
       }}>
         <DialogTitle sx={{ pt: { xs: 'calc(16px + env(safe-area-inset-top))', sm: 2 } }}>
-          {isEditing ? "Modifier le journal" : "Nouveau journal"}
+          {steps[activeStep]}
         </DialogTitle>
         <DialogContent dividers>
           
