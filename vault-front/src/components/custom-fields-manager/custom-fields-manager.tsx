@@ -63,7 +63,7 @@ const customFieldsReducer = (state: CustomFieldsState, action: CustomFieldsActio
     case "OPEN_DIALOG": return {
       ...state,
       dialog: { ...state.dialog, open: true, isEditing: action.isEditing, id: action.id || null },
-      formData: action.formData || { name: "", fieldType: FieldType.NUMBER, optionsOrder: [], isHourly: false, category: "", rememberLastValue: false, min: "", max: "" }
+      formData: action.formData || { name: "", fieldType: FieldType.NUMBER, optionsOrder: [], isHourly: false, category: "", rememberLastValue: false, min: "", max: "", appleWatchMetric: "" }
     };
     case "CLOSE_DIALOG": return { ...state, dialog: { ...state.dialog, open: false } };
     case "SET_SUBMITTING": return { ...state, dialog: { ...state.dialog, submitting: action.submitting } };
@@ -82,7 +82,7 @@ export const CustomFieldsManager: React.FC = () => {
     loading: true,
     error: null,
     dialog: { open: false, isEditing: false, id: null, submitting: false },
-    formData: { name: "", fieldType: FieldType.NUMBER, optionsOrder: [], isHourly: false, category: "", rememberLastValue: false, min: "", max: "" }
+    formData: { name: "", fieldType: FieldType.NUMBER, optionsOrder: [], isHourly: false, category: "", rememberLastValue: false, min: "", max: "", appleWatchMetric: "" }
   });
 
   const { fields, loading, error, dialog, formData } = state;
@@ -117,7 +117,8 @@ export const CustomFieldsManager: React.FC = () => {
           category: field.category || "",
           rememberLastValue: field.rememberLastValue || false,
           min: field.min !== undefined && field.min !== null ? field.min : "",
-          max: field.max !== undefined && field.max !== null ? field.max : ""
+          max: field.max !== undefined && field.max !== null ? field.max : "",
+          appleWatchMetric: field.appleWatchMetric || ""
         }
       });
     } else {
@@ -146,7 +147,8 @@ export const CustomFieldsManager: React.FC = () => {
           category: formData.category,
           rememberLastValue: formData.rememberLastValue,
           min: formData.min === "" ? undefined : formData.min,
-          max: formData.max === "" ? undefined : formData.max
+          max: formData.max === "" ? undefined : formData.max,
+          appleWatchMetric: formData.appleWatchMetric === "" ? undefined : formData.appleWatchMetric
         };
         await apiService.patch<CustomField, UpdateCustomFieldDto>(`/health/custom-fields/${dialog.id}`, updatePayload);
       } else {
@@ -157,7 +159,8 @@ export const CustomFieldsManager: React.FC = () => {
           category: formData.category,
           rememberLastValue: formData.rememberLastValue,
           min: formData.min === "" ? undefined : formData.min,
-          max: formData.max === "" ? undefined : formData.max
+          max: formData.max === "" ? undefined : formData.max,
+          appleWatchMetric: formData.appleWatchMetric === "" ? undefined : formData.appleWatchMetric
         };
         await apiService.post<CustomField, CreateCustomFieldDto>("/health/custom-fields", createPayload);
       }

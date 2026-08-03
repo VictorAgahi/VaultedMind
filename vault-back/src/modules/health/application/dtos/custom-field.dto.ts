@@ -6,6 +6,7 @@ import {
   IsNumber,
 } from 'class-validator';
 import { FieldType } from '../../domain/enums/field-type.enum.js';
+import { AppleWatchMetric } from '../../domain/enums/apple-watch-metric.enum.js';
 
 export class CreateCustomFieldDto {
   @IsString()
@@ -33,6 +34,10 @@ export class CreateCustomFieldDto {
   @IsOptional()
   @IsNumber()
   max?: number;
+
+  @IsOptional()
+  @IsEnum(AppleWatchMetric)
+  appleWatchMetric?: AppleWatchMetric;
 }
 
 export class UpdateCustomFieldDto {
@@ -63,6 +68,10 @@ export class UpdateCustomFieldDto {
   @IsOptional()
   @IsNumber()
   max?: number;
+
+  @IsOptional()
+  @IsEnum(AppleWatchMetric)
+  appleWatchMetric?: AppleWatchMetric;
 }
 
 export class CustomFieldResponseDto {
@@ -75,5 +84,6 @@ export class CustomFieldResponseDto {
   rememberLastValue!: boolean;
   min?: number;
   max?: number;
+  appleWatchMetric?: AppleWatchMetric;
   createdAt!: Date;
 }

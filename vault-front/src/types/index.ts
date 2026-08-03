@@ -6,6 +6,25 @@ export interface User {
   avatarUrl?: string;
 }
 
+export interface UserProfile {
+  id: string;
+  email: string;
+  firstName: string;
+  lastName: string;
+  createdAt: string;
+}
+
+export interface ApiKey {
+  id: string;
+  name: string;
+  createdAt: string;
+  lastUsedAt?: string;
+}
+
+export interface CreateApiKeyDto {
+  name: string;
+}
+
 export interface AuthResponse {
   user: User;
   token: string;
@@ -39,6 +58,15 @@ export enum FieldType {
   DATE = 'DATE',
 }
 
+export enum AppleWatchMetric {
+  SLEEP = 'SLEEP',
+  STEPS = 'STEPS',
+  ACTIVE_CALORIES = 'ACTIVE_CALORIES',
+  RESTING_HEART_RATE = 'RESTING_HEART_RATE',
+  WATER_CONSUMPTION = 'WATER_CONSUMPTION',
+  MINDFULNESS_MINUTES = 'MINDFULNESS_MINUTES',
+}
+
 export interface CustomField {
   id: string;
   name: string;
@@ -49,6 +77,7 @@ export interface CustomField {
   rememberLastValue: boolean;
   min?: number;
   max?: number;
+  appleWatchMetric?: AppleWatchMetric;
   createdAt: string;
 }
 
@@ -60,6 +89,7 @@ export interface CreateCustomFieldDto {
   rememberLastValue?: boolean;
   min?: number;
   max?: number;
+  appleWatchMetric?: AppleWatchMetric;
 }
 
 export interface UpdateCustomFieldDto {
@@ -70,6 +100,7 @@ export interface UpdateCustomFieldDto {
   rememberLastValue?: boolean;
   min?: number;
   max?: number;
+  appleWatchMetric?: AppleWatchMetric;
 }
 
 interface FieldValue {

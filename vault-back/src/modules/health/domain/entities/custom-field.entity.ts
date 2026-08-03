@@ -1,5 +1,6 @@
 import { FieldType } from '../enums/field-type.enum.js';
-export { FieldType };
+import { AppleWatchMetric } from '../enums/apple-watch-metric.enum.js';
+export { FieldType, AppleWatchMetric };
 
 export class CustomField {
   constructor(
@@ -15,5 +16,6 @@ export class CustomField {
     public readonly rememberLastValue: boolean = false,
     public readonly min?: number,
     public readonly max?: number,
+    public readonly appleWatchMetric?: AppleWatchMetric,
   ) {}
 }

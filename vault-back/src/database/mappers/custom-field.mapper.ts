@@ -16,6 +16,7 @@ export class CustomFieldMapper {
       model.rememberLastValue,
       model.min,
       model.max,
+      model.appleWatchMetric,
     );
   }
 
@@ -33,6 +34,7 @@ export class CustomFieldMapper {
     model.rememberLastValue = entity.rememberLastValue;
     model.min = entity.min;
     model.max = entity.max;
+    model.appleWatchMetric = entity.appleWatchMetric;
     return model;
   }
 }

@@ -10,6 +10,7 @@ import SettingsIcon from "@mui/icons-material/Settings";
 import CloudUploadIcon from "@mui/icons-material/CloudUpload";
 import PersonIcon from "@mui/icons-material/Person";
 import AutoAwesomeIcon from "@mui/icons-material/AutoAwesome";
+import LinkIcon from "@mui/icons-material/Link";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 
@@ -19,7 +20,7 @@ export const Navbar: React.FC = () => {
   const { user, logout } = useAuth();
   const pathname = usePathname();
 
-  const authRoutes = ["/dashboard", "/import", "/fields", "/analytics", "/profile", "/ai"];
+  const authRoutes = ["/dashboard", "/import", "/fields", "/analytics", "/profile", "/ai", "/integrations"];
 
   if (!authRoutes.includes(pathname)) {
     return null;
@@ -102,6 +103,17 @@ export const Navbar: React.FC = () => {
               sx={{ borderRadius: 2 }}
             >
               Profil
+            </Button>
+            <Button
+              component={Link}
+              href="/integrations"
+              color={pathname === "/integrations" ? "primary" : "inherit"}
+              variant={pathname === "/integrations" ? "contained" : "text"}
+              startIcon={<LinkIcon />}
+              disableElevation
+              sx={{ borderRadius: 2 }}
+            >
+              Intégrations
             </Button>
           </Box>
         </Box>

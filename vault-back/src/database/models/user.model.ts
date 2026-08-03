@@ -4,6 +4,7 @@ import { BaseModel } from './base.model.js';
 import { CustomFieldModel } from './custom-field.model.js';
 import { DailyLogModel } from './daily-log.model.js';
 import { AIInsightModel } from './ai-insight.model.js';
+import { ApiKeyModel } from './api-key.model.js';
 
 @Entity('users')
 export class UserModel extends BaseModel {
@@ -33,4 +34,7 @@ export class UserModel extends BaseModel {
 
   @OneToMany(() => AIInsightModel, (aiInsight) => aiInsight.user)
   aiInsights?: Relation<AIInsightModel>[];
+
+  @OneToMany(() => ApiKeyModel, (apiKey) => apiKey.user)
+  apiKeys?: Relation<ApiKeyModel>[];
 }

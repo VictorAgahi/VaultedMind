@@ -22,7 +22,7 @@ import DeleteIcon from "@mui/icons-material/Delete";
 import AddIcon from "@mui/icons-material/Add";
 import ArrowUpwardIcon from "@mui/icons-material/ArrowUpward";
 import ArrowDownwardIcon from "@mui/icons-material/ArrowDownward";
-import { FieldType } from "@/types";
+import { FieldType, AppleWatchMetric } from "@/types";
 
 interface OptionItem {
   id: string;
@@ -38,6 +38,7 @@ export interface FieldFormData {
   rememberLastValue: boolean;
   min?: number | "";
   max?: number | "";
+  appleWatchMetric?: AppleWatchMetric | "";
 }
 
 interface FieldDialogProps {
@@ -154,6 +155,24 @@ export const FieldDialog: React.FC<FieldDialogProps> = ({
                 <MenuItem value={FieldType.NUMBER}>Nombre (ex: 75.5)</MenuItem>
                 <MenuItem value={FieldType.STRING}>Texte / Choix (ex: Très bien)</MenuItem>
                 <MenuItem value={FieldType.BOOLEAN}>Oui / Non</MenuItem>
+              </Select>
+            </FormControl>
+
+            <FormControl fullWidth>
+              <InputLabel>Associer à une métrique Apple Watch (optionnel)</InputLabel>
+              <Select
+                value={formData.appleWatchMetric || ""}
+                label="Associer à une métrique Apple Watch (optionnel)"
+                onChange={(e) => setFormData((prev) => ({ ...prev, appleWatchMetric: e.target.value as AppleWatchMetric | "" }))}
+                displayEmpty
+              >
+                <MenuItem value=""><em>Aucune métrique</em></MenuItem>
+                <MenuItem value={AppleWatchMetric.SLEEP}>Sommeil</MenuItem>
+                <MenuItem value={AppleWatchMetric.STEPS}>Pas</MenuItem>
+                <MenuItem value={AppleWatchMetric.ACTIVE_CALORIES}>Calories actives</MenuItem>
+                <MenuItem value={AppleWatchMetric.RESTING_HEART_RATE}>Rythme cardiaque au repos</MenuItem>
+                <MenuItem value={AppleWatchMetric.WATER_CONSUMPTION}>Consommation d&apos;eau</MenuItem>
+                <MenuItem value={AppleWatchMetric.MINDFULNESS_MINUTES}>Minutes de pleine conscience</MenuItem>
               </Select>
             </FormControl>
 

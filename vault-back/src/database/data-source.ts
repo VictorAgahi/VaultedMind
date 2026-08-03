@@ -7,6 +7,7 @@ import { FieldValueModel } from './models/field-value.model.js';
 import { NotificationSubscriptionModel } from './models/notification-subscription.model.js';
 
 import { AIInsightModel } from './models/ai-insight.model.js';
+import { ApiKeyModel } from './models/api-key.model.js';
 
 config();
 
@@ -25,6 +26,7 @@ export const dataSourceOptions: DataSourceOptions = {
     FieldValueModel,
     NotificationSubscriptionModel,
     AIInsightModel,
+    ApiKeyModel,
   ],
   migrations: ['dist/database/migrations/*.js'],
   synchronize: false,

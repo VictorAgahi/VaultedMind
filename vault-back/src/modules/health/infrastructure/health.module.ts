@@ -8,6 +8,8 @@ import { DailyLogController } from './controllers/daily-log.controller.js';
 import { FieldValueController } from './controllers/field-value.controller.js';
 import { BulkImportController } from './controllers/bulk-import.controller.js';
 import { HealthCheckController } from './controllers/health-check.controller.js';
+import { HealthSyncService } from '../application/services/health-sync.service.js';
+import { HealthSyncController } from './controllers/health-sync.controller.js';
 
 @Module({
   providers: [
@@ -15,6 +17,7 @@ import { HealthCheckController } from './controllers/health-check.controller.js'
     DailyLogService,
     FieldValueService,
     BulkImportService,
+    HealthSyncService,
   ],
   controllers: [
     HealthCheckController,
@@ -22,12 +25,14 @@ import { HealthCheckController } from './controllers/health-check.controller.js'
     DailyLogController,
     FieldValueController,
     BulkImportController,
+    HealthSyncController,
   ],
   exports: [
     CustomFieldService,
     DailyLogService,
     FieldValueService,
     BulkImportService,
+    HealthSyncService,
   ],
 })
 export class HealthModule {}
