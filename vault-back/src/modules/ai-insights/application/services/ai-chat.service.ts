@@ -94,7 +94,9 @@ Exemple de format :
     "reason": "Pour mieux organiser les données"
   }
 ]
-</action_suggestions>`;
+</action_suggestions>
+
+ATTENTION EXTRÊME : NE propose PAS les changements sous forme de texte, de liste ou de tableau markdown dans ta réponse. Tu dois OBLIGATOIREMENT et EXCLUSIVEMENT utiliser le bloc JSON dans les balises <action_suggestions> pour proposer ces modifications. Le système va lire ce JSON automatiquement pour afficher des boutons à l'utilisateur.`;
 
       const prompt = `Message de l'utilisateur : "${userMessage}"\n\nAssistant, réponds à l'utilisateur :`;
 

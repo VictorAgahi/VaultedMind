@@ -329,7 +329,8 @@ export function AIChatInline() {
         ref={scrollRef}
         sx={{
           flexGrow: 1,
-          p: { xs: 2, sm: 3 },
+          px: { xs: 1, sm: 2 },
+          py: { xs: 2, sm: 3 },
           overflowY: "auto",
           display: "flex",
           flexDirection: "column",
@@ -360,7 +361,7 @@ export function AIChatInline() {
                   flexDirection: msg.sender === "user" ? "row-reverse" : "row",
                   alignItems: "flex-start",
                   gap: 1.2,
-                  maxWidth: "85%",
+                  maxWidth: { xs: "95%", sm: "85%" },
                 }}
               >
                 <Avatar
@@ -417,7 +418,7 @@ export function AIChatInline() {
                     display: "flex",
                     flexDirection: "column",
                     gap: 1.5,
-                    maxWidth: "80%",
+                    maxWidth: { xs: "92%", sm: "80%" },
                     boxShadow: "0 2px 4px rgba(0,0,0,0.02)"
                   }}
                 >
