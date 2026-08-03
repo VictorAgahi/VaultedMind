@@ -10,8 +10,10 @@ import { BulkImportController } from './controllers/bulk-import.controller.js';
 import { HealthCheckController } from './controllers/health-check.controller.js';
 import { HealthSyncService } from '../application/services/health-sync.service.js';
 import { HealthSyncController } from './controllers/health-sync.controller.js';
+import { AuthModule } from 'src/modules/auth/infrastructure/auth.module.js';
 
 @Module({
+  imports: [AuthModule],
   providers: [
     CustomFieldService,
     DailyLogService,
