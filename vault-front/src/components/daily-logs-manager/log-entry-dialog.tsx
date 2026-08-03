@@ -74,6 +74,9 @@ const StringFieldGridModal: React.FC<StringFieldGridModalProps> = ({
                   <SearchIcon color="action" />
                 </InputAdornment>
               ),
+            },
+            htmlInput: {
+              inputMode: "text"
             }
           }}
           onKeyDown={(e) => {
@@ -360,6 +363,10 @@ export const LogEntryDialog: React.FC<LogEntryDialogProps> = ({
             type={field.fieldType === FieldType.NUMBER && !isHourly ? "number" : "text"}
             fullWidth
             variant="outlined"
+            inputProps={{
+              ...params.inputProps,
+              inputMode: field.fieldType === FieldType.NUMBER && !isHourly ? "decimal" : "text"
+            }}
           />
         )}
       />
