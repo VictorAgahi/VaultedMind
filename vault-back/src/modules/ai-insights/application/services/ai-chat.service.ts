@@ -110,20 +110,52 @@ Exemple de format :
       let suggestedActions: Record<string, unknown>[] | undefined = undefined;
       let cleanResponse = rawResponse;
 
+      const extractActions = (jsonStr: string): boolean => {
+        try {
+          const cleaned = jsonStr.replace(/```(?:json)?/gi, '').trim();
+          // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+          const parsed = JSON.parse(cleaned);
+
+          if (Array.isArray(parsed) && parsed.length > 0) {
+            // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+            if (parsed[0].type) {
+              suggestedActions = parsed as Record<string, unknown>[];
+              return true;
+            }
+          }
+          if (parsed && typeof parsed === 'object') {
+            // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+            if (parsed.type) {
+              suggestedActions = [parsed as Record<string, unknown>];
+              return true;
+            }
+          }
+        } catch {
+          // Ignore parse errors
+        }
+        return false;
+      };
+
       const suggestionRegex =
-        /<action_suggestions>([\s\S]*?)<\/action_suggestions>/;
+        /<action_suggestions>([\s\S]*?)<\/action_suggestions>/i;
       const match = rawResponse.match(suggestionRegex);
 
       if (match && match[1]) {
-        try {
-          const jsonStr = match[1].replace(/```(?:json)?/gi, '').trim();
-          suggestedActions = JSON.parse(jsonStr) as Record<string, unknown>[];
+        if (extractActions(match[1])) {
           cleanResponse = rawResponse.replace(suggestionRegex, '').trim();
-        } catch (e) {
-          this.logger.warn(
-            'Failed to parse suggested actions JSON from AI response',
-            e,
-          );
+        }
+      } else {
+        // Fallback: look for ```json ... ``` at the end of the text
+        const jsonBlockRegex = /```(?:json)?\s*([\s\S]*?)\s*```/gi;
+        let jsonMatch;
+        let lastMatch;
+        while ((jsonMatch = jsonBlockRegex.exec(rawResponse)) !== null) {
+          lastMatch = jsonMatch;
+        }
+        if (lastMatch && lastMatch[1]) {
+          if (extractActions(lastMatch[1])) {
+            cleanResponse = rawResponse.replace(lastMatch[0], '').trim();
+          }
         }
       }
 
