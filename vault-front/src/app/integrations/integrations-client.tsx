@@ -175,7 +175,7 @@ export const IntegrationsClient = () => {
             color="primary"
             size="large"
             startIcon={<FileDownloadIcon />}
-            href="https://www.icloud.com/shortcuts/b527d98258c74c0483c85ce954a5d5a0"
+            href="https://www.icloud.com/shortcuts/37818e9183e04705b10d9477cf3f3fe5"
             target="_blank"
             rel="noopener noreferrer"
             sx={{ borderRadius: 3, px: 4, py: 1.5, fontWeight: 700 }}
