@@ -20,6 +20,7 @@ import {
 } from "@mui/material";
 import DeleteIcon from "@mui/icons-material/Delete";
 import ContentCopyIcon from "@mui/icons-material/ContentCopy";
+import FileDownloadIcon from "@mui/icons-material/FileDownload";
 import { apiService } from "@/services/api.service";
 import { ApiKey, CreateApiKeyDto } from "@/types";
 
@@ -166,8 +167,25 @@ export const IntegrationsClient = () => {
           </pre>
         </Box>
         <Typography variant="body1" sx={{ mb: 2 }}>
-          5. Vous pouvez automatiser l&apos;exécution de ce raccourci chaque matin !
+          5. Collez cette clé dans le raccourci lorsque l&apos;application vous le demande.
         </Typography>
+        <Box sx={{ mt: 4, textAlign: "center" }}>
+          <Button
+            variant="contained"
+            color="primary"
+            size="large"
+            startIcon={<FileDownloadIcon />}
+            href="https://www.icloud.com/shortcuts/b527d98258c74c0483c85ce954a5d5a0"
+            target="_blank"
+            rel="noopener noreferrer"
+            sx={{ borderRadius: 3, px: 4, py: 1.5, fontWeight: 700 }}
+          >
+            Télécharger le raccourci Apple Santé
+          </Button>
+          <Typography variant="caption" sx={{ display: "block", mt: 1, color: "text.secondary" }}>
+            Nécessite l&apos;application Raccourcis (Shortcuts) sur iPhone.
+          </Typography>
+        </Box>
       </Paper>
 
       <Dialog open={isDialogOpen} onClose={closeDialog} fullWidth maxWidth="sm">

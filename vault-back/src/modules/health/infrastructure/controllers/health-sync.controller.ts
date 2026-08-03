@@ -13,6 +13,12 @@ export class HealthSyncController {
     @Req() req: { user: { id: string } },
     @Body() dto: AppleHealthSyncDto,
   ): Promise<{ success: boolean }> {
+    // TEMPORARY DEBUG LOG for the user to see what is received
+    console.log(
+      `[DEBUG - Apple Health Sync] User ${req.user.id} sent:`,
+      JSON.stringify(dto, null, 2),
+    );
+
     await this.healthSyncService.syncAppleWatchData(
       req.user.id,
       dto.metric,
