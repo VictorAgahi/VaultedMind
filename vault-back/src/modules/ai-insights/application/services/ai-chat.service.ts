@@ -118,19 +118,29 @@ ATTENTION EXTRÊME : NE propose PAS les changements sous forme de texte, de list
           // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
           const parsed = JSON.parse(cleaned);
 
-          if (Array.isArray(parsed) && parsed.length > 0) {
-            // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
-            if (parsed[0].type) {
-              suggestedActions = parsed as Record<string, unknown>[];
-              return true;
+          /* eslint-disable */
+          const findActionsArray = (obj: any): any[] | null => {
+            if (Array.isArray(obj)) {
+              if (obj.length > 0 && obj[0] && typeof obj[0] === 'object' && 'type' in obj[0]) {
+                return obj;
+              }
+            } else if (obj && typeof obj === 'object') {
+              if ('type' in obj && typeof obj.type === 'string') {
+                return [obj];
+              }
+              for (const key of Object.keys(obj)) {
+                const res = findActionsArray(obj[key]);
+                if (res) return res;
+              }
             }
-          }
-          if (parsed && typeof parsed === 'object') {
-            // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
-            if (parsed.type) {
-              suggestedActions = [parsed as Record<string, unknown>];
-              return true;
-            }
+            return null;
+          };
+          /* eslint-enable */
+
+          const actionsArray = findActionsArray(parsed);
+          if (actionsArray) {
+            suggestedActions = actionsArray as Record<string, unknown>[];
+            return true;
           }
         } catch {
           // Ignore parse errors
@@ -145,6 +155,11 @@ ATTENTION EXTRÊME : NE propose PAS les changements sous forme de texte, de list
       if (match && match[1]) {
         if (extractActions(match[1])) {
           cleanResponse = rawResponse.replace(suggestionRegex, '').trim();
+        } else {
+          cleanResponse = rawResponse.replace(
+            suggestionRegex,
+            '```json\n$1\n```',
+          );
         }
       } else {
         // Fallback: look for ```json ... ``` at the end of the text
