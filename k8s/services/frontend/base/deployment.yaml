@@ -23,7 +23,7 @@ spec:
         - name: ghcr-login
       containers:
       - name: frontend
-        image: ghcr.io/victoragahi/vault-frontend:a83a33f4329be6f80673d5b66382e6560855a176
+        image: ghcr.io/victoragahi/vault-frontend:82084f0ad21ffd8c7b7e3c0c3464cf6b76caef2a
         securityContext:
           allowPrivilegeEscalation: false
           capabilities:
