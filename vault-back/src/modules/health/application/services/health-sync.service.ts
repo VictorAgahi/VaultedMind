@@ -74,12 +74,11 @@ export class HealthSyncService {
 
     // Convert value to string and clean it up (Apple Shortcuts can send French commas and many decimals)
     let finalValue = String(value);
-    
     // Attempt to normalize numbers
     if (finalValue.includes(',')) {
       finalValue = finalValue.replace(',', '.');
     }
-    
+
     const numericValue = Number(finalValue);
     if (!isNaN(numericValue) && finalValue.trim() !== '') {
       // Round to 1 decimal place if it's a number (e.g. 7.45158 -> 7.5)

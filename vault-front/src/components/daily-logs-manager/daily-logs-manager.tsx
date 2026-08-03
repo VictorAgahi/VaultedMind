@@ -88,11 +88,13 @@ const reducer = (state: State, action: Action): State => {
 
 
 
+export type CalendarDayItem = { dateStr: string; dayNum: number; isLogged: boolean; log?: DailyLog; filledRatio?: number };
+
 interface LogCalendarViewProps {
   calendarDate: Date;
   setCalendarDate: React.Dispatch<React.SetStateAction<Date>>;
-  calendarDays: Array<{ dateStr: string; dayNum: number; isLogged: boolean; log?: DailyLog }>;
-  handleCalendarCellClick: (day: { dateStr: string; dayNum: number; isLogged: boolean; log?: DailyLog }) => void;
+  calendarDays: CalendarDayItem[];
+  handleCalendarCellClick: (day: CalendarDayItem) => void;
 }
 
 const LogCalendarView: React.FC<LogCalendarViewProps> = ({
@@ -198,18 +200,28 @@ const LogCalendarView: React.FC<LogCalendarViewProps> = ({
                   p: { xs: 0.5, sm: 1, md: 1.5 },
                   cursor: "pointer",
                   transition: "all 0.2s ease-in-out",
-                  bgcolor: day.isLogged ? "rgba(16, 185, 129, 0.05)" : "background.paper",
+                  bgcolor: day.isLogged 
+                    ? ((day.filledRatio ?? 0) >= 0.7 ? "rgba(16, 185, 129, 0.05)" : "rgba(234, 179, 8, 0.05)") 
+                    : "background.paper",
                   border: day.isLogged
-                    ? "1.5px solid rgba(16, 185, 129, 0.3)"
+                    ? ((day.filledRatio ?? 0) >= 0.7 ? "1.5px solid rgba(16, 185, 129, 0.3)" : "1.5px solid rgba(234, 179, 8, 0.3)")
                     : "1.5px dashed rgba(0, 0, 0, 0.08)",
-                  color: day.isLogged ? "#10b981" : "text.secondary",
+                  color: day.isLogged 
+                    ? ((day.filledRatio ?? 0) >= 0.7 ? "#10b981" : "#eab308") 
+                    : "text.secondary",
                   position: "relative",
                   '&:hover': {
                     transform: "scale(1.03)",
                     boxShadow: "0 8px 16px rgba(0,0,0,0.06)",
-                    borderColor: day.isLogged ? "#10b981" : "#6366f1",
-                    bgcolor: day.isLogged ? "rgba(16, 185, 129, 0.08)" : "rgba(99, 102, 241, 0.04)",
-                    color: day.isLogged ? "#059669" : "#6366f1"
+                    borderColor: day.isLogged 
+                      ? ((day.filledRatio ?? 0) >= 0.7 ? "#10b981" : "#eab308") 
+                      : "#6366f1",
+                    bgcolor: day.isLogged 
+                      ? ((day.filledRatio ?? 0) >= 0.7 ? "rgba(16, 185, 129, 0.08)" : "rgba(234, 179, 8, 0.08)") 
+                      : "rgba(99, 102, 241, 0.04)",
+                    color: day.isLogged 
+                      ? ((day.filledRatio ?? 0) >= 0.7 ? "#059669" : "#ca8a04") 
+                      : "#6366f1"
                   }
                 }}
               >
@@ -219,7 +231,7 @@ const LogCalendarView: React.FC<LogCalendarViewProps> = ({
 
                 <Box sx={{ display: { xs: "none", md: "flex" }, alignSelf: "flex-end", alignItems: "center" }}>
                   {day.isLogged ? (
-                    <CheckCircleIcon sx={{ fontSize: { xs: 14, md: 18 }, color: "#10b981" }} />
+                    <CheckCircleIcon sx={{ fontSize: { xs: 14, md: 18 }, color: (day.filledRatio ?? 0) >= 0.7 ? "#10b981" : "#eab308" }} />
                   ) : (
                     <AddIcon sx={{ fontSize: { xs: 14, md: 18 }, opacity: 0.3 }} />
                   )}
@@ -313,13 +325,13 @@ interface UseDailyLogsReturn {
   activeFields: CustomField[];
   filteredLogs: DailyLog[];
   historicalValues: Record<string, string[]>;
-  calendarDays: Array<{ dateStr: string; dayNum: number; isLogged: boolean; log?: DailyLog }>;
+  calendarDays: CalendarDayItem[];
   selectedFieldsValue: CustomField[];
   handleOpen: (log?: DailyLog) => void;
   handleClose: () => void;
   handleSubmit: (e: React.FormEvent) => Promise<void>;
   handleDelete: (id: string) => Promise<void>;
-  handleCalendarCellClick: (day: { dateStr: string; dayNum: number; isLogged: boolean; log?: DailyLog }) => void;
+  handleCalendarCellClick: (day: CalendarDayItem) => void;
 }
 
 const useDailyLogs = (): UseDailyLogsReturn => {
@@ -524,7 +536,7 @@ const useDailyLogs = (): UseDailyLogsReturn => {
     // Total days in the month
     const totalDays = new Date(year, month + 1, 0).getDate();
 
-    const daysArray: { dateStr: string; dayNum: number; isLogged: boolean; log?: DailyLog }[] = [];
+    const daysArray: CalendarDayItem[] = [];
 
     // Fill previous month padding
     for (let i = 0; i < startDayOfWeek; i++) {
@@ -541,18 +553,23 @@ const useDailyLogs = (): UseDailyLogsReturn => {
     for (let day = 1; day <= totalDays; day++) {
       const dStr = `${year}-${String(month + 1).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
       const log = logsByDate.get(dStr);
+      let filledRatio = 0;
+      if (log && log.fieldValues && activeFields.length > 0) {
+        filledRatio = log.fieldValues.length / activeFields.length;
+      }
       daysArray.push({
         dateStr: dStr,
         dayNum: day,
         isLogged: !!log,
-        log
+        log,
+        filledRatio
       });
     }
 
     return daysArray;
-  }, [logs, calendarDate]);
+  }, [logs, calendarDate, activeFields]);
 
-  const handleCalendarCellClick = (day: { dateStr: string; dayNum: number; isLogged: boolean; log?: DailyLog }) => {
+  const handleCalendarCellClick = (day: CalendarDayItem) => {
     if (!day.dateStr) return;
     if (day.isLogged && day.log) {
       handleOpen(day.log);
