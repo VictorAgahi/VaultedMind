@@ -11,7 +11,13 @@ import {
   ListItem,
   Avatar,
   CircularProgress,
-  Alert
+  Alert,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
+  Chip,
+  Button
 } from "@mui/material";
 import SmartToyIcon from "@mui/icons-material/SmartToy";
 import PersonIcon from "@mui/icons-material/Person";
@@ -107,6 +113,7 @@ const JOKES = [
 
 export function ChatSuggestedActionsList({ actions }: { actions: ChatSuggestedAction[] }) {
   const [completed, setCompleted] = React.useState<string[]>([]);
+  const [selectedAction, setSelectedAction] = React.useState<{ action: ChatSuggestedAction, idx: number } | null>(null);
   
   const handleApply = async (action: ChatSuggestedAction, idx: number) => {
     try {
@@ -133,6 +140,7 @@ export function ChatSuggestedActionsList({ actions }: { actions: ChatSuggestedAc
         });
       }
       setCompleted(prev => [...prev, String(idx)]);
+      setSelectedAction(null);
       window.dispatchEvent(new CustomEvent("custom-fields-updated"));
     } catch (e) {
       console.error("Failed to apply AI action:", e);
@@ -145,36 +153,88 @@ export function ChatSuggestedActionsList({ actions }: { actions: ChatSuggestedAc
   return (
     <Box sx={{ mt: 2, display: "flex", flexDirection: "column", gap: 1 }}>
       <Typography variant="caption" sx={{ fontWeight: 700, color: "primary.main", textTransform: "uppercase" }}>
-        ✨ Actions Suggérées
+        ✨ Actions Suggérées ({actions.length - completed.length})
       </Typography>
-      {actions.map((action, idx) => {
-        const isDone = completed.includes(String(idx));
-        if (isDone) return null;
-        
-        return (
-          <Paper key={idx} variant="outlined" sx={{ p: 1.5, borderRadius: 2, bgcolor: "#f8fafc", display: "flex", justifyContent: "space-between", alignItems: "center", gap: 2 }}>
-            <Box>
-              <Typography variant="body2" sx={{ fontWeight: 700, color: "#1e293b" }}>
-                {action.type === "CREATE_FIELD" && `Créer le champ : ${action.name}`}
-                {action.type === "DEACTIVATE_FIELD" && `Désactiver : ${action.name}`}
-                {action.type === "UPDATE_CATEGORY" && `Déplacer ${action.name} vers ${action.category}`}
+      <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1 }}>
+        {actions.map((action, idx) => {
+          const isDone = completed.includes(String(idx));
+          if (isDone) return null;
+          
+          let label = action.name;
+          if (action.type === "DEACTIVATE_FIELD") label = `Désactiver ${action.name}`;
+          
+          return (
+            <Chip
+              key={idx}
+              label={label}
+              onClick={() => setSelectedAction({ action, idx })}
+              color="primary"
+              variant="outlined"
+              sx={{ fontWeight: 500, bgcolor: 'rgba(99, 102, 241, 0.05)', borderColor: 'primary.main' }}
+            />
+          );
+        })}
+      </Box>
+
+      <Dialog 
+        open={Boolean(selectedAction)} 
+        onClose={() => setSelectedAction(null)}
+        maxWidth="sm"
+        fullWidth
+        sx={{ "& .MuiDialog-paper": { borderRadius: 3 } }}
+      >
+        {selectedAction && (
+          <>
+            <DialogTitle sx={{ pb: 1 }}>
+              {selectedAction.action.type === "CREATE_FIELD" && "Créer un nouveau champ"}
+              {selectedAction.action.type === "DEACTIVATE_FIELD" && "Désactiver le champ"}
+              {selectedAction.action.type === "UPDATE_CATEGORY" && "Mettre à jour la catégorie"}
+            </DialogTitle>
+            <DialogContent dividers>
+              <Typography variant="h6" sx={{ mb: 2, fontWeight: 'bold' }}>
+                {selectedAction.action.name}
               </Typography>
-              {action.reason && (
-                <Typography variant="caption" sx={{ color: "#64748b", display: "block", lineHeight: 1.2 }}>
-                  {action.reason}
-                </Typography>
-              )}
-            </Box>
-            <IconButton
-              size="small"
-              onClick={() => handleApply(action, idx)}
-              sx={{ bgcolor: "primary.main", color: "white", "&:hover": { bgcolor: "primary.dark" } }}
-            >
-              <SendIcon sx={{ fontSize: "1rem" }} />
-            </IconButton>
-          </Paper>
-        );
-      })}
+              
+              <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
+                {selectedAction.action.type === "CREATE_FIELD" && (
+                  <Typography variant="body2">
+                    <strong>Type :</strong> {selectedAction.action.fieldType}
+                  </Typography>
+                )}
+                {selectedAction.action.category && (
+                  <Typography variant="body2">
+                    <strong>Catégorie :</strong> {selectedAction.action.category}
+                  </Typography>
+                )}
+                {selectedAction.action.reason && (
+                  <Box sx={{ mt: 1, p: 2, bgcolor: '#f8fafc', borderRadius: 2 }}>
+                    <Typography variant="caption" sx={{ fontWeight: 'bold', color: 'text.secondary', display: 'block', mb: 0.5 }}>
+                      Pourquoi cette suggestion ?
+                    </Typography>
+                    <Typography variant="body2" sx={{ fontStyle: 'italic', color: 'text.secondary' }}>
+                      "{selectedAction.action.reason}"
+                    </Typography>
+                  </Box>
+                )}
+              </Box>
+            </DialogContent>
+            <DialogActions sx={{ p: 2, justifyContent: 'space-between' }}>
+              <Button onClick={() => setSelectedAction(null)} color="inherit">
+                Retour
+              </Button>
+              <Button 
+                variant="contained" 
+                color="primary" 
+                onClick={() => handleApply(selectedAction.action, selectedAction.idx)}
+                endIcon={<SendIcon />}
+                sx={{ borderRadius: 2, px: 3 }}
+              >
+                Appliquer
+              </Button>
+            </DialogActions>
+          </>
+        )}
+      </Dialog>
     </Box>
   );
 }

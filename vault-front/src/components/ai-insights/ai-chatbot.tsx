@@ -132,7 +132,7 @@ const MessageList: React.FC<MessageListProps> = ({ messages, isPending, thinking
               flexDirection: msg.sender === "user" ? "row-reverse" : "row",
               alignItems: "flex-start",
               gap: 1.2,
-              maxWidth: "85%",
+              maxWidth: msg.sender === "user" ? "85%" : "95%",
             }}
           >
             <Avatar
@@ -517,9 +517,9 @@ export function AIChatBot() {
             right: { xs: 0, sm: 24 },
             display: "flex",
             flexDirection: "column",
-            height: { xs: "100dvh", md: "600px" },
+            height: { xs: "100dvh", md: "650px" },
             width: "100%",
-            maxWidth: { xs: "100%", md: "400px" },
+            maxWidth: { xs: "100%", md: "500px" },
             borderRadius: { xs: 0, sm: "24px" },
             overflow: "hidden",
             zIndex: 1050,
