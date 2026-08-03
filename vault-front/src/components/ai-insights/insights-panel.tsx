@@ -262,6 +262,7 @@ interface SuggestedField {
   name: string;
   fieldType?: "STRING" | "NUMBER" | "BOOLEAN" | "DATE";
   category?: string;
+  options?: string[];
   reason?: string;
 }
 
@@ -347,6 +348,7 @@ function InsightCard({
         name: field.name,
         fieldType: field.fieldType || "NUMBER",
         category: field.category || "Général",
+        optionsOrder: field.options,
         rememberLastValue: true, // Default to true for ease of use
       };
       await apiService.post("/health/custom-fields", dto);

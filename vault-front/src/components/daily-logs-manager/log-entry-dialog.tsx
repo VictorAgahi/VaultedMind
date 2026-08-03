@@ -315,7 +315,10 @@ export const LogEntryDialog: React.FC<LogEntryDialogProps> = ({
       }
     }
 
-    const options = historicalValues[field.id] || [];
+    const options = Array.from(new Set([
+      ...(field.optionsOrder || []),
+      ...(historicalValues[field.id] || [])
+    ]));
 
     if (field.fieldType === FieldType.STRING) {
       return (

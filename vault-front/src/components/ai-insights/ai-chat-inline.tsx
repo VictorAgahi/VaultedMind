@@ -33,6 +33,7 @@ export interface ChatSuggestedAction {
   name: string;
   fieldType?: string;
   category?: string;
+  options?: string[];
   reason?: string;
 }
 
@@ -128,6 +129,7 @@ export function ChatSuggestedActionsList({ actions }: { actions: ChatSuggestedAc
           name: action.name,
           fieldType: cleanFieldType,
           category: action.category || "Général",
+          optionsOrder: action.options,
           rememberLastValue: true,
         });
       } else if (action.type === "DEACTIVATE_FIELD" && action.id) {

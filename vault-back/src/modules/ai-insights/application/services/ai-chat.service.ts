@@ -75,9 +75,10 @@ Exemple de format :
 [
   {
     "type": "CREATE_FIELD",
-    "name": "Nouveau champ",
-    "fieldType": "NUMBER", // OBLIGATOIRE: "STRING", "NUMBER", "BOOLEAN" ou "DATE"
-    "category": "Catégorie suggérée",
+    "name": "Humeur",
+    "fieldType": "STRING", // OBLIGATOIRE: "STRING", "NUMBER", "BOOLEAN" ou "DATE"
+    "category": "Santé mentale",
+    "options": ["Maniaque", "Dépressif", "Stable"], // Optionnel: suggère des valeurs par défaut pertinentes (pour les champs STRING)
     "reason": "Explication de pourquoi créer ce champ"
   },
   {
@@ -140,26 +141,44 @@ ATTENTION EXTRÊME : NE propose PAS les changements sous forme de texte, de list
           const actionsArray = findActionsArray(parsed);
           if (actionsArray) {
             // Resolve missing IDs by matching the name against the user's fields
+            const validActions = [];
+            /* eslint-disable @typescript-eslint/no-unsafe-assignment */
             for (const action of actionsArray) {
               const act = action as Record<string, any>;
               if (
-                (act.type === 'UPDATE_CATEGORY' ||
-                  act.type === 'DEACTIVATE_FIELD') &&
-                (!act.id ||
-                  typeof act.id !== 'string' ||
-                  !act.id.match(/^[0-9a-f]{8}-/i)) &&
-                act.name
+                act.type === 'UPDATE_CATEGORY' ||
+                act.type === 'DEACTIVATE_FIELD'
               ) {
-                const field = fields.find(
-                  (f) =>
-                    f.name.toLowerCase() === (act.name as string).toLowerCase(),
-                );
-                if (field) {
-                  act.id = field.id;
+                const isValidId =
+                  act.id &&
+                  typeof act.id === 'string' &&
+                  act.id.match(/^[0-9a-f]{8}-/i);
+                if (!isValidId) {
+                  const searchName = act.name || act.id;
+                  if (typeof searchName === 'string') {
+                    const field = fields.find(
+                      (f) => f.name.toLowerCase() === searchName.toLowerCase(),
+                    );
+                    if (field) {
+                      act.id = field.id;
+                      act.name = field.name;
+                    }
+                  }
                 }
+                // Verify again after resolution
+                if (
+                  act.id &&
+                  typeof act.id === 'string' &&
+                  act.id.match(/^[0-9a-f]{8}-/i)
+                ) {
+                  validActions.push(act);
+                }
+              } else {
+                validActions.push(act);
               }
             }
-            suggestedActions = actionsArray as Record<string, unknown>[];
+            /* eslint-enable @typescript-eslint/no-unsafe-assignment */
+            suggestedActions = validActions as Record<string, unknown>[];
             return true;
           }
         } catch {
