@@ -459,7 +459,7 @@ export function AIChatBot() {
 
     startTransition(async () => {
       try {
-        const { response } = await apiService.post<{ response: string }>(
+        const { response, suggestedActions } = await apiService.post<{ response: string; suggestedActions?: ChatSuggestedAction[] }>(
           "/health/ai-chat",
           { message: inputValue }
         );
@@ -468,6 +468,7 @@ export function AIChatBot() {
           id: (Date.now() + 1).toString(),
           text: response,
           sender: "ai",
+          suggestedActions,
         };
 
         dispatch({ type: "SEND_MESSAGE_SUCCESS", payload: aiMsg });
