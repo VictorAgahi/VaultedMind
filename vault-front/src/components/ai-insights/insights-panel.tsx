@@ -30,6 +30,7 @@ import { apiService } from "@/services/api.service";
 import { AIInsightResponseDto } from "@/types";
 import EmojiEventsIcon from "@mui/icons-material/EmojiEvents";
 import { WhackABardella } from "./whack-a-bardella";
+import { ChatSuggestedActionsList, ChatSuggestedAction } from "./ai-chat-inline";
 
 function getErrorMessage(error: unknown): string {
   if (error instanceof Error) return error.message;
@@ -416,6 +417,11 @@ function InsightCard({
         {/* Content — collapsible */}
         <Collapse in={expanded} collapsedSize={80}>
           <MarkdownRenderer content={insight.content} />
+          {expanded && !!insight.metadata?.actionSuggestions && (
+            <Box sx={{ mt: 2, pt: 2, borderTop: "1px dashed #cbd5e1" }}>
+              <ChatSuggestedActionsList actions={insight.metadata.actionSuggestions as ChatSuggestedAction[]} />
+            </Box>
+          )}
           {expanded && !!insight.metadata?.suggestedFields && (
             <SuggestedFieldsList
               suggestedFields={

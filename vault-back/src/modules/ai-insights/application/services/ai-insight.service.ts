@@ -172,20 +172,44 @@ export class AIInsightService {
 
       // ── EXTRACT SUGGESTED FIELDS ──────────────────────────────────────────
       let finalContent = content;
-      let suggestedFields: Record<string, unknown>[] = [];
-      const match = content.match(
-        /<suggested_fields>([\s\S]*?)<\/suggested_fields>/,
+      let actionSuggestions: Record<string, unknown>[] = [];
+
+      // Try the new <action_suggestions> tag
+      const actionMatch = content.match(
+        /<action_suggestions>([\s\S]*?)<\/action_suggestions>/i,
       );
-      if (match && match[1]) {
+      if (actionMatch && actionMatch[1]) {
         try {
-          const jsonStr = match[1].replace(/```(?:json)?/gi, '').trim();
-          suggestedFields = JSON.parse(jsonStr) as Record<string, unknown>[];
-          // Remove the tag from the final content
+          const jsonStr = actionMatch[1].replace(/```(?:json)?/gi, '').trim();
+          actionSuggestions = JSON.parse(jsonStr) as Record<string, unknown>[];
           finalContent = content
-            .replace(/<suggested_fields>[\s\S]*?<\/suggested_fields>/, '')
+            .replace(/<action_suggestions>[\s\S]*?<\/action_suggestions>/i, '')
             .trim();
         } catch (e) {
-          this.logger.error('Failed to parse suggested fields JSON', e);
+          this.logger.error('Failed to parse action suggestions JSON', e);
+        }
+      } else {
+        // Fallback for older <suggested_fields> tag
+        const match = content.match(
+          /<suggested_fields>([\s\S]*?)<\/suggested_fields>/i,
+        );
+        if (match && match[1]) {
+          try {
+            const jsonStr = match[1].replace(/```(?:json)?/gi, '').trim();
+            const legacyFields = JSON.parse(jsonStr) as Record<
+              string,
+              unknown
+            >[];
+            actionSuggestions = legacyFields.map((f) => ({
+              ...f,
+              type: 'CREATE_FIELD',
+            }));
+            finalContent = content
+              .replace(/<suggested_fields>[\s\S]*?<\/suggested_fields>/i, '')
+              .trim();
+          } catch (e) {
+            this.logger.error('Failed to parse suggested fields JSON', e);
+          }
         }
       }
 
@@ -207,8 +231,8 @@ export class AIInsightService {
           agentsUsed: 6,
           pipelineDurationSeconds: parseFloat(totalTime),
           model: useGpt55 ? 'gpt-5.5' : 'gpt-5.6-sol',
-          suggestedFields:
-            suggestedFields.length > 0 ? suggestedFields : undefined,
+          actionSuggestions:
+            actionSuggestions.length > 0 ? actionSuggestions : undefined,
         },
         new Date(),
         new Date(),

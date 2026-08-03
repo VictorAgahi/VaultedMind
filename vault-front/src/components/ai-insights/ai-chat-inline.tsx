@@ -114,9 +114,9 @@ const JOKES = [
 
 export function ChatSuggestedActionsList({ actions }: { actions: ChatSuggestedAction[] }) {
   const [completed, setCompleted] = React.useState<string[]>([]);
-  const [selectedAction, setSelectedAction] = React.useState<{ action: ChatSuggestedAction, idx: number } | null>(null);
+  const [selectedAction, setSelectedAction] = React.useState<{ action: ChatSuggestedAction, idx: number, editedOptions?: string[] } | null>(null);
   
-  const handleApply = async (action: ChatSuggestedAction, idx: number) => {
+  const handleApply = async (action: ChatSuggestedAction, idx: number, editedOptions?: string[]) => {
     try {
       if (action.type === "CREATE_FIELD") {
         let cleanFieldType = (action.fieldType || "STRING").toUpperCase();
@@ -129,7 +129,7 @@ export function ChatSuggestedActionsList({ actions }: { actions: ChatSuggestedAc
           name: action.name,
           fieldType: cleanFieldType,
           category: action.category || "Général",
-          optionsOrder: action.options,
+          optionsOrder: editedOptions !== undefined ? editedOptions : action.options,
           rememberLastValue: true,
         });
       } else if (action.type === "DEACTIVATE_FIELD" && action.id) {
@@ -169,7 +169,7 @@ export function ChatSuggestedActionsList({ actions }: { actions: ChatSuggestedAc
             <Chip
               key={idx}
               label={label}
-              onClick={() => setSelectedAction({ action, idx })}
+              onClick={() => setSelectedAction({ action, idx, editedOptions: action.options ? [...action.options] : undefined })}
               color="primary"
               variant="outlined"
               sx={{ fontWeight: 500, bgcolor: 'rgba(99, 102, 241, 0.05)', borderColor: 'primary.main' }}
@@ -199,9 +199,35 @@ export function ChatSuggestedActionsList({ actions }: { actions: ChatSuggestedAc
               
               <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
                 {selectedAction.action.type === "CREATE_FIELD" && (
-                  <Typography variant="body2">
-                    <strong>Type :</strong> {selectedAction.action.fieldType}
-                  </Typography>
+                  <>
+                    <Typography variant="body2">
+                      <strong>Type :</strong> {selectedAction.action.fieldType}
+                    </Typography>
+                    {selectedAction.editedOptions && selectedAction.editedOptions.length > 0 && (
+                      <Box sx={{ mt: 1 }}>
+                        <Typography variant="body2" sx={{ mb: 1 }}>
+                          <strong>Options suggérées (cliquez pour retirer) :</strong>
+                        </Typography>
+                        <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1 }}>
+                          {selectedAction.editedOptions.map((opt, i) => (
+                            <Chip 
+                              key={i} 
+                              label={opt} 
+                              onDelete={() => {
+                                setSelectedAction(prev => {
+                                  if (!prev || !prev.editedOptions) return prev;
+                                  return { ...prev, editedOptions: prev.editedOptions.filter((_, index) => index !== i) };
+                                });
+                              }} 
+                              color="primary" 
+                              variant="outlined"
+                              size="small"
+                            />
+                          ))}
+                        </Box>
+                      </Box>
+                    )}
+                  </>
                 )}
                 {selectedAction.action.category && (
                   <Typography variant="body2">
@@ -227,7 +253,7 @@ export function ChatSuggestedActionsList({ actions }: { actions: ChatSuggestedAc
               <Button 
                 variant="contained" 
                 color="primary" 
-                onClick={() => handleApply(selectedAction.action, selectedAction.idx)}
+                onClick={() => handleApply(selectedAction.action, selectedAction.idx, selectedAction.editedOptions)}
                 endIcon={<SendIcon />}
                 sx={{ borderRadius: 2, px: 3 }}
               >
