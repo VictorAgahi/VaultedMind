@@ -10,7 +10,6 @@ import {
   Chip,
   Stack,
   Button,
-  Tooltip,
   IconButton,
   Dialog,
   DialogTitle,
@@ -23,7 +22,6 @@ import TrendingDownIcon from "@mui/icons-material/TrendingDown";
 import TrendingFlatIcon from "@mui/icons-material/TrendingFlat";
 import AutoAwesomeIcon from "@mui/icons-material/AutoAwesome";
 import InfoOutlinedIcon from "@mui/icons-material/InfoOutlined";
-import { useRouter } from "next/navigation";
 import { apiService } from "@/services/api.service";
 import { CustomField, DailyLog, FieldType } from "@/types";
 import { calculatePearsonCorrelation } from "@/utils/math";
@@ -222,7 +220,6 @@ function ScoreRing({ score }: { score: number }) {
 }
 
 export function WellnessScoreCard() {
-  const router = useRouter();
   const [state, dispatch] = useReducer(wellnessReducer, { fields: [], logs: [], loading: true });
   const [breakdownOpen, setBreakdownOpen] = React.useState(false);
 
@@ -462,7 +459,7 @@ export function WellnessScoreCard() {
           <DialogTitle sx={{ fontWeight: 'bold' }}>Détail de ton Score ({thisScoreObj.score}/100)</DialogTitle>
           <DialogContent dividers>
             <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
-              Ce score reflète ta tendance globale de la semaine. Chaque champ numérique ou booléen est comparé à son historique pour savoir si tu es proche de ton "minimum" ou de ton "maximum". Le tout forme une moyenne sur 100.
+              Ce score reflète ta tendance globale de la semaine. Chaque champ numérique ou booléen est comparé à son historique pour savoir si tu es proche de ton &quot;minimum&quot; ou de ton &quot;maximum&quot;. Le tout forme une moyenne sur 100.
             </Typography>
             <Stack spacing={2}>
               {thisScoreObj.breakdown.map((item) => (
@@ -497,7 +494,7 @@ export function WellnessScoreCard() {
                 if (btn) btn.click();
               }}
             >
-              Demander à l'IA d'analyser
+              Demander à l&apos;IA d&apos;analyser
             </Button>
           </DialogActions>
         </Dialog>

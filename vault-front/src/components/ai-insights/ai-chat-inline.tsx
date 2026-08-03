@@ -212,7 +212,7 @@ export function ChatSuggestedActionsList({ actions }: { actions: ChatSuggestedAc
                       Pourquoi cette suggestion ?
                     </Typography>
                     <Typography variant="body2" sx={{ fontStyle: 'italic', color: 'text.secondary' }}>
-                      "{selectedAction.action.reason}"
+                      &quot;{selectedAction.action.reason}&quot;
                     </Typography>
                   </Box>
                 )}
