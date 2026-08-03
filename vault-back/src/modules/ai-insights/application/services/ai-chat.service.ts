@@ -176,6 +176,12 @@ ATTENTION EXTRÊME : NE propose PAS les changements sous forme de texte, de list
         }
       }
 
+      this.logger.log(`[AIChat] Raw LLM Response for user ${userId}:`);
+      this.logger.log(rawResponse);
+      this.logger.log(
+        `[AIChat] Parsed suggestedActions: ${JSON.stringify(suggestedActions)}`,
+      );
+
       return { response: cleanResponse, suggestedActions };
     } catch (error) {
       this.logger.error(`Error in AIChatService for user ${userId}:`, error);
