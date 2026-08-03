@@ -111,9 +111,15 @@ export function ChatSuggestedActionsList({ actions }: { actions: ChatSuggestedAc
   const handleApply = async (action: ChatSuggestedAction, idx: number) => {
     try {
       if (action.type === "CREATE_FIELD") {
+        let cleanFieldType = (action.fieldType || "STRING").toUpperCase();
+        if (cleanFieldType === "TEXT") cleanFieldType = "STRING";
+        if (!["STRING", "NUMBER", "BOOLEAN", "DATE"].includes(cleanFieldType)) {
+          cleanFieldType = "STRING";
+        }
+        
         await apiService.post("/health/custom-fields", {
           name: action.name,
-          fieldType: action.fieldType || "NUMBER",
+          fieldType: cleanFieldType,
           category: action.category || "Général",
           rememberLastValue: true,
         });

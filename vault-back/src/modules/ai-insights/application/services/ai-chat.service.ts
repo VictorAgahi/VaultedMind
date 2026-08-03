@@ -76,7 +76,7 @@ Exemple de format :
   {
     "type": "CREATE_FIELD",
     "name": "Nouveau champ",
-    "fieldType": "NUMBER",
+    "fieldType": "NUMBER", // OBLIGATOIRE: "STRING", "NUMBER", "BOOLEAN" ou "DATE"
     "category": "Catégorie suggérée",
     "reason": "Explication de pourquoi créer ce champ"
   },
