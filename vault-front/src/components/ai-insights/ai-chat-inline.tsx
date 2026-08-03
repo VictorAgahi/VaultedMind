@@ -105,7 +105,7 @@ const JOKES = [
   "Traitement en cours... (Et non, je ne lis pas dans vos pensées, seulement vos logs)"
 ];
 
-function ChatSuggestedActionsList({ actions }: { actions: ChatSuggestedAction[] }) {
+export function ChatSuggestedActionsList({ actions }: { actions: ChatSuggestedAction[] }) {
   const [completed, setCompleted] = React.useState<string[]>([]);
   
   const handleApply = async (action: ChatSuggestedAction, idx: number) => {

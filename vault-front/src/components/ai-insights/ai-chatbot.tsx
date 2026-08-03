@@ -24,11 +24,13 @@ import { apiService } from "@/services/api.service";
 import { useAuth } from "@/context/auth-context";
 import { MarkdownRenderer } from "./insights-panel";
 import { WhackABardella } from "./whack-a-bardella";
+import { ChatSuggestedAction, ChatSuggestedActionsList } from "./ai-chat-inline";
 
 interface Message {
   id: string;
   text: string;
   sender: "user" | "ai";
+  suggestedActions?: ChatSuggestedAction[];
 }
 
 interface ChatHeaderProps {
@@ -163,7 +165,10 @@ const MessageList: React.FC<MessageListProps> = ({ messages, isPending, thinking
                   {msg.text}
                 </Typography>
               ) : (
-                <MarkdownRenderer content={msg.text} />
+                <Box sx={{ "& p": { m: 0, mb: 1, "&:last-child": { mb: 0 } }, "& ul, & ol": { mt: 0, mb: 1, pl: 2 } }}>
+                  <MarkdownRenderer content={msg.text} />
+                  {msg.suggestedActions && <ChatSuggestedActionsList actions={msg.suggestedActions} />}
+                </Box>
               )}
             </Paper>
           </Box>
@@ -216,9 +221,9 @@ interface ChatInputProps {
 
 const ChatInput: React.FC<ChatInputProps> = ({ value, onChange, onSend, disabled }) => (
   <Box sx={{
-    px: 2,
+    px: { xs: 1, sm: 2 },
     pt: 2,
-    pb: { xs: "calc(env(safe-area-inset-bottom, 0px) + 72px)", sm: 2 },
+    pb: { xs: 2, sm: 2 },
     bgcolor: "white",
     borderTop: "1px solid #e2e8f0",
     flexShrink: 0,
@@ -509,11 +514,11 @@ export function AIChatBot() {
             position: "fixed",
             bottom: { xs: 0, sm: 96 },
             right: { xs: 0, sm: 24 },
-            width: { xs: "100%", sm: 380 },
-            height: { xs: "100%", sm: 550 },
-            maxHeight: { xs: "none", sm: 650 },
             display: "flex",
             flexDirection: "column",
+            height: { xs: "100dvh", md: "600px" },
+            width: "100%",
+            maxWidth: { xs: "100%", md: "400px" },
             borderRadius: { xs: 0, sm: "24px" },
             overflow: "hidden",
             zIndex: 1050,
