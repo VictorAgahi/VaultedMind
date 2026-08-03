@@ -24,8 +24,10 @@ import {
   Shield as ShieldIcon,
   SmartToy as SmartToyIcon,
   Save as SaveIcon,
-  AutoAwesome as AutoAwesomeIcon
+  AutoAwesome as AutoAwesomeIcon,
+  Link as LinkIcon
 } from "@mui/icons-material";
+import Link from "next/link";
 import { useAuth } from "@/context/auth-context";
 import { Navbar } from "@/components/navbar/navbar";
 import { apiService } from "@/services/api.service";
@@ -430,6 +432,26 @@ export default function ProfilePage() {
             </Stack>
           </Paper>
         )}
+
+        <Paper elevation={0} sx={{ p: 3, borderRadius: 4, bgcolor: "background.paper", border: "1px solid", borderColor: "divider", mb: 3 }}>
+          <Typography variant="subtitle1" gutterBottom sx={{ fontWeight: 600, display: "flex", alignItems: "center" }}>
+            <LinkIcon sx={{ mr: 1, fontSize: 20, color: "primary.main" }} />
+            Intégrations (Apple Santé)
+          </Typography>
+          <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
+            Connectez vos appareils et applications externes (comme Apple Watch et Apple Santé) pour synchroniser automatiquement vos données de santé avec Vaulted Mind.
+          </Typography>
+          <Button
+            component={Link}
+            href="/integrations"
+            variant="outlined"
+            fullWidth
+            startIcon={<LinkIcon />}
+            sx={{ borderRadius: 3, py: 1.2, textTransform: "none", fontWeight: 600 }}
+          >
+            Gérer mes intégrations
+          </Button>
+        </Paper>
 
         <Paper elevation={0} sx={{ p: 3, borderRadius: 4, bgcolor: "background.paper", border: "1px solid", borderColor: "divider", mb: 3 }}>
           <Typography variant="subtitle1" gutterBottom sx={{ fontWeight: 600, display: "flex", alignItems: "center" }}>

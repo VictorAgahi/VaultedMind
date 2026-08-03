@@ -159,12 +159,15 @@ export const FieldDialog: React.FC<FieldDialogProps> = ({
             </FormControl>
 
             <FormControl fullWidth>
-              <InputLabel>Associer à une métrique Apple Watch (optionnel)</InputLabel>
+              <InputLabel id="apple-watch-label" shrink>Associer à une métrique Apple Watch (optionnel)</InputLabel>
               <Select
+                labelId="apple-watch-label"
+                id="apple-watch-select"
                 value={formData.appleWatchMetric || ""}
                 label="Associer à une métrique Apple Watch (optionnel)"
                 onChange={(e) => setFormData((prev) => ({ ...prev, appleWatchMetric: e.target.value as AppleWatchMetric | "" }))}
                 displayEmpty
+                notched
               >
                 <MenuItem value=""><em>Aucune métrique</em></MenuItem>
                 <MenuItem value={AppleWatchMetric.SLEEP}>Sommeil</MenuItem>
