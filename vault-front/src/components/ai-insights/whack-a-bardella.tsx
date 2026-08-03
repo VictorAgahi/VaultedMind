@@ -27,9 +27,9 @@ export const WhackABardella = () => {
   }, [score]);
 
   const getMessage = () => {
-    if (score >= 40) return " Vous êtes le nouveau Premier Ministre ! 👑";
-    if (score >= 30) return " Cohabitation difficile... 🥊";
-    if (score >= 15) return " Dissolution en cours... 🌪️";
+    if (score >= 12) return " Vous êtes le nouveau Premier Ministre ! 👑";
+    if (score >= 10) return " Cohabitation difficile... 🥊";
+    if (score >= 7) return " Dissolution en cours... 🌪️";
     if (score >= 5) return " La République vous remercie ! 🇫🇷";
     return "";
   };
@@ -92,6 +92,7 @@ export const WhackABardella = () => {
             }}
           >
             {activeMole?.index === i ? (
+              /* eslint-disable-next-line @next/next/no-img-element */
               <img 
                 src={getImageUrl(activeMole.type)}
                 alt={activeMole.type} 

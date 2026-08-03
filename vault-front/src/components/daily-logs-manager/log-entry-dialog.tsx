@@ -164,7 +164,6 @@ interface LogEntryDialogProps {
 export const LogEntryDialog: React.FC<LogEntryDialogProps> = ({
   open,
   onClose,
-  isEditing,
   logDate,
   setLogDate,
   notes,
@@ -355,7 +354,7 @@ export const LogEntryDialog: React.FC<LogEntryDialogProps> = ({
         options={options}
         value={value}
         onInputChange={(_, newInputValue) => onFieldValueChange(field.id, newInputValue)}
-        renderInput={(params: any) => (
+        renderInput={(params: import("@mui/material").AutocompleteRenderInputParams) => (
           <TextField
             {...params}
             margin="dense"
@@ -366,6 +365,7 @@ export const LogEntryDialog: React.FC<LogEntryDialogProps> = ({
             slotProps={{
               ...params.slotProps,
               htmlInput: {
+                // @ts-expect-error MUI v5/v6 compatibility
                 ...(params.slotProps?.htmlInput || params.inputProps),
                 inputMode: field.fieldType === FieldType.NUMBER && !isHourly ? "decimal" : "text"
               }
