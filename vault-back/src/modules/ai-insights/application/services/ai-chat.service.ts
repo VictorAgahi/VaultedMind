@@ -139,6 +139,26 @@ ATTENTION EXTRÊME : NE propose PAS les changements sous forme de texte, de list
 
           const actionsArray = findActionsArray(parsed);
           if (actionsArray) {
+            // Resolve missing IDs by matching the name against the user's fields
+            for (const action of actionsArray) {
+              const act = action as Record<string, any>;
+              if (
+                (act.type === 'UPDATE_CATEGORY' ||
+                  act.type === 'DEACTIVATE_FIELD') &&
+                (!act.id ||
+                  typeof act.id !== 'string' ||
+                  !act.id.match(/^[0-9a-f]{8}-/i)) &&
+                act.name
+              ) {
+                const field = fields.find(
+                  (f) =>
+                    f.name.toLowerCase() === (act.name as string).toLowerCase(),
+                );
+                if (field) {
+                  act.id = field.id;
+                }
+              }
+            }
             suggestedActions = actionsArray as Record<string, unknown>[];
             return true;
           }
