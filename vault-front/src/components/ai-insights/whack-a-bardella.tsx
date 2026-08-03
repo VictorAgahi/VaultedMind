@@ -1,6 +1,5 @@
 import React from "react";
 import { Box, Typography } from "@mui/material";
-import Image from "next/image";
 
 export const WhackABardella = () => {
   const [score, setScore] = React.useState(0);
@@ -93,11 +92,10 @@ export const WhackABardella = () => {
             }}
           >
             {activeMole?.index === i ? (
-              <Image 
+              <img 
                 src={getImageUrl(activeMole.type)}
                 alt={activeMole.type} 
-                fill
-                style={{ objectFit: "cover", borderRadius: "3px", pointerEvents: "none" }} 
+                style={{ width: "100%", height: "100%", objectFit: "cover", borderRadius: "3px", pointerEvents: "none" }} 
               />
             ) : ""}
           </Box>

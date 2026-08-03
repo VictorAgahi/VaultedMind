@@ -11,7 +11,11 @@ import {
   Stack,
   Button,
   Tooltip,
-  IconButton
+  IconButton,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions
 } from "@mui/material";
 import LocalFireDepartmentIcon from "@mui/icons-material/LocalFireDepartment";
 import TrendingUpIcon from "@mui/icons-material/TrendingUp";
@@ -66,7 +70,7 @@ function computeScore(
   weekLogs: DailyLog[],
   allLogs: DailyLog[],
   fields: CustomField[]
-): number | null {
+): { score: number; breakdown: { fieldId: string; name: string; avg: number; min: number; max: number; normalized: number }[] } | null {
   const numericFields = fields.filter(
     (f) => f.fieldType === FieldType.NUMBER || f.fieldType === FieldType.BOOLEAN
   );
@@ -85,6 +89,8 @@ function computeScore(
 
   let total = 0;
   let count = 0;
+  const breakdown: { fieldId: string; name: string; avg: number; min: number; max: number; normalized: number }[] = [];
+
   numericFields.forEach((field) => {
     const stats = fieldStats.get(field.id);
     if (!stats || stats.min === stats.max) return;
@@ -96,11 +102,20 @@ function computeScore(
     });
     if (!vals.length) return;
     const avg = vals.reduce((a, b) => a + b, 0) / vals.length;
-    total += (avg - stats.min) / (stats.max - stats.min);
+    const normalized = (avg - stats.min) / (stats.max - stats.min);
+    total += normalized;
     count++;
+    breakdown.push({
+      fieldId: field.id,
+      name: field.name,
+      avg,
+      min: stats.min,
+      max: stats.max,
+      normalized
+    });
   });
   if (!count) return null;
-  return Math.round((total / count) * 100);
+  return { score: Math.round((total / count) * 100), breakdown };
 }
 
 function getWeekBounds(offset = 0): { start: Date; end: Date } {
@@ -209,6 +224,7 @@ function ScoreRing({ score }: { score: number }) {
 export function WellnessScoreCard() {
   const router = useRouter();
   const [state, dispatch] = useReducer(wellnessReducer, { fields: [], logs: [], loading: true });
+  const [breakdownOpen, setBreakdownOpen] = React.useState(false);
 
   useEffect(() => {
     const controller = new AbortController();
@@ -242,13 +258,15 @@ export function WellnessScoreCard() {
     return d >= lastWeek.start && d <= lastWeek.end;
   });
 
-  const thisScore = computeScore(thisWeekLogs, logs, fields);
-  const lastScore = computeScore(lastWeekLogs, logs, fields);
+  const thisScoreObj = computeScore(thisWeekLogs, logs, fields);
+  const lastScoreObj = computeScore(lastWeekLogs, logs, fields);
   const streak = computeStreak(logs);
   const topCorrelation = findTopCorrelation(logs, fields);
 
+  const thisScore = thisScoreObj ? thisScoreObj.score : null;
+  const lastScore = lastScoreObj ? lastScoreObj.score : null;
   const delta = thisScore !== null && lastScore !== null ? thisScore - lastScore : null;
-  const shadowColor = thisScore ? (thisScore >= 70 ? "rgba(16,185,129,0.3)" : thisScore >= 45 ? "rgba(245,158,11,0.3)" : "rgba(239,68,68,0.3)") : "rgba(0,0,0,0.12)";
+  const shadowColor = thisScore !== null ? (thisScore >= 70 ? "rgba(16,185,129,0.3)" : thisScore >= 45 ? "rgba(245,158,11,0.3)" : "rgba(239,68,68,0.3)") : "rgba(0,0,0,0.12)";
 
   if (thisScore === null) {
     return (
@@ -283,24 +301,22 @@ export function WellnessScoreCard() {
             <Typography variant="subtitle1" sx={{ fontWeight: 800, color: "white", letterSpacing: "-0.01em" }}>
               Score de Bien-être
             </Typography>
-            <Tooltip 
-              title={
-                <Typography variant="body2" sx={{ p: 1 }}>
-                  Le score est calculé en normalisant toutes vos données numériques de la semaine par rapport à vos records historiques (min/max). Une moyenne de ces indicateurs pondérés forme votre score de 0 à 100.
-                </Typography>
-              } 
-              arrow 
-              placement="top"
-            >
-              <IconButton size="small" sx={{ color: "rgba(255,255,255,0.6)" }}>
-                <InfoOutlinedIcon fontSize="small" />
-              </IconButton>
-            </Tooltip>
+            <IconButton size="small" sx={{ color: "rgba(255,255,255,0.6)" }} onClick={() => setBreakdownOpen(true)}>
+              <InfoOutlinedIcon fontSize="small" />
+            </IconButton>
           </Box>
           <Button 
             variant="outlined" 
             size="small" 
-            onClick={() => router.push("/ai?prompt=Comment puis-je améliorer mon score de bien-être ?")}
+            onClick={() => {
+              window.dispatchEvent(new CustomEvent("ai-chat-open-with-message", { 
+                detail: { message: "Comment puis-je améliorer mon score de bien-être ce mois-ci ?" }
+              }));
+              // Si le chat est géré par un état global de layout (ex: floating chat icon cliquée),
+              // on peut aussi déclencher un événement pour ouvrir le tiroir s'il est fermé.
+              const btn = document.getElementById("fab-ai-chat");
+              if (btn) btn.click();
+            }}
             sx={{ 
               color: "white", 
               borderColor: "rgba(255,255,255,0.3)", 
@@ -323,7 +339,9 @@ export function WellnessScoreCard() {
           }}
         >
           {/* Score ring */}
-          <ScoreRing score={thisScore} />
+          <Box sx={{ cursor: 'pointer' }} onClick={() => setBreakdownOpen(true)}>
+            <ScoreRing score={thisScore} />
+          </Box>
 
           {/* Stats */}
           <Stack spacing={2} sx={{ flex: 1, minWidth: 160 }}>
@@ -437,6 +455,53 @@ export function WellnessScoreCard() {
           </Box>
         )}
       </CardContent>
+
+      {/* Modal Breakdown */}
+      {thisScoreObj && (
+        <Dialog open={breakdownOpen} onClose={() => setBreakdownOpen(false)} maxWidth="sm" fullWidth sx={{ "& .MuiDialog-paper": { borderRadius: 3 } }}>
+          <DialogTitle sx={{ fontWeight: 'bold' }}>Détail de ton Score ({thisScoreObj.score}/100)</DialogTitle>
+          <DialogContent dividers>
+            <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
+              Ce score reflète ta tendance globale de la semaine. Chaque champ numérique ou booléen est comparé à son historique pour savoir si tu es proche de ton "minimum" ou de ton "maximum". Le tout forme une moyenne sur 100.
+            </Typography>
+            <Stack spacing={2}>
+              {thisScoreObj.breakdown.map((item) => (
+                <Box key={item.fieldId} sx={{ p: 2, borderRadius: 2, bgcolor: "#f8fafc", border: "1px solid #e2e8f0" }}>
+                  <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
+                    <Typography variant="subtitle2" sx={{ fontWeight: 'bold' }}>{item.name}</Typography>
+                    <Typography variant="body2" sx={{ color: "primary.main", fontWeight: 'bold' }}>
+                      {(item.normalized * 100).toFixed(0)} pts
+                    </Typography>
+                  </Box>
+                  <Typography variant="caption" color="text.secondary">
+                    Moyenne cette semaine : <strong>{item.avg % 1 !== 0 ? item.avg.toFixed(1) : item.avg}</strong> <br/>
+                    (Historique : min {item.min}, max {item.max})
+                  </Typography>
+                  <Box sx={{ mt: 1, width: '100%', height: 6, bgcolor: '#e2e8f0', borderRadius: 3, overflow: 'hidden' }}>
+                    <Box sx={{ height: '100%', width: `${item.normalized * 100}%`, bgcolor: 'primary.main', borderRadius: 3 }} />
+                  </Box>
+                </Box>
+              ))}
+            </Stack>
+          </DialogContent>
+          <DialogActions sx={{ p: 2 }}>
+            <Button onClick={() => setBreakdownOpen(false)} color="inherit">Fermer</Button>
+            <Button 
+              variant="contained" 
+              onClick={() => {
+                setBreakdownOpen(false);
+                window.dispatchEvent(new CustomEvent("ai-chat-open-with-message", { 
+                  detail: { message: "Analyse mon score de bien-être détaillé et propose-moi des améliorations." }
+                }));
+                const btn = document.getElementById("fab-ai-chat");
+                if (btn) btn.click();
+              }}
+            >
+              Demander à l'IA d'analyser
+            </Button>
+          </DialogActions>
+        </Dialog>
+      )}
     </Card>
   );
 }
