@@ -10,15 +10,19 @@ import {
   CircularProgress,
   Chip,
   Button,
-  Collapse,
+  IconButton,
   Stack,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
 } from "@mui/material";
 import AutoAwesomeIcon from "@mui/icons-material/AutoAwesome";
-import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
-import ExpandLessIcon from "@mui/icons-material/ExpandLess";
+import CloseIcon from "@mui/icons-material/Close";
 import ChatIcon from "@mui/icons-material/Chat";
 import ArrowForwardIcon from "@mui/icons-material/ArrowForward";
 import PsychologyIcon from "@mui/icons-material/Psychology";
+import MenuBookIcon from "@mui/icons-material/MenuBook";
 import { apiService } from "@/services/api.service";
 import { AIInsightResponseDto } from "@/types";
 import { MarkdownRenderer } from "@/components/ai-insights/insights-panel";
@@ -31,18 +35,10 @@ const insightTypeLabels: Record<string, string> = {
   RECOMMENDATION: "Conseil",
 };
 
-const insightTypeColors: Record<string, "primary" | "secondary" | "success" | "warning" | "info" | "default"> = {
-  DAILY_SUMMARY: "primary",
-  WEEKLY_TREND: "secondary",
-  MONTHLY_TREND: "info",
-  ANOMALY: "warning",
-  RECOMMENDATION: "success",
-};
-
 export function LatestAIReviewCard() {
   const [insight, setInsight] = useState<AIInsightResponseDto | null>(null);
   const [loading, setLoading] = useState(true);
-  const [expanded, setExpanded] = useState(false);
+  const [modalOpen, setModalOpen] = useState(false);
 
   useEffect(() => {
     let isMounted = true;
@@ -110,14 +106,27 @@ export function LatestAIReviewCard() {
     }
   };
 
+  // Preview text for the card before opening the modal
+  const getExcerpt = (content: string) => {
+    const plain = content
+      .replace(/#{1,6}\s+/g, "")
+      .replace(/\*\*([^*]+)\*\*/g, "$1")
+      .replace(/\*([^*]+)\*/g, "$1")
+      .replace(/>\s+/g, "")
+      .replace(/[-*+]\s+/g, "")
+      .trim();
+    if (plain.length <= 180) return plain;
+    return `${plain.slice(0, 180)}...`;
+  };
+
   if (loading) {
     return (
       <Card
         sx={{
           mb: 4,
           borderRadius: 4,
-          boxShadow: "0 8px 32px rgba(15, 23, 42, 0.08)",
-          bgcolor: "background.paper",
+          bgcolor: "#ede5d9",
+          border: "1.5px solid #d81832",
           p: 3,
           display: "flex",
           alignItems: "center",
@@ -126,8 +135,8 @@ export function LatestAIReviewCard() {
         }}
       >
         <Stack direction="row" spacing={2} sx={{ alignItems: "center" }}>
-          <CircularProgress size={24} color="primary" />
-          <Typography variant="body2" color="text.secondary">
+          <CircularProgress size={24} sx={{ color: "#d81832" }} />
+          <Typography variant="body2" sx={{ color: "text.primary" }}>
             Chargement de la dernière revue IA...
           </Typography>
         </Stack>
@@ -141,9 +150,8 @@ export function LatestAIReviewCard() {
         sx={{
           mb: 4,
           borderRadius: 4,
-          boxShadow: "0 8px 32px rgba(15, 23, 42, 0.06)",
-          background: "linear-gradient(135deg, #ffffff 0%, #f8fafc 100%)",
-          border: "1px solid rgba(0, 0, 0, 0.06)",
+          bgcolor: "#ede5d9",
+          border: "1.5px solid #d81832",
           overflow: "hidden",
         }}
       >
@@ -162,8 +170,8 @@ export function LatestAIReviewCard() {
                   width: 48,
                   height: 48,
                   borderRadius: "50%",
-                  bgcolor: "rgba(99, 102, 241, 0.1)",
-                  color: "#6366f1",
+                  bgcolor: "rgba(216, 24, 50, 0.1)",
+                  color: "#d81832",
                   display: "flex",
                   alignItems: "center",
                   justifyContent: "center",
@@ -173,7 +181,7 @@ export function LatestAIReviewCard() {
                 <AutoAwesomeIcon />
               </Box>
               <Box>
-                <Typography variant="subtitle1" sx={{ fontWeight: 800, color: "#1e293b" }}>
+                <Typography variant="subtitle1" sx={{ fontWeight: 800, color: "#142949" }}>
                   Aucune revue IA pour le moment
                 </Typography>
                 <Typography variant="body2" color="text.secondary">
@@ -192,9 +200,14 @@ export function LatestAIReviewCard() {
                 textTransform: "none",
                 fontWeight: 700,
                 borderRadius: 3,
-                borderColor: "primary.main",
+                borderColor: "#d81832",
+                color: "#d81832",
                 whiteSpace: "nowrap",
                 alignSelf: { xs: "stretch", sm: "center" },
+                '&:hover': {
+                  borderColor: "#c2152a",
+                  bgcolor: "rgba(216, 24, 50, 0.05)",
+                },
               }}
             >
               Découvrir l&apos;espace IA
@@ -206,181 +219,298 @@ export function LatestAIReviewCard() {
   }
 
   const typeLabel = insightTypeLabels[insight.type] || insight.type;
-  const chipColor = insightTypeColors[insight.type] || "default";
 
   return (
-    <Card
-      sx={{
-        mb: 4,
-        borderRadius: 4,
-        boxShadow: "0 10px 30px rgba(79, 70, 229, 0.08)",
-        background: "linear-gradient(135deg, #ffffff 0%, #fbfbfe 100%)",
-        border: "1px solid rgba(99, 102, 241, 0.15)",
-        position: "relative",
-        overflow: "hidden",
-      }}
-    >
-      <Box
+    <>
+      <Card
         sx={{
-          height: 4,
-          background: "linear-gradient(90deg, #4f46e5 0%, #818cf8 50%, #c084fc 100%)",
+          mb: 4,
+          borderRadius: 4,
+          bgcolor: "#ede5d9",
+          border: "1.5px solid #d81832",
+          boxShadow: "0 6px 20px rgba(0, 0, 0, 0.04)",
+          position: "relative",
+          overflow: "hidden",
         }}
-      />
-
-      <CardContent sx={{ p: { xs: 2.5, sm: 3.5 } }}>
-        {/* Header Section */}
+      >
+        {/* Top Accent line matching VaultedMind red */}
         <Box
           sx={{
-            display: "flex",
-            flexDirection: { xs: "column", sm: "row" },
-            alignItems: { xs: "flex-start", sm: "center" },
-            justifyContent: "space-between",
-            gap: 1.5,
-            mb: 2,
+            height: 4,
+            background: "linear-gradient(90deg, #d81832 0%, #e63a4f 100%)",
           }}
-        >
-          <Box sx={{ display: "flex", alignItems: "center", gap: 1.5, flexWrap: "wrap" }}>
-            <Box
+        />
+
+        <CardContent sx={{ p: { xs: 2.5, sm: 3.5 } }}>
+          {/* Header Section */}
+          <Box
+            sx={{
+              display: "flex",
+              flexDirection: { xs: "column", sm: "row" },
+              alignItems: { xs: "flex-start", sm: "center" },
+              justifyContent: "space-between",
+              gap: 1.5,
+              mb: 1.5,
+            }}
+          >
+            <Box sx={{ display: "flex", alignItems: "center", gap: 1.5, flexWrap: "wrap" }}>
+              <Box
+                sx={{
+                  width: 36,
+                  height: 36,
+                  borderRadius: "50%",
+                  bgcolor: "rgba(216, 24, 50, 0.1)",
+                  color: "#d81832",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                }}
+              >
+                <PsychologyIcon fontSize="small" />
+              </Box>
+              <Typography
+                variant="subtitle2"
+                sx={{
+                  fontWeight: 800,
+                  color: "#d81832",
+                  textTransform: "uppercase",
+                  letterSpacing: "0.05em",
+                  fontSize: "0.75rem",
+                }}
+              >
+                Dernière Revue IA
+              </Typography>
+              <Chip
+                label={typeLabel}
+                size="small"
+                sx={{
+                  fontWeight: 700,
+                  height: 24,
+                  fontSize: "0.75rem",
+                  bgcolor: "#d81832",
+                  color: "#ffffff",
+                }}
+              />
+              <Typography variant="caption" sx={{ color: "text.secondary" }}>
+                {formatDate(insight.createdAt)}
+              </Typography>
+            </Box>
+
+            <Button
+              component={Link}
+              href="/ai"
+              size="small"
+              endIcon={<ArrowForwardIcon fontSize="small" />}
               sx={{
-                width: 38,
-                height: 38,
-                borderRadius: "50%",
-                bgcolor: "rgba(79, 70, 229, 0.1)",
-                color: "#4f46e5",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
+                textTransform: "none",
+                fontWeight: 700,
+                color: "#d81832",
+                p: 0,
+                minWidth: "auto",
+                '&:hover': { bgcolor: "transparent", textDecoration: "underline" },
               }}
             >
-              <PsychologyIcon fontSize="small" />
-            </Box>
-            <Typography variant="subtitle2" sx={{ fontWeight: 800, color: "#4f46e5", textTransform: "uppercase", letterSpacing: "0.05em", fontSize: "0.75rem" }}>
-              Dernière Revue IA
-            </Typography>
-            <Chip
-              label={typeLabel}
-              color={chipColor}
+              Toutes les analyses
+            </Button>
+          </Box>
+
+          {/* Insight Title */}
+          <Typography
+            variant="h6"
+            sx={{
+              fontWeight: 800,
+              color: "#142949",
+              mb: 1,
+              fontSize: { xs: "1.1rem", sm: "1.25rem" },
+              lineHeight: 1.3,
+            }}
+          >
+            {insight.title}
+          </Typography>
+
+          {/* Clean excerpt preview */}
+          <Typography
+            variant="body2"
+            sx={{
+              color: "#4b5563",
+              lineHeight: 1.6,
+              mb: 2.5,
+              display: "-webkit-box",
+              WebkitLineClamp: 2,
+              WebkitBoxOrient: "vertical",
+              overflow: "hidden",
+            }}
+          >
+            {getExcerpt(insight.content)}
+          </Typography>
+
+          {/* Actions Bar */}
+          <Box
+            sx={{
+              display: "flex",
+              flexDirection: { xs: "column", sm: "row" },
+              justifyContent: "space-between",
+              alignItems: { xs: "stretch", sm: "center" },
+              gap: 1.5,
+              pt: 2,
+              borderTop: "1px solid rgba(216, 24, 50, 0.15)",
+            }}
+          >
+            <Button
+              variant="outlined"
               size="small"
-              sx={{ fontWeight: 700, height: 24, fontSize: "0.75rem" }}
-            />
-            <Typography variant="caption" sx={{ color: "text.secondary", ml: { sm: 1 } }}>
-              {formatDate(insight.createdAt)}
+              startIcon={<MenuBookIcon fontSize="small" />}
+              onClick={() => setModalOpen(true)}
+              sx={{
+                textTransform: "none",
+                fontWeight: 700,
+                color: "#d81832",
+                borderColor: "#d81832",
+                borderRadius: 2.5,
+                px: 2,
+                py: 0.8,
+                '&:hover': {
+                  borderColor: "#c2152a",
+                  bgcolor: "rgba(216, 24, 50, 0.05)",
+                },
+              }}
+            >
+              Lire l&apos;analyse complète
+            </Button>
+
+            <Button
+              variant="contained"
+              size="small"
+              startIcon={<ChatIcon fontSize="small" />}
+              onClick={handleAskAssistant}
+              sx={{
+                bgcolor: "#d81832",
+                color: "#ffffff",
+                textTransform: "none",
+                fontWeight: 700,
+                borderRadius: 2.5,
+                px: 2.5,
+                py: 0.8,
+                boxShadow: "0 4px 14px rgba(216, 24, 50, 0.25)",
+                '&:hover': {
+                  bgcolor: "#c2152a",
+                },
+              }}
+            >
+              En discuter avec l&apos;assistant
+            </Button>
+          </Box>
+        </CardContent>
+      </Card>
+
+      {/* Modal pour lire l'analyse complète avec icône de fermeture */}
+      <Dialog
+        open={modalOpen}
+        onClose={() => setModalOpen(false)}
+        maxWidth="md"
+        fullWidth
+        slotProps={{
+          paper: {
+            sx: {
+              bgcolor: "#ede5d9",
+              border: "1.5px solid #d81832",
+              borderRadius: 4,
+              p: { xs: 1, sm: 2 },
+            },
+          },
+        }}
+      >
+        <DialogTitle
+          sx={{
+            display: "flex",
+            alignItems: "flex-start",
+            justifyContent: "space-between",
+            gap: 2,
+            pb: 1.5,
+          }}
+        >
+          <Box>
+            <Stack direction="row" spacing={1} sx={{ alignItems: "center", mb: 0.5 }}>
+              <Chip
+                label={typeLabel}
+                size="small"
+                sx={{
+                  fontWeight: 700,
+                  bgcolor: "#d81832",
+                  color: "#ffffff",
+                  height: 22,
+                  fontSize: "0.75rem",
+                }}
+              />
+              <Typography variant="caption" sx={{ color: "text.secondary" }}>
+                {formatDate(insight.createdAt)}
+              </Typography>
+            </Stack>
+            <Typography variant="h6" sx={{ fontWeight: 800, color: "#142949", lineHeight: 1.3 }}>
+              {insight.title}
             </Typography>
           </Box>
 
-          <Button
-            component={Link}
-            href="/ai"
+          <IconButton
+            onClick={() => setModalOpen(false)}
+            aria-label="Fermer la modal"
             size="small"
-            endIcon={<ArrowForwardIcon fontSize="small" />}
             sx={{
-              textTransform: "none",
-              fontWeight: 700,
-              color: "#4f46e5",
-              p: 0,
-              minWidth: "auto",
-              '&:hover': { bgcolor: "transparent", textDecoration: "underline" },
+              color: "#d81832",
+              bgcolor: "rgba(216, 24, 50, 0.08)",
+              '&:hover': { bgcolor: "rgba(216, 24, 50, 0.16)" },
             }}
           >
-            Toutes les analyses
-          </Button>
-        </Box>
+            <CloseIcon fontSize="small" />
+          </IconButton>
+        </DialogTitle>
 
-        {/* Insight Title */}
-        <Typography
-          variant="h6"
-          sx={{
-            fontWeight: 800,
-            color: "#0f172a",
-            mb: 1.5,
-            fontSize: { xs: "1.1rem", sm: "1.25rem" },
-            lineHeight: 1.3,
-          }}
-        >
-          {insight.title}
-        </Typography>
-
-        {/* Insight Preview / Body */}
-        <Box sx={{ position: "relative" }}>
-          <Collapse in={expanded} collapsedSize={110}>
-            <Box
-              sx={{
-                color: "#334155",
-                fontSize: "0.95rem",
-                lineHeight: 1.6,
-                "& p": { my: 1 },
-              }}
-            >
-              <MarkdownRenderer content={insight.content} />
-            </Box>
-          </Collapse>
-
-          {/* Fade mask when collapsed */}
-          {!expanded && (
-            <Box
-              sx={{
-                position: "absolute",
-                bottom: 0,
-                left: 0,
-                right: 0,
-                height: 48,
-                background: "linear-gradient(to top, rgba(255, 255, 255, 1) 0%, rgba(255, 255, 255, 0) 100%)",
-                pointerEvents: "none",
-              }}
-            />
-          )}
-        </Box>
-
-        {/* Actions Bar */}
-        <Box
-          sx={{
-            display: "flex",
-            flexDirection: { xs: "column", sm: "row" },
-            justifyContent: "space-between",
-            alignItems: { xs: "stretch", sm: "center" },
-            gap: 1.5,
-            mt: 2,
-            pt: 2,
-            borderTop: "1px solid rgba(0, 0, 0, 0.06)",
-          }}
-        >
-          <Button
-            size="small"
-            onClick={() => setExpanded((prev) => !prev)}
-            endIcon={expanded ? <ExpandLessIcon /> : <ExpandMoreIcon />}
+        <DialogContent dividers sx={{ borderColor: "rgba(216, 24, 50, 0.2)", py: 2.5 }}>
+          <Box
             sx={{
-              textTransform: "none",
-              fontWeight: 700,
-              color: "text.secondary",
-              alignSelf: { xs: "flex-start", sm: "center" },
+              color: "#142949",
+              fontSize: "0.95rem",
+              lineHeight: 1.7,
+              "& p": { my: 1.2 },
+              "& h2": { color: "#142949", mt: 2.5, mb: 1, fontWeight: 800 },
+              "& h3": { color: "#d81832", mt: 2, mb: 0.8, fontWeight: 700 },
+              "& li": { my: 0.5 },
             }}
           >
-            {expanded ? "Réduire l'analyse" : "Lire l'analyse complète"}
+            <MarkdownRenderer content={insight.content} />
+          </Box>
+        </DialogContent>
+
+        <DialogActions sx={{ p: 2, justifyContent: "space-between", gap: 1 }}>
+          <Button
+            onClick={() => setModalOpen(false)}
+            sx={{ color: "text.secondary", textTransform: "none", fontWeight: 600 }}
+          >
+            Fermer
           </Button>
 
           <Button
             variant="contained"
             size="small"
             startIcon={<ChatIcon fontSize="small" />}
-            onClick={handleAskAssistant}
+            onClick={() => {
+              setModalOpen(false);
+              handleAskAssistant();
+            }}
             sx={{
-              bgcolor: "#4f46e5",
-              color: "white",
+              bgcolor: "#d81832",
+              color: "#ffffff",
               textTransform: "none",
               fontWeight: 700,
               borderRadius: 2.5,
               px: 2,
-              py: 0.8,
-              boxShadow: "0 4px 14px rgba(79, 70, 229, 0.3)",
-              '&:hover': {
-                bgcolor: "#4338ca",
-              },
+              '&:hover': { bgcolor: "#c2152a" },
             }}
           >
             En discuter avec l&apos;assistant
           </Button>
-        </Box>
-      </CardContent>
-    </Card>
+        </DialogActions>
+      </Dialog>
+    </>
   );
 }
