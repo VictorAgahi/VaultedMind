@@ -30,7 +30,7 @@ import DeleteIcon from "@mui/icons-material/Delete";
 import GridViewIcon from "@mui/icons-material/GridView";
 import TableRowsIcon from "@mui/icons-material/TableRows";
 import { apiService } from "@/services/api.service";
-import { AppError, CustomField, FieldType, CreateCustomFieldDto, UpdateCustomFieldDto } from "@/types";
+import { AppError, CustomField, FieldType, CreateCustomFieldDto, UpdateCustomFieldDto, SubFieldDefinition } from "@/types";
 import { FieldDialog, FieldFormData } from "./field-dialog";
 
 interface CustomFieldsState {
@@ -63,7 +63,7 @@ const customFieldsReducer = (state: CustomFieldsState, action: CustomFieldsActio
     case "OPEN_DIALOG": return {
       ...state,
       dialog: { ...state.dialog, open: true, isEditing: action.isEditing, id: action.id || null },
-      formData: action.formData || { name: "", fieldType: FieldType.NUMBER, optionsOrder: [], isHourly: false, category: "", rememberLastValue: false, min: "", max: "", appleWatchMetric: "" }
+      formData: action.formData || { name: "", fieldType: FieldType.NUMBER, optionsOrder: [], subFields: [], isHourly: false, category: "", rememberLastValue: false, min: "", max: "", appleWatchMetric: "" }
     };
     case "CLOSE_DIALOG": return { ...state, dialog: { ...state.dialog, open: false } };
     case "SET_SUBMITTING": return { ...state, dialog: { ...state.dialog, submitting: action.submitting } };
@@ -82,7 +82,7 @@ export const CustomFieldsManager: React.FC = () => {
     loading: true,
     error: null,
     dialog: { open: false, isEditing: false, id: null, submitting: false },
-    formData: { name: "", fieldType: FieldType.NUMBER, optionsOrder: [], isHourly: false, category: "", rememberLastValue: false, min: "", max: "", appleWatchMetric: "" }
+    formData: { name: "", fieldType: FieldType.NUMBER, optionsOrder: [], subFields: [], isHourly: false, category: "", rememberLastValue: false, min: "", max: "", appleWatchMetric: "" }
   });
 
   const { fields, loading, error, dialog, formData } = state;
@@ -113,6 +113,7 @@ export const CustomFieldsManager: React.FC = () => {
           name: field.name,
           fieldType: field.fieldType,
           optionsOrder: field.fieldType === FieldType.NUMBER ? [] : (field.optionsOrder || []).map(opt => ({ id: Math.random().toString(36).substr(2, 9), value: opt })),
+          subFields: field.subFields ? JSON.parse(JSON.stringify(field.subFields)) : [],
           isHourly: field.fieldType === FieldType.NUMBER && (field.optionsOrder || []).includes("isHourly"),
           category: field.category || "",
           rememberLastValue: field.rememberLastValue || false,
@@ -131,11 +132,24 @@ export const CustomFieldsManager: React.FC = () => {
     dispatch({ type: "SET_SUBMITTING", submitting: true });
     try {
       let optionsArray: string[] = [];
+      let cleanedSubFields: SubFieldDefinition[] | undefined = undefined;
+
       if (formData.fieldType === FieldType.STRING) {
         optionsArray = formData.optionsOrder.reduce<string[]>((acc, o) => {
           if (o.value.trim() !== "") acc.push(o.value);
           return acc;
         }, []);
+
+        if (formData.subFields && formData.subFields.length > 0) {
+          cleanedSubFields = formData.subFields
+            .filter((sf) => sf.name.trim() !== "" && sf.triggerValue.trim() !== "")
+            .map((sf) => ({
+              ...sf,
+              name: sf.name.trim(),
+              triggerValue: sf.triggerValue.trim(),
+              optionsOrder: (sf.optionsOrder || []).map((o) => o.trim()).filter(Boolean),
+            }));
+        }
       } else if (formData.fieldType === FieldType.NUMBER && formData.isHourly) {
         optionsArray = ["isHourly"];
       }
@@ -144,6 +158,7 @@ export const CustomFieldsManager: React.FC = () => {
         const updatePayload: UpdateCustomFieldDto = {
           name: formData.name,
           optionsOrder: optionsArray,
+          subFields: cleanedSubFields,
           category: formData.category,
           rememberLastValue: formData.rememberLastValue,
           min: formData.min === "" ? undefined : formData.min,
@@ -156,6 +171,7 @@ export const CustomFieldsManager: React.FC = () => {
           name: formData.name,
           fieldType: formData.fieldType,
           optionsOrder: optionsArray,
+          subFields: cleanedSubFields,
           category: formData.category,
           rememberLastValue: formData.rememberLastValue,
           min: formData.min === "" ? undefined : formData.min,
@@ -276,9 +292,16 @@ export const CustomFieldsManager: React.FC = () => {
                       }}
                     >
                       <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", mb: 2 }}>
-                        <Typography variant="subtitle1" sx={{ fontWeight: 800, color: "#142949" }}>
-                          {field.name}
-                        </Typography>
+                        <Box>
+                          <Typography variant="subtitle1" sx={{ fontWeight: 800, color: "#142949" }}>
+                            {field.name}
+                          </Typography>
+                          {field.subFields && field.subFields.length > 0 && (
+                            <Typography variant="caption" sx={{ color: "primary.main", fontWeight: 700, display: "block" }}>
+                              {field.subFields.length} sous-champ(s) conditionnel(s)
+                            </Typography>
+                          )}
+                        </Box>
                         <Chip 
                           label={field.fieldType} 
                           size="small" 
@@ -335,6 +358,11 @@ export const CustomFieldsManager: React.FC = () => {
                     <TableRow key={field.id} hover>
                       <TableCell>
                         <Typography variant="body2" sx={{ fontWeight: 600 }}>{field.name}</Typography>
+                        {field.subFields && field.subFields.length > 0 && (
+                          <Typography variant="caption" sx={{ color: "primary.main", fontWeight: 600, display: "block" }}>
+                            {field.subFields.length} sous-champ(s)
+                          </Typography>
+                        )}
                       </TableCell>
                       <TableCell><Chip label={field.fieldType} size="small" variant="outlined" /></TableCell>
                       <TableCell>

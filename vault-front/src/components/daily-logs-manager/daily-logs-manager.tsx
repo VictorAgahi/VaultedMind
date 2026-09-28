@@ -51,6 +51,7 @@ interface State {
     date: string;
     notes: string;
     fieldValues: Record<string, string>;
+    subFieldValues: Record<string, Record<string, string>>;
   };
   filters: {
     selectedFields: string[];
@@ -76,7 +77,7 @@ const reducer = (state: State, action: Action): State => {
     case "OPEN_DIALOG": return {
       ...state,
       dialog: { ...state.dialog, open: true, isEditing: action.isEditing, logId: action.logId || null },
-      formData: action.formData || { date: new Date().toISOString().split("T")[0], notes: "", fieldValues: {} }
+      formData: action.formData || { date: new Date().toISOString().split("T")[0], notes: "", fieldValues: {}, subFieldValues: {} }
     };
     case "CLOSE_DIALOG": return { ...state, dialog: { ...state.dialog, open: false } };
     case "SET_SUBMITTING": return { ...state, dialog: { ...state.dialog, submitting: action.submitting } };
@@ -341,7 +342,7 @@ const useDailyLogs = (): UseDailyLogsReturn => {
     loading: true,
     error: null,
     dialog: { open: false, isEditing: false, logId: null, submitting: false },
-    formData: { date: new Date().toISOString().split("T")[0], notes: "", fieldValues: {} },
+    formData: { date: new Date().toISOString().split("T")[0], notes: "", fieldValues: {}, subFieldValues: {} },
     filters: { selectedFields: [], sortOrder: "desc" }
   });
 
@@ -427,6 +428,7 @@ const useDailyLogs = (): UseDailyLogsReturn => {
   const handleOpen = (log?: DailyLog) => {
     if (log) {
       const fvMap: Record<string, string> = {};
+      const subFvMap: Record<string, Record<string, string>> = {};
       log.fieldValues?.forEach(fv => {
         const field = fields.find(f => f.id === fv.customFieldId);
         if (field && field.fieldType === FieldType.NUMBER && (field.optionsOrder || []).includes("isHourly")) {
@@ -434,12 +436,15 @@ const useDailyLogs = (): UseDailyLogsReturn => {
         } else {
           fvMap[fv.customFieldId] = fv.value;
         }
+        if (fv.subValues) {
+          subFvMap[fv.customFieldId] = fv.subValues;
+        }
       });
       dispatch({
         type: "OPEN_DIALOG",
         isEditing: true,
         logId: log.id,
-        formData: { date: new Date(log.logDate).toISOString().split("T")[0], notes: log.notes || "", fieldValues: fvMap }
+        formData: { date: new Date(log.logDate).toISOString().split("T")[0], notes: log.notes || "", fieldValues: fvMap, subFieldValues: subFvMap }
       });
     } else {
       const defaultFvMap: Record<string, string> = {};
@@ -460,7 +465,7 @@ const useDailyLogs = (): UseDailyLogsReturn => {
       dispatch({
         type: "OPEN_DIALOG",
         isEditing: false,
-        formData: { date: new Date().toISOString().split("T")[0], notes: "", fieldValues: defaultFvMap }
+        formData: { date: new Date().toISOString().split("T")[0], notes: "", fieldValues: defaultFvMap, subFieldValues: {} }
       });
     }
   };
@@ -486,7 +491,26 @@ const useDailyLogs = (): UseDailyLogsReturn => {
           if (field && field.fieldType === FieldType.NUMBER && (field.optionsOrder || []).includes("isHourly")) {
             valueToSave = parseHourlyValue(v);
           }
-          acc.push(apiService.post(`/health/daily-logs/${lid}/values`, { customFieldId: fid, value: valueToSave }));
+
+          const rawSubVals = formData.subFieldValues?.[fid];
+          let subValuesToSave: Record<string, string> | undefined = undefined;
+          if (rawSubVals) {
+            const filtered = Object.entries(rawSubVals).reduce<Record<string, string>>((sAcc, [sId, sVal]) => {
+              if (sVal && sVal.trim()) {
+                sAcc[sId] = sVal.trim();
+              }
+              return sAcc;
+            }, {});
+            if (Object.keys(filtered).length > 0) {
+              subValuesToSave = filtered;
+            }
+          }
+
+          acc.push(apiService.post(`/health/daily-logs/${lid}/values`, { 
+            customFieldId: fid, 
+            value: valueToSave,
+            subValues: subValuesToSave,
+          }));
         }
         return acc;
       }, []);
@@ -592,7 +616,7 @@ const useDailyLogs = (): UseDailyLogsReturn => {
       dispatch({
         type: "OPEN_DIALOG",
         isEditing: false,
-        formData: { date: day.dateStr, notes: "", fieldValues: defaultFvMap }
+        formData: { date: day.dateStr, notes: "", fieldValues: defaultFvMap, subFieldValues: {} }
       });
     }
   };
@@ -723,6 +747,22 @@ export const DailyLogsManager: React.FC = () => {
         setNotes={(v) => dispatch({ type: "UPDATE_FORM", data: { notes: v } })}
         fieldValuesMap={formData.fieldValues}
         onFieldValueChange={(fid, v) => dispatch({ type: "UPDATE_FORM", data: { fieldValues: { ...formData.fieldValues, [fid]: v } } })}
+        subFieldValuesMap={formData.subFieldValues}
+        onSubFieldValueChange={(fid, subId, v) => {
+          const currentSub = formData.subFieldValues?.[fid] || {};
+          dispatch({
+            type: "UPDATE_FORM",
+            data: {
+              subFieldValues: {
+                ...formData.subFieldValues,
+                [fid]: {
+                  ...currentSub,
+                  [subId]: v,
+                },
+              },
+            },
+          });
+        }}
         onSubmit={handleSubmit}
         submitting={dialog.submitting}
         activeFields={activeFields}

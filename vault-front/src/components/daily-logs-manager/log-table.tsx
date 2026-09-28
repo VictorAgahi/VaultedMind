@@ -65,6 +65,16 @@ export const LogTable: React.FC<LogTableProps> = ({ logs, activeFields, onEdit, 
                   } else {
                     displayValue = fieldValue.value;
                   }
+
+                  if (fieldValue.subValues && Object.keys(fieldValue.subValues).length > 0) {
+                    const subLabels = Object.entries(fieldValue.subValues)
+                      .map(([subKey, subVal]) => {
+                        const subDef = field.subFields?.find((sf) => sf.id === subKey || sf.name === subKey);
+                        return subDef ? `${subDef.name}: ${subVal}` : subVal;
+                      })
+                      .join(", ");
+                    displayValue = `${displayValue} (${subLabels})`;
+                  }
                 }
                 return <TableCell key={field.id}>{displayValue}</TableCell>;
               })}

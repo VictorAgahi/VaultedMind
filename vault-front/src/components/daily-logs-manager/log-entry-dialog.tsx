@@ -22,10 +22,12 @@ import {
   Slider,
   InputAdornment,
   IconButton,
-  Paper
+  Paper,
+  Chip,
 } from "@mui/material";
 import SearchIcon from "@mui/icons-material/Search";
 import CloseIcon from "@mui/icons-material/Close";
+import SubdirectoryArrowRightIcon from "@mui/icons-material/SubdirectoryArrowRight";
 import { CustomField, FieldType } from "@/types";
 
 interface StringFieldGridModalProps {
@@ -155,6 +157,8 @@ interface LogEntryDialogProps {
   setNotes: (notes: string) => void;
   fieldValuesMap: Record<string, string>;
   onFieldValueChange: (fieldId: string, value: string) => void;
+  subFieldValuesMap?: Record<string, Record<string, string>>;
+  onSubFieldValueChange?: (fieldId: string, subFieldId: string, value: string) => void;
   onSubmit: (e: React.FormEvent) => void;
   submitting: boolean;
   activeFields: CustomField[];
@@ -170,6 +174,8 @@ export const LogEntryDialog: React.FC<LogEntryDialogProps> = ({
   setNotes,
   fieldValuesMap,
   onFieldValueChange,
+  subFieldValuesMap,
+  onSubFieldValueChange,
   onSubmit,
   submitting,
   activeFields,
@@ -320,6 +326,88 @@ export const LogEntryDialog: React.FC<LogEntryDialogProps> = ({
       ...(historicalValues[field.id] || [])
     ]));
 
+    const renderMatchingSubFields = (f: CustomField, currentValue: string) => {
+      if (!f.subFields || f.subFields.length === 0 || !currentValue) return null;
+
+      const matchingSubFields = f.subFields.filter(
+        (sf) => sf.triggerValue.trim().toLowerCase() === currentValue.trim().toLowerCase()
+      );
+
+      if (matchingSubFields.length === 0) return null;
+
+      return (
+        <Box
+          sx={{
+            mt: 1.5,
+            p: 2,
+            borderRadius: 2,
+            border: "1.5px dashed rgba(216, 24, 50, 0.4)",
+            bgcolor: "rgba(216, 24, 50, 0.03)",
+            display: "flex",
+            flexDirection: "column",
+            gap: 2,
+          }}
+        >
+          {matchingSubFields.map((sf) => {
+            const currentSubVal = subFieldValuesMap?.[f.id]?.[sf.id] || "";
+            const hasOptions = sf.optionsOrder && sf.optionsOrder.length > 0;
+
+            return (
+              <Box key={sf.id}>
+                <Box sx={{ display: "flex", alignItems: "center", gap: 0.75, mb: 1 }}>
+                  <SubdirectoryArrowRightIcon sx={{ color: "primary.main", fontSize: 18 }} />
+                  <Typography variant="body2" sx={{ fontWeight: 700, color: "#142949" }}>
+                    {sf.name}
+                  </Typography>
+                </Box>
+
+                {hasOptions && (
+                  <Box sx={{ display: "flex", flexWrap: "wrap", gap: 1, mb: 1.25 }}>
+                    {sf.optionsOrder!.map((choice) => {
+                      const isSelected = currentSubVal === choice;
+                      return (
+                        <Chip
+                          key={choice}
+                          label={choice}
+                          clickable
+                          color={isSelected ? "primary" : "default"}
+                          variant={isSelected ? "filled" : "outlined"}
+                          onClick={() => {
+                            onSubFieldValueChange?.(f.id, sf.id, isSelected ? "" : choice);
+                          }}
+                          sx={{
+                            fontWeight: isSelected ? 700 : 500,
+                            cursor: "pointer",
+                            transition: "all 0.15s ease-in-out",
+                            bgcolor: isSelected ? "primary.main" : "background.paper",
+                            color: isSelected ? "#fff" : "text.primary",
+                            borderColor: isSelected ? "primary.main" : "rgba(0,0,0,0.15)",
+                            "&:hover": {
+                              bgcolor: isSelected ? "primary.dark" : "rgba(0,0,0,0.04)",
+                            }
+                          }}
+                        />
+                      );
+                    })}
+                  </Box>
+                )}
+
+                <TextField
+                  size="small"
+                  fullWidth
+                  placeholder={sf.placeholder || (hasOptions ? "Ou précisez un autre motif..." : "Précisez votre réponse...")}
+                  value={currentSubVal}
+                  onChange={(e) => onSubFieldValueChange?.(f.id, sf.id, e.target.value)}
+                  variant="outlined"
+                  sx={{ bgcolor: "background.paper" }}
+                />
+              </Box>
+            );
+          })}
+        </Box>
+      );
+    };
+
     if (field.fieldType === FieldType.STRING) {
       return (
         <Box key={field.id} sx={{ mb: 2 }}>
@@ -346,36 +434,39 @@ export const LogEntryDialog: React.FC<LogEntryDialogProps> = ({
             fieldName={field.name}
             onSelect={(val) => onFieldValueChange(field.id, val)}
           />
+          {renderMatchingSubFields(field, value)}
         </Box>
       );
     }
 
     return (
-      <Autocomplete
-        key={field.id}
-        freeSolo
-        options={options}
-        value={value}
-        onInputChange={(_, newInputValue) => onFieldValueChange(field.id, newInputValue)}
-        renderInput={(params: import("@mui/material").AutocompleteRenderInputParams) => (
-          <TextField
-            {...params}
-            margin="dense"
-            label={field.name}
-            type={field.fieldType === FieldType.NUMBER && !isHourly ? "number" : "text"}
-            fullWidth
-            variant="outlined"
-            slotProps={{
-              ...params.slotProps,
-              htmlInput: {
-                // @ts-expect-error MUI v5/v6 compatibility
-                ...(params.slotProps?.htmlInput || params.inputProps),
-                inputMode: field.fieldType === FieldType.NUMBER && !isHourly ? "decimal" : "text"
-              }
-            }}
-          />
-        )}
-      />
+      <Box key={field.id} sx={{ mb: 2 }}>
+        <Autocomplete
+          freeSolo
+          options={options}
+          value={value}
+          onInputChange={(_, newInputValue) => onFieldValueChange(field.id, newInputValue)}
+          renderInput={(params: import("@mui/material").AutocompleteRenderInputParams) => (
+            <TextField
+              {...params}
+              margin="dense"
+              label={field.name}
+              type={field.fieldType === FieldType.NUMBER && !isHourly ? "number" : "text"}
+              fullWidth
+              variant="outlined"
+              slotProps={{
+                ...params.slotProps,
+                htmlInput: {
+                  // @ts-expect-error MUI v5/v6 compatibility
+                  ...(params.slotProps?.htmlInput || params.inputProps),
+                  inputMode: field.fieldType === FieldType.NUMBER && !isHourly ? "decimal" : "text"
+                }
+              }}
+            />
+          )}
+        />
+        {renderMatchingSubFields(field, value)}
+      </Box>
     );
   };
 

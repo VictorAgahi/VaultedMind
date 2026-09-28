@@ -17,12 +17,15 @@ import {
   IconButton,
   FormControlLabel,
   Switch,
+  Tooltip,
 } from "@mui/material";
 import DeleteIcon from "@mui/icons-material/Delete";
 import AddIcon from "@mui/icons-material/Add";
 import ArrowUpwardIcon from "@mui/icons-material/ArrowUpward";
 import ArrowDownwardIcon from "@mui/icons-material/ArrowDownward";
-import { FieldType, AppleWatchMetric } from "@/types";
+import SubdirectoryArrowRightIcon from "@mui/icons-material/SubdirectoryArrowRight";
+import AddCircleOutlineIcon from "@mui/icons-material/AddCircleOutlineOutlined";
+import { FieldType, AppleWatchMetric, SubFieldDefinition } from "@/types";
 
 interface OptionItem {
   id: string;
@@ -33,6 +36,7 @@ export interface FieldFormData {
   name: string;
   fieldType: FieldType;
   optionsOrder: OptionItem[];
+  subFields?: SubFieldDefinition[];
   isHourly?: boolean;
   category?: string;
   rememberLastValue: boolean;
@@ -68,16 +72,33 @@ export const FieldDialog: React.FC<FieldDialogProps> = ({
   };
 
   const handleOptionChange = (id: string, val: string) => {
-    setFormData((prev) => ({
-      ...prev,
-      optionsOrder: prev.optionsOrder.map(opt => opt.id === id ? { ...opt, value: val } : opt),
-    }));
+    const oldOption = formData.optionsOrder.find((o) => o.id === id);
+    const oldVal = oldOption?.value;
+
+    setFormData((prev) => {
+      const updatedOptions = prev.optionsOrder.map((opt) => (opt.id === id ? { ...opt, value: val } : opt));
+      let updatedSubFields = prev.subFields || [];
+      if (oldVal && oldVal !== val && oldVal.trim() !== "") {
+        updatedSubFields = updatedSubFields.map((sf) =>
+          sf.triggerValue === oldVal ? { ...sf, triggerValue: val } : sf
+        );
+      }
+      return {
+        ...prev,
+        optionsOrder: updatedOptions,
+        subFields: updatedSubFields,
+      };
+    });
   };
 
   const handleRemoveOption = (id: string) => {
+    const optToRemove = formData.optionsOrder.find((o) => o.id === id);
+    const optVal = optToRemove?.value;
+
     setFormData((prev) => ({
       ...prev,
       optionsOrder: prev.optionsOrder.filter((opt) => opt.id !== id),
+      subFields: (prev.subFields || []).filter((sf) => sf.triggerValue !== optVal),
     }));
   };
 
@@ -92,8 +113,72 @@ export const FieldDialog: React.FC<FieldDialogProps> = ({
     setFormData((prev) => ({ ...prev, optionsOrder: newOptions }));
   };
 
+  const handleAddSubField = (triggerValue: string) => {
+    const newSubField: SubFieldDefinition = {
+      id: crypto.randomUUID(),
+      triggerValue,
+      name: "Pourquoi ?",
+      fieldType: FieldType.STRING,
+      optionsOrder: ["Insomnie", "Stress", "Autre"],
+      placeholder: "Précisez...",
+      required: false,
+    };
+    setFormData((prev) => ({
+      ...prev,
+      subFields: [...(prev.subFields || []), newSubField],
+    }));
+  };
+
+  const handleRemoveSubField = (subFieldId: string) => {
+    setFormData((prev) => ({
+      ...prev,
+      subFields: (prev.subFields || []).filter((sf) => sf.id !== subFieldId),
+    }));
+  };
+
+  const handleUpdateSubFieldName = (subFieldId: string, name: string) => {
+    setFormData((prev) => ({
+      ...prev,
+      subFields: (prev.subFields || []).map((sf) => (sf.id === subFieldId ? { ...sf, name } : sf)),
+    }));
+  };
+
+  const handleAddSubOption = (subFieldId: string) => {
+    setFormData((prev) => ({
+      ...prev,
+      subFields: (prev.subFields || []).map((sf) => {
+        if (sf.id !== subFieldId) return sf;
+        const opts = sf.optionsOrder || [];
+        return { ...sf, optionsOrder: [...opts, `Choix ${opts.length + 1}`] };
+      }),
+    }));
+  };
+
+  const handleUpdateSubOption = (subFieldId: string, optIndex: number, val: string) => {
+    setFormData((prev) => ({
+      ...prev,
+      subFields: (prev.subFields || []).map((sf) => {
+        if (sf.id !== subFieldId) return sf;
+        const opts = [...(sf.optionsOrder || [])];
+        opts[optIndex] = val;
+        return { ...sf, optionsOrder: opts };
+      }),
+    }));
+  };
+
+  const handleRemoveSubOption = (subFieldId: string, optIndex: number) => {
+    setFormData((prev) => ({
+      ...prev,
+      subFields: (prev.subFields || []).map((sf) => {
+        if (sf.id !== subFieldId) return sf;
+        const opts = (sf.optionsOrder || []).filter((_, idx) => idx !== optIndex);
+        return { ...sf, optionsOrder: opts };
+      }),
+    }));
+  };
+
   return (
-    <Dialog open={open} onClose={onClose} fullWidth maxWidth="sm">
+    <Dialog open={open} onClose={onClose} fullWidth maxWidth="md">
       <form onSubmit={onSubmit}>
         <DialogTitle>{isEditing ? "Modifier le champ" : "Nouveau champ"}</DialogTitle>
         <DialogContent dividers>
@@ -225,42 +310,181 @@ export const FieldDialog: React.FC<FieldDialogProps> = ({
 
             {formData.fieldType === FieldType.STRING && (
               <Box sx={{ mt: 1 }}>
-                <Typography variant="subtitle2" sx={{ mb: 2, fontWeight: 700 }}>
-                  Options de réponse (ordre d&apos;affichage)
-                </Typography>
-                 {formData.optionsOrder.map((opt, idx) => (
-                  <Box key={opt.id} sx={{ display: "flex", gap: 1, mb: 1.5, alignItems: "center" }}>
-                    <Box sx={{ display: "flex", flexDirection: "column" }}>
-                      <IconButton
-                        size="small"
-                        onClick={() => handleMoveOption(idx, "up")}
-                        disabled={idx === 0}
-                        sx={{ p: 0.1, color: "primary.main" }}
-                      >
-                        <ArrowUpwardIcon fontSize="small" />
-                      </IconButton>
-                      <IconButton
-                        size="small"
-                        onClick={() => handleMoveOption(idx, "down")}
-                        disabled={idx === formData.optionsOrder.length - 1}
-                        sx={{ p: 0.1, color: "primary.main" }}
-                      >
-                        <ArrowDownwardIcon fontSize="small" />
-                      </IconButton>
+                <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", mb: 2 }}>
+                  <Typography variant="subtitle2" sx={{ fontWeight: 700 }}>
+                    Options de réponse (ordre d&apos;affichage)
+                  </Typography>
+                  <Typography variant="caption" color="text.secondary">
+                    Vous pouvez ajouter des sous-champs conditionnels (ex: &quot;Pourquoi ?&quot;)
+                  </Typography>
+                </Box>
+
+                {formData.optionsOrder.map((opt, idx) => {
+                  const optionSubFields = (formData.subFields || []).filter(
+                    (sf) => sf.triggerValue === opt.value && opt.value.trim() !== ""
+                  );
+
+                  return (
+                    <Box
+                      key={opt.id}
+                      sx={{
+                        mb: 2,
+                        p: 1.5,
+                        borderRadius: 2,
+                        border: "1px solid rgba(0,0,0,0.08)",
+                        bgcolor: "background.paper",
+                      }}
+                    >
+                      <Box sx={{ display: "flex", gap: 1, alignItems: "center" }}>
+                        <Box sx={{ display: "flex", flexDirection: "column" }}>
+                          <IconButton
+                            size="small"
+                            onClick={() => handleMoveOption(idx, "up")}
+                            disabled={idx === 0}
+                            sx={{ p: 0.1, color: "primary.main" }}
+                          >
+                            <ArrowUpwardIcon fontSize="small" />
+                          </IconButton>
+                          <IconButton
+                            size="small"
+                            onClick={() => handleMoveOption(idx, "down")}
+                            disabled={idx === formData.optionsOrder.length - 1}
+                            sx={{ p: 0.1, color: "primary.main" }}
+                          >
+                            <ArrowDownwardIcon fontSize="small" />
+                          </IconButton>
+                        </Box>
+                        <TextField
+                          size="small"
+                          fullWidth
+                          value={opt.value}
+                          onChange={(e) => handleOptionChange(opt.id, e.target.value)}
+                          placeholder={`Option ${idx + 1} (ex: Mauvais, Moyen, Bien)`}
+                          sx={{ bgcolor: "background.paper" }}
+                        />
+                        <IconButton color="error" onClick={() => handleRemoveOption(opt.id)}>
+                          <DeleteIcon />
+                        </IconButton>
+                      </Box>
+
+                      {/* Display existing sub-fields for this option */}
+                      {optionSubFields.map((subField) => (
+                        <Box
+                          key={subField.id}
+                          sx={{
+                            mt: 1.5,
+                            ml: { xs: 1, sm: 4 },
+                            p: 2,
+                            borderRadius: 2,
+                            border: "1.5px dashed rgba(216, 24, 50, 0.4)",
+                            bgcolor: "rgba(216, 24, 50, 0.03)",
+                          }}
+                        >
+                          <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", mb: 1.5 }}>
+                            <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+                              <SubdirectoryArrowRightIcon sx={{ color: "primary.main", fontSize: 20 }} />
+                              <Typography variant="subtitle2" sx={{ fontWeight: 700, color: "#142949" }}>
+                                Sous-champ conditionnel (si « {opt.value} »)
+                              </Typography>
+                            </Box>
+                            <Tooltip title="Supprimer ce sous-champ">
+                              <IconButton
+                                size="small"
+                                color="error"
+                                onClick={() => handleRemoveSubField(subField.id)}
+                              >
+                                <DeleteIcon fontSize="small" />
+                              </IconButton>
+                            </Tooltip>
+                          </Box>
+
+                          <TextField
+                            size="small"
+                            fullWidth
+                            label="Question / Intitulé du sous-champ"
+                            value={subField.name}
+                            onChange={(e) => handleUpdateSubFieldName(subField.id, e.target.value)}
+                            placeholder="Ex: Pourquoi ?"
+                            sx={{ mb: 1.5, bgcolor: "background.paper" }}
+                          />
+
+                          <Typography variant="caption" sx={{ fontWeight: 700, color: "text.secondary", display: "block", mb: 1 }}>
+                            Choix proposés pour ce sous-champ :
+                          </Typography>
+
+                          <Box sx={{ display: "flex", flexDirection: "column", gap: 1 }}>
+                            {(subField.optionsOrder || []).map((subOpt, subOptIdx) => (
+                              <Box key={subOptIdx} sx={{ display: "flex", gap: 1, alignItems: "center" }}>
+                                <TextField
+                                  size="small"
+                                  fullWidth
+                                  value={subOpt}
+                                  onChange={(e) => handleUpdateSubOption(subField.id, subOptIdx, e.target.value)}
+                                  placeholder={`Choix ${subOptIdx + 1} (ex: Insomnie, Stress, Bruit...)`}
+                                  sx={{ bgcolor: "background.paper" }}
+                                />
+                                <IconButton
+                                  size="small"
+                                  color="error"
+                                  onClick={() => handleRemoveSubOption(subField.id, subOptIdx)}
+                                  disabled={(subField.optionsOrder || []).length <= 1}
+                                >
+                                  <DeleteIcon fontSize="small" />
+                                </IconButton>
+                              </Box>
+                            ))}
+
+                            <Button
+                              size="small"
+                              variant="text"
+                              startIcon={<AddIcon />}
+                              onClick={() => handleAddSubOption(subField.id)}
+                              sx={{ alignSelf: "flex-start", mt: 0.5, color: "primary.main" }}
+                            >
+                              Ajouter un choix
+                            </Button>
+                          </Box>
+                        </Box>
+                      ))}
+
+                      {/* Button to add sub-field for this option */}
+                      <Box sx={{ mt: 1, ml: { xs: 1, sm: 4 } }}>
+                        <Tooltip
+                          title={
+                            opt.value.trim() === ""
+                              ? "Saisissez d'abord un nom pour cette option ci-dessus"
+                              : ""
+                          }
+                        >
+                          <span>
+                            <Button
+                              size="small"
+                              variant="outlined"
+                              startIcon={<AddCircleOutlineIcon />}
+                              onClick={() => handleAddSubField(opt.value)}
+                              disabled={opt.value.trim() === ""}
+                              sx={{
+                                fontSize: "0.75rem",
+                                textTransform: "none",
+                                borderColor: "rgba(216, 24, 50, 0.4)",
+                                color: "#d81832",
+                                "&:hover": {
+                                  borderColor: "#d81832",
+                                  bgcolor: "rgba(216, 24, 50, 0.05)",
+                                },
+                              }}
+                            >
+                              {optionSubFields.length > 0
+                                ? "+ Ajouter un autre sous-champ"
+                                : "+ Ajouter un sous-champ (ex: Pourquoi ?)"}
+                            </Button>
+                          </span>
+                        </Tooltip>
+                      </Box>
                     </Box>
-                    <TextField
-                      size="small"
-                      fullWidth
-                      value={opt.value}
-                      onChange={(e) => handleOptionChange(opt.id, e.target.value)}
-                      placeholder={`Option ${idx + 1}`}
-                      sx={{ bgcolor: "background.paper" }}
-                    />
-                    <IconButton color="error" onClick={() => handleRemoveOption(opt.id)}>
-                      <DeleteIcon />
-                    </IconButton>
-                  </Box>
-                ))}
+                  );
+                })}
+
                 <Button
                   variant="outlined"
                   startIcon={<AddIcon />}

@@ -26,6 +26,7 @@ import { apiService } from "@/services/api.service";
 import { useAuth } from "@/context/auth-context";
 import { MarkdownRenderer } from "./insights-panel";
 import { WhackABardella } from "./whack-a-bardella";
+import { SubFieldDefinition } from "@/types";
 
 export interface ChatSuggestedAction {
   type: "CREATE_FIELD" | "DEACTIVATE_FIELD" | "UPDATE_CATEGORY";
@@ -34,6 +35,7 @@ export interface ChatSuggestedAction {
   fieldType?: string;
   category?: string;
   options?: string[];
+  subFields?: SubFieldDefinition[];
   reason?: string;
 }
 
@@ -130,6 +132,7 @@ export function ChatSuggestedActionsList({ actions }: { actions: ChatSuggestedAc
           fieldType: cleanFieldType,
           category: action.category || "Général",
           optionsOrder: editedOptions !== undefined ? editedOptions : action.options,
+          subFields: action.subFields,
           rememberLastValue: true,
         });
       } else if (action.type === "DEACTIVATE_FIELD" && action.id) {
