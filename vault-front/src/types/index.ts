@@ -67,12 +67,23 @@ export enum AppleWatchMetric {
   MINDFULNESS_MINUTES = 'MINDFULNESS_MINUTES',
 }
 
+export interface SubFieldDefinition {
+  id: string;
+  triggerValue: string;
+  name: string;
+  fieldType: FieldType;
+  optionsOrder?: string[];
+  placeholder?: string;
+  required?: boolean;
+}
+
 export interface CustomField {
   id: string;
   name: string;
   fieldType: FieldType;
   isActive: boolean;
   optionsOrder?: string[];
+  subFields?: SubFieldDefinition[];
   category?: string;
   rememberLastValue: boolean;
   min?: number;
@@ -85,6 +96,7 @@ export interface CreateCustomFieldDto {
   name: string;
   fieldType: FieldType;
   optionsOrder?: string[];
+  subFields?: SubFieldDefinition[];
   category?: string;
   rememberLastValue?: boolean;
   min?: number;
@@ -96,6 +108,7 @@ export interface UpdateCustomFieldDto {
   name?: string;
   isActive?: boolean;
   optionsOrder?: string[];
+  subFields?: SubFieldDefinition[];
   category?: string;
   rememberLastValue?: boolean;
   min?: number;
@@ -103,11 +116,12 @@ export interface UpdateCustomFieldDto {
   appleWatchMetric?: AppleWatchMetric;
 }
 
-interface FieldValue {
+export interface FieldValue {
   id: string;
   dailyLogId: string;
   customFieldId: string;
   value: string;
+  subValues?: Record<string, string>;
   createdAt: string;
 }
 

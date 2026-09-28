@@ -17,6 +17,7 @@ interface DailyEntry {
     fieldName: string;
     value: string;
     fieldType: string;
+    subValues?: Record<string, string>;
   }>;
 }
 
@@ -74,7 +75,11 @@ export class DataSanitizerService {
         );
         if (!fieldValue) continue;
 
-        values.push(fieldValue.value);
+        const displayValue = this.formatFieldValueWithSubValues(
+          fieldValue,
+          field,
+        );
+        values.push(displayValue);
 
         if (field.fieldType === FieldType.NUMBER) {
           const num = parseFloat(fieldValue.value);
@@ -136,6 +141,7 @@ export class DataSanitizerService {
         fieldName: string;
         value: string;
         fieldType: string;
+        subValues?: Record<string, string>;
       }> = [];
 
       for (const field of fields) {
@@ -145,10 +151,15 @@ export class DataSanitizerService {
           (fv) => fv.customFieldId === field.id,
         );
         if (fieldValue) {
+          const displayValue = this.formatFieldValueWithSubValues(
+            fieldValue,
+            field,
+          );
           entryFieldValues.push({
             fieldName: field.name,
-            value: fieldValue.value,
+            value: displayValue,
             fieldType: field.fieldType,
+            subValues: fieldValue.subValues,
           });
         }
       }
@@ -234,5 +245,29 @@ export class DataSanitizerService {
     }
 
     return formatter.format(parsedDate);
+  }
+
+  private formatFieldValueWithSubValues(
+    fieldValue: { value: string; subValues?: Record<string, string> },
+    field: CustomField,
+  ): string {
+    if (
+      !fieldValue.subValues ||
+      Object.keys(fieldValue.subValues).length === 0
+    ) {
+      return fieldValue.value;
+    }
+
+    const subDetails = Object.entries(fieldValue.subValues)
+      .map(([subKey, subVal]) => {
+        const subDef = field.subFields?.find(
+          (sf) => sf.id === subKey || sf.name === subKey,
+        );
+        const subLabel = subDef?.name || subKey;
+        return `${subLabel}: ${subVal}`;
+      })
+      .join(', ');
+
+    return `${fieldValue.value} (${subDetails})`;
   }
 }

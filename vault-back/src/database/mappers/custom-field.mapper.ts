@@ -17,6 +17,7 @@ export class CustomFieldMapper {
       model.min,
       model.max,
       model.appleWatchMetric,
+      model.subFields,
     );
   }
 
@@ -35,6 +36,7 @@ export class CustomFieldMapper {
     model.min = entity.min;
     model.max = entity.max;
     model.appleWatchMetric = entity.appleWatchMetric;
+    model.subFields = entity.subFields;
     return model;
   }
 }

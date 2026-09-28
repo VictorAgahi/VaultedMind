@@ -4,9 +4,11 @@ import {
   IsOptional,
   IsBoolean,
   IsNumber,
+  IsArray,
 } from 'class-validator';
 import { FieldType } from '../../domain/enums/field-type.enum.js';
 import { AppleWatchMetric } from '../../domain/enums/apple-watch-metric.enum.js';
+import type { SubFieldDefinition } from '../../domain/entities/custom-field.entity.js';
 
 export class CreateCustomFieldDto {
   @IsString()
@@ -18,6 +20,10 @@ export class CreateCustomFieldDto {
   @IsOptional()
   @IsString({ each: true })
   optionsOrder?: string[];
+
+  @IsOptional()
+  @IsArray()
+  subFields?: SubFieldDefinition[];
 
   @IsOptional()
   @IsString()
@@ -54,6 +60,10 @@ export class UpdateCustomFieldDto {
   optionsOrder?: string[];
 
   @IsOptional()
+  @IsArray()
+  subFields?: SubFieldDefinition[];
+
+  @IsOptional()
   @IsString()
   category?: string;
 
@@ -80,6 +90,7 @@ export class CustomFieldResponseDto {
   fieldType!: FieldType;
   isActive!: boolean;
   optionsOrder?: string[];
+  subFields?: SubFieldDefinition[];
   category?: string;
   rememberLastValue!: boolean;
   min?: number;

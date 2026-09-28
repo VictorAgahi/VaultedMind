@@ -45,6 +45,8 @@ export class CustomFieldController {
       dto.rememberLastValue || false,
       dto.min,
       dto.max,
+      dto.appleWatchMetric,
+      dto.subFields,
     );
 
     const saved = await this.customFieldService.createField(entity);
@@ -102,6 +104,8 @@ export class CustomFieldController {
       rememberLastValue: entity.rememberLastValue,
       min: entity.min,
       max: entity.max,
+      appleWatchMetric: entity.appleWatchMetric,
+      subFields: entity.subFields,
       createdAt: entity.createdAt,
     };
   }

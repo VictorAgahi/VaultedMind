@@ -139,5 +139,63 @@ describe('DataSanitizerService', () => {
         fieldType: FieldType.BOOLEAN,
       });
     });
+
+    it('should format subValues into daily entries and categorical field summaries', () => {
+      const fieldSleep = new CustomField(
+        'field-sleep-id',
+        'user-id',
+        'Sommeil',
+        FieldType.STRING,
+        true,
+        new Date(),
+        new Date(),
+        ['Excellent', 'Bon', 'Mauvais'],
+        'Sommeil',
+        false,
+        undefined,
+        undefined,
+        undefined,
+        [
+          {
+            id: 'why-sub-id',
+            triggerValue: 'Mauvais',
+            name: 'Pourquoi ?',
+            fieldType: FieldType.STRING,
+            optionsOrder: ['Insomnie', 'Stress'],
+          },
+        ],
+      );
+
+      const log = new DailyLog(
+        'log-1',
+        'user-id',
+        new Date('2026-06-10'),
+        new Date(),
+        new Date(),
+        'Nuit agitée',
+        [
+          new FieldValue(
+            'val-1',
+            'log-1',
+            'field-sleep-id',
+            'Mauvais',
+            new Date(),
+            new Date(),
+            { 'why-sub-id': 'Insomnie' },
+          ),
+        ],
+      );
+
+      const result = service.sanitizeLogsForAI([log], [fieldSleep]);
+      expect(result.dailyEntries[0].fieldValues[0]).toEqual({
+        fieldName: 'Sommeil',
+        value: 'Mauvais (Pourquoi ?: Insomnie)',
+        fieldType: FieldType.STRING,
+        subValues: { 'why-sub-id': 'Insomnie' },
+      });
+      expect(result.fieldSummaries[0].values).toContain(
+        'Mauvais (Pourquoi ?: Insomnie)',
+      );
+    });
   });
 });

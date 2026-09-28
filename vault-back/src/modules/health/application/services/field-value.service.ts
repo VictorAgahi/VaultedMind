@@ -29,7 +29,12 @@ export class FieldValueService {
       this.logger.log(
         `Updating existing field value for log: ${fieldValue.dailyLogId}`,
       );
-      return this.updateValue(existing.id, userId, fieldValue.value);
+      return this.updateValue(
+        existing.id,
+        userId,
+        fieldValue.value,
+        fieldValue.subValues,
+      );
     }
 
     this.logger.log(`Saving new field value for log: ${fieldValue.dailyLogId}`);
@@ -57,10 +62,17 @@ export class FieldValueService {
     id: string,
     requestingUserId: string,
     newValue: string,
+    newSubValues?: Record<string, string>,
   ): Promise<FieldValue> {
     const existing = await this.findById(id);
     await this.assertOwnership(existing.dailyLogId, requestingUserId);
-    return this.fieldValueRepository.updateDomain(id, { value: newValue });
+    const updates: { value?: string; subValues?: Record<string, string> } = {
+      value: newValue,
+    };
+    if (newSubValues !== undefined) {
+      updates.subValues = newSubValues;
+    }
+    return this.fieldValueRepository.updateDomain(id, updates);
   }
 
   async deleteValue(id: string, requestingUserId: string): Promise<void> {

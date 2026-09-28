@@ -8,6 +8,7 @@ interface DailyEntry {
     fieldName: string;
     value: string;
     fieldType: string;
+    subValues?: Record<string, string>;
   }>;
 }
 

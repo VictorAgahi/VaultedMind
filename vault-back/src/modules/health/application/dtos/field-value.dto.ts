@@ -1,4 +1,4 @@
-import { IsString, IsUUID } from 'class-validator';
+import { IsString, IsUUID, IsOptional, IsObject } from 'class-validator';
 
 export class SaveFieldValueDto {
   @IsUUID()
@@ -6,11 +6,19 @@ export class SaveFieldValueDto {
 
   @IsString()
   value!: string;
+
+  @IsOptional()
+  @IsObject()
+  subValues?: Record<string, string>;
 }
 
 export class UpdateFieldValueDto {
   @IsString()
   value!: string;
+
+  @IsOptional()
+  @IsObject()
+  subValues?: Record<string, string>;
 }
 
 export class FieldValueResponseDto {
@@ -18,5 +26,6 @@ export class FieldValueResponseDto {
   dailyLogId!: string;
   customFieldId!: string;
   value!: string;
+  subValues?: Record<string, string>;
   createdAt!: Date;
 }

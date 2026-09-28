@@ -75,11 +75,19 @@ Exemple de format :
 [
   {
     "type": "CREATE_FIELD",
-    "name": "Humeur",
+    "name": "Sommeil",
     "fieldType": "STRING", // OBLIGATOIRE: "STRING", "NUMBER", "BOOLEAN" ou "DATE"
-    "category": "Santé mentale",
-    "options": ["Maniaque", "Dépressif", "Stable"], // Optionnel: suggère des valeurs par défaut pertinentes (pour les champs STRING)
-    "reason": "Explication de pourquoi créer ce champ"
+    "category": "Sommeil",
+    "options": ["Excellent", "Bon", "Moyen", "Mauvais"], // Optionnel: suggère des valeurs par défaut pertinentes (pour les champs STRING)
+    "subFields": [
+      {
+        "triggerValue": "Mauvais",
+        "name": "Pourquoi ?",
+        "fieldType": "STRING",
+        "options": ["Insomnie", "Stress", "Bruit", "Écran tardif", "Cauchemars", "Autre"]
+      }
+    ],
+    "reason": "Explication de pourquoi créer ce champ avec des sous-champs conditionnels"
   },
   {
     "type": "DEACTIVATE_FIELD",

@@ -9,7 +9,7 @@ import {
   Stack,
 } from "@mui/material";
 import { DailyLogsManager } from "@/components/daily-logs-manager/daily-logs-manager";
-import { WellnessScoreCard } from "@/components/dashboard/wellness-score-card";
+import { LatestAIReviewCard } from "@/components/dashboard/latest-ai-review-card";
 import { Navbar } from "@/components/navbar/navbar";
 import { useAuth } from "@/context/auth-context";
 
@@ -48,8 +48,8 @@ export default function DashboardPage() {
           </Typography>
         </Box>
 
-        {/* Wellness Score Card — spectacular feature */}
-        <WellnessScoreCard />
+        {/* Latest AI Review Card */}
+        <LatestAIReviewCard />
 
         <Grid container spacing={0}>
           <Grid size={{ xs: 12 }}>

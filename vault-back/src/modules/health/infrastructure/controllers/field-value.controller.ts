@@ -40,6 +40,7 @@ export class FieldValueController {
       dto.value,
       new Date(),
       new Date(),
+      dto.subValues,
     );
 
     const saved = await this.fieldValueService.saveValue(entity, req.user.id);
@@ -68,6 +69,7 @@ export class FieldValueController {
       valueId,
       req.user.id,
       dto.value,
+      dto.subValues,
     );
     return this.mapToResponse(updated);
   }
@@ -87,6 +89,7 @@ export class FieldValueController {
       dailyLogId: entity.dailyLogId,
       customFieldId: entity.customFieldId,
       value: entity.value,
+      subValues: entity.subValues,
       createdAt: entity.createdAt,
     };
   }

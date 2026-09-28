@@ -2,6 +2,16 @@ import { FieldType } from '../enums/field-type.enum.js';
 import { AppleWatchMetric } from '../enums/apple-watch-metric.enum.js';
 export { FieldType, AppleWatchMetric };
 
+export interface SubFieldDefinition {
+  id: string;
+  triggerValue: string;
+  name: string;
+  fieldType: FieldType;
+  optionsOrder?: string[];
+  placeholder?: string;
+  required?: boolean;
+}
+
 export class CustomField {
   constructor(
     public readonly id: string,
@@ -17,5 +27,6 @@ export class CustomField {
     public readonly min?: number,
     public readonly max?: number,
     public readonly appleWatchMetric?: AppleWatchMetric,
+    public readonly subFields?: SubFieldDefinition[],
   ) {}
 }

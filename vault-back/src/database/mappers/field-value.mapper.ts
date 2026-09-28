@@ -10,6 +10,7 @@ export class FieldValueMapper {
       model.value,
       model.createdAt,
       model.updatedAt,
+      model.subValues,
     );
   }
 
@@ -19,6 +20,7 @@ export class FieldValueMapper {
     model.dailyLogId = entity.dailyLogId;
     model.customFieldId = entity.customFieldId;
     model.value = entity.value;
+    model.subValues = entity.subValues;
     model.createdAt = entity.createdAt;
     model.updatedAt = entity.updatedAt;
     return model;

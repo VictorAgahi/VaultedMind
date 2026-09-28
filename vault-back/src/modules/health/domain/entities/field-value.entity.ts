@@ -6,5 +6,6 @@ export class FieldValue {
     public readonly value: string,
     public readonly createdAt: Date,
     public readonly updatedAt: Date,
+    public readonly subValues?: Record<string, string>,
   ) {}
 }

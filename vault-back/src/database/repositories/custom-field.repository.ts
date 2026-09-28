@@ -33,7 +33,20 @@ export class CustomFieldRepository extends AbstractBaseRepository<CustomFieldMod
 
   async updateDomain(
     id: string,
-    updates: Partial<Pick<CustomField, 'name' | 'isActive'>>,
+    updates: Partial<
+      Pick<
+        CustomField,
+        | 'name'
+        | 'isActive'
+        | 'optionsOrder'
+        | 'category'
+        | 'rememberLastValue'
+        | 'min'
+        | 'max'
+        | 'appleWatchMetric'
+        | 'subFields'
+      >
+    >,
   ): Promise<CustomField> {
     await this.repository.update(id, updates);
     return this.findDomainById(id);

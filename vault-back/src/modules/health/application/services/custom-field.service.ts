@@ -51,6 +51,8 @@ export class CustomFieldService {
         | 'rememberLastValue'
         | 'min'
         | 'max'
+        | 'appleWatchMetric'
+        | 'subFields'
       >
     >,
   ): Promise<CustomField> {

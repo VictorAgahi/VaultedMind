@@ -78,7 +78,7 @@ export class FieldValueRepository extends AbstractBaseRepository<FieldValueModel
 
   async updateDomain(
     id: string,
-    updates: Partial<Pick<FieldValue, 'value'>>,
+    updates: Partial<Pick<FieldValue, 'value' | 'subValues'>>,
   ): Promise<FieldValue> {
     const encryptedUpdates = { ...updates };
     if (encryptedUpdates.value) {

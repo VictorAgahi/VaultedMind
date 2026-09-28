@@ -5,6 +5,7 @@ import { UserModel } from './user.model.js';
 import { FieldValueModel } from './field-value.model.js';
 import { FieldType } from '../../modules/health/domain/enums/field-type.enum.js';
 import { AppleWatchMetric } from '../../modules/health/domain/enums/apple-watch-metric.enum.js';
+import type { SubFieldDefinition } from '../../modules/health/domain/entities/custom-field.entity.js';
 
 @Entity('custom_fields')
 export class CustomFieldModel extends BaseModel {
@@ -36,6 +37,9 @@ export class CustomFieldModel extends BaseModel {
 
   @Column({ name: 'options_order', type: 'json', nullable: true })
   optionsOrder?: string[];
+
+  @Column({ name: 'sub_fields', type: 'json', nullable: true })
+  subFields?: SubFieldDefinition[];
 
   @Column({
     type: 'enum',
