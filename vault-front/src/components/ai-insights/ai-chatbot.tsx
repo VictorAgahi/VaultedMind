@@ -219,18 +219,28 @@ interface ChatInputProps {
   value: string;
   onChange: (val: string) => void;
   onSend: () => void;
-  disabled: boolean;
+  isPending: boolean;
   quota?: { remaining: number; maxAllowed: number; nextAvailableAt: string | null } | null;
+  onFocus?: () => void;
 }
 
-const ChatInput: React.FC<ChatInputProps> = ({ value, onChange, onSend, disabled, quota }) => {
+const ChatInput: React.FC<ChatInputProps> = ({ value, onChange, onSend, isPending, quota, onFocus }) => {
   const isQuotaReached = quota !== null && quota !== undefined && quota.remaining === 0;
+  const isInputDisabled = isPending || isQuotaReached;
+  const isSendDisabled = !value.trim() || isPending || isQuotaReached;
+  const inputRef = useRef<HTMLInputElement | HTMLTextAreaElement | null>(null);
+
+  const handleContainerClick = () => {
+    if (!isInputDisabled && inputRef.current) {
+      inputRef.current.focus();
+    }
+  };
 
   return (
     <Box sx={{
-      px: { xs: 1, sm: 2 },
+      px: { xs: 1.5, sm: 2 },
       pt: 1.5,
-      pb: { xs: 2, sm: 2 },
+      pb: { xs: "calc(env(safe-area-inset-bottom, 0px) + 12px)", sm: 2 },
       bgcolor: "white",
       borderTop: "1px solid #e2e8f0",
       flexShrink: 0,
@@ -254,18 +264,28 @@ const ChatInput: React.FC<ChatInputProps> = ({ value, onChange, onSend, disabled
           🔒 Limite de 2 messages / 12h atteinte.
         </Typography>
       )}
-      <Box sx={{ display: "flex", gap: 1.2, alignItems: "flex-end" }}>
+      <Box
+        onClick={handleContainerClick}
+        sx={{
+          display: "flex",
+          gap: 1.2,
+          alignItems: "flex-end",
+          cursor: isInputDisabled ? "not-allowed" : "text",
+        }}
+      >
         <TextField
+          inputRef={inputRef}
           fullWidth
           size="small"
           multiline
           maxRows={4}
           placeholder={isQuotaReached ? "Quota de 2 messages / 12h atteint" : "Posez votre question…"}
           value={value}
-          disabled={disabled || isQuotaReached}
+          disabled={isInputDisabled}
           onChange={(e) => onChange(e.target.value)}
+          onFocus={onFocus}
           onKeyDown={(e) => {
-            if (e.key === "Enter" && !e.shiftKey && !isQuotaReached) {
+            if (e.key === "Enter" && !e.shiftKey && !isSendDisabled) {
               e.preventDefault();
               onSend();
             }
@@ -277,8 +297,9 @@ const ChatInput: React.FC<ChatInputProps> = ({ value, onChange, onSend, disabled
               border: "1px solid #e2e8f0",
               transition: "all 0.2s",
               minHeight: 44,
-              alignItems: "flex-end",
-              pb: "10px",
+              alignItems: "center",
+              py: 0.75,
+              px: 1.5,
               "& fieldset": { border: "none" },
               "&.Mui-focused": {
                 bgcolor: "white",
@@ -289,23 +310,26 @@ const ChatInput: React.FC<ChatInputProps> = ({ value, onChange, onSend, disabled
             },
             "& .MuiInputBase-input": {
               py: 0,
-              fontSize: { xs: "0.9rem", sm: "0.875rem" },
+              fontSize: { xs: "16px", sm: "0.875rem" },
               lineHeight: 1.5,
             },
           }}
         />
         <IconButton
-          onClick={onSend}
-          disabled={disabled || isQuotaReached}
+          onClick={(e) => {
+            e.stopPropagation();
+            onSend();
+          }}
+          disabled={isSendDisabled}
           sx={{
-            bgcolor: value.trim() && !isQuotaReached ? "primary.main" : "#f1f5f9",
-            color: value.trim() && !isQuotaReached ? "white" : "#94a3b8",
+            bgcolor: !isSendDisabled ? "primary.main" : "#f1f5f9",
+            color: !isSendDisabled ? "white" : "#94a3b8",
             transition: "all 0.2s ease-in-out",
             flexShrink: 0,
             mb: "2px",
             "&:hover": {
-              bgcolor: value.trim() && !isQuotaReached ? "primary.dark" : "#e2e8f0",
-              transform: value.trim() && !isQuotaReached ? "scale(1.05)" : "none",
+              bgcolor: !isSendDisabled ? "primary.dark" : "#e2e8f0",
+              transform: !isSendDisabled ? "scale(1.05)" : "none",
             },
             "&.Mui-disabled": {
               bgcolor: "#f1f5f9",
@@ -475,6 +499,19 @@ export function AIChatBot() {
     }
   }, [isOpen]);
 
+  useEffect(() => {
+    if (typeof window === "undefined" || !window.visualViewport) return;
+    const handleViewportResize = () => {
+      if (isOpen && window.innerWidth < 600 && scrollRef.current) {
+        scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
+      }
+    };
+    window.visualViewport.addEventListener("resize", handleViewportResize);
+    return () => {
+      window.visualViewport?.removeEventListener("resize", handleViewportResize);
+    };
+  }, [isOpen]);
+
   if (!isAuthenticated) return null;
   if (!pathname?.startsWith("/dashboard") && !pathname?.startsWith("/analytics")) {
     return null;
@@ -586,12 +623,13 @@ export function AIChatBot() {
             right: { xs: 0, sm: 24 },
             display: "flex",
             flexDirection: "column",
-            height: { xs: "100dvh", md: "650px" },
+            height: { xs: "100%", sm: "600px", md: "650px" },
+            maxHeight: { xs: "100dvh", sm: "650px" },
             width: "100%",
-            maxWidth: { xs: "100%", md: "500px" },
+            maxWidth: { xs: "100%", sm: "420px", md: "500px" },
             borderRadius: { xs: 0, sm: "24px" },
             overflow: "hidden",
-            zIndex: 1050,
+            zIndex: { xs: 1300, sm: 1050 },
             boxShadow: { xs: "none", sm: "0 20px 48px rgba(0,0,0,0.15)" },
             top: { xs: 0, sm: "auto" },
             left: { xs: 0, sm: "auto" },
@@ -604,8 +642,15 @@ export function AIChatBot() {
             value={inputValue}
             onChange={(val) => dispatch({ type: "SET_INPUT_VALUE", payload: val })}
             onSend={handleSendMessage}
-            disabled={!inputValue.trim() || isPending}
+            isPending={isPending}
             quota={chatQuota}
+            onFocus={() => {
+              setTimeout(() => {
+                if (scrollRef.current) {
+                  scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
+                }
+              }, 300);
+            }}
           />
         </Paper>
       </Fade>

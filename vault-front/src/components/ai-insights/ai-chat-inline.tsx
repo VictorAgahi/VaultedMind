@@ -278,6 +278,7 @@ export function AIChatInline() {
   const [state, dispatch] = React.useReducer(chatReducer, initialChatState);
   const [isPending, startTransition] = useTransition();
   const scrollRef = useRef<HTMLDivElement>(null);
+  const inputRef = useRef<HTMLInputElement | HTMLTextAreaElement | null>(null);
   const [chatQuota, setChatQuota] = React.useState<AIChatStatusResponseDto | null>(null);
   
   const hasAutoPrompted = useRef(false);
@@ -645,8 +646,21 @@ export function AIChatInline() {
             🔒 Limite de 2 messages / 12h atteinte.
           </Typography>
         )}
-        <Box sx={{ display: "flex", gap: 1.5, alignItems: "flex-end" }}>
+        <Box
+          onClick={() => {
+            if (!(isPending || (chatQuota !== null && chatQuota.remaining === 0)) && inputRef.current) {
+              inputRef.current.focus();
+            }
+          }}
+          sx={{
+            display: "flex",
+            gap: 1.5,
+            alignItems: "flex-end",
+            cursor: isPending || (chatQuota !== null && chatQuota.remaining === 0) ? "not-allowed" : "text",
+          }}
+        >
           <TextField
+            inputRef={inputRef}
             fullWidth
             multiline
             maxRows={5}
@@ -672,6 +686,9 @@ export function AIChatInline() {
                   "& fieldset": { borderColor: "primary.main" },
                   boxShadow: "0 0 0 3px rgba(99, 102, 241, 0.1)",
                 },
+              },
+              "& .MuiInputBase-input": {
+                fontSize: { xs: "16px", sm: "0.875rem" },
               },
             }}
           />
