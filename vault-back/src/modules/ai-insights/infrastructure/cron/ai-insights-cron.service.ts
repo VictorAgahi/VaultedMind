@@ -17,6 +17,14 @@ export class AIInsightsCronService {
     timeZone: 'Europe/Paris',
   })
   async generateDailyInsights() {
+    const isCronEnabled = process.env.ENABLE_AI_CRON === 'true';
+    if (!isCronEnabled) {
+      this.logger.log(
+        'Daily AI insights generation is disabled (ENABLE_AI_CRON is false). Skipping.',
+      );
+      return;
+    }
+
     this.logger.log('Starting daily AI insights generation (21h)...');
 
     try {

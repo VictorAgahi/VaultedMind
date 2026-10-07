@@ -29,8 +29,10 @@ import InfoOutlinedIcon from "@mui/icons-material/InfoOutlined";
 import { apiService } from "@/services/api.service";
 import { AIInsightResponseDto } from "@/types";
 import EmojiEventsIcon from "@mui/icons-material/EmojiEvents";
+import AutoAwesomeIcon from "@mui/icons-material/AutoAwesome";
 import { WhackABardella } from "./whack-a-bardella";
 import { ChatSuggestedActionsList, ChatSuggestedAction } from "./ai-chat-inline";
+import { useCurrentTime } from "@/utils/use-current-time";
 
 function getErrorMessage(error: unknown): string {
   if (error instanceof Error) return error.message;
@@ -573,11 +575,24 @@ export function InsightsPanel() {
     }
   };
 
-  const hasGeneratedToday = state.insights.some(i => {
-    const d = new Date(i.createdAt);
-    const today = new Date();
-    return d.getDate() === today.getDate() && d.getMonth() === today.getMonth() && d.getFullYear() === today.getFullYear();
-  });
+  const currentTime = useCurrentTime();
+
+  const getCooldownInfo = () => {
+    if (state.insights.length === 0 || currentTime === 0) return { active: false, text: "" };
+    const latest = state.insights[0];
+    const diffMs = currentTime - new Date(latest.createdAt).getTime();
+    const twelveHoursMs = 12 * 60 * 60 * 1000;
+    if (diffMs < twelveHoursMs) {
+      const remainingMs = twelveHoursMs - diffMs;
+      const hours = Math.floor(remainingMs / (60 * 60 * 1000));
+      const minutes = Math.ceil((remainingMs % (60 * 60 * 1000)) / (60 * 1000));
+      const text = hours > 0 ? `${hours}h ${minutes}min` : `${minutes}min`;
+      return { active: true, text };
+    }
+    return { active: false, text: "" };
+  };
+
+  const cooldown = getCooldownInfo();
 
   return (
     <Box
@@ -622,11 +637,11 @@ export function InsightsPanel() {
 
       {/* Contexte limites */}
       <Box sx={{ display: "flex", alignItems: "flex-start", gap: 0.75, mb: 2, bgcolor: "rgba(148,163,184,0.08)", borderRadius: 2, p: 1.2 }}>
-        <Tooltip title="L'IA analyse vos 30 derniers journaux. Une analyse par type est conservée ; les suivantes remplacent les précédentes." arrow>
+        <Tooltip title="Vous pouvez déclencher une review vous-même toutes les 12h. L'IA analyse vos entrées récentes pour synthétiser vos tendances." arrow>
           <InfoOutlinedIcon sx={{ fontSize: "0.85rem", color: "#94a3b8", mt: "1px", flexShrink: 0, cursor: "help" }} />
         </Tooltip>
         <Typography variant="caption" sx={{ color: "#64748b", lineHeight: 1.5, fontSize: "0.72rem" }}>
-          Générées chaque jeudi à <strong>21h</strong> · une analyse par type · basées sur vos 30 derniers journaux
+          Analyses à la demande · <strong>1 review max toutes les 12h</strong> · basées sur vos 30 derniers journaux
         </Typography>
       </Box>
 
@@ -637,70 +652,86 @@ export function InsightsPanel() {
       )}
 
       {state.enabled && (
-        <Box sx={{ display: "flex", gap: 1.5, mb: 2 }}>
-          <Button
-            variant="outlined"
-            size="small"
-            fullWidth
-            disabled={state.isGenerating || hasGeneratedToday}
-            onClick={() => {
-              dispatch({ type: "SET_GENERATING", isGenerating: true });
-              apiService.post("/health/ai-insights/generate")
-                .catch((error: unknown) => {
-                  console.error("Erreur de génération :", getErrorMessage(error));
-                  dispatch({ type: "SET_GENERATING", isGenerating: false });
-                });
-            }}
-            sx={{
-              borderColor: "#cbd5e1",
-              color: "#475569",
-              fontSize: "0.82rem",
-              "&:hover": { borderColor: "#94a3b8", bgcolor: "#f1f5f9" }
-            }}
-          >
-            {state.isGenerating ? "Génération en cours..." : hasGeneratedToday ? "Déjà générée aujourd'hui" : "Lancer l'analyse"}
-          </Button>
+        <Box sx={{ mb: 2 }}>
+          <Box sx={{ display: "flex", gap: 1.5, mb: 1, flexWrap: { xs: "wrap", sm: "nowrap" } }}>
+            <Button
+              variant="contained"
+              size="small"
+              fullWidth
+              startIcon={state.isGenerating ? <CircularProgress size={16} color="inherit" /> : <AutoAwesomeIcon />}
+              disabled={state.isGenerating || cooldown.active}
+              onClick={() => {
+                dispatch({ type: "SET_GENERATING", isGenerating: true });
+                apiService.post("/health/ai-insights/generate")
+                  .then(async () => {
+                    window.dispatchEvent(new CustomEvent("ai-insights-updated"));
+                    const insights = await apiService.get<AIInsightResponseDto[]>("/health/ai-insights");
+                    dispatch({ type: "FETCH_SUCCESS", insights });
+                    dispatch({ type: "SET_GENERATING", isGenerating: false });
+                  })
+                  .catch((error: unknown) => {
+                    console.error("Erreur de génération :", getErrorMessage(error));
+                    dispatch({ type: "SET_GENERATING", isGenerating: false });
+                  });
+              }}
+              sx={{
+                bgcolor: cooldown.active ? "#94a3b8" : "#4f46e5",
+                color: "white",
+                fontWeight: 700,
+                fontSize: "0.82rem",
+                boxShadow: cooldown.active ? "none" : "0 4px 12px rgba(79, 70, 229, 0.25)",
+                "&:hover": { bgcolor: "#4338ca" },
+                "&.Mui-disabled": { bgcolor: "#cbd5e1", color: "#64748b" },
+              }}
+            >
+              {state.isGenerating
+                ? "Génération en cours..."
+                : cooldown.active
+                ? `Prochaine review dans ${cooldown.text}`
+                : "Lancer ma review"}
+            </Button>
 
-          <Button
-            variant="outlined"
-            size="small"
-            fullWidth
-            onClick={() => {
-              window.dispatchEvent(new CustomEvent("ai-chat-open-with-message", { detail: { message: "" } }));
-            }}
-            sx={{
-              borderColor: "#4f46e5",
-              color: "#4f46e5",
-              fontWeight: 700,
-              fontSize: "0.82rem",
-              "&:hover": { borderColor: "#4338ca", bgcolor: "rgba(79,70,229,0.04)" }
-            }}
-          >
-            Discuter avec l&apos;IA
-          </Button>
-          
-          <Button
-            variant="outlined"
-            size="small"
-            fullWidth
-            onClick={async () => {
-              try {
-                dispatch({ type: "FETCH_START" });
-                const insights = await apiService.get<AIInsightResponseDto[]>("/health/ai-insights");
-                dispatch({ type: "FETCH_SUCCESS", insights });
-              } catch (error: unknown) {
-                dispatch({ type: "FETCH_ERROR", error: getErrorMessage(error) });
-              }
-            }}
-            sx={{
-              borderColor: "#cbd5e1",
-              color: "#475569",
-              fontSize: "0.82rem",
-              "&:hover": { borderColor: "#94a3b8", bgcolor: "#f1f5f9" }
-            }}
-          >
-            Actualiser
-          </Button>
+            <Button
+              variant="outlined"
+              size="small"
+              fullWidth
+              onClick={() => {
+                window.dispatchEvent(new CustomEvent("ai-chat-open-with-message", { detail: { message: "" } }));
+              }}
+              sx={{
+                borderColor: "#4f46e5",
+                color: "#4f46e5",
+                fontWeight: 700,
+                fontSize: "0.82rem",
+                "&:hover": { borderColor: "#4338ca", bgcolor: "rgba(79,70,229,0.04)" }
+              }}
+            >
+              Discuter avec l&apos;IA
+            </Button>
+            
+            <Button
+              variant="outlined"
+              size="small"
+              fullWidth
+              onClick={async () => {
+                try {
+                  dispatch({ type: "FETCH_START" });
+                  const insights = await apiService.get<AIInsightResponseDto[]>("/health/ai-insights");
+                  dispatch({ type: "FETCH_SUCCESS", insights });
+                } catch (error: unknown) {
+                  dispatch({ type: "FETCH_ERROR", error: getErrorMessage(error) });
+                }
+              }}
+              sx={{
+                borderColor: "#cbd5e1",
+                color: "#475569",
+                fontSize: "0.82rem",
+                "&:hover": { borderColor: "#94a3b8", bgcolor: "#f1f5f9" }
+              }}
+            >
+              Actualiser
+            </Button>
+          </Box>
         </Box>
       )}
 

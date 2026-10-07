@@ -70,20 +70,28 @@ export class AIInsightService {
         activeFields,
       );
 
-      // Check if an insight was already generated today
+      // Check 12-hour review rate limit (1 review max per 12h)
       const recentInsights = await this.aiInsightRepository.findByUserId(
         userId,
         1,
       );
       if (recentInsights.length > 0) {
         const lastInsightDate = new Date(recentInsights[0].createdAt);
-        const todayDate = new Date();
-        if (
-          lastInsightDate.getDate() === todayDate.getDate() &&
-          lastInsightDate.getMonth() === todayDate.getMonth() &&
-          lastInsightDate.getFullYear() === todayDate.getFullYear()
-        ) {
-          throw new Error("Vous avez déjà généré une analyse aujourd'hui.");
+        const diffMs = Date.now() - lastInsightDate.getTime();
+        const twelveHoursMs = 12 * 60 * 60 * 1000;
+        if (diffMs < twelveHoursMs) {
+          const remainingMs = twelveHoursMs - diffMs;
+          const remainingHours = Math.floor(remainingMs / (60 * 60 * 1000));
+          const remainingMinutes = Math.ceil(
+            (remainingMs % (60 * 60 * 1000)) / (60 * 1000),
+          );
+          const timeText =
+            remainingHours > 0
+              ? `${remainingHours}h ${remainingMinutes}min`
+              : `${remainingMinutes}min`;
+          throw new Error(
+            `Vous avez déjà généré une review récemment. Prochaine review disponible dans ${timeText}.`,
+          );
         }
       }
 
@@ -95,8 +103,6 @@ export class AIInsightService {
       if (!forceInsightType && today.getDate() === 1) {
         insightType = InsightType.MONTHLY_TREND;
       }
-
-      const useGpt55 = insightType !== InsightType.MONTHLY_TREND;
 
       const promptParams = {
         logs: sanitizedData,
@@ -113,9 +119,9 @@ export class AIInsightService {
 
       const [analysisBrief, correlationBrief, contextBrief] = await Promise.all(
         [
-          this.runAgent1DataAnalyst(insightType, promptParams, useGpt55),
-          this.runAgent2CorrelationEngine(promptParams, useGpt55),
-          this.runAgent3ContextInterpreter(promptParams, useGpt55),
+          this.runAgent1DataAnalyst(insightType, promptParams),
+          this.runAgent2CorrelationEngine(promptParams),
+          this.runAgent3ContextInterpreter(promptParams),
         ],
       );
 
@@ -135,7 +141,6 @@ export class AIInsightService {
       evidence.predictionBrief = await this.runAgent4PredictionStrategist(
         promptParams,
         evidence,
-        useGpt55,
       );
 
       this.logger.log(
@@ -148,7 +153,6 @@ export class AIInsightService {
       evidence.qualityReview = await this.runAgent5QualityGate(
         promptParams,
         evidence,
-        useGpt55,
       );
 
       this.logger.log(
@@ -162,7 +166,6 @@ export class AIInsightService {
         insightType,
         promptParams,
         evidence,
-        useGpt55,
       );
 
       const totalTime = ((Date.now() - startTime) / 1000).toFixed(1);
@@ -227,10 +230,11 @@ export class AIInsightService {
         finalContent,
         {
           logsAnalyzed: recentLogs.length,
-          agentsPipelineVersion: '2.0',
+          agentsPipelineVersion: '2.1',
           agentsUsed: 6,
           pipelineDurationSeconds: parseFloat(totalTime),
-          model: useGpt55 ? 'gpt-5.5' : 'gpt-5.6-sol',
+          synthesisModel: this.llmService.getSynthesisModel(),
+          analysisModel: this.llmService.getAnalysisModel(),
           actionSuggestions:
             actionSuggestions.length > 0 ? actionSuggestions : undefined,
         },
@@ -261,7 +265,6 @@ export class AIInsightService {
   private async runAgent1DataAnalyst(
     insightType: InsightType,
     promptParams: { logs: unknown; userContext?: string },
-    useGpt55: boolean,
   ): Promise<string> {
     const prompt = this.promptService.generateAnalysisBriefPrompt(
       insightType,
@@ -270,48 +273,47 @@ export class AIInsightService {
       >[1],
     );
     return this.llmService.generateTextWithConfig(prompt, {
-      model: useGpt55 ? 'gpt-5.5' : this.llmService.getAnalysisModel(),
-      maxTokens: 100000,
-      reasoningEffort: 'max',
+      model: this.llmService.getAnalysisModel(),
+      maxTokens: 3000,
+      reasoningEffort: 'low',
     });
   }
 
-  private async runAgent2CorrelationEngine(
-    promptParams: { logs: unknown; userContext?: string },
-    useGpt55: boolean,
-  ): Promise<string> {
+  private async runAgent2CorrelationEngine(promptParams: {
+    logs: unknown;
+    userContext?: string;
+  }): Promise<string> {
     const prompt = this.promptService.generateCorrelationPrompt(
       promptParams as Parameters<
         typeof this.promptService.generateCorrelationPrompt
       >[0],
     );
     return this.llmService.generateTextWithConfig(prompt, {
-      model: useGpt55 ? 'gpt-5.5' : this.llmService.getCorrelationModel(),
-      maxTokens: 100000,
-      reasoningEffort: 'max',
+      model: this.llmService.getCorrelationModel(),
+      maxTokens: 3000,
+      reasoningEffort: 'low',
     });
   }
 
-  private async runAgent3ContextInterpreter(
-    promptParams: { logs: unknown; userContext?: string },
-    useGpt55: boolean,
-  ): Promise<string> {
+  private async runAgent3ContextInterpreter(promptParams: {
+    logs: unknown;
+    userContext?: string;
+  }): Promise<string> {
     const prompt = this.promptService.generateContextInterpretationPrompt(
       promptParams as Parameters<
         typeof this.promptService.generateContextInterpretationPrompt
       >[0],
     );
     return this.llmService.generateTextWithConfig(prompt, {
-      model: useGpt55 ? 'gpt-5.5' : this.llmService.getContextModel(),
-      maxTokens: 100000,
-      reasoningEffort: 'high',
+      model: this.llmService.getContextModel(),
+      maxTokens: 3000,
+      reasoningEffort: 'low',
     });
   }
 
   private async runAgent4PredictionStrategist(
     promptParams: { logs: unknown; userContext?: string },
     evidence: AgentEvidenceBundle,
-    useGpt55: boolean,
   ): Promise<string> {
     const prompt = this.promptService.generatePredictionPrompt(
       promptParams as Parameters<
@@ -320,16 +322,15 @@ export class AIInsightService {
       evidence,
     );
     return this.llmService.generateTextWithConfig(prompt, {
-      model: useGpt55 ? 'gpt-5.5' : this.llmService.getPredictionModel(),
-      maxTokens: 100000,
-      reasoningEffort: 'max',
+      model: this.llmService.getPredictionModel(),
+      maxTokens: 3000,
+      reasoningEffort: 'low',
     });
   }
 
   private async runAgent5QualityGate(
     promptParams: { logs: unknown; userContext?: string },
     evidence: AgentEvidenceBundle,
-    useGpt55: boolean,
   ): Promise<string> {
     const prompt = this.promptService.generateQualityGatePrompt(
       promptParams as Parameters<
@@ -338,9 +339,9 @@ export class AIInsightService {
       evidence,
     );
     return this.llmService.generateTextWithConfig(prompt, {
-      model: useGpt55 ? 'gpt-5.5' : this.llmService.getQualityModel(),
-      maxTokens: 100000,
-      reasoningEffort: 'high',
+      model: this.llmService.getQualityModel(),
+      maxTokens: 3000,
+      reasoningEffort: 'low',
     });
   }
 
@@ -348,7 +349,6 @@ export class AIInsightService {
     insightType: InsightType,
     promptParams: { logs: unknown; userContext?: string },
     evidence: AgentEvidenceBundle,
-    useGpt55: boolean,
   ): Promise<string> {
     const prompt = this.promptService.generateInsightNarrativePrompt(
       insightType,
@@ -359,9 +359,9 @@ export class AIInsightService {
       evidence,
     );
     return this.llmService.generateTextWithConfig(prompt, {
-      model: useGpt55 ? 'gpt-5.5' : this.llmService.getSynthesisModel(),
-      maxTokens: 100000,
-      reasoningEffort: 'max',
+      model: this.llmService.getSynthesisModel(),
+      maxTokens: 8000,
+      reasoningEffort: 'high',
     });
   }
 
@@ -420,10 +420,49 @@ Ne mets aucune introduction ni conclusion, renvoie UNIQUEMENT le texte optimisé
 
     const optimized = await this.llmService.generateTextWithConfig(prompt, {
       model: this.llmService.getAnalysisModel(),
-      maxTokens: 100000,
-      reasoningEffort: 'high',
+      maxTokens: 3000,
+      reasoningEffort: 'low',
     });
     return optimized.trim();
+  }
+
+  async getInsightGenerationStatus(userId: string): Promise<{
+    enabled: boolean;
+    isGenerating: boolean;
+    canGenerate: boolean;
+    nextAvailableAt: Date | null;
+    cooldownRemainingMs: number;
+    lastGeneratedAt: Date | null;
+  }> {
+    const user = await this.userRepository.findUserById(userId);
+    const recentInsights = await this.aiInsightRepository.findByUserId(
+      userId,
+      1,
+    );
+    let canGenerate = true;
+    let nextAvailableAt: Date | null = null;
+    let cooldownRemainingMs = 0;
+    let lastGeneratedAt: Date | null = null;
+
+    if (recentInsights.length > 0) {
+      lastGeneratedAt = new Date(recentInsights[0].createdAt);
+      const diffMs = Date.now() - lastGeneratedAt.getTime();
+      const twelveHoursMs = 12 * 60 * 60 * 1000;
+      if (diffMs < twelveHoursMs) {
+        canGenerate = false;
+        cooldownRemainingMs = twelveHoursMs - diffMs;
+        nextAvailableAt = new Date(lastGeneratedAt.getTime() + twelveHoursMs);
+      }
+    }
+
+    return {
+      enabled: user ? user.aiInsightsEnabled : false,
+      isGenerating: user ? user.isGeneratingInsights : false,
+      canGenerate: canGenerate && (!user || !user.isGeneratingInsights),
+      nextAvailableAt,
+      cooldownRemainingMs,
+      lastGeneratedAt,
+    };
   }
 
   async deleteAIInsight(userId: string, insightId: string): Promise<void> {

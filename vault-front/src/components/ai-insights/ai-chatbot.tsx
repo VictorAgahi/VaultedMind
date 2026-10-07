@@ -26,6 +26,8 @@ import { MarkdownRenderer } from "./insights-panel";
 import { WhackABardella } from "./whack-a-bardella";
 import { ChatSuggestedAction, ChatSuggestedActionsList } from "./ai-chat-inline";
 
+import { AIChatStatusResponseDto } from "@/types";
+
 interface Message {
   id: string;
   text: string;
@@ -35,9 +37,10 @@ interface Message {
 
 interface ChatHeaderProps {
   onClose: () => void;
+  quota?: { remaining: number; maxAllowed: number; nextAvailableAt: string | null } | null;
 }
 
-const ChatHeader: React.FC<ChatHeaderProps> = ({ onClose }) => (
+const ChatHeader: React.FC<ChatHeaderProps> = ({ onClose, quota }) => (
   <Box
     sx={{
       pt: { xs: "calc(env(safe-area-inset-top, 0px) + 16px)", sm: 2.5 },
@@ -70,8 +73,8 @@ const ChatHeader: React.FC<ChatHeaderProps> = ({ onClose }) => (
             boxShadow: "0 0 8px #10b981",
           }} />
         </Box>
-        <Typography variant="caption" sx={{ opacity: 0.85, fontSize: "0.75rem", mt: 0.2, display: "block" }}>
-          Toujours là pour vous écouter
+        <Typography variant="caption" sx={{ opacity: 0.9, fontSize: "0.75rem", mt: 0.2, display: "block" }}>
+          {quota ? `${quota.remaining}/${quota.maxAllowed} messages disponibles (12h)` : "Toujours là pour vous écouter"}
         </Typography>
       </Box>
     </Box>
@@ -217,82 +220,107 @@ interface ChatInputProps {
   onChange: (val: string) => void;
   onSend: () => void;
   disabled: boolean;
+  quota?: { remaining: number; maxAllowed: number; nextAvailableAt: string | null } | null;
 }
 
-const ChatInput: React.FC<ChatInputProps> = ({ value, onChange, onSend, disabled }) => (
-  <Box sx={{
-    px: { xs: 1, sm: 2 },
-    pt: 2,
-    pb: { xs: 2, sm: 2 },
-    bgcolor: "white",
-    borderTop: "1px solid #e2e8f0",
-    flexShrink: 0,
-  }}>
-    <Box sx={{ display: "flex", gap: 1.2, alignItems: "flex-end" }}>
-      <TextField
-        fullWidth
-        size="small"
-        multiline
-        maxRows={4}
-        placeholder="Posez votre question…"
-        value={value}
-        onChange={(e) => onChange(e.target.value)}
-        onKeyDown={(e) => {
-          if (e.key === "Enter" && !e.shiftKey) {
-            e.preventDefault();
-            onSend();
-          }
-        }}
-        sx={{
-          "& .MuiOutlinedInput-root": {
-            borderRadius: 4,
-            bgcolor: "#f8fafc",
-            border: "1px solid #e2e8f0",
-            transition: "all 0.2s",
-            minHeight: 44,
-            alignItems: "flex-end",
-            pb: "10px",
-            "& fieldset": { border: "none" },
-            "&.Mui-focused": {
-              bgcolor: "white",
-              border: "1px solid",
-              borderColor: "primary.main",
-              boxShadow: "0 0 0 3px rgba(99, 102, 241, 0.12)",
+const ChatInput: React.FC<ChatInputProps> = ({ value, onChange, onSend, disabled, quota }) => {
+  const isQuotaReached = quota !== null && quota !== undefined && quota.remaining === 0;
+
+  return (
+    <Box sx={{
+      px: { xs: 1, sm: 2 },
+      pt: 1.5,
+      pb: { xs: 2, sm: 2 },
+      bgcolor: "white",
+      borderTop: "1px solid #e2e8f0",
+      flexShrink: 0,
+    }}>
+      {isQuotaReached && (
+        <Typography
+          variant="caption"
+          sx={{
+            display: "block",
+            color: "#e11d48",
+            fontWeight: 700,
+            fontSize: "0.72rem",
+            mb: 1,
+            textAlign: "center",
+            bgcolor: "#fff1f2",
+            py: 0.5,
+            px: 1,
+            borderRadius: 1.5,
+          }}
+        >
+          🔒 Limite de 2 messages / 12h atteinte.
+        </Typography>
+      )}
+      <Box sx={{ display: "flex", gap: 1.2, alignItems: "flex-end" }}>
+        <TextField
+          fullWidth
+          size="small"
+          multiline
+          maxRows={4}
+          placeholder={isQuotaReached ? "Quota de 2 messages / 12h atteint" : "Posez votre question…"}
+          value={value}
+          disabled={disabled || isQuotaReached}
+          onChange={(e) => onChange(e.target.value)}
+          onKeyDown={(e) => {
+            if (e.key === "Enter" && !e.shiftKey && !isQuotaReached) {
+              e.preventDefault();
+              onSend();
+            }
+          }}
+          sx={{
+            "& .MuiOutlinedInput-root": {
+              borderRadius: 4,
+              bgcolor: isQuotaReached ? "#f1f5f9" : "#f8fafc",
+              border: "1px solid #e2e8f0",
+              transition: "all 0.2s",
+              minHeight: 44,
+              alignItems: "flex-end",
+              pb: "10px",
+              "& fieldset": { border: "none" },
+              "&.Mui-focused": {
+                bgcolor: "white",
+                border: "1px solid",
+                borderColor: "primary.main",
+                boxShadow: "0 0 0 3px rgba(99, 102, 241, 0.12)",
+              },
             },
-          },
-          "& .MuiInputBase-input": {
-            py: 0,
-            fontSize: { xs: "0.9rem", sm: "0.875rem" },
-            lineHeight: 1.5,
-          },
-        }}
-      />
-      <IconButton
-        onClick={onSend}
-        disabled={disabled}
-        sx={{
-          bgcolor: value.trim() ? "primary.main" : "#f1f5f9",
-          color: value.trim() ? "white" : "#94a3b8",
-          transition: "all 0.2s ease-in-out",
-          flexShrink: 0,
-          mb: "2px",
-          "&:hover": {
-            bgcolor: value.trim() ? "primary.dark" : "#e2e8f0",
-            transform: value.trim() ? "scale(1.05)" : "none",
-          },
-          "&.Mui-disabled": {
-            bgcolor: "#f1f5f9",
-            color: "#cbd5e1",
-          },
-          width: 44,
-          height: 44,
-        }}
-      >
-        <SendIcon fontSize="small" />
-      </IconButton>
+            "& .MuiInputBase-input": {
+              py: 0,
+              fontSize: { xs: "0.9rem", sm: "0.875rem" },
+              lineHeight: 1.5,
+            },
+          }}
+        />
+        <IconButton
+          onClick={onSend}
+          disabled={disabled || isQuotaReached}
+          sx={{
+            bgcolor: value.trim() && !isQuotaReached ? "primary.main" : "#f1f5f9",
+            color: value.trim() && !isQuotaReached ? "white" : "#94a3b8",
+            transition: "all 0.2s ease-in-out",
+            flexShrink: 0,
+            mb: "2px",
+            "&:hover": {
+              bgcolor: value.trim() && !isQuotaReached ? "primary.dark" : "#e2e8f0",
+              transform: value.trim() && !isQuotaReached ? "scale(1.05)" : "none",
+            },
+            "&.Mui-disabled": {
+              bgcolor: "#f1f5f9",
+              color: "#cbd5e1",
+            },
+            width: 44,
+            height: 44,
+          }}
+        >
+          <SendIcon fontSize="small" />
+        </IconButton>
+      </Box>
     </Box>
-  </Box>
-);
+  );
+};
 
 interface ChatState {
   isOpen: boolean;
@@ -372,6 +400,7 @@ export function AIChatBot() {
   const [state, dispatch] = React.useReducer(chatReducer, initialChatState);
   const [isPending, startTransition] = useTransition();
   const scrollRef = useRef<HTMLDivElement>(null);
+  const [chatQuota, setChatQuota] = React.useState<AIChatStatusResponseDto | null>(null);
   
   const [thinkingMessage, setThinkingMessage] = React.useState("L'IA réfléchit...");
 
@@ -401,6 +430,14 @@ export function AIChatBot() {
       try {
         const { enabled } = await apiService.get<{ enabled: boolean }>("/health/ai-insights/status");
         dispatch({ type: "INIT_SUCCESS", payload: { isEnabled: enabled } });
+        if (enabled) {
+          try {
+            const status = await apiService.get<AIChatStatusResponseDto>("/health/ai-chat/status");
+            setChatQuota(status);
+          } catch {
+            // Ignore if quota check endpoint is not ready
+          }
+        }
       } catch (err) {
         console.error("Failed to check AI status for chatbot", err);
         dispatch({ type: "INIT_FAILURE" });
@@ -444,7 +481,7 @@ export function AIChatBot() {
   }
 
   const handleSendMessage = async () => {
-    if (!inputValue.trim() || isPending) return;
+    if (!inputValue.trim() || isPending || (chatQuota !== null && chatQuota.remaining === 0)) return;
 
     const randomJoke = JOKES[Math.floor(Math.random() * JOKES.length)];
     setThinkingMessage(randomJoke);
@@ -459,10 +496,25 @@ export function AIChatBot() {
 
     startTransition(async () => {
       try {
-        const { response, suggestedActions } = await apiService.post<{ response: string; suggestedActions?: ChatSuggestedAction[] }>(
+        const { response, suggestedActions, remainingPrompts, nextAvailableAt } = await apiService.post<{
+          response: string;
+          suggestedActions?: ChatSuggestedAction[];
+          remainingPrompts?: number;
+          nextAvailableAt?: string | null;
+        }>(
           "/health/ai-chat",
           { message: inputValue }
         );
+
+        if (typeof remainingPrompts === "number") {
+          setChatQuota((prev) => ({
+            count: (prev?.maxAllowed ?? 2) - remainingPrompts,
+            maxAllowed: prev?.maxAllowed ?? 2,
+            remaining: remainingPrompts,
+            nextAvailableAt: nextAvailableAt ?? null,
+            cooldownRemainingMs: 0,
+          }));
+        }
 
         const aiMsg: Message = {
           id: (Date.now() + 1).toString(),
@@ -472,11 +524,28 @@ export function AIChatBot() {
         };
 
         dispatch({ type: "SEND_MESSAGE_SUCCESS", payload: aiMsg });
-      } catch (_error) {
-        console.log(_error);
+      } catch (err: unknown) {
+        let errorMsgText = "Désolé, je rencontre une erreur de connexion. Veuillez réessayer.";
+        if (typeof err === "object" && err !== null) {
+          const anyErr = err as { response?: { data?: { message?: string } }; message?: string };
+          if (anyErr.response?.data?.message) {
+            errorMsgText = anyErr.response.data.message;
+          } else if (anyErr.message) {
+            errorMsgText = anyErr.message;
+          }
+        }
+        if (errorMsgText.includes("Limite") || errorMsgText.includes("2 questions") || errorMsgText.includes("2 messages")) {
+          setChatQuota((prev) => ({
+            count: prev?.maxAllowed ?? 2,
+            maxAllowed: prev?.maxAllowed ?? 2,
+            remaining: 0,
+            nextAvailableAt: prev?.nextAvailableAt ?? null,
+            cooldownRemainingMs: 0,
+          }));
+        }
         const errorMsg: Message = {
           id: (Date.now() + 1).toString(),
-          text: "Désolé, je rencontre une erreur de connexion. Veuillez réessayer.",
+          text: errorMsgText,
           sender: "ai",
         };
         dispatch({ type: "SEND_MESSAGE_FAILURE", payload: errorMsg });
@@ -529,13 +598,14 @@ export function AIChatBot() {
             border: { xs: "none", sm: "1px solid rgba(0,0,0,0.06)" }
           }}
         >
-          <ChatHeader onClose={() => dispatch({ type: "SET_OPEN", payload: false })} />
+          <ChatHeader onClose={() => dispatch({ type: "SET_OPEN", payload: false })} quota={chatQuota} />
           <MessageList messages={messages} isPending={isPending} thinkingMessage={thinkingMessage} scrollRef={scrollRef} />
           <ChatInput
             value={inputValue}
             onChange={(val) => dispatch({ type: "SET_INPUT_VALUE", payload: val })}
             onSend={handleSendMessage}
             disabled={!inputValue.trim() || isPending}
+            quota={chatQuota}
           />
         </Paper>
       </Fade>

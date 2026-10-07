@@ -12,6 +12,8 @@ import { DailyLogRepository } from './repositories/daily-log.repository.js';
 import { FieldValueRepository } from './repositories/field-value.repository.js';
 import { AIInsightRepository } from './repositories/ai-insight.repository.js';
 import { ApiKeyRepository } from './repositories/api-key.repository.js';
+import { AIChatUsageModel } from './models/ai-chat-usage.model.js';
+import { AIChatUsageRepository } from './repositories/ai-chat-usage.repository.js';
 import { UserMapper } from './mappers/user.mapper.js';
 import { CustomFieldMapper } from './mappers/custom-field.mapper.js';
 import { DailyLogMapper } from './mappers/daily-log.mapper.js';
@@ -26,6 +28,7 @@ const models = [
   FieldValueModel,
   AIInsightModel,
   ApiKeyModel,
+  AIChatUsageModel,
 ];
 
 const repositories = [
@@ -35,6 +38,7 @@ const repositories = [
   FieldValueRepository,
   AIInsightRepository,
   ApiKeyRepository,
+  AIChatUsageRepository,
 ];
 
 const mappers = [

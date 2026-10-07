@@ -18,6 +18,8 @@ export class LLMService {
 
   // ── Per-agent model slots ─────────────────────────────────────────────────
   private readonly defaultModel: string;
+  private readonly miniModel: string;
+  private readonly chatModel: string;
   private readonly analysisModel: string;
   private readonly correlationModel: string;
   private readonly contextModel: string;
@@ -32,33 +34,41 @@ export class LLMService {
   constructor(private readonly configService: ConfigService) {
     const apiKey = this.configService.getOrThrow<string>('OPENAI_API_KEY');
 
-    const defaultFallback = 'gpt-5.6-sol';
+    const miniFallback = 'gpt-4o-mini';
+    const flagshipFallback = 'gpt-5.5';
+
+    this.miniModel =
+      this.configService.get<string>('OPENAI_MINI_MODEL')?.trim() ||
+      miniFallback;
+    this.chatModel =
+      this.configService.get<string>('OPENAI_CHAT_MODEL')?.trim() ||
+      this.miniModel;
     this.defaultModel =
-      this.configService.get<string>('OPENAI_MODEL')?.trim() || defaultFallback;
+      this.configService.get<string>('OPENAI_MODEL')?.trim() || this.miniModel;
     this.analysisModel =
       this.configService.get<string>('OPENAI_ANALYSIS_MODEL')?.trim() ||
-      defaultFallback;
+      this.miniModel;
     this.correlationModel =
       this.configService.get<string>('OPENAI_CORRELATION_MODEL')?.trim() ||
-      defaultFallback;
+      this.miniModel;
     this.contextModel =
       this.configService.get<string>('OPENAI_CONTEXT_MODEL')?.trim() ||
-      defaultFallback;
+      this.miniModel;
     this.predictionModel =
       this.configService.get<string>('OPENAI_PREDICTION_MODEL')?.trim() ||
-      defaultFallback;
+      this.miniModel;
     this.qualityModel =
       this.configService.get<string>('OPENAI_QUALITY_MODEL')?.trim() ||
-      defaultFallback;
+      this.miniModel;
     this.synthesisModel =
       this.configService.get<string>('OPENAI_SYNTHESIS_MODEL')?.trim() ||
-      defaultFallback;
+      flagshipFallback;
 
     const effortRaw = this.configService
       .get<string>('OPENAI_REASONING_EFFORT')
       ?.trim()
       ?.toLowerCase();
-    this.defaultReasoningEffort = this.parseReasoningEffort(effortRaw) ?? 'max';
+    this.defaultReasoningEffort = this.parseReasoningEffort(effortRaw) ?? 'low';
 
     this.defaultProMode =
       this.configService.get<string>('OPENAI_PRO_MODE')?.trim() === 'true';
@@ -66,12 +76,20 @@ export class LLMService {
     this.client = new OpenAI({ apiKey });
 
     this.logger.log(
-      `LLMService initialized — default: ${this.defaultModel}, ` +
+      `LLMService initialized — mini: ${this.miniModel}, synthesis: ${this.synthesisModel}, ` +
         `reasoning: ${this.defaultReasoningEffort}, pro: ${this.defaultProMode}`,
     );
   }
 
   // ── Model getters ─────────────────────────────────────────────────────────
+
+  getMiniModel(): string {
+    return this.miniModel;
+  }
+
+  getChatModel(): string {
+    return this.chatModel;
+  }
 
   getAnalysisModel(): string {
     return this.analysisModel;
@@ -151,7 +169,7 @@ export class LLMService {
         targetModel.startsWith('o4')
       ) {
         // GPT-5.x / o-series: use max_completion_tokens
-        body.max_completion_tokens = Math.max(maxTokens, 25000);
+        body.max_completion_tokens = maxTokens;
 
         if (targetModel.includes('gpt-5.6') || targetModel.startsWith('o')) {
           body.reasoning_effort =

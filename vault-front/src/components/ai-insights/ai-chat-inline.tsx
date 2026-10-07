@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useRef, useEffect, useTransition } from "react";
+import { useSearchParams } from "next/navigation";
 import {
   Box,
   Paper,
@@ -26,7 +27,7 @@ import { apiService } from "@/services/api.service";
 import { useAuth } from "@/context/auth-context";
 import { MarkdownRenderer } from "./insights-panel";
 import { WhackABardella } from "./whack-a-bardella";
-import { SubFieldDefinition } from "@/types";
+import { SubFieldDefinition, AIChatStatusResponseDto } from "@/types";
 
 export interface ChatSuggestedAction {
   type: "CREATE_FIELD" | "DEACTIVATE_FIELD" | "UPDATE_CATEGORY";
@@ -270,8 +271,6 @@ export function ChatSuggestedActionsList({ actions }: { actions: ChatSuggestedAc
   );
 }
 
-import { useSearchParams } from "next/navigation";
-
 export function AIChatInline() {
   const { isAuthenticated } = useAuth();
   const searchParams = useSearchParams();
@@ -279,6 +278,7 @@ export function AIChatInline() {
   const [state, dispatch] = React.useReducer(chatReducer, initialChatState);
   const [isPending, startTransition] = useTransition();
   const scrollRef = useRef<HTMLDivElement>(null);
+  const [chatQuota, setChatQuota] = React.useState<AIChatStatusResponseDto | null>(null);
   
   const hasAutoPrompted = useRef(false);
   
@@ -310,6 +310,14 @@ export function AIChatInline() {
       try {
         const { enabled } = await apiService.get<{ enabled: boolean }>("/health/ai-insights/status");
         dispatch({ type: "INIT_SUCCESS", payload: { isEnabled: enabled } });
+        if (enabled) {
+          try {
+            const status = await apiService.get<AIChatStatusResponseDto>("/health/ai-chat/status");
+            setChatQuota(status);
+          } catch {
+            // Ignore if endpoint not accessible
+          }
+        }
       } catch (err) {
         console.error("Failed to check AI status for chatbot", err);
         dispatch({ type: "INIT_FAILURE" });
@@ -338,7 +346,7 @@ export function AIChatInline() {
 
   const handleSendMessage = async (overrideMessage?: string) => {
     const textToSend = overrideMessage || inputValue;
-    if (!textToSend.trim() || isPending) return;
+    if (!textToSend.trim() || isPending || (chatQuota !== null && chatQuota.remaining === 0)) return;
 
     const randomJoke = JOKES[Math.floor(Math.random() * JOKES.length)];
     setThinkingMessage(randomJoke);
@@ -353,10 +361,25 @@ export function AIChatInline() {
 
     startTransition(async () => {
       try {
-        const { response, suggestedActions } = await apiService.post<{ response: string; suggestedActions?: ChatSuggestedAction[] }>(
+        const { response, suggestedActions, remainingPrompts, nextAvailableAt } = await apiService.post<{
+          response: string;
+          suggestedActions?: ChatSuggestedAction[];
+          remainingPrompts?: number;
+          nextAvailableAt?: string | null;
+        }>(
           "/health/ai-chat",
           { message: textToSend }
         );
+
+        if (typeof remainingPrompts === "number") {
+          setChatQuota((prev) => ({
+            count: (prev?.maxAllowed ?? 2) - remainingPrompts,
+            maxAllowed: prev?.maxAllowed ?? 2,
+            remaining: remainingPrompts,
+            nextAvailableAt: nextAvailableAt ?? null,
+            cooldownRemainingMs: 0,
+          }));
+        }
 
         const aiMsg: Message = {
           id: (Date.now() + 1).toString(),
@@ -366,11 +389,28 @@ export function AIChatInline() {
         };
 
         dispatch({ type: "SEND_MESSAGE_SUCCESS", payload: aiMsg });
-      } catch (_error) {
-        console.log(_error);
+      } catch (err: unknown) {
+        let errorMsgText = "Désolé, je rencontre une erreur de connexion. Veuillez réessayer.";
+        if (typeof err === "object" && err !== null) {
+          const anyErr = err as { response?: { data?: { message?: string } }; message?: string };
+          if (anyErr.response?.data?.message) {
+            errorMsgText = anyErr.response.data.message;
+          } else if (anyErr.message) {
+            errorMsgText = anyErr.message;
+          }
+        }
+        if (errorMsgText.includes("Limite") || errorMsgText.includes("2 questions") || errorMsgText.includes("2 messages")) {
+          setChatQuota((prev) => ({
+            count: prev?.maxAllowed ?? 2,
+            maxAllowed: prev?.maxAllowed ?? 2,
+            remaining: 0,
+            nextAvailableAt: prev?.nextAvailableAt ?? null,
+            cooldownRemainingMs: 0,
+          }));
+        }
         const errorMsg: Message = {
           id: (Date.now() + 1).toString(),
-          text: "Désolé, je rencontre une erreur de connexion. Veuillez réessayer.",
+          text: errorMsgText,
           sender: "ai",
         };
         dispatch({ type: "SEND_MESSAGE_FAILURE", payload: errorMsg });
@@ -421,6 +461,48 @@ export function AIChatInline() {
         bgcolor: "#f8fafc",
       }}
     >
+      {/* Header bar */}
+      <Box
+        sx={{
+          px: { xs: 2, sm: 2.5 },
+          py: 1.5,
+          bgcolor: "white",
+          borderBottom: "1px solid #e2e8f0",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "space-between",
+          flexShrink: 0,
+        }}
+      >
+        <Box sx={{ display: "flex", alignItems: "center", gap: 1.2 }}>
+          <Avatar sx={{ bgcolor: "primary.main", width: 32, height: 32 }}>
+            <SmartToyIcon sx={{ fontSize: 18 }} />
+          </Avatar>
+          <Box>
+            <Typography variant="subtitle2" sx={{ fontWeight: 700, lineHeight: 1.2 }}>
+              Assistant VaultedMind
+            </Typography>
+            <Typography variant="caption" sx={{ color: "text.secondary", fontSize: "0.72rem" }}>
+              IA Médicale & Bien-être
+            </Typography>
+          </Box>
+        </Box>
+        {chatQuota && (
+          <Chip
+            size="small"
+            label={`${chatQuota.remaining}/${chatQuota.maxAllowed} msgs / 12h`}
+            color={chatQuota.remaining > 0 ? "primary" : "default"}
+            variant={chatQuota.remaining > 0 ? "outlined" : "filled"}
+            sx={{
+              fontWeight: 600,
+              fontSize: "0.75rem",
+              bgcolor: chatQuota.remaining === 0 ? "#fee2e2" : undefined,
+              color: chatQuota.remaining === 0 ? "#b91c1c" : undefined,
+            }}
+          />
+        )}
+      </Box>
+
       {/* Messages area */}
       <Box
         ref={scrollRef}
@@ -544,16 +626,36 @@ export function AIChatInline() {
         bgcolor: "white",
         borderTop: "1px solid #e2e8f0",
       }}>
+        {chatQuota !== null && chatQuota.remaining === 0 && (
+          <Typography
+            variant="caption"
+            sx={{
+              display: "block",
+              color: "#e11d48",
+              fontWeight: 700,
+              fontSize: "0.75rem",
+              mb: 1.5,
+              textAlign: "center",
+              bgcolor: "#fff1f2",
+              py: 0.75,
+              px: 1.5,
+              borderRadius: 2,
+            }}
+          >
+            🔒 Limite de 2 messages / 12h atteinte.
+          </Typography>
+        )}
         <Box sx={{ display: "flex", gap: 1.5, alignItems: "flex-end" }}>
           <TextField
             fullWidth
             multiline
             maxRows={5}
-            placeholder="Posez votre question à l&apos;IA..."
+            placeholder={chatQuota !== null && chatQuota.remaining === 0 ? "Quota de 2 messages / 12h atteint" : "Posez votre question à l'IA..."}
             value={inputValue}
+            disabled={isPending || (chatQuota !== null && chatQuota.remaining === 0)}
             onChange={(e) => dispatch({ type: "SET_INPUT_VALUE", payload: e.target.value })}
             onKeyDown={(e) => {
-              if (e.key === "Enter" && !e.shiftKey) {
+              if (e.key === "Enter" && !e.shiftKey && !(chatQuota !== null && chatQuota.remaining === 0)) {
                 e.preventDefault();
                 handleSendMessage();
               }
@@ -561,7 +663,7 @@ export function AIChatInline() {
             sx={{
               "& .MuiOutlinedInput-root": {
                 borderRadius: 4,
-                bgcolor: "#f8fafc",
+                bgcolor: chatQuota !== null && chatQuota.remaining === 0 ? "#f1f5f9" : "#f8fafc",
                 transition: "all 0.2s",
                 "& fieldset": { borderColor: "#e2e8f0" },
                 "&:hover fieldset": { borderColor: "#cbd5e1" },
@@ -575,15 +677,15 @@ export function AIChatInline() {
           />
           <IconButton
             onClick={() => handleSendMessage()}
-            disabled={!inputValue.trim() || isPending}
+            disabled={!inputValue.trim() || isPending || (chatQuota !== null && chatQuota.remaining === 0)}
             sx={{
-              bgcolor: inputValue.trim() ? "primary.main" : "#f1f5f9",
-              color: inputValue.trim() ? "white" : "#94a3b8",
+              bgcolor: inputValue.trim() && !(chatQuota !== null && chatQuota.remaining === 0) ? "primary.main" : "#f1f5f9",
+              color: inputValue.trim() && !(chatQuota !== null && chatQuota.remaining === 0) ? "white" : "#94a3b8",
               transition: "all 0.2s ease-in-out",
               mb: 0.5,
               "&:hover": {
-                bgcolor: inputValue.trim() ? "primary.dark" : "#e2e8f0",
-                transform: inputValue.trim() ? "scale(1.05)" : "none",
+                bgcolor: inputValue.trim() && !(chatQuota !== null && chatQuota.remaining === 0) ? "primary.dark" : "#e2e8f0",
+                transform: inputValue.trim() && !(chatQuota !== null && chatQuota.remaining === 0) ? "scale(1.05)" : "none",
               },
               "&.Mui-disabled": {
                 bgcolor: "#f1f5f9",

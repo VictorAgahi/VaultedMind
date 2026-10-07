@@ -109,23 +109,29 @@ spec:
               name: vault-backend-secret
               key: openai-api-key
         - name: OPENAI_MODEL
-          value: "gpt-5.6-sol"
+          value: "gpt-4o-mini"
+        - name: OPENAI_MINI_MODEL
+          value: "gpt-4o-mini"
+        - name: OPENAI_CHAT_MODEL
+          value: "gpt-4o-mini"
         - name: OPENAI_ANALYSIS_MODEL
-          value: "gpt-5.6-sol"
+          value: "gpt-4o-mini"
         - name: OPENAI_CORRELATION_MODEL
-          value: "gpt-5.6-sol"
+          value: "gpt-4o-mini"
         - name: OPENAI_CONTEXT_MODEL
-          value: "gpt-5.6-sol"
+          value: "gpt-4o-mini"
         - name: OPENAI_PREDICTION_MODEL
-          value: "gpt-5.6-sol"
+          value: "gpt-4o-mini"
         - name: OPENAI_QUALITY_MODEL
-          value: "gpt-5.6-sol"
+          value: "gpt-4o-mini"
         - name: OPENAI_SYNTHESIS_MODEL
-          value: "gpt-5.6-sol"
+          value: "gpt-5.5"
         - name: OPENAI_REASONING_EFFORT
-          value: "max"
+          value: "low"
         - name: OPENAI_PRO_MODE
-          value: "true"
+          value: "false"
+        - name: ENABLE_AI_CRON
+          value: "false"
         - name: COOKIE_DOMAIN
           value: ".cyrus-ag.com"
         ports:

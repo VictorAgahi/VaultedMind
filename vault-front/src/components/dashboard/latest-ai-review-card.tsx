@@ -26,6 +26,7 @@ import MenuBookIcon from "@mui/icons-material/MenuBook";
 import { apiService } from "@/services/api.service";
 import { AIInsightResponseDto } from "@/types";
 import { MarkdownRenderer } from "@/components/ai-insights/insights-panel";
+import { useCurrentTime } from "@/utils/use-current-time";
 
 const insightTypeLabels: Record<string, string> = {
   DAILY_SUMMARY: "Résumé quotidien",
@@ -39,6 +40,40 @@ export function LatestAIReviewCard() {
   const [insight, setInsight] = useState<AIInsightResponseDto | null>(null);
   const [loading, setLoading] = useState(true);
   const [modalOpen, setModalOpen] = useState(false);
+  const [isGenerating, setIsGenerating] = useState(false);
+  const currentTime = useCurrentTime();
+
+  const getCooldownInfo = () => {
+    if (!insight || currentTime === 0) return { active: false, text: "" };
+    const diffMs = currentTime - new Date(insight.createdAt).getTime();
+    const twelveHoursMs = 12 * 60 * 60 * 1000;
+    if (diffMs < twelveHoursMs) {
+      const remainingMs = twelveHoursMs - diffMs;
+      const hours = Math.floor(remainingMs / (60 * 60 * 1000));
+      const minutes = Math.ceil((remainingMs % (60 * 60 * 1000)) / (60 * 1000));
+      const text = hours > 0 ? `${hours}h ${minutes}min` : `${minutes}min`;
+      return { active: true, text };
+    }
+    return { active: false, text: "" };
+  };
+
+  const cooldown = getCooldownInfo();
+
+  const handleLaunchReview = async () => {
+    try {
+      setIsGenerating(true);
+      await apiService.post("/health/ai-insights/generate");
+      window.dispatchEvent(new CustomEvent("ai-insights-updated"));
+      const insights = await apiService.get<AIInsightResponseDto[]>("/health/ai-insights");
+      if (insights && insights.length > 0) {
+        setInsight(insights[0]);
+      }
+    } catch (err: unknown) {
+      console.error("Failed to generate review:", err);
+    } finally {
+      setIsGenerating(false);
+    }
+  };
 
   useEffect(() => {
     let isMounted = true;
@@ -190,28 +225,49 @@ export function LatestAIReviewCard() {
               </Box>
             </Box>
 
-            <Button
-              component={Link}
-              href="/ai"
-              variant="outlined"
-              size="small"
-              endIcon={<ArrowForwardIcon />}
-              sx={{
-                textTransform: "none",
-                fontWeight: 700,
-                borderRadius: 3,
-                borderColor: "#d81832",
-                color: "#d81832",
-                whiteSpace: "nowrap",
-                alignSelf: { xs: "stretch", sm: "center" },
-                '&:hover': {
-                  borderColor: "#c2152a",
-                  bgcolor: "rgba(216, 24, 50, 0.05)",
-                },
-              }}
-            >
-              Découvrir l&apos;espace IA
-            </Button>
+            <Stack direction={{ xs: "column", sm: "row" }} spacing={1.5} sx={{ alignSelf: { xs: "stretch", sm: "center" } }}>
+              <Button
+                variant="contained"
+                size="small"
+                startIcon={isGenerating ? <CircularProgress size={16} color="inherit" /> : <AutoAwesomeIcon />}
+                disabled={isGenerating}
+                onClick={handleLaunchReview}
+                sx={{
+                  bgcolor: "#d81832",
+                  color: "#ffffff",
+                  textTransform: "none",
+                  fontWeight: 700,
+                  borderRadius: 2.5,
+                  px: 2.5,
+                  py: 0.8,
+                  boxShadow: "0 4px 14px rgba(216, 24, 50, 0.25)",
+                  '&:hover': { bgcolor: "#c2152a" },
+                }}
+              >
+                {isGenerating ? "Génération en cours..." : "Lancer ma review"}
+              </Button>
+              <Button
+                component={Link}
+                href="/ai"
+                variant="outlined"
+                size="small"
+                endIcon={<ArrowForwardIcon />}
+                sx={{
+                  textTransform: "none",
+                  fontWeight: 700,
+                  borderRadius: 3,
+                  borderColor: "#d81832",
+                  color: "#d81832",
+                  whiteSpace: "nowrap",
+                  '&:hover': {
+                    borderColor: "#c2152a",
+                    bgcolor: "rgba(216, 24, 50, 0.05)",
+                  },
+                }}
+              >
+                Espace IA
+              </Button>
+            </Stack>
           </Stack>
         </CardContent>
       </Card>
@@ -354,29 +410,60 @@ export function LatestAIReviewCard() {
               gap: 1.5,
               pt: 2,
               borderTop: "1px solid rgba(216, 24, 50, 0.15)",
+              flexWrap: "wrap",
             }}
           >
-            <Button
-              variant="outlined"
-              size="small"
-              startIcon={<MenuBookIcon fontSize="small" />}
-              onClick={() => setModalOpen(true)}
-              sx={{
-                textTransform: "none",
-                fontWeight: 700,
-                color: "#d81832",
-                borderColor: "#d81832",
-                borderRadius: 2.5,
-                px: 2,
-                py: 0.8,
-                '&:hover': {
-                  borderColor: "#c2152a",
-                  bgcolor: "rgba(216, 24, 50, 0.05)",
-                },
-              }}
-            >
-              Lire l&apos;analyse complète
-            </Button>
+            <Stack direction="row" spacing={1.5} sx={{ flexWrap: "wrap", gap: 1 }}>
+              <Button
+                variant="outlined"
+                size="small"
+                startIcon={<MenuBookIcon fontSize="small" />}
+                onClick={() => setModalOpen(true)}
+                sx={{
+                  textTransform: "none",
+                  fontWeight: 700,
+                  color: "#d81832",
+                  borderColor: "#d81832",
+                  borderRadius: 2.5,
+                  px: 2,
+                  py: 0.8,
+                  '&:hover': {
+                    borderColor: "#c2152a",
+                    bgcolor: "rgba(216, 24, 50, 0.05)",
+                  },
+                }}
+              >
+                Lire l&apos;analyse complète
+              </Button>
+
+              <Button
+                variant="outlined"
+                size="small"
+                startIcon={isGenerating ? <CircularProgress size={16} color="inherit" /> : <AutoAwesomeIcon fontSize="small" />}
+                disabled={isGenerating || cooldown.active}
+                onClick={handleLaunchReview}
+                sx={{
+                  textTransform: "none",
+                  fontWeight: 700,
+                  color: cooldown.active ? "#64748b" : "#142949",
+                  borderColor: cooldown.active ? "#cbd5e1" : "#142949",
+                  borderRadius: 2.5,
+                  px: 2,
+                  py: 0.8,
+                  bgcolor: cooldown.active ? "rgba(0,0,0,0.03)" : "transparent",
+                  '&:hover': {
+                    borderColor: "#0f1f38",
+                    bgcolor: "rgba(20, 41, 73, 0.05)",
+                  },
+                }}
+              >
+                {isGenerating
+                  ? "Génération en cours..."
+                  : cooldown.active
+                  ? `Review dans ${cooldown.text}`
+                  : "Lancer ma review"}
+              </Button>
+            </Stack>
 
             <Button
               variant="contained"

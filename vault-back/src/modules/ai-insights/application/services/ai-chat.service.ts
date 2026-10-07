@@ -1,7 +1,11 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable, Logger, HttpException, HttpStatus } from '@nestjs/common';
 import { DailyLogRepository } from '../../../../database/repositories/daily-log.repository.js';
 import { CustomFieldRepository } from '../../../../database/repositories/custom-field.repository.js';
 import { UserRepository } from '../../../../database/repositories/user.repository.js';
+import {
+  AIChatUsageRepository,
+  AIChatUsageStatus,
+} from '../../../../database/repositories/ai-chat-usage.repository.js';
 import { DataSanitizerService } from './data-sanitizer.service.js';
 import { LLMService } from './llm.service.js';
 
@@ -13,9 +17,14 @@ export class AIChatService {
     private readonly dailyLogRepository: DailyLogRepository,
     private readonly customFieldRepository: CustomFieldRepository,
     private readonly userRepository: UserRepository,
+    private readonly aiChatUsageRepository: AIChatUsageRepository,
     private readonly dataSanitizer: DataSanitizerService,
     private readonly llmService: LLMService,
   ) {}
+
+  async getChatStatus(userId: string): Promise<AIChatUsageStatus> {
+    return this.aiChatUsageRepository.getUsageStatus(userId);
+  }
 
   async getChatResponse(
     userId: string,
@@ -23,7 +32,33 @@ export class AIChatService {
   ): Promise<{
     response: string;
     suggestedActions?: Record<string, unknown>[];
+    remainingPrompts?: number;
+    nextAvailableAt?: Date | null;
   }> {
+    // Check rate limit: 2 prompts max per 12 hours
+    const usageStatus = await this.aiChatUsageRepository.getUsageStatus(userId);
+    if (usageStatus.remaining <= 0) {
+      const remainingHours = Math.floor(
+        usageStatus.cooldownRemainingMs / (60 * 60 * 1000),
+      );
+      const remainingMinutes = Math.ceil(
+        (usageStatus.cooldownRemainingMs % (60 * 60 * 1000)) / (60 * 1000),
+      );
+      const timeStr =
+        remainingHours > 0
+          ? `${remainingHours}h ${remainingMinutes}min`
+          : `${remainingMinutes}min`;
+      throw new HttpException(
+        {
+          statusCode: HttpStatus.TOO_MANY_REQUESTS,
+          message: `Limite de messages atteinte : vous avez droit à 2 questions toutes les 12 heures. Prochaine question disponible dans ${timeStr}.`,
+          remainingPrompts: 0,
+          nextAvailableAt: usageStatus.nextAvailableAt,
+        },
+        HttpStatus.TOO_MANY_REQUESTS,
+      );
+    }
+
     try {
       // Fetch recent logs for context (last 60 days for more depth)
       const allLogs = await this.dailyLogRepository.findByUserId(userId);
@@ -112,8 +147,8 @@ ATTENTION EXTRÊME : NE propose PAS les changements sous forme de texte, de list
       const rawResponse = await this.llmService.generateTextWithConfig(
         `${systemPrompt}\n\n${prompt}`,
         {
-          model: 'gpt-5.5',
-          maxTokens: 2000,
+          model: this.llmService.getChatModel(),
+          maxTokens: 1500,
         },
       );
 
@@ -229,8 +264,19 @@ ATTENTION EXTRÊME : NE propose PAS les changements sous forme de texte, de list
         `[AIChat] Parsed suggestedActions: ${JSON.stringify(suggestedActions)}`,
       );
 
-      return { response: cleanResponse, suggestedActions };
+      // Record successful usage
+      await this.aiChatUsageRepository.recordUsage(userId);
+
+      return {
+        response: cleanResponse,
+        suggestedActions,
+        remainingPrompts: Math.max(0, usageStatus.remaining - 1),
+        nextAvailableAt: usageStatus.nextAvailableAt,
+      };
     } catch (error) {
+      if (error instanceof HttpException) {
+        throw error;
+      }
       this.logger.error(`Error in AIChatService for user ${userId}:`, error);
       return {
         response:

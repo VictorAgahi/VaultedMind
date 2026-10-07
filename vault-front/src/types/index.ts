@@ -155,9 +155,27 @@ export interface BulkImportResponseDto {
 
 export interface AIInsightResponseDto {
   id: string;
-  type: 'DAILY_SUMMARY' | 'WEEKLY_TREND' | 'ANOMALY' | 'RECOMMENDATION';
+  type: 'DAILY_SUMMARY' | 'WEEKLY_TREND' | 'MONTHLY_TREND' | 'ANOMALY' | 'RECOMMENDATION';
   title: string;
   content: string;
   metadata?: Record<string, unknown>;
   createdAt: string;
 }
+
+export interface AIInsightStatusResponseDto {
+  enabled: boolean;
+  isGenerating: boolean;
+  canGenerate: boolean;
+  nextAvailableAt: string | null;
+  cooldownRemainingMs: number;
+  lastGeneratedAt: string | null;
+}
+
+export interface AIChatStatusResponseDto {
+  count: number;
+  maxAllowed: number;
+  remaining: number;
+  nextAvailableAt: string | null;
+  cooldownRemainingMs: number;
+}
+

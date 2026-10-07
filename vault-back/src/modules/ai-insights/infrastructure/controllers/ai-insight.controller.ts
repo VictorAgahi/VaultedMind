@@ -81,13 +81,7 @@ export class AIInsightController {
   @UseGuards(JwtAuthGuard)
   @Get('status')
   async getStatus(@Request() req: { user: AuthUser }) {
-    const user = await this.aiInsightService['userRepository'].findUserById(
-      req.user.id,
-    );
-    return {
-      enabled: user.aiInsightsEnabled,
-      isGenerating: user.isGeneratingInsights,
-    };
+    return this.aiInsightService.getInsightGenerationStatus(req.user.id);
   }
 
   @UseGuards(JwtAuthGuard)
