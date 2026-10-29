@@ -1,9 +1,13 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable, Logger, HttpException, HttpStatus } from '@nestjs/common';
 import { v4 as uuidv4 } from 'uuid';
 import { AIInsightRepository } from '../../../../database/repositories/ai-insight.repository.js';
 import { DailyLogRepository } from '../../../../database/repositories/daily-log.repository.js';
 import { CustomFieldRepository } from '../../../../database/repositories/custom-field.repository.js';
 import { UserRepository } from '../../../../database/repositories/user.repository.js';
+import {
+  AIChatUsageRepository,
+  AIChatUsageStatus,
+} from '../../../../database/repositories/ai-chat-usage.repository.js';
 import { AIInsight } from '../../domain/entities/ai-insight.entity.js';
 import { InsightType } from '../../domain/enums/insight-type.enum.js';
 import { DataSanitizerService } from './data-sanitizer.service.js';
@@ -19,6 +23,7 @@ export class AIInsightService {
     private readonly dailyLogRepository: DailyLogRepository,
     private readonly customFieldRepository: CustomFieldRepository,
     private readonly userRepository: UserRepository,
+    private readonly aiChatUsageRepository: AIChatUsageRepository,
     private readonly dataSanitizer: DataSanitizerService,
     private readonly promptService: PromptService,
     private readonly llmService: LLMService,
@@ -32,6 +37,7 @@ export class AIInsightService {
     userId: string,
     forceInsightType?: InsightType,
   ): Promise<AIInsight | null> {
+    let usageId: string | null = null;
     try {
       const user = await this.userRepository.findUserById(userId);
       if (!user.aiInsightsEnabled) {
@@ -70,30 +76,18 @@ export class AIInsightService {
         activeFields,
       );
 
-      // Check 12-hour review rate limit (1 review max per 12h)
-      const recentInsights = await this.aiInsightRepository.findByUserId(
+      // Reserve the 12-hour review slot atomically (1 review max per 12h).
+      // Tracked in ai_chat_usages so deleting an insight does not reset it.
+      const reservation = await this.aiChatUsageRepository.tryReserve(
         userId,
-        1,
+        'insight',
       );
-      if (recentInsights.length > 0) {
-        const lastInsightDate = new Date(recentInsights[0].createdAt);
-        const diffMs = Date.now() - lastInsightDate.getTime();
-        const twelveHoursMs = 12 * 60 * 60 * 1000;
-        if (diffMs < twelveHoursMs) {
-          const remainingMs = twelveHoursMs - diffMs;
-          const remainingHours = Math.floor(remainingMs / (60 * 60 * 1000));
-          const remainingMinutes = Math.ceil(
-            (remainingMs % (60 * 60 * 1000)) / (60 * 1000),
-          );
-          const timeText =
-            remainingHours > 0
-              ? `${remainingHours}h ${remainingMinutes}min`
-              : `${remainingMinutes}min`;
-          throw new Error(
-            `Vous avez déjà généré une review récemment. Prochaine review disponible dans ${timeText}.`,
-          );
-        }
+      if (!reservation.usageId) {
+        throw new Error(
+          `Vous avez déjà généré une review récemment. Prochaine review disponible dans ${this.formatRemaining(reservation.status.cooldownRemainingMs)}.`,
+        );
       }
+      usageId = reservation.usageId;
 
       user.isGeneratingInsights = true;
       await this.userRepository.saveUser(user);
@@ -247,6 +241,8 @@ export class AIInsightService {
 
       return saved;
     } catch (error) {
+      // The pipeline failed: give the review slot back to the user
+      await this.aiChatUsageRepository.release(usageId);
       this.logger.error(`Error generating insight for user ${userId}:`, error);
       throw error;
     } finally {
@@ -407,7 +403,18 @@ export class AIInsightService {
     this.logger.log(`AI context updated for user ${userId}`);
   }
 
-  async optimizeAIContext(context: string): Promise<string> {
+  async optimizeAIContext(userId: string, context: string): Promise<string> {
+    const { status, usageId } = await this.aiChatUsageRepository.tryReserve(
+      userId,
+      'optimize',
+    );
+    if (!usageId) {
+      throw new HttpException(
+        `Limite d'optimisations atteinte : vous avez droit à ${status.maxAllowed} optimisations toutes les 12 heures. Prochaine optimisation disponible dans ${this.formatRemaining(status.cooldownRemainingMs)}.`,
+        HttpStatus.TOO_MANY_REQUESTS,
+      );
+    }
+
     const prompt = `Agis en tant qu'expert en ingénierie de prompt et psychologue comportementaliste.
 L'utilisateur a saisi le contexte personnel suivant pour personnaliser ses analyses et les réponses de son assistant IA :
 ---
@@ -418,12 +425,27 @@ Rédige le résultat directement sous forme de profil structuré en français (p
 Conserve absolument toutes les informations de base fournies par l'utilisateur mais enrichis-les pour que l'IA comprenne parfaitement son état d'esprit, ses contraintes et ses buts.
 Ne mets aucune introduction ni conclusion, renvoie UNIQUEMENT le texte optimisé final prêt à être enregistré.`;
 
-    const optimized = await this.llmService.generateTextWithConfig(prompt, {
-      model: this.llmService.getAnalysisModel(),
-      maxTokens: 3000,
-      reasoningEffort: 'low',
-    });
-    return optimized.trim();
+    try {
+      const optimized = await this.llmService.generateTextWithConfig(prompt, {
+        model: this.llmService.getAnalysisModel(),
+        maxTokens: 3000,
+        reasoningEffort: 'low',
+      });
+      return optimized.trim();
+    } catch (error) {
+      await this.aiChatUsageRepository.release(usageId);
+      throw error;
+    }
+  }
+
+  private formatRemaining(remainingMs: number): string {
+    const remainingHours = Math.floor(remainingMs / (60 * 60 * 1000));
+    const remainingMinutes = Math.ceil(
+      (remainingMs % (60 * 60 * 1000)) / (60 * 1000),
+    );
+    return remainingHours > 0
+      ? `${remainingHours}h ${remainingMinutes}min`
+      : `${remainingMinutes}min`;
   }
 
   async getInsightGenerationStatus(userId: string): Promise<{
@@ -435,25 +457,17 @@ Ne mets aucune introduction ni conclusion, renvoie UNIQUEMENT le texte optimisé
     lastGeneratedAt: Date | null;
   }> {
     const user = await this.userRepository.findUserById(userId);
+    const usage: AIChatUsageStatus =
+      await this.aiChatUsageRepository.getUsageStatus(userId, 'insight');
     const recentInsights = await this.aiInsightRepository.findByUserId(
       userId,
       1,
     );
-    let canGenerate = true;
-    let nextAvailableAt: Date | null = null;
-    let cooldownRemainingMs = 0;
-    let lastGeneratedAt: Date | null = null;
-
-    if (recentInsights.length > 0) {
-      lastGeneratedAt = new Date(recentInsights[0].createdAt);
-      const diffMs = Date.now() - lastGeneratedAt.getTime();
-      const twelveHoursMs = 12 * 60 * 60 * 1000;
-      if (diffMs < twelveHoursMs) {
-        canGenerate = false;
-        cooldownRemainingMs = twelveHoursMs - diffMs;
-        nextAvailableAt = new Date(lastGeneratedAt.getTime() + twelveHoursMs);
-      }
-    }
+    const lastGeneratedAt: Date | null =
+      recentInsights.length > 0 ? new Date(recentInsights[0].createdAt) : null;
+    const canGenerate = usage.remaining > 0;
+    const nextAvailableAt = usage.nextAvailableAt;
+    const cooldownRemainingMs = usage.cooldownRemainingMs;
 
     return {
       enabled: user ? user.aiInsightsEnabled : false,

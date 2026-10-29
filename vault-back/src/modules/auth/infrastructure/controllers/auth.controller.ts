@@ -31,7 +31,7 @@ export class AuthController {
   ) {
     const { user, token } = await this.authService.register(dto);
     this.setCookie(response, token);
-    return { user };
+    return { user: { id: user.id, email: user.email } };
   }
 
   @Public()
@@ -45,7 +45,7 @@ export class AuthController {
   ) {
     const { user, token } = await this.authService.login(dto);
     this.setCookie(response, token);
-    return { user };
+    return { user: { id: user.id, email: user.email } };
   }
 
   @Post('logout')
