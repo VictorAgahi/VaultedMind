@@ -71,12 +71,12 @@ export default function ImportPage() {
       const content = await file.text();
       const rows = parseCSV(content);
       if (rows.length === 0) {
-        dispatch({ type: "PARSING_ERROR", error: "❌ Aucune ligne valide trouvée." });
+        dispatch({ type: "PARSING_ERROR", error: "Aucune ligne valide trouvée." });
       } else {
         dispatch({ type: "PARSING_SUCCESS", rows });
       }
     } catch (err) {
-      dispatch({ type: "PARSING_ERROR", error: `❌ Erreur : ${(err as Error).message}` });
+      dispatch({ type: "PARSING_ERROR", error: `Erreur : ${(err as Error).message}` });
     }
   };
 
@@ -94,12 +94,12 @@ export default function ImportPage() {
       window.dispatchEvent(new CustomEvent("vaultedmind:logs-imported", { detail: { logsCreated: result.logsCreated } }));
     } catch (err: unknown) {
       const error = err as AppError;
-      dispatch({ type: "IMPORT_ERROR", error: `❌ Échec : ${error.message || "Erreur inconnue"}` });
+      dispatch({ type: "IMPORT_ERROR", error: `Échec : ${error.message || "Erreur inconnue"}` });
     }
   };
 
   return (
-    <Box sx={{ minHeight: "100vh", bgcolor: "#ede5d9" }}>
+    <Box sx={{ minHeight: "100vh", bgcolor: "var(--mui-palette-background-default)" }}>
       <Navbar />
       <Container maxWidth="lg" sx={{ py: 8 }}>
         <Box sx={{ mb: 6 }}>
@@ -112,15 +112,15 @@ export default function ImportPage() {
               onDragOver={(e) => { e.preventDefault(); dispatch({ type: "SET_DRAG", active: true }); }}
               onDragLeave={() => dispatch({ type: "SET_DRAG", active: false })}
               onDrop={(e) => { e.preventDefault(); dispatch({ type: "SET_DRAG", active: false }); const f = e.dataTransfer.files?.[0]; if (f) processFile(f); }}
-              sx={{ p: 4, borderRadius: 4, border: "2px dashed", borderColor: dragActive ? "#3b82f6" : "transparent", bgcolor: dragActive ? "#eff6ff" : "transparent", textAlign: "center", cursor: "pointer" }}
+              sx={{ p: 4, borderRadius: 4, border: "2px dashed", borderColor: dragActive ? "var(--mui-palette-info-main)" : "transparent", bgcolor: dragActive ? "var(--mui-palette-action-hover)" : "transparent", textAlign: "center", cursor: "pointer" }}
             >
-              <CloudUploadIcon sx={{ fontSize: 48, color: "#3b82f6", mb: 2 }} />
+              <CloudUploadIcon sx={{ fontSize: 48, color: "var(--mui-palette-info-main)", mb: 2 }} />
               <Typography variant="h6">{parsing ? "Analyse..." : "Déposez votre CSV"}</Typography>
               <Button variant="contained" component="label" sx={{ mt: 2 }}>
                 Choisir un fichier
                 <input type="file" hidden accept=".csv,.tsv,.txt" onChange={handleFileChange} />
               </Button>
-              {fileName && <Typography sx={{ mt: 1, color: "success.main" }}>✓ {fileName}</Typography>}
+              {fileName && <Typography sx={{ mt: 1, color: "success.main" }}>{fileName}</Typography>}
             </Paper>
           </Grid>
           {error && <Grid size={{ xs: 12 }}><Alert severity="error">{error}</Alert></Grid>}
@@ -130,7 +130,7 @@ export default function ImportPage() {
               <Grid size={{ xs: 12 }}><ImportPreview rows={parsedRows} /></Grid>
               <Grid size={{ xs: 12 }}>
                 <Box sx={{ display: "flex", gap: 2 }}>
-                  <Button variant="contained" onClick={handleImport} disabled={loading} sx={{ bgcolor: "#059669" }}>{loading ? <CircularProgress size={24} /> : "Importer"}</Button>
+                  <Button variant="contained" onClick={handleImport} disabled={loading} sx={{ bgcolor: "var(--mui-palette-success-main)" }}>{loading ? <CircularProgress size={24} /> : "Importer"}</Button>
                   <Button variant="outlined" onClick={() => dispatch({ type: "RESET_PREVIEW" })}>Annuler</Button>
                 </Box>
               </Grid>

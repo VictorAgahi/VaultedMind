@@ -189,7 +189,7 @@ export const FieldDialog: React.FC<FieldDialogProps> = ({
               required
               value={formData.name}
               onChange={(e) => setFormData((prev) => ({ ...prev, name: e.target.value }))}
-              placeholder="Ex: Humeur, Sommeil, Poids..."
+              placeholder="Ex. : Humeur, Sommeil, Poids..."
             />
 
             <TextField
@@ -197,7 +197,7 @@ export const FieldDialog: React.FC<FieldDialogProps> = ({
               fullWidth
               value={formData.category || ""}
               onChange={(e) => setFormData((prev) => ({ ...prev, category: e.target.value }))}
-              placeholder="Ex: Général, Sommeil, Sport..."
+              placeholder="Ex. : Général, Sommeil, Sport..."
             />
 
             <FormControlLabel
@@ -231,7 +231,7 @@ export const FieldDialog: React.FC<FieldDialogProps> = ({
                       sx: {
                         maxHeight: 300,
                         '&::-webkit-scrollbar': { width: '8px' },
-                        '&::-webkit-scrollbar-thumb': { backgroundColor: 'rgba(0,0,0,0.1)', borderRadius: '4px' }
+                        '&::-webkit-scrollbar-thumb': { backgroundColor: 'var(--mui-palette-divider)', borderRadius: '4px' }
                       }
                     }
                   }
@@ -293,7 +293,7 @@ export const FieldDialog: React.FC<FieldDialogProps> = ({
                       fullWidth
                       value={formData.min !== undefined ? formData.min : ""}
                       onChange={(e) => setFormData((prev) => ({ ...prev, min: e.target.value === "" ? "" : Number(e.target.value) }))}
-                      placeholder="Ex: 0"
+                      placeholder="Ex. : 0"
                     />
                     <TextField
                       label="Valeur Max (optionnel)"
@@ -301,7 +301,7 @@ export const FieldDialog: React.FC<FieldDialogProps> = ({
                       fullWidth
                       value={formData.max !== undefined ? formData.max : ""}
                       onChange={(e) => setFormData((prev) => ({ ...prev, max: e.target.value === "" ? "" : Number(e.target.value) }))}
-                      placeholder="Ex: 100"
+                      placeholder="Ex. : 100"
                     />
                   </Box>
                 )}
@@ -331,7 +331,7 @@ export const FieldDialog: React.FC<FieldDialogProps> = ({
                         mb: 2,
                         p: 1.5,
                         borderRadius: 2,
-                        border: "1px solid rgba(0,0,0,0.08)",
+                        border: "1px solid var(--mui-palette-divider)",
                         bgcolor: "background.paper",
                       }}
                     >
@@ -376,14 +376,14 @@ export const FieldDialog: React.FC<FieldDialogProps> = ({
                             ml: { xs: 1, sm: 4 },
                             p: 2,
                             borderRadius: 2,
-                            border: "1.5px dashed rgba(216, 24, 50, 0.4)",
-                            bgcolor: "rgba(216, 24, 50, 0.03)",
+                            border: "1.5px dashed rgba(var(--mui-palette-primary-mainChannel) / 0.4)",
+                            bgcolor: "rgba(var(--mui-palette-primary-mainChannel) / 0.03)",
                           }}
                         >
                           <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", mb: 1.5 }}>
                             <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
                               <SubdirectoryArrowRightIcon sx={{ color: "primary.main", fontSize: 20 }} />
-                              <Typography variant="subtitle2" sx={{ fontWeight: 700, color: "#142949" }}>
+                              <Typography variant="subtitle2" sx={{ fontWeight: 700, color: "var(--mui-palette-text-primary)" }}>
                                 Sous-champ conditionnel (si « {opt.value} »)
                               </Typography>
                             </Box>
@@ -404,7 +404,7 @@ export const FieldDialog: React.FC<FieldDialogProps> = ({
                             label="Question / Intitulé du sous-champ"
                             value={subField.name}
                             onChange={(e) => handleUpdateSubFieldName(subField.id, e.target.value)}
-                            placeholder="Ex: Pourquoi ?"
+                            placeholder="Ex. : Pourquoi ?"
                             sx={{ mb: 1.5, bgcolor: "background.paper" }}
                           />
 
@@ -466,11 +466,11 @@ export const FieldDialog: React.FC<FieldDialogProps> = ({
                               sx={{
                                 fontSize: "0.75rem",
                                 textTransform: "none",
-                                borderColor: "rgba(216, 24, 50, 0.4)",
-                                color: "#d81832",
+                                borderColor: "rgba(var(--mui-palette-primary-mainChannel) / 0.4)",
+                                color: "var(--mui-palette-primary-main)",
                                 "&:hover": {
-                                  borderColor: "#d81832",
-                                  bgcolor: "rgba(216, 24, 50, 0.05)",
+                                  borderColor: "var(--mui-palette-primary-main)",
+                                  bgcolor: "rgba(var(--mui-palette-primary-mainChannel) / 0.05)",
                                 },
                               }}
                             >

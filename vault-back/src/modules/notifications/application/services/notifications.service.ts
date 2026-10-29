@@ -6,6 +6,7 @@ import webpush from 'web-push';
 import { ConfigService } from '@nestjs/config';
 import { NotificationSubscriptionModel } from '../../../../database/models/notification-subscription.model.js';
 import { DailyLogService } from '../../../health/application/services/daily-log.service.js';
+import { isAllowedPushEndpoint } from '../utils/push-endpoint.util.js';
 
 interface PushSubscription {
   endpoint: string;
@@ -89,6 +90,15 @@ export class NotificationsService {
         continue; // Skip sending if user already logged today
       }
 
+      // Rows stored before endpoint validation could point to arbitrary hosts (SSRF)
+      if (!isAllowedPushEndpoint(sub.endpoint)) {
+        this.logger.warn(
+          `Deleting subscription ${sub.id} with disallowed push endpoint`,
+        );
+        await this.subscriptionRepository.delete(sub.id);
+        continue;
+      }
+
       try {
         await webpush.sendNotification(
           {
@@ -159,6 +169,12 @@ export class NotificationsService {
     });
 
     for (const sub of subscriptions) {
+      if (!isAllowedPushEndpoint(sub.endpoint)) {
+        this.logger.warn(
+          `Skipping subscription ${sub.id} with disallowed push endpoint`,
+        );
+        continue;
+      }
       try {
         await webpush.sendNotification(
           {

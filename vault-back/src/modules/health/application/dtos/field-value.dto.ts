@@ -1,10 +1,17 @@
-import { IsString, IsUUID, IsOptional, IsObject } from 'class-validator';
+import {
+  IsString,
+  IsUUID,
+  IsOptional,
+  IsObject,
+  MaxLength,
+} from 'class-validator';
 
 export class SaveFieldValueDto {
   @IsUUID()
   customFieldId!: string;
 
   @IsString()
+  @MaxLength(2000)
   value!: string;
 
   @IsOptional()
@@ -14,6 +21,7 @@ export class SaveFieldValueDto {
 
 export class UpdateFieldValueDto {
   @IsString()
+  @MaxLength(2000)
   value!: string;
 
   @IsOptional()

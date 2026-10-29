@@ -27,7 +27,7 @@ export default function TermsClient() {
           borderColor: "primary.main",
         }}
       >
-        <Typography variant="h3" component="h1" sx={{ fontWeight: 900, mb: 4, color: "primary.main" }}>
+        <Typography variant="h3" component="h1" sx={{ fontWeight: 800, mb: 4, color: "primary.main" }}>
           Conditions d&apos;Utilisation
         </Typography>
 
@@ -53,7 +53,7 @@ export default function TermsClient() {
           </Typography>
 
           <Typography variant="h5" sx={{ fontWeight: 700, mt: 4, mb: 2 }}>5. Partage de Contenu (IA)</Typography>
-          <Typography sx={{ bgcolor: "rgba(0,0,0,0.02)", p: 3, borderRadius: 2, borderLeft: "4px solid", borderColor: "primary.main", fontStyle: "italic", fontSize: "0.9rem" }}>
+          <Typography sx={{ bgcolor: "var(--mui-palette-divider)", p: 3, borderRadius: 2, borderLeft: "4px solid", borderColor: "primary.main", fontStyle: "italic", fontSize: "0.9rem" }}>
             This Content Sharing Agreement is between OpenAI, L.L.C. (“us” or “we”) and you (“Customer”). This Content Sharing Agreement is incorporated into the terms located at https://openai.com/policies/business-terms unless the parties have negotiated a separate agreement for the Services, in which case such agreement will govern (the “Business Terms”). Capitalized terms not defined here are defined in the Business Terms or the Data Processing Agreement between the parties in connection with the Services (the “DPA”). This Content Sharing Agreement takes precedence in the event of any conflict.
             <br /><br />
             Notwithstanding anything set forth in the Business Terms, we may use Customer Content that is designated by your organization owner in your account (“Designated Content”) to develop and improve the Services, including for training our models and other research, development, evaluation, and testing purposes (“Development Purposes”). You expressly agree that use of Designated Content for the Development Purposes is not subject to the provisions of the DPA nor is it subject to the security measures, auditing, or other obligations applicable to Customer Content that is not Designated Content for the Development Purposes. OpenAI will process such Designated Content for Development Purposes as an independent Data Controller. You are responsible for all Input provided by you and your End Users.

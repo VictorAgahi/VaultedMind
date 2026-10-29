@@ -2,14 +2,22 @@
 
 import { Box, Typography, Container, Divider, Link as MuiLink } from "@mui/material";
 import Link from "next/link";
+import { usePathname } from "next/navigation";
+import { BrandWordmark } from "@/components/brand/brand-mark";
+
+// Dans l'espace connecté, le pied de page n'apparaît que sur grand écran : sur mobile, la barre du bas suffit.
+const appRoutes = ["/dashboard", "/import", "/fields", "/analytics", "/profile", "/ai", "/integrations"];
 
 export const Footer: React.FC = () => {
   const year = new Date().getFullYear();
+  const pathname = usePathname();
+  const inApp = appRoutes.includes(pathname);
 
   return (
     <Box
       component="footer"
       sx={{
+        display: inApp ? { xs: "none", md: "block" } : "block",
         py: { xs: 4, md: 6 },
         px: 2,
         mt: "auto",
@@ -27,30 +35,21 @@ export const Footer: React.FC = () => {
             mb: 4,
           }}
         >
-          <Typography
-            variant="h6"
-            sx={{
-              fontWeight: 800,
-              color: "primary.main",
-              textDecoration: "none",
-            }}
-            component={Link}
-            href="/"
-          >
-            VaultedMind
-          </Typography>
+          <Box component={Link} href="/" aria-label="Accueil VaultedMind" sx={{ textDecoration: "none", display: "flex" }}>
+            <BrandWordmark size={28} />
+          </Box>
 
           <Box sx={{ display: "flex", gap: { xs: 1.5, sm: 3 }, flexWrap: "wrap", justifyContent: "center" }}>
-            <MuiLink component={Link} href="/privacy" color="text.secondary" variant="body2" sx={{ textDecoration: "none" }}>
+            <MuiLink component={Link} href="/privacy" color="text.secondary" variant="body2" sx={{ textDecoration: "none", py: 1 }}>
               Politique de confidentialité
             </MuiLink>
-            <MuiLink component={Link} href="/terms" color="text.secondary" variant="body2" sx={{ textDecoration: "none" }}>
+            <MuiLink component={Link} href="/terms" color="text.secondary" variant="body2" sx={{ textDecoration: "none", py: 1 }}>
               Conditions d&apos;utilisation
             </MuiLink>
-            <MuiLink component={Link} href="/contact" color="text.secondary" variant="body2" sx={{ textDecoration: "none" }}>
+            <MuiLink component={Link} href="/contact" color="text.secondary" variant="body2" sx={{ textDecoration: "none", py: 1 }}>
               Contact
             </MuiLink>
-            <MuiLink href="https://github.com/VictorAgahi/VaultedMind" target="_blank" rel="noopener noreferrer" color="text.secondary" variant="body2" sx={{ textDecoration: "none" }}>
+            <MuiLink href="https://github.com/VictorAgahi/VaultedMind" target="_blank" rel="noopener noreferrer" color="text.secondary" variant="body2" sx={{ textDecoration: "none", py: 1 }}>
               GitHub
             </MuiLink>
           </Box>
@@ -61,7 +60,7 @@ export const Footer: React.FC = () => {
         <Typography variant="body2" color="text.secondary" align="center">
           {"Copyright © "}
           VaultedMind {year}
-          {" - Sécurisez votre bien-être mental."}
+          {". Votre carnet, chiffré."}
         </Typography>
       </Container>
     </Box>

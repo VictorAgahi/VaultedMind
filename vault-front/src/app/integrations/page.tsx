@@ -1,7 +1,7 @@
 import { IntegrationsClient } from "./integrations-client";
 
 export const metadata = {
-  title: "Intégrations - Vaulted Mind",
+  title: "Intégrations - VaultedMind",
   description: "Gérez vos intégrations (Apple Santé, etc.)",
 };
 

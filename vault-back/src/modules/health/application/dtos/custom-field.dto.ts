@@ -5,6 +5,8 @@ import {
   IsBoolean,
   IsNumber,
   IsArray,
+  MaxLength,
+  ArrayMaxSize,
 } from 'class-validator';
 import { FieldType } from '../../domain/enums/field-type.enum.js';
 import { AppleWatchMetric } from '../../domain/enums/apple-watch-metric.enum.js';
@@ -12,6 +14,7 @@ import type { SubFieldDefinition } from '../../domain/entities/custom-field.enti
 
 export class CreateCustomFieldDto {
   @IsString()
+  @MaxLength(100)
   name!: string;
 
   @IsEnum(FieldType)
@@ -19,14 +22,18 @@ export class CreateCustomFieldDto {
 
   @IsOptional()
   @IsString({ each: true })
+  @MaxLength(100, { each: true })
+  @ArrayMaxSize(100)
   optionsOrder?: string[];
 
   @IsOptional()
   @IsArray()
+  @ArrayMaxSize(50)
   subFields?: SubFieldDefinition[];
 
   @IsOptional()
   @IsString()
+  @MaxLength(100)
   category?: string;
 
   @IsOptional()
@@ -49,6 +56,7 @@ export class CreateCustomFieldDto {
 export class UpdateCustomFieldDto {
   @IsOptional()
   @IsString()
+  @MaxLength(100)
   name?: string;
 
   @IsOptional()
@@ -57,14 +65,18 @@ export class UpdateCustomFieldDto {
 
   @IsOptional()
   @IsString({ each: true })
+  @MaxLength(100, { each: true })
+  @ArrayMaxSize(100)
   optionsOrder?: string[];
 
   @IsOptional()
   @IsArray()
+  @ArrayMaxSize(50)
   subFields?: SubFieldDefinition[];
 
   @IsOptional()
   @IsString()
+  @MaxLength(100)
   category?: string;
 
   @IsOptional()

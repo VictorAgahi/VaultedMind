@@ -21,7 +21,7 @@ export default function ContactClient() {
       </Breadcrumbs>
       <Grid container spacing={6}>
         <Grid size={{ xs: 12, md: 5 }}>
-          <Typography variant="h3" component="h1" sx={{ fontWeight: 900, mb: 3, color: "primary.main" }}>
+          <Typography variant="h3" component="h1" sx={{ fontWeight: 800, mb: 3, color: "primary.main" }}>
             Parlons ensemble.
           </Typography>
           <Typography variant="body1" color="text.primary" sx={{ mb: 6, fontSize: "1.1rem" }}>
@@ -30,7 +30,7 @@ export default function ContactClient() {
 
           <Card elevation={0} sx={{ borderRadius: 4, bgcolor: "background.paper", border: "1px solid", borderColor: "primary.main", mb: 3 }}>
             <CardContent sx={{ display: "flex", alignItems: "center", gap: 3, p: 3 }}>
-              <Box sx={{ p: 1.5, borderRadius: 2, bgcolor: "primary.main", color: "white" }}>
+              <Box sx={{ p: 1.5, borderRadius: 2, bgcolor: "primary.main", color: "primary.contrastText" }}>
                 <EmailIcon />
               </Box>
               <Box>
@@ -42,7 +42,7 @@ export default function ContactClient() {
 
           <Card elevation={0} sx={{ borderRadius: 4, bgcolor: "background.paper", border: "1px solid", borderColor: "primary.main", mb: 3 }}>
             <CardContent sx={{ display: "flex", alignItems: "center", gap: 3, p: 3 }}>
-              <Box sx={{ p: 1.5, borderRadius: 2, bgcolor: "primary.main", color: "white" }}>
+              <Box sx={{ p: 1.5, borderRadius: 2, bgcolor: "primary.main", color: "primary.contrastText" }}>
                 <LanguageIcon />
               </Box>
               <Box>
@@ -53,9 +53,9 @@ export default function ContactClient() {
           </Card>
 
           <MuiLink href="https://github.com/VictorAgahi/VaultedMind" target="_blank" rel="noopener noreferrer" sx={{ textDecoration: "none", color: "inherit" }}>
-            <Card elevation={0} sx={{ borderRadius: 4, bgcolor: "background.paper", border: "1px solid", borderColor: "primary.main", transition: "all 0.2s", '&:hover': { bgcolor: "rgba(216, 24, 50, 0.05)" } }}>
+            <Card elevation={0} sx={{ borderRadius: 4, bgcolor: "background.paper", border: "1px solid", borderColor: "primary.main", transition: "all 0.2s", '&:hover': { bgcolor: "rgba(var(--mui-palette-primary-mainChannel) / 0.05)" } }}>
               <CardContent sx={{ display: "flex", alignItems: "center", gap: 3, p: 3 }}>
-                <Box sx={{ p: 1.5, borderRadius: 2, bgcolor: "primary.main", color: "white" }}>
+                <Box sx={{ p: 1.5, borderRadius: 2, bgcolor: "primary.main", color: "primary.contrastText" }}>
                   <GitHubIcon />
                 </Box>
                 <Box>

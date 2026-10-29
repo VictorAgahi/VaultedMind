@@ -27,7 +27,7 @@ export default function PrivacyClient() {
           borderColor: "primary.main",
         }}
       >
-        <Typography variant="h3" component="h1" sx={{ fontWeight: 900, mb: 4, color: "primary.main" }}>
+        <Typography variant="h3" component="h1" sx={{ fontWeight: 800, mb: 4, color: "primary.main" }}>
           Politique de Confidentialité
         </Typography>
 

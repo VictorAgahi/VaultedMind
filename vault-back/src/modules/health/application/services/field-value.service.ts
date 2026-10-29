@@ -6,6 +6,7 @@ import {
 } from '@nestjs/common';
 import { FieldValueRepository } from '../../../../database/repositories/field-value.repository.js';
 import { DailyLogRepository } from '../../../../database/repositories/daily-log.repository.js';
+import { CustomFieldRepository } from '../../../../database/repositories/custom-field.repository.js';
 import { FieldValue } from '../../domain/entities/field-value.entity.js';
 
 @Injectable()
@@ -15,10 +16,12 @@ export class FieldValueService {
   constructor(
     private readonly fieldValueRepository: FieldValueRepository,
     private readonly dailyLogRepository: DailyLogRepository,
+    private readonly customFieldRepository: CustomFieldRepository,
   ) {}
 
   async saveValue(fieldValue: FieldValue, userId: string): Promise<FieldValue> {
     await this.assertOwnership(fieldValue.dailyLogId, userId);
+    await this.assertFieldOwnership(fieldValue.customFieldId, userId);
 
     const existing = await this.fieldValueRepository.findOneByLogAndField(
       fieldValue.dailyLogId,
@@ -79,6 +82,26 @@ export class FieldValueService {
     const existing = await this.findById(id);
     await this.assertOwnership(existing.dailyLogId, requestingUserId);
     await this.fieldValueRepository.deleteById(id);
+  }
+
+  private async assertFieldOwnership(
+    customFieldId: string,
+    requestingUserId: string,
+  ): Promise<void> {
+    try {
+      const field =
+        await this.customFieldRepository.findDomainById(customFieldId);
+      if (field.userId !== requestingUserId) {
+        throw new ForbiddenException('You do not own this custom field');
+      }
+    } catch (error) {
+      if (error instanceof ForbiddenException) {
+        throw error;
+      }
+      throw new NotFoundException(
+        `Custom field with ID ${customFieldId} not found`,
+      );
+    }
   }
 
   private async assertOwnership(

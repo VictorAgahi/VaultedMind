@@ -1,25 +1,42 @@
 import type { Metadata, Viewport } from "next";
-import { Inter } from "next/font/google";
+import { Atkinson_Hyperlegible_Next, Bricolage_Grotesque } from "next/font/google";
 import "./globals.css";
 import { AuthProvider } from "@/context/auth-context";
 import { AppRouterCacheProvider } from "@mui/material-nextjs/v13-appRouter";
 import { ThemeProvider } from "@mui/material/styles";
 import CssBaseline from "@mui/material/CssBaseline";
+import InitColorSchemeScript from "@mui/material/InitColorSchemeScript";
 import Box from "@mui/material/Box";
 import { theme } from "@/theme/theme";
 import { BottomNav } from "@/components/bottom-nav/bottom-nav";
 import PWAHandler from "@/components/pwa-handler";
+import { ThemeColorSync } from "@/components/theme-color-sync";
 import { AIChatBot } from "@/components/ai-insights/ai-chatbot";
 import Script from "next/script";
 
-const inter = Inter({ subsets: ["latin"] });
+const bodyFont = Atkinson_Hyperlegible_Next({
+  subsets: ["latin", "latin-ext"],
+  variable: "--font-body",
+  display: "swap",
+  // Pas de métriques de repli connues pour cette police : on déclare la pile système à la main.
+  adjustFontFallback: false,
+  fallback: ["system-ui", "-apple-system", "Segoe UI", "sans-serif"],
+});
+
+const displayFont = Bricolage_Grotesque({
+  subsets: ["latin", "latin-ext"],
+  variable: "--font-display",
+  axes: ["opsz"],
+  display: "swap",
+});
 
 export const viewport: Viewport = {
-  themeColor: "#d81832",
+  themeColor: [
+    { media: "(prefers-color-scheme: light)", color: "#F3F4F1" },
+    { media: "(prefers-color-scheme: dark)", color: "#0F1413" },
+  ],
   width: "device-width",
   initialScale: 1,
-  maximumScale: 1,
-  userScalable: false,
   viewportFit: "cover",
 };
 
@@ -73,7 +90,7 @@ export const metadata: Metadata = {
   manifest: "/manifest.json",
   appleWebApp: {
     capable: true,
-    statusBarStyle: "black-translucent",
+    statusBarStyle: "default",
     title: "VaultedMind",
   },
 };
@@ -141,8 +158,9 @@ export default function RootLayout({
   ];
 
   return (
-    <html lang="fr">
-      <body className={inter.className}>
+    <html lang="fr" className={`${bodyFont.variable} ${displayFont.variable}`} suppressHydrationWarning>
+      <body>
+        <InitColorSchemeScript attribute="class" defaultMode="system" />
         <Script
           id="json-ld"
           type="application/ld+json"
@@ -151,8 +169,9 @@ export default function RootLayout({
           {JSON.stringify(jsonLd)}
         </Script>
         <AppRouterCacheProvider>
-          <ThemeProvider theme={theme}>
+          <ThemeProvider theme={theme} defaultMode="system">
             <CssBaseline />
+            <ThemeColorSync />
             <AuthProvider>
               <Box sx={{ display: "flex", flexDirection: "column", minHeight: "100vh" }}>
                 <Box component="main" sx={{ flexGrow: 1 }}>

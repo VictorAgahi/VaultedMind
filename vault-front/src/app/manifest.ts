@@ -7,18 +7,20 @@ export default function manifest(): MetadataRoute.Manifest {
     description: 'Sécurisez votre bien-être mental',
     start_url: '/',
     display: 'standalone',
-    background_color: '#ede5d9',
-    theme_color: '#d81832',
+    background_color: '#F3F4F1',
+    theme_color: '#1E5B53',
     icons: [
       {
-        src: '/assets/logo.png',
-        sizes: '192x192',
+        src: '/icon.png',
+        sizes: '1024x1024',
         type: 'image/png',
+        purpose: 'maskable',
       },
       {
         src: '/assets/logo.png',
-        sizes: '512x512',
+        sizes: '1024x1024',
         type: 'image/png',
+        purpose: 'any',
       },
     ],
   }

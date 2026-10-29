@@ -19,30 +19,33 @@ export default function GlobalError({
             display: "flex",
             alignItems: "center",
             justifyContent: "center",
-            background: "linear-gradient(135deg, #000 0%, #111 100%)",
-            color: "white",
+            bgcolor: "#0F1413",
+            color: "#E8EEEB",
             textAlign: "center",
             p: 3,
-            fontFamily: "sans-serif"
+            fontFamily: "system-ui, -apple-system, sans-serif"
           }}
         >
           <Container maxWidth="sm">
-            <Typography variant="h2" sx={{ fontWeight: 900, mb: 2 }}>
-              Erreur Critique
+            <Typography variant="h3" component="h1" sx={{ fontWeight: 800, mb: 2 }}>
+              L&apos;application s&apos;est arrêtée
             </Typography>
-            <Typography variant="body1" sx={{ color: "rgba(255,255,255,0.7)", mb: 6 }}>
-              Une erreur système majeure est survenue. L&apos;application a dû s&apos;arrêter pour protéger votre coffre-fort.
+            <Typography variant="body1" sx={{ color: "#A3B0AB", mb: 4 }}>
+              Une erreur grave est survenue. L&apos;application s&apos;est arrêtée pour protéger votre carnet. Vos données ne sont pas perdues.
             </Typography>
             <Button
               onClick={() => reset()}
               variant="contained"
               size="large"
               sx={{
-                py: 2,
+                minHeight: 52,
                 px: 4,
-                borderRadius: 3,
-                bgcolor: "#d81832",
-                "&:hover": { bgcolor: "#b01328" }
+                borderRadius: 999,
+                textTransform: "none",
+                fontWeight: 700,
+                bgcolor: "#6CC3B3",
+                color: "#0F1413",
+                "&:hover": { bgcolor: "#86D1C3" }
               }}
             >
               Relancer l&apos;application

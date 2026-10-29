@@ -27,7 +27,7 @@ export const ImportPreview: React.FC<ImportPreviewProps> = ({ rows }) => {
       <TableContainer>
         <Table size="small">
           <TableHead>
-            <TableRow sx={{ bgcolor: "#ede5d9" }}>
+            <TableRow sx={{ bgcolor: "var(--mui-palette-background-default)" }}>
               <TableCell sx={{ fontWeight: 700 }}>Date</TableCell>
               <TableCell sx={{ fontWeight: 700 }}>Champs</TableCell>
             </TableRow>
@@ -42,7 +42,7 @@ export const ImportPreview: React.FC<ImportPreviewProps> = ({ rows }) => {
                       <Box
                         key={`${key}-${fIdx}`}
                         sx={{
-                          bgcolor: "#e0f2fe",
+                          bgcolor: "primary.light",
                           px: 1.5,
                           py: 0.5,
                           borderRadius: 1,

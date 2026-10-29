@@ -1,10 +1,10 @@
 "use client";
 
 import React from "react";
-import { Box, Typography, IconButton, Fade } from "@mui/material";
-import CloseIcon from "@mui/icons-material/Close";
+import { Box, Typography, Fade } from "@mui/material";
 import { ScatterChart, Scatter, XAxis, YAxis, CartesianGrid, Tooltip } from "recharts";
-import { getCorrelationColor } from "@/utils/math";
+import { getCorrelationAccent } from "@/utils/math";
+import { axisTick, chartColors, chartTooltipProps } from "@/theme/chart-tokens";
 
 import { CustomField } from "@/types";
 
@@ -23,7 +23,6 @@ interface CorrelationDetailProps {
 
 export const CorrelationDetail: React.FC<CorrelationDetailProps> = ({
   activeCell,
-  onClose,
   getInterpretation,
   currentCorrelation,
   ChartContainer,
@@ -32,52 +31,54 @@ export const CorrelationDetail: React.FC<CorrelationDetailProps> = ({
   activeFieldB,
   measurableFields,
   formatVal
-}) => (
-  <Fade in={!!activeCell} timeout={400}>
-    <Box sx={{ height: "100%", display: "flex", flexDirection: "column" }}>
-      <Box sx={{ display: "flex", justifyContent: "space-between", mb: 4 }}>
-        <Typography variant="h6" sx={{ fontWeight: 800 }}>Détail du lien</Typography>
-        <IconButton size="small" onClick={onClose} sx={{ bgcolor: "grey.50" }}>
-          <CloseIcon fontSize="small" />
-        </IconButton>
-      </Box>
-      <Box sx={{ display: "flex", alignItems: "center", gap: 2, mb: 3 }}>
-        <Box sx={{ width: 60, height: 60, borderRadius: 3, bgcolor: activeCell?.color, display: "flex", alignItems: "center", justifyContent: "center", color: "white", fontWeight: 900, fontSize: "1.2rem" }}>
-          {activeCell?.value.toFixed(2)}
-        </Box>
-        <Box>
-          <Typography variant="body1" sx={{ fontWeight: 800 }}>{activeCell?.x}</Typography>
-          <Typography variant="caption" color="text.secondary" sx={{ display: "block" }}>vs</Typography>
-          <Typography variant="body1" sx={{ fontWeight: 800 }}>{activeCell?.y}</Typography>
-        </Box>
-      </Box>
-      <Typography variant="body2" sx={{ lineHeight: 1.6, color: "text.secondary", bgcolor: "grey.50", p: 2.5, borderRadius: 4, border: "1px solid rgba(0,0,0,0.03)", mb: 4 }}>
-        {activeCell && getInterpretation(activeCell.value, activeCell.x, activeCell.y)}
-      </Typography>
+}) => {
+  const nameA = measurableFields.find(f => f.id === activeFieldA)?.name;
+  const nameB = measurableFields.find(f => f.id === activeFieldB)?.name;
+  const accent = getCorrelationAccent(currentCorrelation);
 
-      <Box sx={{ textAlign: "center", mb: 4, p: 3, bgcolor: "rgba(99, 102, 241, 0.05)", borderRadius: 4, border: "1px solid rgba(99, 102, 241, 0.1)" }}>
-        <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 700, textTransform: "uppercase", letterSpacing: 1 }}>Coefficient r</Typography>
-        <Typography variant="h2" sx={{ fontWeight: 900, color: getCorrelationColor(currentCorrelation).replace(/[\d.]+\)$/, "1)") }}>
-          {currentCorrelation.toFixed(2)}
+  return (
+    <Fade in={!!activeCell} timeout={280}>
+      <Box sx={{ height: "100%", display: "flex", flexDirection: "column", gap: 2 }}>
+        <Box sx={{ display: "flex", alignItems: "flex-end", justifyContent: "space-between", gap: 2 }}>
+          <Box sx={{ minWidth: 0 }}>
+            <Typography variant="overline" color="text.secondary">Détail du lien</Typography>
+            <Typography variant="h5" component="h2" sx={{ overflowWrap: "anywhere" }}>
+              {nameA} <Box component="span" sx={{ color: "text.secondary", fontWeight: 400 }}>et</Box> {nameB}
+            </Typography>
+          </Box>
+          <Box sx={{ textAlign: "right", flex: "none" }}>
+            <Typography sx={{ fontFamily: "var(--font-display)", fontWeight: 800, fontSize: "2.25rem", lineHeight: 1, color: accent, fontVariantNumeric: "tabular-nums" }}>
+              {currentCorrelation > 0 ? "+" : ""}{currentCorrelation.toFixed(2).replace(".", ",")}
+            </Typography>
+            <Typography variant="caption" color="text.secondary">coefficient r sur {scatterData.length} jours</Typography>
+          </Box>
+        </Box>
+
+        <Typography variant="body2" sx={{ color: "text.secondary", bgcolor: "action.hover", p: 2, borderRadius: 3 }}>
+          {activeCell && getInterpretation(activeCell.value, activeCell.x, activeCell.y)}
+          {scatterData.length < 14 && ` Seulement ${scatterData.length} jours en commun : ce lien est à confirmer avec plus de données.`}
+          {" "}Un lien statistique ne dit pas lequel influence l&apos;autre.
         </Typography>
-      </Box>
 
-      <ChartContainer aspect={1.2} minHeight={300}>
-        <ScatterChart margin={{ top: 20, right: 10, bottom: 0, left: 10 }}>
-          <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="rgba(0,0,0,0.05)" />
-          <XAxis type="number" dataKey="x" name="X" axisLine={false} tickLine={false} tick={{ fontSize: 11, fontWeight: 600 }} />
-          <YAxis type="number" dataKey="y" name="Y" axisLine={false} tickLine={false} tick={{ fontSize: 11, fontWeight: 600 }} />
-          <Tooltip
-            cursor={{ strokeDasharray: '3 3' }}
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            formatter={(value: any, name: any) => [
-              formatVal(value, name === "X" ? activeFieldA : activeFieldB),
-              name === "X" ? measurableFields.find(f => f.id === activeFieldA)?.name : measurableFields.find(f => f.id === activeFieldB)?.name
-            ]}
-          />
-          <Scatter name="Logs" data={scatterData} fill={getCorrelationColor(currentCorrelation).replace(/[\d.]+\)$/, "0.8")} />
-        </ScatterChart>
-      </ChartContainer>
-    </Box>
-  </Fade>
-);
+        <ChartContainer aspect={1.3} minHeight={280}>
+          <ScatterChart margin={{ top: 12, right: 12, bottom: 4, left: 0 }}>
+            <CartesianGrid stroke={chartColors.grid} />
+            <XAxis type="number" dataKey="x" name="X" domain={["dataMin - 1", "dataMax + 1"]} allowDecimals={false} axisLine={{ stroke: chartColors.axis }} tickLine={false} tick={axisTick} tickFormatter={(v) => String(formatVal(v, activeFieldA))}
+              label={{ value: nameA, position: "insideBottomRight", offset: -2, fill: chartColors.tick, fontSize: 11 }} />
+            <YAxis type="number" dataKey="y" name="Y" domain={["dataMin - 1", "dataMax + 1"]} allowDecimals={false} axisLine={false} tickLine={false} tick={axisTick} width={40} tickFormatter={(v) => String(formatVal(v, activeFieldB))}
+              label={{ value: nameB, angle: -90, position: "insideTopLeft", offset: 12, fill: chartColors.tick, fontSize: 11 }} />
+            <Tooltip
+              {...chartTooltipProps}
+              // eslint-disable-next-line @typescript-eslint/no-explicit-any
+              formatter={(value: any, name: any) => [
+                formatVal(value, name === "X" ? activeFieldA : activeFieldB),
+                name === "X" ? nameA : nameB
+              ]}
+            />
+            <Scatter name="Jours" data={scatterData} fill={chartColors.primary} fillOpacity={0.75} stroke={chartColors.surface} strokeWidth={1.5} />
+          </ScatterChart>
+        </ChartContainer>
+      </Box>
+    </Fade>
+  );
+};

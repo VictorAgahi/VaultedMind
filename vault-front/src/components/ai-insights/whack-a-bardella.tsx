@@ -27,9 +27,9 @@ export const WhackABardella = () => {
   }, [score]);
 
   const getMessage = () => {
-    if (score >= 12) return " Vous êtes le nouveau Premier Ministre ! 👑";
-    if (score >= 10) return " Cohabitation difficile... 🥊";
-    if (score >= 7) return " Dissolution en cours... 🌪️";
+    if (score >= 12) return " Vous êtes le nouveau Premier Ministre !";
+    if (score >= 10) return " Cohabitation difficile...";
+    if (score >= 7) return " Dissolution en cours...";
     if (score >= 5) return " La République vous remercie ! 🇫🇷";
     return "";
   };
@@ -43,16 +43,16 @@ export const WhackABardella = () => {
   };
 
   return (
-    <Box sx={{ mt: 1, p: 1.5, bgcolor: "#f1f5f9", borderRadius: 2, textAlign: "center", userSelect: "none" }}>
+    <Box sx={{ mt: 1, p: 1.5, bgcolor: "var(--mui-palette-grey-100)", borderRadius: 2, textAlign: "center", userSelect: "none" }}>
       <Typography variant="caption" sx={{ fontWeight: 800, mb: 1, display: "block", color: "primary.main" }}>
-        Mini-jeu politique pour patienter 🕹️
+        Mini-jeu politique pour patienter
       </Typography>
       <Typography variant="caption" sx={{ display: "block", color: "text.secondary" }}>
         Tapez sur Bardella, <strong>évitez les autres !</strong>
       </Typography>
       <Typography variant="caption" sx={{ mb: 1.5, display: "block", color: "text.secondary" }}>
         Score : <strong>{score}</strong>
-        <span style={{ color: score >= 5 ? "#e11d48" : "inherit", fontWeight: score >= 5 ? "bold" : "normal" }}>
+        <span style={{ color: score >= 5 ? "var(--mui-palette-error-main)" : "inherit", fontWeight: score >= 5 ? "bold" : "normal" }}>
           {getMessage()}
         </span>
       </Typography>
@@ -73,9 +73,9 @@ export const WhackABardella = () => {
             }}
             sx={{
               height: 52,
-              bgcolor: "white",
+              bgcolor: "background.paper",
               borderRadius: 1,
-              border: "1px solid #cbd5e1",
+              border: "1px solid var(--mui-palette-divider)",
               display: "flex",
               alignItems: "center",
               justifyContent: "center",

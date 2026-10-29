@@ -11,14 +11,13 @@ import {
   Select,
   MenuItem,
   Grid,
-  Tooltip as MuiTooltip
 } from "@mui/material";
-import InfoIcon from "@mui/icons-material/Info";
-import ThumbUpIcon from "@mui/icons-material/ThumbUp";
-import ThumbDownIcon from "@mui/icons-material/ThumbDown";
-import CompareArrowsIcon from "@mui/icons-material/CompareArrows";
+import ArrowUpwardIcon from "@mui/icons-material/ArrowUpward";
+import ArrowDownwardIcon from "@mui/icons-material/ArrowDownward";
 import { CustomField, DailyLog, FieldType } from "@/types";
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip } from "recharts";
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Cell, LabelList } from "recharts";
+import { ChartCard, ChartEmpty } from "./chart-card";
+import { axisTick, chartColors, chartTooltipProps } from "@/theme/chart-tokens";
 import { formatHourlyValue } from "@/utils/time-converter";
 
 interface HabitImpactStudyProps {
@@ -94,35 +93,16 @@ export const HabitImpactStudy: React.FC<HabitImpactStudyProps> = ({
   const chartData = useMemo(() => {
     if (!comparisonStats) return [];
     return [
-      {
-        name: "Sans l'habitude",
-        Valeur: comparisonStats.avgWithout,
-        color: "#94a3b8"
-      },
-      {
-        name: "Avec l'habitude",
-        Valeur: comparisonStats.avgWith,
-        color: "#6366f1"
-      }
+      { name: "Sans", Valeur: comparisonStats.avgWithout, count: comparisonStats.countWithout },
+      { name: "Avec", Valeur: comparisonStats.avgWith, count: comparisonStats.countWith },
     ];
   }, [comparisonStats]);
 
-  const refinedPaperStyle = {
-    p: { xs: 3, md: 4 },
-    borderRadius: 6,
-    border: "1px solid rgba(0,0,0,0.05)",
-    boxShadow: "0 10px 15px -3px rgba(0,0,0,0.05)",
-    bgcolor: "background.paper",
-    height: "100%",
-    display: "flex",
-    flexDirection: "column" as const
-  };
-
   if (habitFields.length === 0 || metricFields.length === 0) {
     return (
-      <Box sx={{ mt: 4 }}>
-        <Paper elevation={0} sx={{ p: 6, borderRadius: 6, textAlign: "center", border: "1px solid rgba(0,0,0,0.05)" }}>
-          <Typography variant="h6" color="text.secondary" sx={{ fontWeight: 700 }}>
+      <Box>
+        <Paper sx={{ p: { xs: 3, md: 6 }, borderRadius: 4, textAlign: "center" }}>
+          <Typography variant="h6" color="text.secondary">
             Pas assez de données pour l&apos;étude d&apos;impact des habitudes
           </Typography>
           <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
@@ -137,153 +117,112 @@ export const HabitImpactStudy: React.FC<HabitImpactStudyProps> = ({
   const metricName = activeMetric?.name || "";
   const habitName = activeHabit?.name || "";
 
+  const fmt = (v: number) => (isHourly ? formatHourlyValue(v.toString()) : String(v).replace(".", ","));
+  const higher = comparisonStats ? comparisonStats.diff >= 0 : true;
+  // Sans assez de jours de chaque côté, l'écart n'a pas de sens : on le dit au lieu d'afficher un faux chiffre.
+  const MIN_DAYS_PER_GROUP = 3;
+  const enoughData = !!comparisonStats
+    && comparisonStats.countWith >= MIN_DAYS_PER_GROUP
+    && comparisonStats.countWithout >= MIN_DAYS_PER_GROUP;
+  const notEnoughMessage = comparisonStats
+    ? `Pour comparer, il faut au moins ${MIN_DAYS_PER_GROUP} jours avec ${habitName} et ${MIN_DAYS_PER_GROUP} jours sans. Pour l'instant : ${comparisonStats.countWith} avec, ${comparisonStats.countWithout} sans.`
+    : "Données insuffisantes.";
+
   return (
-    <Box sx={{ mt: 4 }}>
-      <Grid container spacing={4}>
-        {/* Selection panel */}
-        <Grid size={{ xs: 12 }}>
-          <Paper elevation={0} sx={{ p: 3, borderRadius: 5, border: "1px solid rgba(0,0,0,0.05)", boxShadow: "0 4px 6px -1px rgba(0,0,0,0.02)" }}>
-            <Grid container spacing={2} sx={{ alignItems: "center", justifyContent: "space-between" }}>
-              <Grid size={{ xs: 12, md: 5 }}>
-                <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-                  <CompareArrowsIcon sx={{ color: "#6366f1" }} />
-                  <Typography variant="h6" sx={{ fontWeight: 800 }}>Impact des Habitudes sur vos Mesures</Typography>
-                </Box>
-                <Typography variant="body2" color="text.secondary">
-                  Comparez scientifiquement l&apos;impact de vos habitudes (Oui/Non) sur vos indicateurs de santé.
-                </Typography>
-              </Grid>
-              <Grid size={{ xs: 12, sm: 6, md: 3 }}>
-                <FormControl fullWidth size="small">
-                  <InputLabel>Habitude (Champ Booléen)</InputLabel>
-                  <Select
-                    value={selectedHabitId}
-                    label="Habitude (Champ Booléen)"
-                    onChange={(e) => setSelectedHabitId(e.target.value)}
-                    sx={{ borderRadius: 3 }}
-                  >
-                    {habitFields.map(f => <MenuItem key={f.id} value={f.id}>{f.name}</MenuItem>)}
-                  </Select>
-                </FormControl>
-              </Grid>
-              <Grid size={{ xs: 12, sm: 6, md: 3 }}>
-                <FormControl fullWidth size="small">
-                  <InputLabel>Mesure (Champ Numérique)</InputLabel>
-                  <Select
-                    value={selectedMetricId}
-                    label="Mesure (Champ Numérique)"
-                    onChange={(e) => setSelectedMetricId(e.target.value)}
-                    sx={{ borderRadius: 3 }}
-                  >
-                    {metricFields.map(f => <MenuItem key={f.id} value={f.id}>{f.name}</MenuItem>)}
-                  </Select>
-                </FormControl>
-              </Grid>
-            </Grid>
-          </Paper>
-        </Grid>
-
-        {/* Left Card: Averages and Net Impact Analysis */}
-        <Grid size={{ xs: 12, md: 5 }}>
-          <Paper elevation={0} sx={refinedPaperStyle}>
-            <Typography variant="h6" sx={{ fontWeight: 800, mb: 3 }}>Analyse d&apos;Impact Net</Typography>
-
-            {comparisonStats ? (
-              <Box sx={{ display: "flex", flexDirection: "column", gap: 3, flexGrow: 1, justifyContent: "center" }}>
-                <Grid container spacing={2}>
-                  {/* Without Habit Card */}
-                  <Grid size={{ xs: 6 }}>
-                    <Box sx={{ p: 2.5, bgcolor: "rgba(148, 163, 184, 0.05)", border: "1px solid rgba(148, 163, 184, 0.12)", borderRadius: 4, textAlign: "center" }}>
-                      <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 700, display: "block", mb: 1 }}>Sans {habitName}</Typography>
-                      <Typography variant="h5" sx={{ fontWeight: 900, color: "text.primary" }}>
-                        {isHourly ? formatHourlyValue(comparisonStats.avgWithout.toString()) : comparisonStats.avgWithout}
-                      </Typography>
-                      <Typography variant="caption" color="text.secondary" sx={{ display: "block", mt: 0.5 }}>{comparisonStats.countWithout} jours</Typography>
-                    </Box>
-                  </Grid>
-
-                  {/* With Habit Card */}
-                  <Grid size={{ xs: 6 }}>
-                    <Box sx={{ p: 2.5, bgcolor: "rgba(99, 102, 241, 0.05)", border: "1px solid rgba(99, 102, 241, 0.12)", borderRadius: 4, textAlign: "center" }}>
-                      <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 700, display: "block", mb: 1 }}>Avec {habitName}</Typography>
-                      <Typography variant="h5" sx={{ fontWeight: 900, color: "#6366f1" }}>
-                        {isHourly ? formatHourlyValue(comparisonStats.avgWith.toString()) : comparisonStats.avgWith}
-                      </Typography>
-                      <Typography variant="caption" color="text.secondary" sx={{ display: "block", mt: 0.5 }}>{comparisonStats.countWith} jours</Typography>
-                    </Box>
-                  </Grid>
-                </Grid>
-
-                {/* Scorecard banner with green / red depending on impact */}
-                <Box sx={{ 
-                  p: 3, 
-                  bgcolor: comparisonStats.diff >= 0 ? "rgba(16, 185, 129, 0.05)" : "rgba(244, 63, 94, 0.05)", 
-                  border: comparisonStats.diff >= 0 ? "1px dashed rgba(16, 185, 129, 0.25)" : "1px dashed rgba(244, 63, 94, 0.25)",
-                  borderRadius: 4,
-                  textAlign: "center"
-                }}>
-                  <Box sx={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 1, mb: 1 }}>
-                    {comparisonStats.diff >= 0 ? (
-                      <ThumbUpIcon sx={{ color: "#10b981" }} />
-                    ) : (
-                      <ThumbDownIcon sx={{ color: "#f43f5e" }} />
-                    )}
-                    <Typography variant="subtitle2" sx={{ fontWeight: 800, color: comparisonStats.diff >= 0 ? "#0f766e" : "#be123c" }}>
-                      {comparisonStats.diff >= 0 ? "Influence Positive" : "Influence Négative"}
-                    </Typography>
-                  </Box>
-                  <Typography variant="h4" sx={{ fontWeight: 900, color: comparisonStats.diff >= 0 ? "#10b981" : "#f43f5e", mb: 1 }}>
-                    {comparisonStats.diff >= 0 ? "+" : ""}{isHourly ? formatHourlyValue(comparisonStats.diff.toString()) : comparisonStats.diff}
-                  </Typography>
-                  <Typography variant="body2" color="text.secondary" sx={{ lineHeight: 1.5 }}>
-                    L&apos;activité <strong>{habitName}</strong> est associée à une variation de <strong>{comparisonStats.diff >= 0 ? "+" : ""}{comparisonStats.percentChange}%</strong> sur votre indicateur <strong>{metricName}</strong>.
-                  </Typography>
-                </Box>
-              </Box>
-            ) : (
-              <Typography color="text.secondary">Données insuffisantes.</Typography>
-            )}
-          </Paper>
-        </Grid>
-
-        {/* Right Card: Comparative BarChart */}
-        <Grid size={{ xs: 12, md: 7 }}>
-          <Paper elevation={0} sx={refinedPaperStyle}>
-            <Box sx={{ display: "flex", justifyContent: "space-between", mb: 3 }}>
-              <Box>
-                <Typography variant="h6" sx={{ fontWeight: 800 }}>Visualisation de la Différence</Typography>
-                <Typography variant="body2" color="text.secondary">Comparatif des moyennes absolues</Typography>
-              </Box>
-              <MuiTooltip title="Ce diagramme à barres compare la moyenne de votre mesure lorsque l'habitude est désactivée (grise) par rapport à lorsqu'elle est activée (indigo).">
-                <InfoIcon sx={{ fontSize: 18, color: "text.secondary", cursor: "help" }} />
-              </MuiTooltip>
-            </Box>
-
-            <Box sx={{ flexGrow: 1, minHeight: 300, display: "flex", alignItems: "center" }}>
-              <ChartContainer aspect={1.5} mobileAspect={1.1} minHeight={300}>
-                <BarChart data={chartData} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
-                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="rgba(0,0,0,0.05)" />
-                  <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 12, fontWeight: 600 }} />
-                  <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 12, fontWeight: 600 }} />
-                  <Tooltip
-                    contentStyle={{ borderRadius: 12, border: "none", boxShadow: "0 10px 15px -3px rgba(0,0,0,0.1)" }}
-                    formatter={(val: any) => {
-                      if (isHourly) return [formatHourlyValue(val.toString()), metricName];
-                      return [val, metricName];
-                    }}
-                  />
-                  <Bar 
-                    dataKey="Valeur" 
-                    radius={6} 
-                    barSize={40}
-                    fill="#6366f1"
-                  />
-                </BarChart>
-              </ChartContainer>
-            </Box>
-          </Paper>
-        </Grid>
+    <Grid container spacing={{ xs: 1.5, md: 3 }}>
+      <Grid size={{ xs: 12 }}>
+        <Paper sx={{ p: { xs: 2, md: 3 }, borderRadius: 4, display: "grid", gap: 1.5, gridTemplateColumns: { xs: "1fr", md: "1fr 280px 280px" }, alignItems: "center" }}>
+          <Box>
+            <Typography variant="h5" component="h2">Impact d&apos;une habitude</Typography>
+            <Typography variant="body2" color="text.secondary" sx={{ mt: 0.25 }}>
+              Comparez une mesure les jours avec et sans une habitude (oui / non).
+            </Typography>
+          </Box>
+          <FormControl fullWidth size="small">
+            <InputLabel>Habitude</InputLabel>
+            <Select value={selectedHabitId} label="Habitude" onChange={(e) => setSelectedHabitId(e.target.value)}>
+              {habitFields.map(f => <MenuItem key={f.id} value={f.id}>{f.name}</MenuItem>)}
+            </Select>
+          </FormControl>
+          <FormControl fullWidth size="small">
+            <InputLabel>Mesure</InputLabel>
+            <Select value={selectedMetricId} label="Mesure" onChange={(e) => setSelectedMetricId(e.target.value)}>
+              {metricFields.map(f => <MenuItem key={f.id} value={f.id}>{f.name}</MenuItem>)}
+            </Select>
+          </FormControl>
+        </Paper>
       </Grid>
-    </Box>
+
+      <Grid size={{ xs: 12, md: 5 }}>
+        <Paper sx={{ p: { xs: 2, md: 3 }, borderRadius: 4, height: "100%", display: "grid", gap: 2, alignContent: "start" }}>
+          <Typography variant="h5" component="h2">Écart moyen</Typography>
+          {comparisonStats && enoughData ? (
+            <>
+              <Box sx={{ display: "flex", alignItems: "baseline", gap: 1, flexWrap: "wrap" }}>
+                <Typography sx={{ fontFamily: "var(--font-display)", fontWeight: 800, fontSize: "2.75rem", lineHeight: 1, fontVariantNumeric: "tabular-nums", color: "text.primary" }}>
+                  {comparisonStats.diff >= 0 ? "+" : ""}{fmt(comparisonStats.diff)}
+                </Typography>
+                <Box sx={{ display: "inline-flex", alignItems: "center", gap: 0.5, px: 1, py: 0.25, borderRadius: 999, bgcolor: "action.hover", color: "text.secondary" }}>
+                  {higher ? <ArrowUpwardIcon sx={{ fontSize: 16 }} /> : <ArrowDownwardIcon sx={{ fontSize: 16 }} />}
+                  <Typography variant="caption" sx={{ fontWeight: 700, fontVariantNumeric: "tabular-nums" }}>
+                    {comparisonStats.diff >= 0 ? "+" : ""}{comparisonStats.percentChange} %
+                  </Typography>
+                </Box>
+              </Box>
+              <Typography variant="body2" color="text.secondary">
+                Les jours avec <strong>{habitName}</strong>, la moyenne de <strong>{metricName}</strong> est {higher ? "plus élevée" : "plus basse"}.
+                Un écart ne prouve pas une cause : c&apos;est une piste à observer.
+              </Typography>
+              <Box sx={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 1 }}>
+                {[
+                  { label: `Sans ${habitName}`, value: comparisonStats.avgWithout, count: comparisonStats.countWithout, color: "var(--chart-neutral)" },
+                  { label: `Avec ${habitName}`, value: comparisonStats.avgWith, count: comparisonStats.countWith, color: "var(--chart-s1)" },
+                ].map((item) => (
+                  <Box key={item.label} sx={{ p: 1.5, borderRadius: 3, bgcolor: "action.hover", display: "grid", gap: 0.5, minWidth: 0 }}>
+                    <Box sx={{ display: "flex", alignItems: "center", gap: 0.75, minWidth: 0 }}>
+                      <Box sx={{ width: 10, height: 10, flex: "none", borderRadius: "3px", bgcolor: item.color }} />
+                      <Typography variant="caption" color="text.secondary" noWrap>{item.label}</Typography>
+                    </Box>
+                    <Typography sx={{ fontFamily: "var(--font-display)", fontWeight: 800, fontSize: "1.5rem", lineHeight: 1.1, fontVariantNumeric: "tabular-nums" }}>
+                      {fmt(item.value)}
+                    </Typography>
+                    <Typography variant="caption" color="text.secondary">{item.count} jours</Typography>
+                  </Box>
+                ))}
+              </Box>
+            </>
+          ) : (
+            <Typography color="text.secondary">{notEnoughMessage}</Typography>
+          )}
+        </Paper>
+      </Grid>
+
+      <Grid size={{ xs: 12, md: 7 }}>
+        <ChartCard title="Comparaison" subtitle={`Moyenne de ${metricName} selon l'habitude.`} help="Compare la moyenne de la mesure les jours sans l'habitude (gris) et les jours avec (sceau).">
+          {!enoughData ? (
+            <ChartEmpty>{notEnoughMessage}</ChartEmpty>
+          ) : (
+          <ChartContainer aspect={1.8} minHeight={260}>
+            <BarChart data={chartData} margin={{ top: 24, right: 12, left: 0, bottom: 0 }}>
+              <CartesianGrid vertical={false} stroke={chartColors.grid} />
+              <XAxis dataKey="name" axisLine={{ stroke: chartColors.axis }} tickLine={false} tick={{ ...axisTick, fill: chartColors.ink }} />
+              <YAxis axisLine={false} tickLine={false} tick={axisTick} width={40} tickCount={4} tickFormatter={(v) => fmt(Number(v))} />
+              <Tooltip
+                {...chartTooltipProps}
+                cursor={{ fill: "var(--mui-palette-action-hover)" }}
+                formatter={(val: any) => [fmt(Number(val)), metricName]}
+              />
+              <Bar dataKey="Valeur" radius={[4, 4, 0, 0]} maxBarSize={64}>
+                {chartData.map((d) => (
+                  <Cell key={d.name} fill={d.name === "Avec" ? chartColors.primary : chartColors.neutral} />
+                ))}
+                <LabelList dataKey="Valeur" position="top" formatter={(v: any) => fmt(Number(v))} style={{ fill: chartColors.ink, fontSize: 12, fontWeight: 700 }} />
+              </Bar>
+            </BarChart>
+          </ChartContainer>
+          )}
+        </ChartCard>
+      </Grid>
+    </Grid>
   );
 };

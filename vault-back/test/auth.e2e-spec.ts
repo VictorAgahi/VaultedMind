@@ -41,6 +41,7 @@ describe('Authentication (e2e)', () => {
       // Assert
       expect(body).toHaveProperty('user');
       expect(body.user.email).toBe(registerDto.email);
+      expect(body.user).not.toHaveProperty('passwordHash');
       expect(response.header['set-cookie']).toBeDefined();
       expect(response.header['set-cookie'][0]).toContain('access_token');
     });
@@ -97,6 +98,7 @@ describe('Authentication (e2e)', () => {
       expect(response.header['set-cookie']).toBeDefined();
       expect(response.header['set-cookie'][0]).toContain('access_token');
       expect(body.user.email).toBe(email);
+      expect(body.user).not.toHaveProperty('passwordHash');
 
       // Store cookie for subsequent tests
       client.setAuthCookie(response.header['set-cookie'][0]);

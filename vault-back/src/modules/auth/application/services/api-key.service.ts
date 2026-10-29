@@ -6,6 +6,9 @@ import { ApiKeyMapper } from '../../../../database/mappers/api-key.mapper.js';
 import { ApiKey } from '../../domain/entities/api-key.entity.js';
 import { ApiKeyModel } from '../../../../database/models/api-key.model.js';
 
+const UUID_REGEX =
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
 @Injectable()
 export class ApiKeyService {
   constructor(private readonly apiKeyRepository: ApiKeyRepository) {}
@@ -61,6 +64,8 @@ export class ApiKeyService {
     if (parts.length !== 2) return null;
 
     const [keyId, secretValue] = parts;
+    // Avoid a Postgres uuid cast error (500) on malformed keys
+    if (!UUID_REGEX.test(keyId) || !secretValue) return null;
 
     const apiKey = await this.apiKeyRepository.findOne({
       where: { id: keyId },

@@ -25,15 +25,30 @@ export function calculatePearsonCorrelation(x: number[], y: number[]): number {
 }
 
 /**
- * Returns a color based on the correlation value (-1 to 1).
+ * Couleur divergente pour une corrélation (-1 à 1) : argile (négatif), gris neutre, sceau (positif).
+ * Renvoie une variable CSS qui suit le thème clair / sombre (voir globals.css).
  */
 export function getCorrelationColor(value: number): string {
-  if (value > 0) {
-    // Green spectrum for positive correlation
-    return `rgba(34, 197, 94, ${Math.abs(value)})`; // Tailwind green-500
-  } else if (value < 0) {
-    // Red spectrum for negative correlation
-    return `rgba(239, 68, 68, ${Math.abs(value)})`; // Tailwind red-500
-  }
-  return "rgba(156, 163, 175, 0.2)"; // Grey for neutral
+  const strength = Math.abs(value);
+  if (strength < 0.15) return "var(--chart-mid)";
+  const step = strength < 0.35 ? 1 : strength < 0.6 ? 2 : 3;
+  return `var(--chart-${value > 0 ? "pos" : "neg"}-${step})`;
+}
+
+/**
+ * Couleur du texte posé sur une cellule de corrélation.
+ */
+export function getCorrelationTextColor(value: number): string {
+  const strength = Math.abs(value);
+  if (strength >= 0.6) return "var(--chart-surface)";
+  if (strength >= 0.35) return "var(--chart-on-mid)";
+  return "var(--chart-ink)";
+}
+
+/**
+ * Couleur d'accent (trait, chiffre) pour une corrélation : toujours lisible sur la surface.
+ */
+export function getCorrelationAccent(value: number): string {
+  if (Math.abs(value) < 0.15) return "var(--chart-tick)";
+  return value > 0 ? "var(--chart-pos-3)" : "var(--chart-neg-3)";
 }

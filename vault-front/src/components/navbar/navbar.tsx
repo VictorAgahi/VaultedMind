@@ -1,151 +1,90 @@
 "use client";
 
 import React from "react";
-import { AppBar, Toolbar, Typography, Box, Button, Avatar } from "@mui/material";
+import { AppBar, Toolbar, Box, Button, Avatar, IconButton, Tooltip } from "@mui/material";
 import { useAuth } from "@/context/auth-context";
 import LogoutIcon from "@mui/icons-material/Logout";
-import DashboardIcon from "@mui/icons-material/Dashboard";
-import BarChartIcon from "@mui/icons-material/BarChart";
-import SettingsIcon from "@mui/icons-material/Settings";
-import CloudUploadIcon from "@mui/icons-material/CloudUpload";
-import PersonIcon from "@mui/icons-material/Person";
-import AutoAwesomeIcon from "@mui/icons-material/AutoAwesome";
-import LinkIcon from "@mui/icons-material/Link";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { BrandWordmark } from "@/components/brand/brand-mark";
 
-import Image from "next/image";
+const authRoutes = ["/dashboard", "/import", "/fields", "/analytics", "/profile", "/ai", "/integrations"];
 
+const desktopLinks = [
+  { href: "/dashboard", label: "Accueil" },
+  { href: "/analytics", label: "Analyses" },
+  { href: "/ai", label: "IA" },
+  { href: "/fields", label: "Champs" },
+  { href: "/import", label: "Importation" },
+  { href: "/integrations", label: "Intégrations" },
+];
+
+// Mobile : barre compacte (marque + avatar), la navigation vit dans la barre du bas.
+// Desktop : liens texte, la page active porte une pastille douce.
 export const Navbar: React.FC = () => {
   const { user, logout } = useAuth();
   const pathname = usePathname();
-
-  const authRoutes = ["/dashboard", "/import", "/fields", "/analytics", "/profile", "/ai", "/integrations"];
 
   if (!authRoutes.includes(pathname)) {
     return null;
   }
 
+  const initial = (user?.firstName?.[0] || user?.email?.[0] || "U").toUpperCase();
+
   return (
-    <AppBar position="static" color="inherit" elevation={1}>
-      <Toolbar sx={{ justifyContent: "space-between", px: { xs: 2, md: 8 } }}>
-        <Box sx={{ display: "flex", alignItems: "center", gap: { xs: 1.5, md: 4 } }}>
-          <Box component={Link} href="/dashboard" sx={{ display: "flex", alignItems: "center", gap: 1.5, textDecoration: "none" }}>
-            <Image src="/assets/logo.png" alt="VaultedMind Logo" width={40} height={40} priority />
-            <Typography variant="h6" sx={{ fontWeight: 800, color: "primary.main", letterSpacing: "-0.02em" }}>
-              VaultedMind
-            </Typography>
+    <AppBar
+      position="sticky"
+      color="inherit"
+      elevation={0}
+      sx={{
+        top: "env(safe-area-inset-top, 0px)",
+        bgcolor: "background.default",
+        borderBottom: { xs: "none", md: 1 },
+        borderColor: "divider",
+      }}
+    >
+      <Toolbar sx={{ justifyContent: "space-between", gap: 2, minHeight: { xs: 56, md: 64 }, px: { xs: 2, md: 4 } }}>
+        <Box sx={{ display: "flex", alignItems: "center", gap: 4, minWidth: 0 }}>
+          <Box component={Link} href="/dashboard" aria-label="VaultedMind, accueil" sx={{ textDecoration: "none", display: "flex" }}>
+            <BrandWordmark size={30} />
           </Box>
 
-          <Box sx={{ display: { xs: "none", md: "flex" }, gap: 1 }}>
-            <Button
-              component={Link}
-              href="/dashboard"
-              color={pathname === "/dashboard" ? "primary" : "inherit"}
-              variant={pathname === "/dashboard" ? "contained" : "text"}
-              startIcon={<DashboardIcon />}
-              disableElevation
-              sx={{ borderRadius: 2 }}
-            >
-              Accueil
-            </Button>
-            <Button
-              component={Link}
-              href="/analytics"
-              color={pathname === "/analytics" ? "primary" : "inherit"}
-              variant={pathname === "/analytics" ? "contained" : "text"}
-              startIcon={<BarChartIcon />}
-              disableElevation
-              sx={{ borderRadius: 2 }}
-            >
-              Analyses
-            </Button>
-            <Button
-              component={Link}
-              href="/ai"
-              color={pathname === "/ai" ? "primary" : "inherit"}
-              variant={pathname === "/ai" ? "contained" : "text"}
-              startIcon={<AutoAwesomeIcon />}
-              disableElevation
-              sx={{ borderRadius: 2 }}
-            >
-              IA
-            </Button>
-            <Button
-              component={Link}
-              href="/fields"
-              color={pathname === "/fields" ? "primary" : "inherit"}
-              variant={pathname === "/fields" ? "contained" : "text"}
-              startIcon={<SettingsIcon />}
-              disableElevation
-              sx={{ borderRadius: 2 }}
-            >
-              Champs
-            </Button>
-            <Button
-              component={Link}
-              href="/import"
-              color={pathname === "/import" ? "primary" : "inherit"}
-              variant={pathname === "/import" ? "contained" : "text"}
-              startIcon={<CloudUploadIcon />}
-              disableElevation
-              sx={{ borderRadius: 2 }}
-            >
-              Importation
-            </Button>
-            <Button
-              component={Link}
-              href="/profile"
-              color={pathname === "/profile" ? "primary" : "inherit"}
-              variant={pathname === "/profile" ? "contained" : "text"}
-              startIcon={<PersonIcon />}
-              disableElevation
-              sx={{ borderRadius: 2 }}
-            >
-              Profil
-            </Button>
-            <Button
-              component={Link}
-              href="/integrations"
-              color={pathname === "/integrations" ? "primary" : "inherit"}
-              variant={pathname === "/integrations" ? "contained" : "text"}
-              startIcon={<LinkIcon />}
-              disableElevation
-              sx={{ borderRadius: 2 }}
-            >
-              Intégrations
-            </Button>
+          <Box component="nav" aria-label="Navigation principale" sx={{ display: { xs: "none", md: "flex" }, gap: 0.5 }}>
+            {desktopLinks.map((link) => {
+              const active = pathname === link.href;
+              return (
+                <Button
+                  key={link.href}
+                  component={Link}
+                  href={link.href}
+                  aria-current={active ? "page" : undefined}
+                  size="small"
+                  sx={{
+                    color: active ? "primary.main" : "text.secondary",
+                    bgcolor: active ? "primary.light" : "transparent",
+                    "&:hover": { bgcolor: active ? "primary.light" : "action.hover" },
+                  }}
+                >
+                  {link.label}
+                </Button>
+              );
+            })}
           </Box>
         </Box>
 
-        <Box sx={{ display: "flex", alignItems: "center", gap: { xs: 1, sm: 3 } }}>
-          <Box component={Link} href="/profile" sx={{ textDecoration: "none", color: "inherit", display: "flex", alignItems: "center", gap: { xs: 1, sm: 2 } }}>
-            <Typography
-              variant="body2"
-              sx={{
-                display: { xs: "none", sm: "block" },
-                maxWidth: { sm: 180, md: 280 },
-                overflow: "hidden",
-                textOverflow: "ellipsis",
-                whiteSpace: "nowrap",
-              }}
-            >
-              Bienvenue, <strong>{user?.email || "Utilisateur"}</strong>
-            </Typography>
-            <Avatar sx={{ bgcolor: "primary.light", width: 32, height: 32 }}>
-              {user?.email?.[0].toUpperCase() || "U"}
-            </Avatar>
-          </Box>
-          <Button
-            variant="outlined"
-            size="small"
-            onClick={logout}
-            startIcon={<LogoutIcon sx={{ display: { xs: "none", sm: "inline-flex" } }} />}
-            sx={{ minWidth: { xs: 36, sm: "auto" }, px: { xs: 1, sm: 1.5 } }}
-          >
-            <Box component="span" sx={{ display: { xs: "none", sm: "inline" } }}>Déconnexion</Box>
-            <LogoutIcon sx={{ display: { xs: "inline-flex", sm: "none" }, fontSize: 18 }} />
-          </Button>
+        <Box sx={{ display: "flex", alignItems: "center", gap: 0.5 }}>
+          <Tooltip title="Mon profil">
+            <IconButton component={Link} href="/profile" aria-label="Mon profil">
+              <Avatar sx={{ bgcolor: "primary.light", color: "primary.main", width: 34, height: 34, fontSize: "0.875rem", fontWeight: 700 }}>
+                {initial}
+              </Avatar>
+            </IconButton>
+          </Tooltip>
+          <Tooltip title="Se déconnecter">
+            <IconButton onClick={logout} aria-label="Se déconnecter" sx={{ display: { xs: "none", md: "inline-flex" }, color: "text.secondary" }}>
+              <LogoutIcon fontSize="small" />
+            </IconButton>
+          </Tooltip>
         </Box>
       </Toolbar>
     </AppBar>

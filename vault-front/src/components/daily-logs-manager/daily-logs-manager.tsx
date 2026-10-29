@@ -14,14 +14,15 @@ import {
   Select,
   MenuItem,
   Autocomplete,
-  Tooltip,
   Tabs,
   Tab,
-  IconButton
+  IconButton,
+  ButtonBase,
 } from "@mui/material";
 import AddIcon from "@mui/icons-material/Add";
+import { useRouter } from "next/navigation";
+import { NEW_ENTRY_EVENT } from "@/components/bottom-nav/bottom-nav";
 import CalendarMonthIcon from "@mui/icons-material/CalendarMonth";
-import CheckCircleIcon from "@mui/icons-material/CheckCircle";
 import ListIcon from "@mui/icons-material/List";
 import ChevronLeftIcon from "@mui/icons-material/ChevronLeft";
 import ChevronRightIcon from "@mui/icons-material/ChevronRight";
@@ -35,6 +36,7 @@ import {
 import { parseHourlyValue, formatHourlyValue } from "@/utils/time-converter";
 import { LogEntryDialog } from "./log-entry-dialog";
 import { LogTable } from "./log-table";
+import { localDateStr } from "@/utils/local-date";
 
 interface State {
   logs: DailyLog[];
@@ -77,7 +79,7 @@ const reducer = (state: State, action: Action): State => {
     case "OPEN_DIALOG": return {
       ...state,
       dialog: { ...state.dialog, open: true, isEditing: action.isEditing, logId: action.logId || null },
-      formData: action.formData || { date: new Date().toISOString().split("T")[0], notes: "", fieldValues: {}, subFieldValues: {} }
+      formData: action.formData || { date: localDateStr(), notes: "", fieldValues: {}, subFieldValues: {} }
     };
     case "CLOSE_DIALOG": return { ...state, dialog: { ...state.dialog, open: false } };
     case "SET_SUBMITTING": return { ...state, dialog: { ...state.dialog, submitting: action.submitting } };
@@ -98,12 +100,16 @@ interface LogCalendarViewProps {
   handleCalendarCellClick: (day: CalendarDayItem) => void;
 }
 
+const CALENDAR_WEEKDAYS = ["L", "M", "M", "J", "V", "S", "D"];
+
 const LogCalendarView: React.FC<LogCalendarViewProps> = ({
   calendarDate,
   setCalendarDate,
   calendarDays,
   handleCalendarCellClick
 }) => {
+  const todayStr = localDateStr();
+
   const handlePrevMonth = () => {
     setCalendarDate(new Date(calendarDate.getFullYear(), calendarDate.getMonth() - 1, 1));
   };
@@ -112,139 +118,131 @@ const LogCalendarView: React.FC<LogCalendarViewProps> = ({
     setCalendarDate(new Date(calendarDate.getFullYear(), calendarDate.getMonth() + 1, 1));
   };
 
-  const getTooltipTitle = (day: typeof calendarDays[number]) => {
-    if (!day.dateStr || day.dayNum === 0) return "";
-    const formattedDate = new Date(day.dateStr).toLocaleDateString("fr-FR");
-    return day.isLogged
-      ? `Modifier le journal du ${formattedDate}`
-      : `Ajouter un journal pour le ${formattedDate}`;
+  const getAriaLabel = (day: typeof calendarDays[number]) => {
+    const formattedDate = new Date(day.dateStr).toLocaleDateString("fr-FR", { weekday: "long", day: "numeric", month: "long" });
+    if (!day.isLogged) return `Ajouter un journal pour le ${formattedDate}`;
+    const ratio = day.filledRatio ?? 0;
+    const level = ratio >= 0.7 ? "complet" : ratio >= 0.35 ? "bien rempli" : "partiel";
+    return `Modifier le journal du ${formattedDate}, ${level}`;
+  };
+
+  // Plus le jour est complet, plus la teinte est profonde (rampe séquentielle du sceau).
+  const getDayColors = (day: typeof calendarDays[number]) => {
+    if (!day.isLogged) return { bgcolor: "action.hover", color: "text.secondary" };
+    const ratio = day.filledRatio ?? 0;
+    if (ratio >= 0.7) return { bgcolor: "var(--chart-pos-3)", color: "primary.contrastText" };
+    if (ratio >= 0.35) return { bgcolor: "var(--chart-pos-2)", color: "var(--chart-on-mid)" };
+    return { bgcolor: "var(--chart-pos-1)", color: "text.primary" };
   };
 
   return (
-    <Box sx={{ mb: 2 }}>
-      {/* Month Selector Panel */}
-      <Box sx={{
-        display: "flex",
-        justifyContent: "space-between",
-        alignItems: "center",
-        mb: 3,
-        p: 1.5,
-        borderRadius: 3,
-        bgcolor: "rgba(99, 102, 241, 0.03)",
-        border: "1px solid rgba(99, 102, 241, 0.08)"
-      }}>
-        <IconButton
-          size="small"
-          onClick={handlePrevMonth}
-          sx={{ bgcolor: "background.paper", border: "1px solid rgba(0,0,0,0.05)", boxShadow: "0 2px 4px rgba(0,0,0,0.02)" }}
-        >
+    <Box>
+      <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", mb: 1.5 }}>
+        <IconButton onClick={handlePrevMonth} aria-label="Mois précédent">
           <ChevronLeftIcon />
         </IconButton>
-
-        <Typography suppressHydrationWarning variant="subtitle1" sx={{ fontWeight: 900, color: "#142949", textTransform: "capitalize" }}>
+        <Typography suppressHydrationWarning variant="subtitle1" sx={{ textTransform: "capitalize" }}>
           {calendarDate.toLocaleDateString("fr-FR", { month: "long", year: "numeric" })}
         </Typography>
-
-        <IconButton
-          size="small"
-          onClick={handleNextMonth}
-          sx={{ bgcolor: "background.paper", border: "1px solid rgba(0,0,0,0.05)", boxShadow: "0 2px 4px rgba(0,0,0,0.02)" }}
-        >
+        <IconButton onClick={handleNextMonth} aria-label="Mois suivant">
           <ChevronRightIcon />
         </IconButton>
       </Box>
 
-      {/* Weekday headers */}
-      <Box sx={{
-        display: "grid",
-        gridTemplateColumns: "repeat(7, 1fr)",
-        gap: { xs: 0.5, sm: 1, md: 1.5 },
-        textAlign: "center",
-        mb: 1.5,
-        bgcolor: "rgba(0,0,0,0.02)",
-        py: 1,
-        borderRadius: 2
-      }}>
-        {["Lun", "Mar", "Mer", "Jeu", "Ven", "Sam", "Dim"].map((dayName) => (
-          <Typography key={dayName} variant="caption" sx={{ fontWeight: 800, color: "text.secondary" }}>
+      <Box aria-hidden sx={{ display: "grid", gridTemplateColumns: "repeat(7, 1fr)", gap: { xs: 0.5, sm: 1 }, textAlign: "center", mb: 0.75 }}>
+        {CALENDAR_WEEKDAYS.map((dayName, i) => (
+          <Typography key={i} variant="caption" sx={{ fontWeight: 700, color: "text.disabled" }}>
             {dayName}
           </Typography>
         ))}
       </Box>
 
-      {/* Days Grid */}
-      <Box sx={{
-        display: "grid",
-        gridTemplateColumns: "repeat(7, 1fr)",
-        gap: { xs: 0.5, sm: 1, md: 1.5 }
-      }}>
+      <Box sx={{ display: "grid", gridTemplateColumns: "repeat(7, 1fr)", gap: { xs: 0.5, sm: 1 } }}>
         {calendarDays.map((day) => {
           if (day.dayNum === 0) {
-            return <Box key={day.dateStr} sx={{ aspectRatio: { xs: "1", md: "1.2" } }} />;
+            return <Box key={day.dateStr} sx={{ aspectRatio: { xs: "1", md: "1.4" } }} />;
           }
-
+          const isToday = day.dateStr === todayStr;
           return (
-            <Tooltip
+            <ButtonBase
               key={day.dateStr}
-              title={getTooltipTitle(day)}
-              arrow
+              onClick={() => handleCalendarCellClick(day)}
+              aria-label={getAriaLabel(day)}
+              sx={{
+                aspectRatio: { xs: "1", md: "1.4" },
+                borderRadius: 2,
+                ...getDayColors(day),
+                // Anneau "aujourd'hui" en ombre portée : l'outline reste libre pour le focus clavier.
+                boxShadow: isToday ? "0 0 0 2px var(--mui-palette-background-paper), 0 0 0 4px var(--accent-strong)" : "none",
+                transition: "transform 160ms cubic-bezier(.2,0,0,1)",
+                "&:active": { transform: "scale(0.94)" },
+              }}
             >
-              <Box
-                onClick={() => handleCalendarCellClick(day)}
-                sx={{
-                  aspectRatio: { xs: "1", md: "1.2" },
-                  borderRadius: { xs: 1.5, md: 3 },
-                  display: "flex",
-                  flexDirection: { xs: "row", md: "column" },
-                  justifyContent: { xs: "center", md: "space-between" },
-                  alignItems: "center",
-                  p: { xs: 0.5, sm: 1, md: 1.5 },
-                  cursor: "pointer",
-                  transition: "all 0.2s ease-in-out",
-                  bgcolor: day.isLogged 
-                    ? ((day.filledRatio ?? 0) >= 0.7 ? "rgba(16, 185, 129, 0.05)" : "rgba(234, 179, 8, 0.05)") 
-                    : "background.paper",
-                  border: day.isLogged
-                    ? ((day.filledRatio ?? 0) >= 0.7 ? "1.5px solid rgba(16, 185, 129, 0.3)" : "1.5px solid rgba(234, 179, 8, 0.3)")
-                    : "1.5px dashed rgba(0, 0, 0, 0.08)",
-                  color: day.isLogged 
-                    ? ((day.filledRatio ?? 0) >= 0.7 ? "#10b981" : "#eab308") 
-                    : "text.secondary",
-                  position: "relative",
-                  '&:hover': {
-                    transform: "scale(1.03)",
-                    boxShadow: "0 8px 16px rgba(0,0,0,0.06)",
-                    borderColor: day.isLogged 
-                      ? ((day.filledRatio ?? 0) >= 0.7 ? "#10b981" : "#eab308") 
-                      : "#6366f1",
-                    bgcolor: day.isLogged 
-                      ? ((day.filledRatio ?? 0) >= 0.7 ? "rgba(16, 185, 129, 0.08)" : "rgba(234, 179, 8, 0.08)") 
-                      : "rgba(99, 102, 241, 0.04)",
-                    color: day.isLogged 
-                      ? ((day.filledRatio ?? 0) >= 0.7 ? "#059669" : "#ca8a04") 
-                      : "#6366f1"
-                  }
-                }}
-              >
-                <Typography sx={{ fontWeight: 800, fontSize: { xs: 11, md: 14 } }}>
-                  {day.dayNum}
-                </Typography>
-
-                <Box sx={{ display: { xs: "none", md: "flex" }, alignSelf: "flex-end", alignItems: "center" }}>
-                  {day.isLogged ? (
-                    <CheckCircleIcon sx={{ fontSize: { xs: 14, md: 18 }, color: (day.filledRatio ?? 0) >= 0.7 ? "#10b981" : "#eab308" }} />
-                  ) : (
-                    <AddIcon sx={{ fontSize: { xs: 14, md: 18 }, opacity: 0.3 }} />
-                  )}
-                </Box>
-              </Box>
-            </Tooltip>
+              <Typography component="span" sx={{ fontWeight: isToday ? 700 : 500, fontSize: { xs: 13, md: 15 }, fontVariantNumeric: "tabular-nums" }}>
+                {day.dayNum}
+              </Typography>
+            </ButtonBase>
           );
         })}
+      </Box>
+
+      <Box sx={{ display: "flex", flexWrap: "wrap", gap: 2, mt: 2, color: "text.secondary" }}>
+        {[
+          { label: "Partiel", bg: "var(--chart-pos-1)" },
+          { label: "Bien rempli", bg: "var(--chart-pos-2)" },
+          { label: "Complet", bg: "var(--chart-pos-3)" },
+        ].map((item) => (
+          <Box key={item.label} sx={{ display: "flex", alignItems: "center", gap: 0.75 }}>
+            <Box sx={{ width: 10, height: 10, borderRadius: "3px", bgcolor: item.bg }} />
+            <Typography variant="caption">{item.label}</Typography>
+          </Box>
+        ))}
       </Box>
     </Box>
   );
 };
+
+interface TodayCardProps {
+  todayLogged: boolean;
+  streak: number;
+  last7: boolean[];
+  onOpenToday: () => void;
+}
+
+const TodayCard: React.FC<TodayCardProps> = ({ todayLogged, streak, last7, onOpenToday }) => (
+  <Box sx={{ display: "grid", gap: 1.5, gridTemplateColumns: { xs: "1fr", md: "2fr 1fr" } }}>
+    <Paper sx={{ p: 2.5, borderRadius: 4, bgcolor: "primary.main", color: "primary.contrastText", display: "grid", gap: 1.5 }}>
+      <Typography suppressHydrationWarning variant="overline" sx={{ opacity: 0.85, textTransform: "capitalize" }}>
+        {new Date().toLocaleDateString("fr-FR", { weekday: "long", day: "numeric", month: "long" })}
+      </Typography>
+      <Typography variant="h3" component="p" sx={{ color: "inherit" }}>
+        {todayLogged ? "Votre journée est notée." : "Votre journée n'est pas encore notée."}
+      </Typography>
+      <Button
+        onClick={onOpenToday}
+        variant="contained"
+        sx={{ justifySelf: "start", bgcolor: "background.paper", color: "primary.main", "&:hover": { bgcolor: "background.default" } }}
+      >
+        {todayLogged ? "Modifier ma journée" : "Noter ma journée"}
+      </Button>
+    </Paper>
+    <Paper sx={{ p: 2.5, borderRadius: 4, display: "grid", gap: 1.5, alignContent: "start" }}>
+      <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "baseline" }}>
+        <Typography variant="subtitle2">Série en cours</Typography>
+        <Typography variant="body2" color="text.secondary" sx={{ fontVariantNumeric: "tabular-nums" }}>
+          {streak} jour{streak > 1 ? "s" : ""}
+        </Typography>
+      </Box>
+      <Box role="img" sx={{ display: "flex", gap: 0.75, alignItems: "center" }} aria-label={`${last7.filter(Boolean).length} jours notés sur les 7 derniers`}>
+        {last7.map((on, i) => (
+          // Noté : segment plein et épais ; non noté : segment fin. La forme double la couleur.
+          <Box key={i} sx={{ flex: 1, height: on ? 8 : 4, borderRadius: 1, bgcolor: on ? "var(--accent-strong)" : "var(--mui-palette-divider)" }} />
+        ))}
+      </Box>
+      <Typography variant="caption" color="text.secondary">7 derniers jours</Typography>
+    </Paper>
+  </Box>
+);
 
 interface LogListViewProps {
   activeFields: CustomField[];
@@ -271,7 +269,7 @@ const LogListView: React.FC<LogListViewProps> = ({
 }) => {
   return (
     <>
-      <Box sx={{ mb: 4, display: "flex", gap: 2, flexWrap: "wrap", alignItems: "center" }}>
+      <Box sx={{ mb: 2, display: "flex", gap: 1.5, flexWrap: "wrap", alignItems: "center" }}>
         <Autocomplete
           multiple
           size="small"
@@ -284,12 +282,12 @@ const LogListView: React.FC<LogListViewProps> = ({
               {...params}
               label="Filtrer par champs"
               placeholder="Sélectionner..."
-              sx={{ bgcolor: "background.paper" }}
+              margin="none"
             />
           )}
-          sx={{ minWidth: 280, flexGrow: 1, maxWidth: { md: 400 } }}
+          sx={{ minWidth: { xs: "100%", sm: 280 }, flexGrow: 1, maxWidth: { md: 400 } }}
         />
-        <FormControl size="small" sx={{ minWidth: 160, bgcolor: "background.paper" }}>
+        <FormControl size="small" sx={{ minWidth: 160, flexGrow: { xs: 1, sm: 0 } }}>
           <InputLabel>Ordre</InputLabel>
           <Select
             value={sortOrder}
@@ -333,6 +331,10 @@ interface UseDailyLogsReturn {
   handleSubmit: (e: React.FormEvent) => Promise<void>;
   handleDelete: (id: string) => Promise<void>;
   handleCalendarCellClick: (day: CalendarDayItem) => void;
+  todayLogged: boolean;
+  streak: number;
+  last7: boolean[];
+  openToday: () => void;
 }
 
 const useDailyLogs = (): UseDailyLogsReturn => {
@@ -342,7 +344,7 @@ const useDailyLogs = (): UseDailyLogsReturn => {
     loading: true,
     error: null,
     dialog: { open: false, isEditing: false, logId: null, submitting: false },
-    formData: { date: new Date().toISOString().split("T")[0], notes: "", fieldValues: {}, subFieldValues: {} },
+    formData: { date: localDateStr(), notes: "", fieldValues: {}, subFieldValues: {} },
     filters: { selectedFields: [], sortOrder: "desc" }
   });
 
@@ -465,7 +467,7 @@ const useDailyLogs = (): UseDailyLogsReturn => {
       dispatch({
         type: "OPEN_DIALOG",
         isEditing: false,
-        formData: { date: new Date().toISOString().split("T")[0], notes: "", fieldValues: defaultFvMap, subFieldValues: {} }
+        formData: { date: localDateStr(), notes: "", fieldValues: defaultFvMap, subFieldValues: {} }
       });
     }
   };
@@ -621,6 +623,31 @@ const useDailyLogs = (): UseDailyLogsReturn => {
     }
   };
 
+  const loggedDates = useMemo(() => new Set(logs.map(l => new Date(l.logDate).toISOString().split("T")[0])), [logs]);
+
+  const { todayLogged, streak, last7 } = useMemo(() => {
+    const dayStr = (offset: number) => {
+      const d = new Date();
+      d.setDate(d.getDate() - offset);
+      return localDateStr(d);
+    };
+    const isTodayLogged = loggedDates.has(dayStr(0));
+    // La série continue tant que la journée d'aujourd'hui peut encore être notée.
+    let count = 0;
+    for (let i = isTodayLogged ? 0 : 1; loggedDates.has(dayStr(i)); i++) count++;
+    return {
+      todayLogged: isTodayLogged,
+      streak: count,
+      last7: Array.from({ length: 7 }, (_, i) => loggedDates.has(dayStr(6 - i))),
+    };
+  }, [loggedDates]);
+
+  const openToday = () => {
+    const todayStr = localDateStr();
+    const todayLog = logs.find(l => new Date(l.logDate).toISOString().split("T")[0] === todayStr);
+    handleOpen(todayLog);
+  };
+
   return {
     state,
     dispatch,
@@ -637,7 +664,11 @@ const useDailyLogs = (): UseDailyLogsReturn => {
     handleClose,
     handleSubmit,
     handleDelete,
-    handleCalendarCellClick
+    handleCalendarCellClick,
+    todayLogged,
+    streak,
+    last7,
+    openToday,
   };
 };
 
@@ -671,45 +702,89 @@ export const DailyLogsManager: React.FC = () => {
     handleClose,
     handleSubmit,
     handleDelete,
-    handleCalendarCellClick
+    handleCalendarCellClick,
+    todayLogged,
+    streak,
+    last7,
+    openToday,
   } = useDailyLogs();
+  const router = useRouter();
+
+  // Le bouton central de la barre du bas ouvre la saisie du jour.
+  const openTodayRef = React.useRef(openToday);
+  useEffect(() => {
+    openTodayRef.current = openToday;
+  });
+  // Tant que les journaux chargent, on diffère l'ouverture : sinon la saisie partirait en création et doublerait l'entrée du jour.
+  const loadingRef = React.useRef(state.loading);
+  const pendingNewRef = React.useRef(false);
+  const [pendingTick, setPendingTick] = React.useState(0);
+  useEffect(() => {
+    loadingRef.current = state.loading;
+  }, [state.loading]);
+  useEffect(() => {
+    const onNewEntry = () => {
+      if (loadingRef.current) {
+        pendingNewRef.current = true;
+        setPendingTick(t => t + 1);
+      } else {
+        openTodayRef.current();
+      }
+    };
+    window.addEventListener(NEW_ENTRY_EVENT, onNewEntry);
+    return () => window.removeEventListener(NEW_ENTRY_EVENT, onNewEntry);
+  }, []);
+  useEffect(() => {
+    if (state.loading || !mounted) return;
+    if (pendingNewRef.current) {
+      pendingNewRef.current = false;
+      openTodayRef.current();
+    }
+    if (new URLSearchParams(window.location.search).get("new") === "1") {
+      openTodayRef.current();
+      router.replace("/dashboard", { scroll: false });
+    }
+  }, [state.loading, mounted, router, pendingTick]);
 
   const { loading, error, dialog, formData } = state;
 
   return !mounted ? (
-    <Paper sx={{ p: { xs: 2, md: 4 }, borderRadius: 4, mt: 4, display: "flex", justifyContent: "center", alignItems: "center", minHeight: 400 }}>
+    <Paper sx={{ p: 2, borderRadius: 4, display: "flex", justifyContent: "center", alignItems: "center", minHeight: 320 }}>
       <CircularProgress />
     </Paper>
   ) : (
-    <Paper sx={{ p: { xs: 2, md: 4 }, borderRadius: 4, mt: 4 }}>
-      <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", mb: 4, flexWrap: "wrap", gap: 2 }}>
-        <Box sx={{ display: "flex", alignItems: "center", gap: 2, flexWrap: "wrap" }}>
-          <Typography variant="h6" sx={{ fontWeight: 800, color: "#142949" }}>Suivi Quotidien</Typography>
+    <Box sx={{ display: "grid", gap: 1.5 }}>
+      <TodayCard todayLogged={todayLogged} streak={streak} last7={last7} onOpenToday={openToday} />
+    <Paper sx={{ p: { xs: 2, md: 3 }, borderRadius: 4 }}>
+      <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", mb: 2, gap: 1.5, flexWrap: "wrap" }}>
+        <Typography variant="h5" component="h2">Mon journal</Typography>
+        <Box sx={{ display: "flex", gap: 1, alignItems: "center" }}>
           <Tabs
             value={managerTab}
             onChange={(_, v) => setManagerTab(v)}
+            aria-label="Affichage du journal"
             sx={{
               minHeight: 36,
-              '& .MuiTab-root': { minHeight: 36, py: 0.5, px: 2, fontWeight: 700, fontSize: '0.8rem', borderRadius: 2, textTransform: "none" },
-              '& .Mui-selected': { color: '#6366f1 !important', bgcolor: 'rgba(99, 102, 241, 0.08)' },
-              '& .MuiTabs-indicator': { display: 'none' }
+              p: 0.375,
+              borderRadius: 999,
+              bgcolor: "action.hover",
+              "& .MuiTabs-indicator": { display: "none" },
+              "& .MuiTab-root": { minHeight: 32, minWidth: 0, px: 1.75, py: 0.5, borderRadius: 999, fontSize: "0.8125rem", color: "text.secondary" },
+              "& .MuiTab-root.Mui-selected": { bgcolor: "background.paper", color: "text.primary", boxShadow: "0 1px 2px rgba(15, 20, 19, 0.12)" },
             }}
           >
             <Tab label="Calendrier" value="calendar" icon={<CalendarMonthIcon sx={{ fontSize: 16 }} />} iconPosition="start" />
             <Tab label="Liste" value="list" icon={<ListIcon sx={{ fontSize: 16 }} />} iconPosition="start" />
           </Tabs>
+          <Button
+            variant="contained"
+            startIcon={<AddIcon />}
+            onClick={() => handleOpen()}
+            sx={{ display: { xs: "none", md: "inline-flex" } }}
+          >
+            Ajouter une entrée
+          </Button>
         </Box>
-        <Button
-          variant="contained"
-          startIcon={<AddIcon />}
-          onClick={() => handleOpen()}
-          sx={{
-            borderRadius: 2,
-            width: { xs: "100%", sm: "auto" }
-          }}
-        >
-          Ajouter une entrée
-        </Button>
       </Box>
 
       {error && <Alert severity="error" sx={{ mb: 3 }} onClose={() => dispatch({ type: "SET_ERROR", error: null })}>{error}</Alert>}
@@ -769,5 +844,6 @@ export const DailyLogsManager: React.FC = () => {
         historicalValues={historicalValues}
       />
     </Paper>
+    </Box>
   );
 };

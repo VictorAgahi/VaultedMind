@@ -1,4 +1,4 @@
-import { IsDateString, IsString, IsOptional } from 'class-validator';
+import { IsDateString, IsString, IsOptional, MaxLength } from 'class-validator';
 
 export class CreateDailyLogDto {
   @IsDateString()
@@ -6,6 +6,7 @@ export class CreateDailyLogDto {
 
   @IsOptional()
   @IsString()
+  @MaxLength(10000)
   notes?: string;
 }
 
@@ -16,6 +17,7 @@ export class UpdateDailyLogDto {
 
   @IsOptional()
   @IsString()
+  @MaxLength(10000)
   notes?: string;
 }
 

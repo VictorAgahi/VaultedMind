@@ -2,19 +2,14 @@
 
 import React from "react";
 import {
-  Box,
-  Typography,
-  Paper,
   FormControl,
   InputLabel,
   Select,
   MenuItem,
-  Tooltip as MuiTooltip,
   MenuProps,
   useTheme,
   useMediaQuery,
 } from "@mui/material";
-import InfoIcon from "@mui/icons-material/Info";
 import {
   LineChart,
   Line,
@@ -22,8 +17,9 @@ import {
   YAxis,
   CartesianGrid,
   Tooltip,
-  Legend
 } from "recharts";
+import { ChartCard, ChartEmpty } from "./chart-card";
+import { axisTick, chartColors, chartTooltipProps, shortDateTick } from "@/theme/chart-tokens";
 import { CustomField, FieldType } from "@/types";
 import { formatHourlyValue } from "@/utils/time-converter";
 
@@ -69,93 +65,80 @@ export const EvolutionQualitativeChart: React.FC<EvolutionQualitativeChartProps>
   const isNumeric = field?.fieldType === FieldType.NUMBER;
 
   return (
-    <Paper elevation={0} sx={{ 
-      borderRadius: 6, 
-      border: "1px solid rgba(0,0,0,0.05)", 
-      boxShadow: "0 10px 15px -3px rgba(0,0,0,0.05)",
-      height: "100%",
-      display: "flex",
-      flexDirection: "column",
-      overflow: "hidden"
-    }}>
-      <Box sx={{ p: { xs: 2, md: 4 }, pb: 0 }}>
-        <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", mb: 4, flexWrap: "wrap", gap: 2 }}>
-          <Box>
-            <Box sx={{ display: "flex", alignItems: "center", gap: 1, mb: 1 }}>
-              <Typography variant="h6" sx={{ fontWeight: 800 }}>Évolution Temporelle & Qualitative</Typography>
-              <MuiTooltip title="Visualisez l'évolution de vos ressentis et de vos mesures physiques dans le temps.">
-                <InfoIcon sx={{ fontSize: 18, color: "text.secondary", cursor: "help" }} />
-              </MuiTooltip>
-            </Box>
-            <Typography variant="body2" color="text.secondary">Suivi des tendances pour vos mesures qualitatives et numériques.</Typography>
-          </Box>
-          <FormControl fullWidth size="small" sx={{ mb: 4 }}>
-            <InputLabel>Champ à analyser</InputLabel>
-            <Select
-              value={selectedField}
-              label="Champ à analyser"
-              onChange={(e) => setSelectedField(e.target.value)}
-              sx={{ borderRadius: 3 }}
-              MenuProps={menuProps}
-            >
-              {stringFields.map(f => <MenuItem key={f.id} value={f.id}>{f.name}</MenuItem>)}
-            </Select>
-          </FormControl>
-        </Box>
-      </Box>
- 
-      <Box sx={{ flexGrow: 1 }}>
-        <ChartContainer aspect={1.5} mobileAspect={1.0} minHeight={350} fullHeight>
-          <LineChart data={data} margin={isMobile ? { top: 15, right: 8, left: 0, bottom: 10 } : { top: 35, right: 20, left: 20, bottom: 20 }}>
-            <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="rgba(0,0,0,0.05)" />
-            <XAxis 
-              dataKey="dateDisplay" 
-              axisLine={false} 
-              tickLine={false} 
-              tick={{ fontSize: 10, fill: "#666", fontWeight: 600 }} 
-              minTickGap={20}
-              padding={{ left: 10, right: 10 }}
-            />
-            <YAxis
-              axisLine={false}
-              tickLine={false}
-              allowDecimals={!isHourly}
-              tick={{ fontSize: 10, fill: "#666", fontWeight: 600 }}
-              domain={isNumeric ? ['auto', 'auto'] : [0, Math.max(...Object.values(valueMap), 1)]}
-              ticks={(!isNumeric || Object.keys(valueMap).length <= 8) ? Object.values(valueMap) : undefined}
-              tickFormatter={(val) => {
-                if (isHourly) {
-                  return formatHourlyValue(val.toString());
-                }
-                const text = reverseMap[val] || val.toString();
-                return text.length > 12 ? text.substring(0, 10) + '...' : text;
-              }}
-              width={isMobile ? 50 : 70}
-            />
-            <Tooltip
-              contentStyle={{ borderRadius: 12, border: "none", boxShadow: "0 10px 15px -3px rgba(0,0,0,0.1)" }}
-              // eslint-disable-next-line @typescript-eslint/no-explicit-any
-              formatter={(val: any) => {
-                if (isHourly) {
-                  return [formatHourlyValue((val ?? "").toString()), "Valeur"];
-                }
-                return [reverseMap[Number(val)] || (val ?? "").toString(), isNumeric ? "Valeur" : "État"];
-              }}
-            />
-            <Legend verticalAlign="top" height={50} />
-            <Line
-              type="monotone"
-              dataKey="value"
-              stroke="#6366f1"
-              strokeWidth={4}
-              dot={{ r: 4, fill: "#6366f1", strokeWidth: 2, stroke: "#fff" }}
-              activeDot={{ r: 6, strokeWidth: 0 }}
-              name={field?.name || "Valeur"}
-              connectNulls
-            />
-          </LineChart>
-        </ChartContainer>
-      </Box>
-    </Paper>
+    <ChartCard
+      title={field?.name || "Évolution"}
+      subtitle="Évolution de vos ressentis et de vos mesures dans le temps."
+      help="Pour un champ texte, chaque valeur est placée sur une échelle selon l'ordre défini dans vos champs."
+      controls={
+        <FormControl fullWidth size="small">
+          <InputLabel>Champ à analyser</InputLabel>
+          <Select
+            value={selectedField}
+            label="Champ à analyser"
+            onChange={(e) => setSelectedField(e.target.value)}
+            MenuProps={menuProps}
+          >
+            {stringFields.map(f => <MenuItem key={f.id} value={f.id}>{f.name}</MenuItem>)}
+          </Select>
+        </FormControl>
+      }
+    >
+      {!data.some(d => d.value !== null && d.value !== undefined) ? (
+        <ChartEmpty>Aucune valeur sur cette période.</ChartEmpty>
+      ) : (
+      <ChartContainer aspect={2} minHeight={300} fullHeight>
+        <LineChart data={data} margin={isMobile ? { top: 12, right: 12, left: 0, bottom: 0 } : { top: 16, right: 24, left: 8, bottom: 8 }}>
+          <CartesianGrid vertical={false} stroke={chartColors.grid} />
+          <XAxis
+            dataKey="dateDisplay"
+            tickFormatter={(v) => shortDateTick(v, isMobile)}
+            axisLine={{ stroke: chartColors.axis }}
+            tickLine={false}
+            tick={axisTick}
+            minTickGap={isMobile ? 36 : 24}
+            padding={{ left: 8, right: 8 }}
+          />
+          <YAxis
+            axisLine={false}
+            tickLine={false}
+            allowDecimals={!isHourly}
+            tick={axisTick}
+            domain={isNumeric ? ["dataMin", "dataMax"] : [0, Math.max(...Object.values(valueMap), 1)]}
+            ticks={!isNumeric && Object.keys(valueMap).length > 0 ? Object.values(valueMap) : undefined}
+            tickCount={isNumeric ? 4 : undefined}
+            tickFormatter={(val) => {
+              if (isHourly) {
+                return formatHourlyValue(val.toString());
+              }
+              const text = reverseMap[val] || val.toString();
+              const max = isMobile ? 8 : 12;
+              return text.length > max ? text.substring(0, max - 1) + "…" : text;
+            }}
+            width={isMobile ? 56 : 76}
+          />
+          <Tooltip
+            {...chartTooltipProps}
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            formatter={(val: any) => {
+              if (isHourly) {
+                return [formatHourlyValue((val ?? "").toString()), "Valeur"];
+              }
+              return [reverseMap[Number(val)] || (val ?? "").toString(), isNumeric ? "Valeur" : "État"];
+            }}
+          />
+          <Line
+            type={data.filter(d => d.value !== null).length < 15 ? "linear" : "monotone"}
+            dataKey="value"
+            stroke={chartColors.primary}
+            strokeWidth={2}
+            dot={data.length <= 31 ? { r: 3, fill: chartColors.primary, strokeWidth: 2, stroke: chartColors.surface } : false}
+            activeDot={{ r: 5, strokeWidth: 2, stroke: chartColors.surface }}
+            name={field?.name || "Valeur"}
+            connectNulls
+          />
+        </LineChart>
+      </ChartContainer>
+      )}
+    </ChartCard>
   );
 };

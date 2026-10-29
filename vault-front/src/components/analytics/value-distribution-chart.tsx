@@ -2,17 +2,12 @@
 
 import React from "react";
 import {
-  Box,
-  Typography,
-  Paper,
   FormControl,
   InputLabel,
   Select,
   MenuItem,
-  Tooltip as MuiTooltip,
   MenuProps
 } from "@mui/material";
-import InfoIcon from "@mui/icons-material/Info";
 import {
   BarChart,
   Bar,
@@ -20,10 +15,11 @@ import {
   YAxis,
   CartesianGrid,
   Tooltip,
-  Cell,
-  Legend
+  LabelList,
 } from "recharts";
 import { CustomField } from "@/types";
+import { ChartCard, ChartEmpty } from "./chart-card";
+import { axisTick, chartColors, chartTooltipProps } from "@/theme/chart-tokens";
 
 interface ChartContainerProps {
   children: React.ReactNode;
@@ -41,8 +37,7 @@ interface ValueDistributionChartProps {
   menuProps?: Partial<MenuProps>;
 }
 
-const COLORS = ["#6366f1", "#10b981", "#f59e0b", "#ef4444", "#8b5cf6", "#6366f1"];
-
+// Barres horizontales : les libellés restent lisibles sans rotation, même à 360px de large.
 export const ValueDistributionChart: React.FC<ValueDistributionChartProps> = ({
   data,
   selectedField,
@@ -51,62 +46,51 @@ export const ValueDistributionChart: React.FC<ValueDistributionChartProps> = ({
   ChartContainer,
   menuProps
 }) => {
+  const sorted = React.useMemo(() => [...data].sort((a, b) => b.count - a.count).slice(0, 8), [data]);
+  const labelWidth = Math.min(110, Math.max(56, ...sorted.map((d) => d.name.length * 7)));
+
   return (
-    <Paper elevation={0} sx={{ 
-      borderRadius: 6, 
-      border: "1px solid rgba(0,0,0,0.05)", 
-      boxShadow: "0 10px 15px -3px rgba(0,0,0,0.05)", 
-      height: "100%",
-      display: "flex",
-      flexDirection: "column",
-      overflow: "hidden"
-    }}>
-      <Box sx={{ p: { xs: 2, md: 4 }, pb: 0 }}>
-        <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", mb: 4, flexWrap: "wrap", gap: 2 }}>
-          <Box>
-            <Box sx={{ display: "flex", alignItems: "center", gap: 1, mb: 1 }}>
-              <Typography variant="h6" sx={{ fontWeight: 800 }}>Répartition</Typography>
-              <MuiTooltip title="Découvrez quelles valeurs reviennent le plus souvent.">
-                <InfoIcon sx={{ fontSize: 18, color: "text.secondary", cursor: "help" }} />
-              </MuiTooltip>
-            </Box>
-            <Typography variant="body2" color="text.secondary">Fréquence d&apos;apparition des valeurs.</Typography>
-          </Box>
-          <FormControl size="small" sx={{ minWidth: 150 }}>
-            <InputLabel>Champ</InputLabel>
-            <Select
-              value={selectedField}
-              label="Champ"
-              onChange={(e) => setSelectedField(e.target.value)}
-              MenuProps={menuProps}
-            >
-              {stringAndBoolFields.map(f => <MenuItem key={f.id} value={f.id}>{f.name}</MenuItem>)}
-            </Select>
-          </FormControl>
-        </Box>
-      </Box>
- 
-      <Box sx={{ flexGrow: 1 }}>
-        <ChartContainer aspect={1.1} mobileAspect={1.0} minHeight={350} fullHeight>
-          <BarChart data={data} margin={{ top: 35, right: 20, left: 10, bottom: 20 }}>
-            <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="rgba(0,0,0,0.05)" />
-            <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 10, fill: "#666", fontWeight: 600 }} />
+    <ChartCard
+      title="Répartition"
+      subtitle="Les valeurs qui reviennent le plus souvent."
+      help="Nombre de jours pour chaque valeur du champ choisi. Les 8 valeurs les plus fréquentes sont affichées."
+      controls={
+        <FormControl size="small" fullWidth>
+          <InputLabel>Champ</InputLabel>
+          <Select
+            value={selectedField}
+            label="Champ"
+            onChange={(e) => setSelectedField(e.target.value)}
+            MenuProps={menuProps}
+          >
+            {stringAndBoolFields.map(f => <MenuItem key={f.id} value={f.id}>{f.name}</MenuItem>)}
+          </Select>
+        </FormControl>
+      }
+    >
+      {sorted.length === 0 ? (
+        <ChartEmpty>Aucune valeur sur cette période.</ChartEmpty>
+      ) : (
+        <ChartContainer aspect={1.1} minHeight={Math.max(200, sorted.length * 36)} fullHeight>
+          <BarChart data={sorted} layout="vertical" margin={{ top: 4, right: 36, left: 4, bottom: 4 }} barCategoryGap={6}>
+            <CartesianGrid horizontal={false} stroke={chartColors.grid} />
+            <XAxis type="number" axisLine={false} tickLine={false} tick={axisTick} allowDecimals={false} hide />
             <YAxis
+              type="category"
+              dataKey="name"
               axisLine={false}
               tickLine={false}
-              tick={{ fontSize: 10, fill: "#666", fontWeight: 600 }}
-              width={40}
+              tick={{ ...axisTick, fill: chartColors.ink }}
+              width={labelWidth}
+              tickFormatter={(v: string) => (v.length > 14 ? `${v.slice(0, 13)}…` : v)}
             />
-            <Tooltip contentStyle={{ borderRadius: 12, border: "none", boxShadow: "0 10px 15px -3px rgba(0,0,0,0.1)" }} />
-            <Legend verticalAlign="top" height={50} />
-            <Bar dataKey="count" radius={[6, 6, 0, 0]} name="Occurrences">
-              {data.map((item) => (
-                <Cell key={`cell-${item.name}`} fill={COLORS[data.indexOf(item) % COLORS.length]} />
-              ))}
+            <Tooltip {...chartTooltipProps} cursor={{ fill: "var(--mui-palette-action-hover)" }} formatter={(value) => [`${value} jour${Number(value) > 1 ? "s" : ""}`, "Occurrences"]} />
+            <Bar dataKey="count" name="Occurrences" fill={chartColors.primary} radius={[0, 4, 4, 0]} maxBarSize={22}>
+              <LabelList dataKey="count" position="right" style={{ fill: chartColors.ink, fontSize: 11, fontWeight: 700 }} />
             </Bar>
           </BarChart>
         </ChartContainer>
-      </Box>
-    </Paper>
+      )}
+    </ChartCard>
   );
 };

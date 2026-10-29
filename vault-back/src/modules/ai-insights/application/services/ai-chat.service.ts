@@ -35,9 +35,10 @@ export class AIChatService {
     remainingPrompts?: number;
     nextAvailableAt?: Date | null;
   }> {
-    // Check rate limit: 2 prompts max per 12 hours
-    const usageStatus = await this.aiChatUsageRepository.getUsageStatus(userId);
-    if (usageStatus.remaining <= 0) {
+    // Reserve a slot atomically (2 prompts max per 12 hours) before calling the LLM
+    const { status: usageStatus, usageId } =
+      await this.aiChatUsageRepository.tryReserve(userId, 'chat');
+    if (!usageId) {
       const remainingHours = Math.floor(
         usageStatus.cooldownRemainingMs / (60 * 60 * 1000),
       );
@@ -264,9 +265,6 @@ ATTENTION EXTRÊME : NE propose PAS les changements sous forme de texte, de list
         `[AIChat] Parsed suggestedActions: ${JSON.stringify(suggestedActions)}`,
       );
 
-      // Record successful usage
-      await this.aiChatUsageRepository.recordUsage(userId);
-
       return {
         response: cleanResponse,
         suggestedActions,
@@ -274,6 +272,8 @@ ATTENTION EXTRÊME : NE propose PAS les changements sous forme de texte, de list
         nextAvailableAt: usageStatus.nextAvailableAt,
       };
     } catch (error) {
+      // The LLM call failed: give the slot back to the user
+      await this.aiChatUsageRepository.release(usageId);
       if (error instanceof HttpException) {
         throw error;
       }

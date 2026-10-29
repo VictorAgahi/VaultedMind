@@ -9,7 +9,10 @@ import {
   BadRequestException,
 } from '@nestjs/common';
 import { AIInsightService } from '../../application/services/ai-insight.service.js';
-import { AIInsightResponseDto } from '../../application/dtos/ai-insight.dto.js';
+import {
+  AIInsightResponseDto,
+  AIContextDto,
+} from '../../application/dtos/ai-insight.dto.js';
 import { JwtAuthGuard } from '../../../auth/infrastructure/guards/jwt-auth.guard.js';
 import { AuthUser } from '../../../auth/domain/interfaces/auth-user.interface.js';
 import { Body } from '@nestjs/common';
@@ -95,22 +98,28 @@ export class AIInsightController {
   @Post('context')
   async updateContext(
     @Request() req: { user: AuthUser },
-    @Body('context') context: string,
+    @Body() body: AIContextDto,
   ) {
-    await this.aiInsightService.updateAIContext(req.user.id, context);
+    await this.aiInsightService.updateAIContext(req.user.id, body.context);
     return { message: 'AI Context updated successfully' };
   }
 
   @UseGuards(JwtAuthGuard)
   @Post('context/optimize')
-  async optimizeContext(@Body() body: { context: string }) {
+  async optimizeContext(
+    @Request() req: { user: AuthUser },
+    @Body() body: AIContextDto,
+  ) {
     const { context } = body;
     if (!context || context.trim() === '') {
       throw new BadRequestException(
         'Le contexte ne peut pas être vide pour être optimisé.',
       );
     }
-    const optimized = await this.aiInsightService.optimizeAIContext(context);
+    const optimized = await this.aiInsightService.optimizeAIContext(
+      req.user.id,
+      context,
+    );
     return { optimized };
   }
 

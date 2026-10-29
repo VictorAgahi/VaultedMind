@@ -146,11 +146,11 @@ function renderInline(text: string): React.ReactNode {
   const parts = text.split(/(\*\*[^*]+\*\*|\*[^*]+\*|`[^`]+`)/g);
   return parts.map((part, idx) => {
     if (part.startsWith("**") && part.endsWith("**"))
-      return <Box key={idx} component="span" sx={{ fontWeight: 800, color: "#1e293b" }}>{part.slice(2, -2)}</Box>;
+      return <Box key={idx} component="span" sx={{ fontWeight: 800, color: "var(--mui-palette-text-primary)" }}>{part.slice(2, -2)}</Box>;
     if (part.startsWith("*") && part.endsWith("*"))
       return <Box key={idx} component="span" sx={{ fontStyle: "italic" }}>{part.slice(1, -1)}</Box>;
     if (part.startsWith("`") && part.endsWith("`"))
-      return <Box key={idx} component="code" sx={{ bgcolor: "rgba(0,0,0,0.06)", borderRadius: 1, px: 0.5, fontFamily: "monospace", fontSize: "0.85em" }}>{part.slice(1, -1)}</Box>;
+      return <Box key={idx} component="code" sx={{ bgcolor: "var(--mui-palette-divider)", borderRadius: 1, px: 0.5, fontFamily: "monospace", fontSize: "0.85em" }}>{part.slice(1, -1)}</Box>;
     return part;
   });
 }
@@ -164,25 +164,25 @@ export function MarkdownRenderer({ content }: { content: string }) {
         const key = `md-${idx}`;
 
         if (token.type === "hr")
-          return <Box key={key} sx={{ borderTop: "1px solid #e5e7eb", my: 0.5 }} />;
+          return <Box key={key} sx={{ borderTop: "1px solid var(--mui-palette-divider)", my: 0.5 }} />;
 
         if (token.type === "h1")
           return (
-            <Typography key={key} variant="h6" sx={{ fontWeight: 900, color: "#0f172a", mt: 1, lineHeight: 1.3, fontSize: { xs: "1rem", sm: "1.1rem" } }}>
+            <Typography key={key} variant="h6" sx={{ fontWeight: 800, color: "var(--mui-palette-text-primary)", mt: 1, lineHeight: 1.3, fontSize: { xs: "1rem", sm: "1.1rem" } }}>
               {renderInline(token.text)}
             </Typography>
           );
 
         if (token.type === "h2")
           return (
-            <Typography key={key} variant="subtitle1" sx={{ fontWeight: 800, color: "#1e293b", mt: 0.5, lineHeight: 1.4, fontSize: { xs: "0.9rem", sm: "1rem" } }}>
+            <Typography key={key} variant="subtitle1" sx={{ fontWeight: 800, color: "var(--mui-palette-text-primary)", mt: 0.5, lineHeight: 1.4, fontSize: { xs: "0.9rem", sm: "1rem" } }}>
               {renderInline(token.text)}
             </Typography>
           );
 
         if (token.type === "h3")
           return (
-            <Typography key={key} variant="subtitle2" sx={{ fontWeight: 700, color: "#334155", textTransform: "uppercase", letterSpacing: "0.04em", fontSize: "0.75rem", mt: 0.5 }}>
+            <Typography key={key} variant="subtitle2" sx={{ color: "text.primary", mt: 0.5 }}>
               {renderInline(token.text)}
             </Typography>
           );
@@ -192,14 +192,14 @@ export function MarkdownRenderer({ content }: { content: string }) {
             <Box
               key={key}
               sx={{
-                borderLeft: "3px solid #6366f1",
+                borderLeft: "3px solid var(--mui-palette-primary-main)",
                 pl: 1.5,
                 py: 0.5,
-                bgcolor: "rgba(99,102,241,0.04)",
+                bgcolor: "rgba(var(--mui-palette-primary-mainChannel) / 0.04)",
                 borderRadius: "0 8px 8px 0",
               }}
             >
-              <Typography variant="body2" sx={{ color: "#475569", fontStyle: "italic", lineHeight: 1.6, fontSize: { xs: "0.82rem", sm: "0.875rem" } }}>
+              <Typography variant="body2" sx={{ color: "var(--mui-palette-text-secondary)", fontStyle: "italic", lineHeight: 1.6, fontSize: { xs: "0.82rem", sm: "0.875rem" } }}>
                 {renderInline(token.text)}
               </Typography>
             </Box>
@@ -209,7 +209,7 @@ export function MarkdownRenderer({ content }: { content: string }) {
           return (
             <Box key={key} component="ul" sx={{ m: 0, pl: 2, display: "flex", flexDirection: "column", gap: 0.5 }}>
               {token.items.map((item, ii) => (
-                <Box key={ii} component="li" sx={{ color: "#475569" }}>
+                <Box key={ii} component="li" sx={{ color: "var(--mui-palette-text-secondary)" }}>
                   <Typography variant="body2" component="span" sx={{ lineHeight: 1.6, fontSize: { xs: "0.82rem", sm: "0.875rem" } }}>
                     {renderInline(item)}
                   </Typography>
@@ -225,8 +225,8 @@ export function MarkdownRenderer({ content }: { content: string }) {
                 <Box key={ii} sx={{ display: "flex", gap: 1.5, alignItems: "flex-start" }}>
                   <Box
                     sx={{
-                      bgcolor: "#6366f1",
-                      color: "white",
+                      bgcolor: "var(--mui-palette-primary-main)",
+                      color: "primary.contrastText",
                       fontWeight: 800,
                       borderRadius: "50%",
                       minWidth: 20,
@@ -241,7 +241,7 @@ export function MarkdownRenderer({ content }: { content: string }) {
                   >
                     {ii + 1}
                   </Box>
-                  <Typography variant="body2" sx={{ color: "#475569", lineHeight: 1.6, fontSize: { xs: "0.82rem", sm: "0.875rem" } }}>
+                  <Typography variant="body2" sx={{ color: "var(--mui-palette-text-secondary)", lineHeight: 1.6, fontSize: { xs: "0.82rem", sm: "0.875rem" } }}>
                     {renderInline(item)}
                   </Typography>
                 </Box>
@@ -250,7 +250,7 @@ export function MarkdownRenderer({ content }: { content: string }) {
           );
 
         return (
-          <Typography key={key} variant="body2" sx={{ color: "#475569", lineHeight: 1.7, fontSize: { xs: "0.82rem", sm: "0.875rem" } }}>
+          <Typography key={key} variant="body2" sx={{ color: "var(--mui-palette-text-secondary)", lineHeight: 1.7, fontSize: { xs: "0.82rem", sm: "0.875rem" } }}>
             {renderInline(token.text)}
           </Typography>
         );
@@ -280,39 +280,39 @@ function SuggestedFieldsList({ suggestedFields, onAccept }: { suggestedFields: S
   }, {} as Record<string, SuggestedField[]>);
 
   return (
-    <Box sx={{ mt: 3, pt: 2, borderTop: "1px dashed #cbd5e1" }}>
-      <Typography variant="subtitle2" sx={{ fontWeight: 700, color: "#334155", mb: 1, fontSize: "0.85rem", display: "flex", alignItems: "center", gap: 0.5 }}>
-        ✨ L&apos;IA vous suggère d&apos;ajouter ces champs :
+    <Box sx={{ mt: 3, pt: 2, borderTop: "1px dashed var(--mui-palette-divider)" }}>
+      <Typography variant="subtitle2" sx={{ fontWeight: 700, color: "text.primary", mb: 1, fontSize: "0.875rem", display: "flex", alignItems: "center", gap: 0.5 }}>
+         L&apos;IA vous suggère d&apos;ajouter ces champs :
       </Typography>
       <Stack spacing={2}>
         {Object.entries(grouped).map(([category, fieldsList]) => {
           const fields = fieldsList as SuggestedField[];
           return (
             <Box key={category}>
-              <Typography variant="caption" sx={{ fontWeight: 800, color: "#64748b", textTransform: "uppercase", letterSpacing: "0.05em", mb: 1, display: "block" }}>
+              <Typography variant="caption" sx={{ fontWeight: 700, color: "text.secondary", mb: 1, display: "block" }}>
                 {category}
               </Typography>
               <Stack spacing={1}>
                 {fields.map((field, idx) => (
-                <Box key={idx} sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", bgcolor: "#f1f5f9", p: 1.5, borderRadius: 2 }}>
+                <Box key={idx} sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", bgcolor: "var(--mui-palette-grey-100)", p: 1.5, borderRadius: 2 }}>
                   <Box>
-                    <Typography variant="body2" sx={{ fontWeight: 700, color: "#1e293b" }}>{field.name}</Typography>
-                    <Typography variant="caption" sx={{ color: "#64748b", display: "block", lineHeight: 1.2 }}>{field.reason}</Typography>
+                    <Typography variant="body2" sx={{ fontWeight: 700, color: "var(--mui-palette-text-primary)" }}>{field.name}</Typography>
+                    <Typography variant="caption" sx={{ color: "var(--mui-palette-text-secondary)", display: "block", lineHeight: 1.2 }}>{field.reason}</Typography>
                   </Box>
                   <Button
                     variant="contained"
                     size="small"
                     onClick={() => onAccept(field)}
                     sx={{
-                      bgcolor: "#4f46e5",
-                      color: "white",
+                      bgcolor: "var(--mui-palette-primary-dark)",
+                      color: "primary.contrastText",
                       fontSize: "0.7rem",
                       px: 1.5,
                       py: 0.5,
                       borderRadius: 2,
                       textTransform: "none",
                       boxShadow: "none",
-                      "&:hover": { bgcolor: "#4338ca", boxShadow: "none" }
+                      "&:hover": { bgcolor: "var(--mui-palette-primary-dark)", boxShadow: "none" }
                     }}
                   >
                     Accepter
@@ -377,12 +377,8 @@ function InsightCard({
   return (
     <Card
       sx={{
-        border: "1px solid #e2e8f0",
-        boxShadow: "0 1px 3px rgba(0,0,0,0.04)",
         borderRadius: { xs: 3, sm: 4 },
-        bgcolor: "white",
-        "&:hover": { boxShadow: "0 4px 12px rgba(0,0,0,0.08)", borderColor: "#cbd5e1" },
-        transition: "box-shadow 0.2s, border-color 0.2s",
+        bgcolor: "action.hover",
       }}
     >
       <CardContent sx={{ p: { xs: 2, sm: 3 }, "&:last-child": { pb: { xs: 2, sm: 3 } } }}>
@@ -391,8 +387,8 @@ function InsightCard({
           <Typography
             variant="caption"
             sx={{
-              bgcolor: "rgba(99,102,241,0.08)",
-              color: "#4f46e5",
+              bgcolor: "rgba(var(--mui-palette-primary-mainChannel) / 0.08)",
+              color: "var(--mui-palette-primary-dark)",
               fontWeight: 700,
               px: 1.2,
               py: 0.4,
@@ -405,14 +401,14 @@ function InsightCard({
           <IconButton
             size="small"
             onClick={() => onDelete(insight.id)}
-            sx={{ color: "#9ca3af", p: 0.5, "&:hover": { color: "#ef4444", bgcolor: "rgba(239,68,68,0.05)" } }}
+            sx={{ color: "var(--mui-palette-text-disabled)", p: 0.5, "&:hover": { color: "var(--mui-palette-error-main)", bgcolor: "rgba(var(--mui-palette-error-mainChannel) / 0.05)" } }}
           >
             <DeleteIcon sx={{ fontSize: "1rem" }} />
           </IconButton>
         </Box>
 
         {/* Title */}
-        <Typography variant="subtitle1" sx={{ fontWeight: 800, color: "#1e293b", mb: 1.5, fontSize: { xs: "0.95rem", sm: "1rem" }, lineHeight: 1.35 }}>
+        <Typography variant="subtitle1" sx={{ fontWeight: 800, color: "var(--mui-palette-text-primary)", mb: 1.5, fontSize: { xs: "0.95rem", sm: "1rem" }, lineHeight: 1.35 }}>
           {insight.title}
         </Typography>
 
@@ -420,7 +416,7 @@ function InsightCard({
         <Collapse in={expanded} collapsedSize={80}>
           <MarkdownRenderer content={insight.content} />
           {expanded && !!insight.metadata?.actionSuggestions && (
-            <Box sx={{ mt: 2, pt: 2, borderTop: "1px dashed #cbd5e1" }}>
+            <Box sx={{ mt: 2, pt: 2, borderTop: "1px dashed var(--mui-palette-divider)" }}>
               <ChatSuggestedActionsList actions={insight.metadata.actionSuggestions as ChatSuggestedAction[]} />
             </Box>
           )}
@@ -438,7 +434,7 @@ function InsightCard({
 
         {/* Footer */}
         <Box sx={{ mt: 1.5, display: "flex", flexDirection: { xs: "column", sm: "row" }, gap: { xs: 1, sm: 0 }, justifyContent: "space-between", alignItems: { xs: "stretch", sm: "center" } }}>
-          <Typography variant="caption" sx={{ color: "#94a3b8", fontSize: "0.72rem" }}>
+          <Typography variant="caption" sx={{ color: "var(--mui-palette-text-disabled)", fontSize: "0.72rem" }}>
             {dateStr}
           </Typography>
           <Box sx={{ display: "flex", gap: 1, justifyContent: { xs: "space-between", sm: "flex-end" } }}>
@@ -448,16 +444,16 @@ function InsightCard({
                 startIcon={<ChatIcon sx={{ fontSize: "0.8rem !important" }} />}
                 onClick={handleAskAI}
                 sx={{
-                  color: "#4f46e5",
+                  color: "var(--mui-palette-primary-dark)",
                   fontWeight: 700,
                   fontSize: "0.72rem",
                   textTransform: "none",
-                  bgcolor: "rgba(99,102,241,0.06)",
+                  bgcolor: "rgba(var(--mui-palette-primary-mainChannel) / 0.06)",
                   borderRadius: 2,
                   px: 1.2,
                   py: 0.5,
                   flex: { xs: 1, sm: "none" },
-                  "&:hover": { bgcolor: "rgba(99,102,241,0.12)" },
+                  "&:hover": { bgcolor: "rgba(var(--mui-palette-primary-mainChannel) / 0.12)" },
                 }}
               >
                 Demander à l&apos;IA
@@ -468,7 +464,7 @@ function InsightCard({
               onClick={() => setExpanded((v) => !v)}
               endIcon={expanded ? <ExpandLessIcon sx={{ fontSize: "0.9rem !important" }} /> : <ExpandMoreIcon sx={{ fontSize: "0.9rem !important" }} />}
               sx={{
-                color: "#6366f1",
+                color: "var(--mui-palette-primary-main)",
                 fontWeight: 700,
                 fontSize: "0.72rem",
                 textTransform: "none",
@@ -599,21 +595,20 @@ export function InsightsPanel() {
       sx={{
         width: "100%",
         mt: 3,
-        bgcolor: "#f8fafc",
-        borderRadius: { xs: 3, sm: 4 },
-        border: "1px solid #e2e8f0",
+        bgcolor: "background.paper",
+        borderRadius: 4,
         p: { xs: 2, sm: 3 },
       }}
     >
       {/* Header */}
       <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", mb: 1, flexWrap: "wrap", gap: 1 }}>
         <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-          <EmojiEventsIcon sx={{ color: "#f59e0b", fontSize: { xs: "1.2rem", sm: "1.5rem" } }} />
-          <Typography variant="h6" sx={{ fontWeight: 700, color: "#0f172a", fontSize: { xs: "1rem", sm: "1.1rem" } }}>
+          <EmojiEventsIcon sx={{ color: "var(--mui-palette-warning-main)", fontSize: { xs: "1.2rem", sm: "1.5rem" } }} />
+          <Typography variant="h6" sx={{ fontWeight: 700, color: "var(--mui-palette-text-primary)", fontSize: { xs: "1rem", sm: "1.1rem" } }}>
             Analyses par IA
           </Typography>
           {state.insights.length > 0 && (
-            <Box sx={{ bgcolor: "rgba(0,0,0,0.07)", color: "#475569", fontWeight: 700, px: 1, py: 0.2, borderRadius: 10, fontSize: "0.7rem" }}>
+            <Box sx={{ bgcolor: "var(--mui-palette-divider)", color: "var(--mui-palette-text-secondary)", fontWeight: 700, px: 1, py: 0.2, borderRadius: 10, fontSize: "0.7rem" }}>
               {state.insights.length}
             </Box>
           )}
@@ -627,7 +622,7 @@ export function InsightsPanel() {
             />
           }
           label={
-            <Typography variant="caption" sx={{ fontWeight: 600, color: state.enabled ? "#16a34a" : "#94a3b8" }}>
+            <Typography variant="caption" sx={{ fontWeight: 600, color: state.enabled ? "var(--mui-palette-success-main)" : "var(--mui-palette-text-disabled)" }}>
               {state.enabled ? "Activé" : "Désactivé"}
             </Typography>
           }
@@ -637,16 +632,16 @@ export function InsightsPanel() {
 
       {/* Contexte limites */}
       <Box sx={{ display: "flex", alignItems: "flex-start", gap: 0.75, mb: 2, bgcolor: "rgba(148,163,184,0.08)", borderRadius: 2, p: 1.2 }}>
-        <Tooltip title="Vous pouvez déclencher une review vous-même toutes les 12h. L'IA analyse vos entrées récentes pour synthétiser vos tendances." arrow>
-          <InfoOutlinedIcon sx={{ fontSize: "0.85rem", color: "#94a3b8", mt: "1px", flexShrink: 0, cursor: "help" }} />
+        <Tooltip title="Vous pouvez déclencher un bilan vous-même toutes les 12h. L'IA analyse vos entrées récentes pour synthétiser vos tendances." arrow>
+          <InfoOutlinedIcon sx={{ fontSize: "0.85rem", color: "var(--mui-palette-text-disabled)", mt: "1px", flexShrink: 0, cursor: "help" }} />
         </Tooltip>
-        <Typography variant="caption" sx={{ color: "#64748b", lineHeight: 1.5, fontSize: "0.72rem" }}>
-          Analyses à la demande · <strong>1 review max toutes les 12h</strong> · basées sur vos 30 derniers journaux
+        <Typography variant="caption" sx={{ color: "var(--mui-palette-text-secondary)", lineHeight: 1.5, fontSize: "0.72rem" }}>
+          Analyses à la demande, basées sur vos 30 derniers journaux. <strong>Un bilan toutes les 12 h au maximum.</strong>
         </Typography>
       </Box>
 
       {!state.enabled && (
-        <Alert severity="info" sx={{ mb: 2, bgcolor: "#eff6ff", border: "1px solid #bfdbfe", fontSize: { xs: "0.82rem", sm: "0.875rem" }, "& .MuiAlert-icon": { color: "#3b82f6" } }}>
+        <Alert severity="info" sx={{ mb: 2, bgcolor: "var(--mui-palette-action-hover)", fontSize: { xs: "0.82rem", sm: "0.875rem" }, "& .MuiAlert-icon": { color: "var(--mui-palette-info-main)" } }}>
           Activez les analyses pour recevoir un suivi personnalisé de votre bien-être.
         </Alert>
       )}
@@ -675,20 +670,20 @@ export function InsightsPanel() {
                   });
               }}
               sx={{
-                bgcolor: cooldown.active ? "#94a3b8" : "#4f46e5",
-                color: "white",
+                bgcolor: cooldown.active ? "var(--mui-palette-text-disabled)" : "var(--mui-palette-primary-dark)",
+                color: "primary.contrastText",
                 fontWeight: 700,
                 fontSize: "0.82rem",
-                boxShadow: cooldown.active ? "none" : "0 4px 12px rgba(79, 70, 229, 0.25)",
-                "&:hover": { bgcolor: "#4338ca" },
-                "&.Mui-disabled": { bgcolor: "#cbd5e1", color: "#64748b" },
+                boxShadow: cooldown.active ? "none" : "0 4px 12px rgba(var(--mui-palette-primary-mainChannel) / 0.25)",
+                "&:hover": { bgcolor: "var(--mui-palette-primary-dark)" },
+                "&.Mui-disabled": { bgcolor: "var(--mui-palette-divider)", color: "var(--mui-palette-text-secondary)" },
               }}
             >
               {state.isGenerating
                 ? "Génération en cours..."
                 : cooldown.active
                 ? `Prochaine review dans ${cooldown.text}`
-                : "Lancer ma review"}
+                : "Lancer mon bilan"}
             </Button>
 
             <Button
@@ -699,11 +694,11 @@ export function InsightsPanel() {
                 window.dispatchEvent(new CustomEvent("ai-chat-open-with-message", { detail: { message: "" } }));
               }}
               sx={{
-                borderColor: "#4f46e5",
-                color: "#4f46e5",
+                borderColor: "var(--mui-palette-primary-dark)",
+                color: "var(--mui-palette-primary-dark)",
                 fontWeight: 700,
                 fontSize: "0.82rem",
-                "&:hover": { borderColor: "#4338ca", bgcolor: "rgba(79,70,229,0.04)" }
+                "&:hover": { borderColor: "var(--mui-palette-primary-dark)", bgcolor: "rgba(var(--mui-palette-primary-mainChannel) / 0.04)" }
               }}
             >
               Discuter avec l&apos;IA
@@ -723,10 +718,10 @@ export function InsightsPanel() {
                 }
               }}
               sx={{
-                borderColor: "#cbd5e1",
-                color: "#475569",
+                borderColor: "var(--mui-palette-divider)",
+                color: "var(--mui-palette-text-secondary)",
                 fontSize: "0.82rem",
-                "&:hover": { borderColor: "#94a3b8", bgcolor: "#f1f5f9" }
+                "&:hover": { borderColor: "var(--mui-palette-text-disabled)", bgcolor: "var(--mui-palette-grey-100)" }
               }}
             >
               Actualiser
@@ -748,7 +743,7 @@ export function InsightsPanel() {
       ) : state.error ? (
         <Alert severity="error" sx={{ fontSize: "0.82rem" }}>{state.error}</Alert>
       ) : state.insights.length === 0 ? (
-        <Alert severity="info" sx={{ bgcolor: "#eff6ff", border: "1px solid #bfdbfe", fontSize: "0.82rem", "& .MuiAlert-icon": { color: "#3b82f6" } }}>
+        <Alert severity="info" sx={{ bgcolor: "var(--mui-palette-action-hover)", fontSize: "0.82rem", "& .MuiAlert-icon": { color: "var(--mui-palette-info-main)" } }}>
           Pas encore d&apos;analyses. Elles sont générées chaque jeudi à 21h.
         </Alert>
       ) : (
@@ -773,10 +768,10 @@ export function InsightsPanel() {
           </DialogContentText>
           <Box
             sx={{
-              bgcolor: "#f9fafb",
+              bgcolor: "action.hover",
               p: 2,
               borderRadius: 1,
-              border: "1px solid #e5e7eb",
+              border: "1px solid var(--mui-palette-divider)",
               maxHeight: 180,
               overflowY: "auto",
               fontSize: "0.8rem",

@@ -158,10 +158,8 @@ export function LatestAIReviewCard() {
     return (
       <Card
         sx={{
-          mb: 4,
           borderRadius: 4,
-          bgcolor: "#ede5d9",
-          border: "1.5px solid #d81832",
+          bgcolor: "background.paper",
           p: 3,
           display: "flex",
           alignItems: "center",
@@ -170,9 +168,9 @@ export function LatestAIReviewCard() {
         }}
       >
         <Stack direction="row" spacing={2} sx={{ alignItems: "center" }}>
-          <CircularProgress size={24} sx={{ color: "#d81832" }} />
+          <CircularProgress size={24} sx={{ color: "var(--mui-palette-primary-main)" }} />
           <Typography variant="body2" sx={{ color: "text.primary" }}>
-            Chargement de la dernière revue IA...
+            Chargement du dernier bilan IA…
           </Typography>
         </Stack>
       </Card>
@@ -183,10 +181,8 @@ export function LatestAIReviewCard() {
     return (
       <Card
         sx={{
-          mb: 4,
           borderRadius: 4,
-          bgcolor: "#ede5d9",
-          border: "1.5px solid #d81832",
+          bgcolor: "background.paper",
           overflow: "hidden",
         }}
       >
@@ -205,8 +201,8 @@ export function LatestAIReviewCard() {
                   width: 48,
                   height: 48,
                   borderRadius: "50%",
-                  bgcolor: "rgba(216, 24, 50, 0.1)",
-                  color: "#d81832",
+                  bgcolor: "rgba(var(--mui-palette-primary-mainChannel) / 0.1)",
+                  color: "var(--mui-palette-primary-main)",
                   display: "flex",
                   alignItems: "center",
                   justifyContent: "center",
@@ -216,8 +212,8 @@ export function LatestAIReviewCard() {
                 <AutoAwesomeIcon />
               </Box>
               <Box>
-                <Typography variant="subtitle1" sx={{ fontWeight: 800, color: "#142949" }}>
-                  Aucune revue IA pour le moment
+                <Typography variant="subtitle1" sx={{ fontWeight: 800, color: "var(--mui-palette-text-primary)" }}>
+                  Aucun bilan IA pour le moment
                 </Typography>
                 <Typography variant="body2" color="text.secondary">
                   Renseignez vos journaux quotidiens pour permettre au moteur multi-agents de générer votre première analyse.
@@ -233,18 +229,9 @@ export function LatestAIReviewCard() {
                 disabled={isGenerating}
                 onClick={handleLaunchReview}
                 sx={{
-                  bgcolor: "#d81832",
-                  color: "#ffffff",
-                  textTransform: "none",
-                  fontWeight: 700,
-                  borderRadius: 2.5,
-                  px: 2.5,
-                  py: 0.8,
-                  boxShadow: "0 4px 14px rgba(216, 24, 50, 0.25)",
-                  '&:hover': { bgcolor: "#c2152a" },
                 }}
               >
-                {isGenerating ? "Génération en cours..." : "Lancer ma review"}
+                {isGenerating ? "Génération en cours..." : "Lancer mon bilan"}
               </Button>
               <Button
                 component={Link}
@@ -253,15 +240,10 @@ export function LatestAIReviewCard() {
                 size="small"
                 endIcon={<ArrowForwardIcon />}
                 sx={{
-                  textTransform: "none",
-                  fontWeight: 700,
-                  borderRadius: 3,
-                  borderColor: "#d81832",
-                  color: "#d81832",
                   whiteSpace: "nowrap",
                   '&:hover': {
-                    borderColor: "#c2152a",
-                    bgcolor: "rgba(216, 24, 50, 0.05)",
+                    borderColor: "var(--mui-palette-primary-dark)",
+                    bgcolor: "rgba(var(--mui-palette-primary-mainChannel) / 0.05)",
                   },
                 }}
               >
@@ -280,22 +262,12 @@ export function LatestAIReviewCard() {
     <>
       <Card
         sx={{
-          mb: 4,
           borderRadius: 4,
-          bgcolor: "#ede5d9",
-          border: "1.5px solid #d81832",
-          boxShadow: "0 6px 20px rgba(0, 0, 0, 0.04)",
+          bgcolor: "background.paper",
           position: "relative",
           overflow: "hidden",
         }}
       >
-        {/* Top Accent line matching VaultedMind red */}
-        <Box
-          sx={{
-            height: 4,
-            background: "linear-gradient(90deg, #d81832 0%, #e63a4f 100%)",
-          }}
-        />
 
         <CardContent sx={{ p: { xs: 2.5, sm: 3.5 } }}>
           {/* Header Section */}
@@ -315,8 +287,8 @@ export function LatestAIReviewCard() {
                   width: 36,
                   height: 36,
                   borderRadius: "50%",
-                  bgcolor: "rgba(216, 24, 50, 0.1)",
-                  color: "#d81832",
+                  bgcolor: "rgba(var(--mui-palette-primary-mainChannel) / 0.1)",
+                  color: "var(--mui-palette-primary-main)",
                   display: "flex",
                   alignItems: "center",
                   justifyContent: "center",
@@ -327,14 +299,10 @@ export function LatestAIReviewCard() {
               <Typography
                 variant="subtitle2"
                 sx={{
-                  fontWeight: 800,
-                  color: "#d81832",
-                  textTransform: "uppercase",
-                  letterSpacing: "0.05em",
-                  fontSize: "0.75rem",
+                  color: "text.primary",
                 }}
               >
-                Dernière Revue IA
+                Dernier bilan IA
               </Typography>
               <Chip
                 label={typeLabel}
@@ -343,8 +311,8 @@ export function LatestAIReviewCard() {
                   fontWeight: 700,
                   height: 24,
                   fontSize: "0.75rem",
-                  bgcolor: "#d81832",
-                  color: "#ffffff",
+                  bgcolor: "var(--mui-palette-primary-main)",
+                  color: "primary.contrastText",
                 }}
               />
               <Typography variant="caption" sx={{ color: "text.secondary" }}>
@@ -360,7 +328,7 @@ export function LatestAIReviewCard() {
               sx={{
                 textTransform: "none",
                 fontWeight: 700,
-                color: "#d81832",
+                color: "var(--mui-palette-primary-main)",
                 p: 0,
                 minWidth: "auto",
                 '&:hover': { bgcolor: "transparent", textDecoration: "underline" },
@@ -375,7 +343,7 @@ export function LatestAIReviewCard() {
             variant="h6"
             sx={{
               fontWeight: 800,
-              color: "#142949",
+              color: "var(--mui-palette-text-primary)",
               mb: 1,
               fontSize: { xs: "1.1rem", sm: "1.25rem" },
               lineHeight: 1.3,
@@ -388,7 +356,7 @@ export function LatestAIReviewCard() {
           <Typography
             variant="body2"
             sx={{
-              color: "#4b5563",
+              color: "var(--mui-palette-text-secondary)",
               lineHeight: 1.6,
               mb: 2.5,
               display: "-webkit-box",
@@ -409,7 +377,7 @@ export function LatestAIReviewCard() {
               alignItems: { xs: "stretch", sm: "center" },
               gap: 1.5,
               pt: 2,
-              borderTop: "1px solid rgba(216, 24, 50, 0.15)",
+              borderTop: "1px solid rgba(var(--mui-palette-primary-mainChannel) / 0.15)",
               flexWrap: "wrap",
             }}
           >
@@ -422,14 +390,14 @@ export function LatestAIReviewCard() {
                 sx={{
                   textTransform: "none",
                   fontWeight: 700,
-                  color: "#d81832",
-                  borderColor: "#d81832",
+                  color: "var(--mui-palette-primary-main)",
+                  borderColor: "var(--mui-palette-primary-main)",
                   borderRadius: 2.5,
                   px: 2,
                   py: 0.8,
                   '&:hover': {
-                    borderColor: "#c2152a",
-                    bgcolor: "rgba(216, 24, 50, 0.05)",
+                    borderColor: "var(--mui-palette-primary-dark)",
+                    bgcolor: "rgba(var(--mui-palette-primary-mainChannel) / 0.05)",
                   },
                 }}
               >
@@ -445,15 +413,15 @@ export function LatestAIReviewCard() {
                 sx={{
                   textTransform: "none",
                   fontWeight: 700,
-                  color: cooldown.active ? "#64748b" : "#142949",
-                  borderColor: cooldown.active ? "#cbd5e1" : "#142949",
+                  color: cooldown.active ? "var(--mui-palette-text-secondary)" : "var(--mui-palette-text-primary)",
+                  borderColor: cooldown.active ? "var(--mui-palette-divider)" : "var(--mui-palette-text-primary)",
                   borderRadius: 2.5,
                   px: 2,
                   py: 0.8,
-                  bgcolor: cooldown.active ? "rgba(0,0,0,0.03)" : "transparent",
+                  bgcolor: cooldown.active ? "var(--mui-palette-action-hover)" : "transparent",
                   '&:hover': {
-                    borderColor: "#0f1f38",
-                    bgcolor: "rgba(20, 41, 73, 0.05)",
+                    borderColor: "var(--mui-palette-text-primary)",
+                    bgcolor: "var(--mui-palette-action-hover)",
                   },
                 }}
               >
@@ -461,7 +429,7 @@ export function LatestAIReviewCard() {
                   ? "Génération en cours..."
                   : cooldown.active
                   ? `Review dans ${cooldown.text}`
-                  : "Lancer ma review"}
+                  : "Lancer mon bilan"}
               </Button>
             </Stack>
 
@@ -471,16 +439,16 @@ export function LatestAIReviewCard() {
               startIcon={<ChatIcon fontSize="small" />}
               onClick={handleAskAssistant}
               sx={{
-                bgcolor: "#d81832",
-                color: "#ffffff",
+                bgcolor: "var(--mui-palette-primary-main)",
+                color: "primary.contrastText",
                 textTransform: "none",
                 fontWeight: 700,
                 borderRadius: 2.5,
                 px: 2.5,
                 py: 0.8,
-                boxShadow: "0 4px 14px rgba(216, 24, 50, 0.25)",
+                boxShadow: "0 4px 14px rgba(var(--mui-palette-primary-mainChannel) / 0.25)",
                 '&:hover': {
-                  bgcolor: "#c2152a",
+                  bgcolor: "var(--mui-palette-primary-dark)",
                 },
               }}
             >
@@ -499,8 +467,7 @@ export function LatestAIReviewCard() {
         slotProps={{
           paper: {
             sx: {
-              bgcolor: "#ede5d9",
-              border: "1.5px solid #d81832",
+              bgcolor: "background.paper",
               borderRadius: 4,
               p: { xs: 1, sm: 2 },
             },
@@ -523,8 +490,8 @@ export function LatestAIReviewCard() {
                 size="small"
                 sx={{
                   fontWeight: 700,
-                  bgcolor: "#d81832",
-                  color: "#ffffff",
+                  bgcolor: "var(--mui-palette-primary-main)",
+                  color: "primary.contrastText",
                   height: 22,
                   fontSize: "0.75rem",
                 }}
@@ -533,7 +500,7 @@ export function LatestAIReviewCard() {
                 {formatDate(insight.createdAt)}
               </Typography>
             </Stack>
-            <Typography variant="h6" sx={{ fontWeight: 800, color: "#142949", lineHeight: 1.3 }}>
+            <Typography variant="h6" sx={{ fontWeight: 800, color: "var(--mui-palette-text-primary)", lineHeight: 1.3 }}>
               {insight.title}
             </Typography>
           </Box>
@@ -543,24 +510,24 @@ export function LatestAIReviewCard() {
             aria-label="Fermer la modal"
             size="small"
             sx={{
-              color: "#d81832",
-              bgcolor: "rgba(216, 24, 50, 0.08)",
-              '&:hover': { bgcolor: "rgba(216, 24, 50, 0.16)" },
+              color: "var(--mui-palette-primary-main)",
+              bgcolor: "rgba(var(--mui-palette-primary-mainChannel) / 0.08)",
+              '&:hover': { bgcolor: "rgba(var(--mui-palette-primary-mainChannel) / 0.16)" },
             }}
           >
             <CloseIcon fontSize="small" />
           </IconButton>
         </DialogTitle>
 
-        <DialogContent dividers sx={{ borderColor: "rgba(216, 24, 50, 0.2)", py: 2.5 }}>
+        <DialogContent dividers sx={{ borderColor: "rgba(var(--mui-palette-primary-mainChannel) / 0.2)", py: 2.5 }}>
           <Box
             sx={{
-              color: "#142949",
+              color: "var(--mui-palette-text-primary)",
               fontSize: "0.95rem",
               lineHeight: 1.7,
               "& p": { my: 1.2 },
-              "& h2": { color: "#142949", mt: 2.5, mb: 1, fontWeight: 800 },
-              "& h3": { color: "#d81832", mt: 2, mb: 0.8, fontWeight: 700 },
+              "& h2": { color: "var(--mui-palette-text-primary)", mt: 2.5, mb: 1, fontWeight: 800 },
+              "& h3": { color: "var(--mui-palette-primary-main)", mt: 2, mb: 0.8, fontWeight: 700 },
               "& li": { my: 0.5 },
             }}
           >
@@ -585,13 +552,13 @@ export function LatestAIReviewCard() {
               handleAskAssistant();
             }}
             sx={{
-              bgcolor: "#d81832",
-              color: "#ffffff",
+              bgcolor: "var(--mui-palette-primary-main)",
+              color: "primary.contrastText",
               textTransform: "none",
               fontWeight: 700,
               borderRadius: 2.5,
               px: 2,
-              '&:hover': { bgcolor: "#c2152a" },
+              '&:hover': { bgcolor: "var(--mui-palette-primary-dark)" },
             }}
           >
             En discuter avec l&apos;assistant

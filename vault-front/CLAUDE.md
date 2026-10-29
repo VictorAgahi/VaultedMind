@@ -29,7 +29,8 @@ No test suite is configured. UI verification requires running `npm run dev` and 
 ### UI Stack
 - **MUI v9** (Material UI) is the primary component library — use MUI components, not Shadcn/Radix.
 - **Tailwind CSS v4** is also available but MUI is dominant. Avoid mixing both in the same component.
-- Theme is defined in `src/theme/theme.ts`. Primary brand color is `#d81832`.
+- Theme is defined in `src/theme/theme.ts` (charte "Le carnet scellé": primary `#1E5B53`, accent `#F2B544`, light + dark color schemes via MUI CSS variables). Never hard-code colors: use palette paths (`primary.main`) or `var(--mui-palette-*)`. Chart colors come from `src/theme/chart-tokens.ts` (CSS vars defined in `globals.css`), max 6 series in fixed order.
+- Mobile-first: bottom nav (`bottom-nav.tsx`) with a central "new entry" button that dispatches `NEW_ENTRY_EVENT`; dialogs become bottom sheets under 600px (theme override); charts use `ChartContainer` (fixed 240px height on mobile) and `ChartCard`.
 - Global layout (`src/app/layout.tsx`) wraps everything in: `AppRouterCacheProvider` → `ThemeProvider` → `AuthProvider`. The `<AIChatBot>`, `<BottomNav>`, and `<Footer>` are rendered globally.
 
 ### Page Pattern

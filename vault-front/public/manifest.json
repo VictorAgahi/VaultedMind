@@ -4,12 +4,12 @@
   "description": "Suivi de santé mentale et journal quotidien sécurisé.",
   "start_url": "/",
   "display": "standalone",
-  "background_color": "#000000",
-  "theme_color": "#000000",
+  "background_color": "#F3F4F1",
+  "theme_color": "#1E5B53",
   "icons": [
     {
       "src": "/icon.png",
-      "sizes": "512x512",
+      "sizes": "1024x1024",
       "type": "image/png",
       "purpose": "any maskable"
     },

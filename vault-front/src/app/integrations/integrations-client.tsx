@@ -86,11 +86,11 @@ export const IntegrationsClient = () => {
 
   return (
     <Box sx={{ maxWidth: 1200, mx: "auto", p: { xs: 2, md: 4 } }}>
-      <Typography variant="h4" sx={{ fontWeight: 800, mb: 1, color: "#142949" }}>
+      <Typography variant="h4" sx={{ fontWeight: 800, mb: 1, color: "var(--mui-palette-text-primary)" }}>
         Intégrations
       </Typography>
       <Typography variant="body1" color="text.secondary" sx={{ mb: 4 }}>
-        Connectez vos applications tierces (comme Apple Santé) à Vaulted Mind.
+        Connectez vos applications tierces (comme Apple Santé) à VaultedMind.
       </Typography>
 
       {error && <Alert severity="error" sx={{ mb: 3 }} onClose={() => setError(null)}>{error}</Alert>}
@@ -122,7 +122,7 @@ export const IntegrationsClient = () => {
             {apiKeys.map((key) => (
               <ListItem
                 key={key.id}
-                sx={{ border: "1px solid rgba(0,0,0,0.1)", borderRadius: 2, mb: 1 }}
+                sx={{ border: "1px solid var(--mui-palette-divider)", borderRadius: 2, mb: 1 }}
                 secondaryAction={
                   <IconButton edge="end" color="error" onClick={() => handleDeleteKey(key.id)}>
                     <DeleteIcon />
@@ -157,7 +157,7 @@ export const IntegrationsClient = () => {
           4. Dans le raccourci, ajoutez une action &quot;Obtenir le contenu de l&apos;URL&quot; pour faire un POST vers 
           <code>{` https://api.vaultedmind.com/api/integrations/health/sync `}</code> avec l&apos;en-tête <code>Authorization: Bearer VOTRE_CLE_API</code> et le JSON :
         </Typography>
-        <Box sx={{ bgcolor: "#f5f5f5", p: 2, borderRadius: 2, mb: 2, overflowX: "auto" }}>
+        <Box sx={{ bgcolor: "action.hover", p: 2, borderRadius: 2, mb: 2, overflowX: "auto" }}>
           <pre>
 {`{
   "metric": "SLEEP",
