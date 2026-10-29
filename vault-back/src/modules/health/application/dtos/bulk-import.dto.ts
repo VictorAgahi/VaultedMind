@@ -1,8 +1,16 @@
-import { IsString, IsObject, IsArray, ValidateNested } from 'class-validator';
+import {
+  IsString,
+  IsObject,
+  IsArray,
+  ValidateNested,
+  MaxLength,
+  ArrayMaxSize,
+} from 'class-validator';
 import { Type } from 'class-transformer';
 
 export class BulkRowDto {
   @IsString()
+  @MaxLength(50)
   date!: string;
 
   @IsObject()
@@ -11,6 +19,7 @@ export class BulkRowDto {
 
 export class BulkImportDto {
   @IsArray()
+  @ArrayMaxSize(5000)
   @ValidateNested({ each: true })
   @Type(() => BulkRowDto)
   rows!: BulkRowDto[];

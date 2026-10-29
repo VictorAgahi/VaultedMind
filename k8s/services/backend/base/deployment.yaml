@@ -134,6 +134,9 @@ spec:
           value: "false"
         - name: COOKIE_DOMAIN
           value: ".cyrus-ag.com"
+        # Real client IP set by Cloudflare, used by the rate limiter
+        - name: TRUSTED_CLIENT_IP_HEADER
+          value: "cf-connecting-ip"
         ports:
         - containerPort: 3000
           name: http

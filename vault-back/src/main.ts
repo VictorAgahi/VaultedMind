@@ -5,6 +5,10 @@ import { ValidationPipe } from '@nestjs/common';
 import { NestExpressApplication } from '@nestjs/platform-express';
 import { AppModule } from './app.module.js';
 import { LoggingInterceptor } from './common/interceptors/logging.interceptor.js';
+import {
+  ALLOWED_ORIGINS,
+  originCheckMiddleware,
+} from './common/security/origin-check.middleware.js';
 
 async function bootstrap() {
   const app = await NestFactory.create<NestExpressApplication>(AppModule);
@@ -13,9 +17,10 @@ async function bootstrap() {
   app.use(helmet());
   app.use(cookieParser());
   app.enableCors({
-    origin: ['https://vault-mind.cyrus-ag.com', 'http://localhost:3000'],
+    origin: ALLOWED_ORIGINS,
     credentials: true,
   });
+  app.use(originCheckMiddleware);
 
   // Trust Cloudflare Proxy
   app.set('trust proxy', 1);

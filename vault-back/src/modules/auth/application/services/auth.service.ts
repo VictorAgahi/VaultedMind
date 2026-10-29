@@ -8,6 +8,8 @@ import { UserRepository } from '../../../../database/repositories/user.repositor
 @Injectable()
 export class AuthService {
   private readonly logger = new Logger(AuthService.name);
+  // Hash compared when the user does not exist, so login time does not reveal accounts
+  private dummyHashPromise?: Promise<string>;
 
   constructor(
     private readonly userService: UserService,
@@ -17,7 +19,7 @@ export class AuthService {
   ) {}
 
   async register(dto: RegisterDto) {
-    this.logger.log(`Registering new user with email: ${dto.email}`);
+    this.logger.log('Registering new user');
     const user = await this.userService.createUser(dto.email, dto.password);
     const token = await this.tokenService.generateToken(user);
     return { user, token };
@@ -29,6 +31,13 @@ export class AuthService {
       await this.userRepository.findByEmailIndexWithPassword(emailIndex);
 
     if (!user) {
+      this.dummyHashPromise ??= this.encryptionService.hashPassword(
+        'timing-equalization-placeholder',
+      );
+      await this.encryptionService.comparePassword(
+        dto.password,
+        await this.dummyHashPromise,
+      );
       this.logger.warn(`Login failed: user not found for email index`);
       throw new UnauthorizedException('Invalid credentials');
     }
@@ -47,9 +56,11 @@ export class AuthService {
     return { user, token };
   }
 
-  async validateUserById(userId: string): Promise<{ id: string } | null> {
+  async validateUserById(
+    userId: string,
+  ): Promise<{ id: string; email: string } | null> {
     const user = await this.userRepository.findUserById(userId);
-    return user ? { id: user.id } : null;
+    return user ? { id: user.id, email: user.email } : null;
   }
 
   async deleteAccount(userId: string) {

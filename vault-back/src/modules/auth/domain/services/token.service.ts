@@ -7,16 +7,17 @@ export class TokenService {
   constructor(private readonly jwtService: JwtService) {}
 
   /**
-   * Generates a long-lived access token (6 months).
+   * Generates an access token aligned with the 7-day session cookie.
+   * The email is not put in the payload: JWTs are readable by anyone holding them.
    */
   async generateToken(user: User): Promise<string> {
     const payload = {
       sub: user.id,
-      email: user.email,
     };
 
     return this.jwtService.signAsync(payload, {
-      expiresIn: '180d', // ~6 months
+      expiresIn: '7d',
+      algorithm: 'HS256',
     });
   }
 

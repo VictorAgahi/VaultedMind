@@ -82,7 +82,7 @@ export class BulkImportService {
       const allFieldNames = new Set<string>();
       rows.forEach((row) => {
         Object.keys(row.fields || {}).forEach((name) => {
-          if (name && name.trim()) {
+          if (name && name.trim() && name.length <= 100) {
             allFieldNames.add(name);
           }
         });
@@ -142,7 +142,11 @@ export class BulkImportService {
 
         // Step 5: Save field values
         for (const [fieldName, value] of Object.entries(row.fields || {})) {
-          if (!value || !value.trim()) {
+          if (
+            typeof value !== 'string' ||
+            !value.trim() ||
+            value.length > 2000
+          ) {
             continue;
           }
 
