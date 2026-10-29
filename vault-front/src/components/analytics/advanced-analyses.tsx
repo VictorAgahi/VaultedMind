@@ -21,26 +21,22 @@ import InfoIcon from "@mui/icons-material/Info";
 import TrendingUpIcon from "@mui/icons-material/TrendingUp";
 import LocalFireDepartmentIcon from "@mui/icons-material/LocalFireDepartment";
 import CalendarMonthIcon from "@mui/icons-material/CalendarMonth";
-import AssessmentIcon from "@mui/icons-material/Assessment";
 import AutoAwesomeIcon from "@mui/icons-material/AutoAwesome";
 import { CustomField, DailyLog, FieldType } from "@/types";
 import { calculatePearsonCorrelation } from "@/utils/math";
 
 import {
-  RadarChart,
-  Radar,
-  PolarGrid,
-  PolarAngleAxis,
-  PolarRadiusAxis,
   Tooltip,
+  BarChart,
   ComposedChart,
   Bar,
   Line,
   XAxis,
   YAxis,
   CartesianGrid,
-  Legend
 } from "recharts";
+import { ChartCard } from "./chart-card";
+import { axisTick, chartColors, chartTooltipProps } from "@/theme/chart-tokens";
 import { formatHourlyValue } from "@/utils/time-converter";
 
 interface AdvancedAnalysesProps {
@@ -56,7 +52,7 @@ interface UseAdvancedAnalysesReturn {
   advFieldMappings: Record<string, Record<string, number>>;
   weeklyProfileData: Array<{ subject: string; A: number }>;
   statsSummary: { mean: string; min: number; max: number; volatility: string } | null;
-  weekdaySpreadData: Array<{ name: string; range: [number, number]; avg: number; min: number; max: number }>;
+  weekdaySpreadData: Array<{ name: string; range: [number, number] | null; avg: number | null; min: number; max: number }>;
   streakStats: { currentStreak: number; maxStreak: number; completionRate: number };
   heatmapData: Array<{ date: Date; dateStr: string; logged: boolean; value: number | null; displayLabel: string; dayNum: number; formattedDate: string }>;
   activeFieldObj: CustomField | undefined;
@@ -173,7 +169,8 @@ const useAdvancedAnalyses = (
     return days.map((label, index) => {
       const vals = dayTotals[index];
       if (vals.length === 0) {
-        return { name: label, range: [0, 0] as [number, number], avg: 0, min: 0, max: 0 };
+        // Jour sans saisie : pas de barre ni de point, plutôt qu'une chute trompeuse à 0.
+        return { name: label, range: null, avg: null, min: 0, max: 0 };
       }
       const min = Math.min(...vals);
       const max = Math.max(...vals);
@@ -291,17 +288,17 @@ const useAdvancedAnalyses = (
   const activeFieldObj = useMemo(() => fields.find(f => f.id === activeAdvField), [fields, activeAdvField]);
 
   const expertRecommendation = useMemo(() => {
-    if (!statsSummary) return "Pas assez de données pour générer un diagnostic.";
+    if (!statsSummary) return "Pas encore assez de jours pour dégager une tendance.";
     const volatility = parseFloat(statsSummary.volatility);
     const fieldName = activeFieldObj?.name || "cet indicateur";
 
     if (volatility > 40) {
-      return `Votre routine pour "${fieldName}" est hautement irrégulière (Variabilité de ${volatility}%). Les fluctuations importantes d'un jour à l'autre peuvent perturber votre équilibre. Essayez de fixer un rituel ou une heure fixe pour ancrer cette habitude.`;
+      return `"${fieldName}" varie beaucoup d'un jour à l'autre (variabilité de ${volatility} %). C'est fréquent et ce n'est pas un défaut. Si cela vous pèse, noter ce qui se passe les jours qui sortent du lot peut aider à les comprendre.`;
     }
     if (volatility > 20) {
-      return `Votre suivi pour "${fieldName}" montre une flexibilité modérée (Variabilité de ${volatility}%). C'est idéal pour s'adapter aux imprévus de la vie tout en conservant une bonne ligne de conduite générale.`;
+      return `"${fieldName}" varie modérément (variabilité de ${volatility} %) : il reste assez stable tout en suivant les aléas de vos journées.`;
     }
-    return `Remarquable ! Votre stabilité pour "${fieldName}" est exemplaire (Variabilité de seulement ${volatility}%). Vous faites preuve d'une discipline de fer qui consolide durablement votre rythme biologique.`;
+    return `"${fieldName}" est très stable ces derniers temps (variabilité de ${volatility} %).`;
   }, [statsSummary, activeFieldObj]);
 
   const autoDiscoveryInsight = useMemo(() => {
@@ -390,422 +387,229 @@ export const AdvancedAnalyses: React.FC<AdvancedAnalysesProps> = ({
     autoDiscoveryInsight
   } = useAdvancedAnalyses(fields, logs, activeAdvField);
 
-  const refinedPaperStyle = {
-    p: { xs: 3, md: 4 },
-    borderRadius: 6,
-    border: "1px solid rgba(0,0,0,0.05)",
-    boxShadow: "0 10px 15px -3px rgba(0,0,0,0.05)",
-    bgcolor: "background.paper",
-    height: "100%",
-    display: "flex",
-    flexDirection: "column" as const
+  const formatFieldValue = (v: number | null | undefined): string => {
+    if (v === null || v === undefined || Number.isNaN(v)) return "-";
+    if (activeFieldObj?.fieldType === FieldType.BOOLEAN) return v >= 0.5 ? "Oui" : "Non";
+    if (activeFieldObj?.fieldType === FieldType.STRING) {
+      const mapping = advFieldMappings[activeAdvField];
+      if (mapping) return Object.keys(mapping).find(key => mapping[key] === Math.round(v)) || v.toFixed(1);
+    }
+    if (activeFieldObj?.fieldType === FieldType.NUMBER && (activeFieldObj.optionsOrder || []).includes("isHourly")) {
+      return formatHourlyValue(v.toString());
+    }
+    return String(Math.round(v * 10) / 10).replace(".", ",");
   };
 
+  // Intensité d'une case de la carte de chaleur : mélange du sceau avec la surface, de 25 % à 100 %.
+  const heatNorm = (day: (typeof heatmapData)[number]) => {
+    let norm = 0.6;
+    if (activeFieldObj?.fieldType === FieldType.NUMBER && statsSummary) {
+      const range = statsSummary.max - statsSummary.min;
+      norm = range > 0 ? (Number(day.value) - statsSummary.min) / range : 0.6;
+    } else if (activeFieldObj?.fieldType === FieldType.STRING) {
+      const keys = Object.keys(advFieldMappings[activeAdvField] || {});
+      norm = keys.length > 1 ? Number(day.value) / (keys.length - 1) : 0.6;
+    }
+    return Math.max(0, Math.min(1, norm));
+  };
+  const heatText = (day: (typeof heatmapData)[number]) => {
+    if (!day.logged) return "text.disabled";
+    if (activeFieldObj?.fieldType === FieldType.BOOLEAN) return "var(--chart-surface)";
+    return heatNorm(day) >= 0.55 ? "var(--chart-surface)" : "var(--chart-ink)";
+  };
+  const heatColor = (day: (typeof heatmapData)[number]) => {
+    if (!day.logged) return "transparent";
+    if (activeFieldObj?.fieldType === FieldType.BOOLEAN) return day.value === 1 ? "var(--chart-pos-3)" : "var(--chart-neg-2)";
+    let norm = 0.6;
+    if (activeFieldObj?.fieldType === FieldType.NUMBER && statsSummary) {
+      const range = statsSummary.max - statsSummary.min;
+      norm = range > 0 ? (Number(day.value) - statsSummary.min) / range : 0.6;
+    } else if (activeFieldObj?.fieldType === FieldType.STRING) {
+      const keys = Object.keys(advFieldMappings[activeAdvField] || {});
+      norm = keys.length > 1 ? Number(day.value) / (keys.length - 1) : 0.6;
+    }
+    const pct = Math.round(25 + 75 * Math.max(0, Math.min(1, norm)));
+    return `color-mix(in oklab, var(--chart-s1) ${pct}%, var(--chart-surface))`;
+  };
+
+  const stats = [
+    { label: "Régularité (30 j)", value: `${streakStats.completionRate} %`, icon: CalendarMonthIcon },
+    { label: "Série en cours", value: `${streakStats.currentStreak} j`, icon: LocalFireDepartmentIcon, accent: true },
+    { label: "Série record", value: `${streakStats.maxStreak} j`, icon: TrendingUpIcon },
+    { label: "Variabilité", value: statsSummary ? `${statsSummary.volatility} %` : "0 %", icon: InfoIcon },
+  ];
+
   return !mounted ? (
-    <Box sx={{ display: "flex", justifyContent: "center", alignItems: "center", minHeight: 400 }}>
+    <Box sx={{ display: "flex", justifyContent: "center", alignItems: "center", minHeight: 320 }}>
       <CircularProgress />
     </Box>
   ) : (
-    <Grid container spacing={4}>
-      {/* Top Filter Selection Panel */}
+    <Grid container spacing={{ xs: 1.5, md: 3 }}>
       <Grid size={{ xs: 12 }}>
-        <Paper elevation={0} sx={{ p: 3, borderRadius: 5, border: "1px solid rgba(0,0,0,0.05)", boxShadow: "0 4px 6px -1px rgba(0,0,0,0.02)" }}>
-          <Grid container spacing={2} sx={{ alignItems: "center", justifyContent: "space-between" }}>
-            <Grid size={{ xs: 12, md: 6 }}>
-              <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-                <AssessmentIcon sx={{ color: "#6366f1" }} />
-                <Typography variant="h6" sx={{ fontWeight: 800 }}>Analyses Comportementales Avancées</Typography>
-              </Box>
-              <Typography variant="body2" color="text.secondary">
-                Explorez la stabilité de vos rituels, découvrez vos séries de réussite et vos profils temporels.
-              </Typography>
-            </Grid>
-            <Grid size={{ xs: 12, md: 4 }}>
-              <FormControl fullWidth size="small">
-                <InputLabel>Indicateur à décortiquer</InputLabel>
-                <Select
-                  value={activeAdvField}
-                  label="Indicateur à décortiquer"
-                  onChange={(e) => setAdvSelectedField(e.target.value)}
-                  sx={{ borderRadius: 3 }}
-                  MenuProps={menuProps}
-                >
-                  {fields.map(f => <MenuItem key={f.id} value={f.id}>{f.name}</MenuItem>)}
-                </Select>
-              </FormControl>
-            </Grid>
-          </Grid>
+        <Paper sx={{ p: { xs: 2, md: 3 }, borderRadius: 4, display: "grid", gap: 1.5, gridTemplateColumns: { xs: "1fr", md: "1fr 360px" }, alignItems: "center" }}>
+          <Box>
+            <Typography variant="h5" component="h2">Analyse détaillée</Typography>
+            <Typography variant="body2" color="text.secondary" sx={{ mt: 0.25 }}>
+              Régularité, séries et profil de la semaine pour un indicateur.
+            </Typography>
+          </Box>
+          <FormControl fullWidth size="small">
+            <InputLabel>Indicateur à analyser</InputLabel>
+            <Select
+              value={activeAdvField}
+              label="Indicateur à analyser"
+              onChange={(e) => setAdvSelectedField(e.target.value)}
+              MenuProps={menuProps}
+            >
+              {fields.map(f => <MenuItem key={f.id} value={f.id}>{f.name}</MenuItem>)}
+            </Select>
+          </FormControl>
         </Paper>
       </Grid>
 
-      {/* Eureka Discovery Card (Feature added!) */}
       {autoDiscoveryInsight && (
         <Grid size={{ xs: 12 }}>
-          <Paper
-            elevation={0}
-            sx={{
-              p: 3,
-              borderRadius: 5,
-              background: autoDiscoveryInsight.correlation >= 0
-                ? "linear-gradient(135deg, rgba(16, 185, 129, 0.06) 0%, rgba(99, 102, 241, 0.06) 100%)"
-                : "linear-gradient(135deg, rgba(244, 63, 94, 0.06) 0%, rgba(245, 158, 11, 0.06) 100%)",
-              border: autoDiscoveryInsight.correlation >= 0
-                ? "1px solid rgba(16, 185, 129, 0.2)"
-                : "1px solid rgba(244, 63, 94, 0.2)",
-              boxShadow: "0 10px 20px rgba(0,0,0,0.02)",
-              display: "flex",
-              alignItems: "flex-start",
-              gap: 2.5,
-              position: "relative",
-              overflow: "hidden",
-              "&::before": {
-                content: '""',
-                position: "absolute",
-                top: 0,
-                left: 0,
-                width: 4,
-                height: "100%",
-                bgcolor: autoDiscoveryInsight.correlation >= 0 ? "#10b981" : "#f43f5e"
-              }
-            }}
-          >
-            <Box sx={{
-              p: 1.5,
-              bgcolor: autoDiscoveryInsight.correlation >= 0 ? "rgba(16, 185, 129, 0.12)" : "rgba(244, 63, 94, 0.12)",
-              borderRadius: 3.5,
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              color: autoDiscoveryInsight.correlation >= 0 ? "#10b981" : "#f43f5e"
-            }}>
-              <AutoAwesomeIcon sx={{ fontSize: 28 }} />
+          <Paper sx={{ p: { xs: 2, md: 3 }, borderRadius: 4, display: "flex", gap: 2, alignItems: "flex-start" }}>
+            <Box sx={{ width: 40, height: 40, flex: "none", borderRadius: 3, display: "grid", placeItems: "center", bgcolor: "secondary.light", color: "secondary.dark" }}>
+              <AutoAwesomeIcon />
             </Box>
-            <Box sx={{ flexGrow: 1 }}>
-              <Typography variant="subtitle1" sx={{ fontWeight: 900, color: "#1e293b", display: "flex", alignItems: "center", gap: 1, mb: 0.5 }}>
-                💡 La Découverte Majeure de VaultedMind
+            <Box sx={{ minWidth: 0, display: "grid", gap: 0.5 }}>
+              <Typography variant="overline" color="text.secondary">Lien le plus fort détecté</Typography>
+              <Typography variant="body1">
+                <strong>{autoDiscoveryInsight.fieldA.name}</strong> et <strong>{autoDiscoveryInsight.fieldB.name}</strong>{" "}
+                {autoDiscoveryInsight.correlation >= 0 ? "évoluent ensemble" : "évoluent en sens inverse"}
+                {" "}(r = {autoDiscoveryInsight.correlation.toFixed(2).replace(".", ",")}).
               </Typography>
-              <Typography variant="body2" sx={{ color: "text.primary", lineHeight: 1.6 }}>
-                Nous avons analysé l&apos;intégralité de vos journaux et découvert une liaison statistique remarquable :
-                votre indicateur <strong>{autoDiscoveryInsight.fieldA.name}</strong> et votre indicateur <strong>{autoDiscoveryInsight.fieldB.name}</strong> sont fortement connectés,
-                avec un coefficient de corrélation de <strong>{Math.round(autoDiscoveryInsight.correlation * 100)}%</strong>.
-              </Typography>
-              <Typography variant="caption" color="text.secondary" sx={{ display: "block", mt: 1, fontWeight: 700 }}>
+              <Typography variant="body2" color="text.secondary">
                 {autoDiscoveryInsight.correlation >= 0
-                  ? "📈 Corrélation Positive : Lorsque l'une de ces variables augmente, l'autre a une très forte tendance statistique à s'élever également. C'est un levier d'action extraordinaire pour structurer votre routine !"
-                  : "📉 Corrélation Inverse : Ces deux facteurs évoluent en sens inverse. Quand l'un augmente, l'autre diminue. Vous pouvez agir sur l'un pour tempérer l'autre."}
+                  ? "Quand l'un augmente, l'autre a souvent tendance à augmenter aussi. Cela ne dit pas lequel influence l'autre."
+                  : "Quand l'un augmente, l'autre a souvent tendance à baisser. Cela ne dit pas lequel influence l'autre."}
               </Typography>
             </Box>
           </Paper>
         </Grid>
       )}
 
-      {/* Grid 1: Radar Chart (Weekly Average) */}
-      <Grid size={{ xs: 12, md: 6 }}>
-        <Paper elevation={0} sx={refinedPaperStyle}>
-          <Box sx={{ display: "flex", justifyContent: "space-between", mb: 2 }}>
-            <Box>
-              <Typography variant="h6" sx={{ fontWeight: 800 }}>Profil Circadien Hebdomadaire</Typography>
-              <Typography variant="body2" color="text.secondary">Moyenne par jour de la semaine</Typography>
-            </Box>
-            <MuiTooltip title="Ce radar montre quel jour de la semaine enregistre les niveaux moyens les plus élevés ou bas.">
-              <InfoIcon sx={{ fontSize: 18, color: "text.secondary", cursor: "help" }} />
-            </MuiTooltip>
-          </Box>
-
-          <Box sx={{ flexGrow: 1, display: "flex", justifyContent: "center", alignItems: "center", minHeight: 300 }}>
-            <ChartContainer aspect={1.1} mobileAspect={1.0} minHeight={300}>
-              <RadarChart cx="50%" cy="50%" outerRadius={isMobile ? "65%" : "80%"} data={weeklyProfileData}>
-                <PolarGrid stroke="rgba(0,0,0,0.05)" />
-                <PolarAngleAxis dataKey="subject" tick={{ fontSize: 11, fontWeight: 600, fill: theme.palette.text.secondary }} />
-                <PolarRadiusAxis angle={30} domain={[0, 'auto']} hide />
-                <Tooltip
-                  contentStyle={{ borderRadius: 12, border: "none", boxShadow: "0 10px 15px -3px rgba(0,0,0,0.1)" }}
-                  formatter={(val: any) => {
-                    const numVal = Number(val);
-                    if (activeFieldObj?.fieldType === FieldType.BOOLEAN) return [`${(numVal * 100).toFixed(0)}% Oui`, "Fidélité"];
-                    if (activeFieldObj?.fieldType === FieldType.STRING) {
-                      const mapping = advFieldMappings[activeAdvField];
-                      if (mapping) {
-                        const label = Object.keys(mapping).find(key => mapping[key] === Math.round(numVal));
-                        return [label || numVal.toFixed(2), "Valeur"];
-                      }
-                    }
-                    if (activeFieldObj?.fieldType === FieldType.NUMBER) {
-                      const isHourly = (activeFieldObj.optionsOrder || []).includes("isHourly");
-                      if (isHourly) return [formatHourlyValue(numVal.toString()), "Moyenne"];
-                    }
-                    return [numVal.toFixed(2), "Moyenne"];
-                  }}
-                />
-                <Radar
-                  name="Moyenne"
-                  dataKey="A"
-                  stroke="#6366f1"
-                  fill="#6366f1"
-                  fillOpacity={0.45}
-                />
-              </RadarChart>
-            </ChartContainer>
-          </Box>
-        </Paper>
-      </Grid>
-
-      {/* Grid 2: Composed Weekday Spread Chart (Min/Max Pillars + Avg Line) */}
-      <Grid size={{ xs: 12, md: 6 }}>
-        <Paper elevation={0} sx={refinedPaperStyle}>
-          <Box sx={{ display: "flex", justifyContent: "space-between", mb: 2 }}>
-            <Box>
-              <Typography variant="h6" sx={{ fontWeight: 800 }}>Dispersion & Variabilité par Jour</Typography>
-              <Typography variant="body2" color="text.secondary">Piliers Min-Max et Ligne de Moyenne</Typography>
-            </Box>
-            <MuiTooltip title="Les barres translucides représentent le spectre complet (le min et le max enregistrés ce jour-là) et la ligne verte montre votre moyenne. Idéal pour voir vos jours instables !">
-              <InfoIcon sx={{ fontSize: 18, color: "text.secondary", cursor: "help" }} />
-            </MuiTooltip>
-          </Box>
-
-          <Box sx={{ flexGrow: 1, minHeight: 300 }}>
-            <ChartContainer aspect={1.1} mobileAspect={1.0} minHeight={300}>
-              <ComposedChart data={weekdaySpreadData} margin={{ top: 20, right: 10, left: 10, bottom: 5 }}>
-                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="rgba(0,0,0,0.05)" />
-                <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 11, fontWeight: 600 }} />
-                <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 11, fontWeight: 600 }} width={30} />
-                <Tooltip
-                  contentStyle={{ borderRadius: 12, border: "none", boxShadow: "0 10px 15px -3px rgba(0,0,0,0.1)" }}
-                  formatter={(val: any, name: any) => {
-                    const formatVal = (v: number) => {
-                      if (activeFieldObj?.fieldType === FieldType.BOOLEAN) return v === 1 ? "Oui" : "Non";
-                      if (activeFieldObj?.fieldType === FieldType.STRING) {
-                        const mapping = advFieldMappings[activeAdvField];
-                        if (mapping) return Object.keys(mapping).find(key => mapping[key] === Math.round(v)) || v.toFixed(1);
-                      }
-                      if (activeFieldObj?.fieldType === FieldType.NUMBER) {
-                        const isHourly = (activeFieldObj.optionsOrder || []).includes("isHourly");
-                        if (isHourly) return formatHourlyValue(v.toString());
-                      }
-                      return v.toString();
-                    };
-
-                    if (name === "range") {
-                      return [`Min: ${formatVal(val[0])} / Max: ${formatVal(val[1])}`, "Étendue"];
-                    }
-                    return [formatVal(Number(val)), "Moyenne"];
-                  }}
-                />
-                <Legend />
-                <Bar
-                  dataKey="range"
-                  name="Étendue (Min-Max)"
-                  fill="rgba(99, 102, 241, 0.12)"
-                  stroke="rgba(99, 102, 241, 0.4)"
-                  strokeWidth={1}
-                  radius={4}
-                  barSize={18}
-                />
-                <Line
-                  type="monotone"
-                  dataKey="avg"
-                  name="Moyenne"
-                  stroke="#10b981"
-                  strokeWidth={3}
-                  dot={{ r: 4, fill: "#10b981", strokeWidth: 0 }}
-                />
-              </ComposedChart>
-            </ChartContainer>
-          </Box>
-        </Paper>
-      </Grid>
-
-      {/* Grid 3: Gamified Stats Cards & Expert Recommendation */}
       <Grid size={{ xs: 12, md: 5 }}>
-        <Paper elevation={0} sx={{ ...refinedPaperStyle, gap: 2 }}>
-          <Typography variant="h6" sx={{ fontWeight: 800, mb: 1 }}>Scorecards & Assiduité</Typography>
-
-          <Grid container spacing={2}>
-            {/* Completion Rate */}
-            <Grid size={{ xs: 6 }}>
-              <Box sx={{ p: 2, bgcolor: "rgba(99, 102, 241, 0.04)", border: "1px solid rgba(99, 102, 241, 0.08)", borderRadius: 4, textAlign: "center" }}>
-                <CalendarMonthIcon sx={{ color: "#6366f1", mb: 0.5 }} />
-                <Typography variant="caption" color="text.secondary" sx={{ display: "block", fontWeight: 600 }}>Régularité (30j)</Typography>
-                <Typography variant="h5" sx={{ fontWeight: 900, color: "#6366f1", mt: 0.5 }}>{streakStats.completionRate}%</Typography>
+        <Paper sx={{ p: { xs: 2, md: 3 }, borderRadius: 4, height: "100%", display: "grid", gap: 2, alignContent: "start" }}>
+          <Typography variant="h5" component="h2">Assiduité</Typography>
+          <Box sx={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 1 }}>
+            {stats.map(({ label, value, icon: Icon, accent }) => (
+              <Box key={label} sx={{ p: 1.5, borderRadius: 3, bgcolor: "action.hover", display: "grid", gap: 0.5 }}>
+                <Box sx={{ display: "flex", alignItems: "center", gap: 0.75, color: "text.secondary" }}>
+                  <Icon sx={{ fontSize: 16, color: accent ? "var(--accent-glow)" : "inherit" }} />
+                  <Typography variant="caption">{label}</Typography>
+                </Box>
+                <Typography sx={{ fontFamily: "var(--font-display)", fontWeight: 800, fontSize: "1.5rem", lineHeight: 1.1, fontVariantNumeric: "tabular-nums" }}>
+                  {value}
+                </Typography>
               </Box>
-            </Grid>
-
-            {/* Current Streak */}
-            <Grid size={{ xs: 6 }}>
-              <Box sx={{ p: 2, bgcolor: "rgba(245, 158, 11, 0.04)", border: "1px solid rgba(245, 158, 11, 0.08)", borderRadius: 4, textAlign: "center" }}>
-                <LocalFireDepartmentIcon sx={{ color: "#f59e0b", mb: 0.5 }} />
-                <Typography variant="caption" color="text.secondary" sx={{ display: "block", fontWeight: 600 }}>Série en cours</Typography>
-                <Typography variant="h5" sx={{ fontWeight: 900, color: "#f59e0b", mt: 0.5 }}>{streakStats.currentStreak} j</Typography>
-              </Box>
-            </Grid>
-
-            {/* Max Streak */}
-            <Grid size={{ xs: 6 }}>
-              <Box sx={{ p: 2, bgcolor: "rgba(244, 63, 94, 0.04)", border: "1px solid rgba(244, 63, 94, 0.08)", borderRadius: 4, textAlign: "center" }}>
-                <TrendingUpIcon sx={{ color: "#f43f5e", mb: 0.5 }} />
-                <Typography variant="caption" color="text.secondary" sx={{ display: "block", fontWeight: 600 }}>Série Record</Typography>
-                <Typography variant="h5" sx={{ fontWeight: 900, color: "#f43f5e", mt: 0.5 }}>{streakStats.maxStreak} j</Typography>
-              </Box>
-            </Grid>
-
-            {/* Volatility Coefficient */}
-            <Grid size={{ xs: 6 }}>
-              <Box sx={{ p: 2, bgcolor: "rgba(16, 185, 129, 0.04)", border: "1px solid rgba(16, 185, 129, 0.08)", borderRadius: 4, textAlign: "center" }}>
-                <InfoIcon sx={{ color: "#10b981", mb: 0.5 }} />
-                <Typography variant="caption" color="text.secondary" sx={{ display: "block", fontWeight: 600 }}>Variabilité (CV)</Typography>
-                <Typography variant="h5" sx={{ fontWeight: 900, color: "#10b981", mt: 0.5 }}>{statsSummary ? `${statsSummary.volatility}%` : "0%"}</Typography>
-              </Box>
-            </Grid>
-          </Grid>
-
-          <Paper elevation={0} sx={{ p: 3, bgcolor: "rgba(99, 102, 241, 0.03)", borderRadius: 4, border: "1px dashed rgba(99, 102, 241, 0.2)", flexGrow: 1, display: "flex", flexDirection: "column", justifyContent: "center", mt: 1 }}>
-            <Box sx={{ display: "flex", alignItems: "center", gap: 1, mb: 1 }}>
-              <Typography variant="subtitle2" sx={{ fontWeight: 800, color: "#4f46e5" }}>Diagnostic de l&apos;Expert</Typography>
-            </Box>
-            <Typography variant="body2" sx={{ fontStyle: "italic", color: "text.secondary", lineHeight: 1.6 }}>
-              &ldquo;{expertRecommendation}&rdquo;
-            </Typography>
-          </Paper>
+            ))}
+          </Box>
+          <Box sx={{ p: 2, borderRadius: 3, bgcolor: "primary.light" }}>
+            <Typography variant="subtitle2" sx={{ color: "primary.main", mb: 0.5 }}>À retenir</Typography>
+            <Typography variant="body2" sx={{ color: "text.primary" }}>{expertRecommendation}</Typography>
+          </Box>
         </Paper>
       </Grid>
 
-      {/* Grid 4: 30-Day Activity Heatmap Calendar */}
       <Grid size={{ xs: 12, md: 7 }}>
-        <Paper elevation={0} sx={refinedPaperStyle}>
-          <Box sx={{ display: "flex", justifyContent: "space-between", mb: 2 }}>
-            <Box>
-              <Typography variant="h6" sx={{ fontWeight: 800 }}>Calendrier d&apos;Activité (Derniers 30 Jours)</Typography>
-              <Typography variant="body2" color="text.secondary">Visualisez d&apos;un coup d&apos;œil votre assiduité et vos résultats</Typography>
-            </Box>
-            <MuiTooltip title="Comme sur GitHub, chaque carré représente un jour. Plus la couleur est marquée, plus la valeur enregistrée est élevée.">
-              <InfoIcon sx={{ fontSize: 18, color: "text.secondary", cursor: "help" }} />
-            </MuiTooltip>
+        <Paper sx={{ p: { xs: 2, md: 3 }, borderRadius: 4, height: "100%", display: "grid", gap: 1.5, alignContent: "start" }}>
+          <Box>
+            <Typography variant="h5" component="h2">30 derniers jours</Typography>
+            <Typography variant="body2" color="text.secondary" sx={{ mt: 0.25 }}>
+              Plus la case est foncée, plus la valeur est élevée.
+            </Typography>
           </Box>
-
-          <Box sx={{
-            display: "flex",
-            flexWrap: "wrap",
-            gap: 1,
-            p: 2,
-            bgcolor: "rgba(0,0,0,0.01)",
-            borderRadius: 4,
-            border: "1px solid rgba(0,0,0,0.02)",
-            justifyContent: "flex-start",
-            alignItems: "center",
-            mt: 2
-          }}>
-            {heatmapData.map((day) => {
-              // Color calculation logic based on field value
-              let bg = "rgba(0,0,0,0.03)";
-              let border = "1px solid rgba(0,0,0,0.05)";
-
-              if (day.logged) {
-                border = "none";
-                if (activeFieldObj?.fieldType === FieldType.BOOLEAN) {
-                  bg = day.value === 1 ? "#10b981" : "#ef4444";
-                } else if (activeFieldObj?.fieldType === FieldType.NUMBER && statsSummary) {
-                  const min = statsSummary.min;
-                  const max = statsSummary.max;
-                  const range = max - min;
-                  const norm = range > 0 ? (Number(day.value) - min) / range : 0.6;
-                  bg = `rgba(99, 102, 241, ${0.25 + 0.75 * norm})`;
-                } else if (activeFieldObj?.fieldType === FieldType.STRING) {
-                  const mapping = advFieldMappings[activeAdvField];
-                  if (mapping) {
-                    const keys = Object.keys(mapping);
-                    const norm = keys.length > 1 ? Number(day.value) / (keys.length - 1) : 0.6;
-                    bg = `rgba(139, 92, 246, ${0.25 + 0.75 * norm})`;
-                  }
-                } else {
-                  bg = "#6366f1";
-                }
-              } else {
-                border = "1px dashed rgba(0,0,0,0.1)";
-              }
-
-              // Pretty-format dates
-              const formattedDate = day.formattedDate;
-
-              const formatVal = (v: any) => {
-                if (v === null || v === undefined) return "Aucun log";
-                if (activeFieldObj?.fieldType === FieldType.BOOLEAN) return v === 1 ? "Oui" : "Non";
-                if (activeFieldObj?.fieldType === FieldType.STRING) {
-                  const mapping = advFieldMappings[activeAdvField];
-                  if (mapping) return Object.keys(mapping).find(key => mapping[key] === Math.round(v)) || v;
-                }
-                if (activeFieldObj?.fieldType === FieldType.NUMBER) {
-                  const isHourly = (activeFieldObj.optionsOrder || []).includes("isHourly");
-                  if (isHourly) return formatHourlyValue(v.toString());
-                }
-                return v;
-              };
-
-              return (
-                <MuiTooltip
-                  key={day.dateStr}
-                  title={`${formattedDate} : ${formatVal(day.value)}`}
-                  arrow
+          <Box sx={{ display: "grid", gridTemplateColumns: "repeat(7, 1fr)", gap: 0.75 }}>
+            {heatmapData.map((day) => (
+              <MuiTooltip key={day.dateStr} title={`${day.formattedDate} : ${day.logged ? formatFieldValue(Number(day.value)) : "aucune saisie"}`} enterTouchDelay={0}>
+                <Box
+                  sx={{
+                    aspectRatio: "1",
+                    borderRadius: 2,
+                    bgcolor: heatColor(day),
+                    border: day.logged ? "none" : "1px dashed var(--mui-palette-divider)",
+                    display: "grid",
+                    placeItems: "center",
+                  }}
                 >
-                  <Box
-                    sx={{
-                      width: { xs: 26, sm: 32, md: 38 },
-                      height: { xs: 26, sm: 32, md: 38 },
-                      borderRadius: 2,
-                      bgcolor: bg,
-                      border: border,
-                      cursor: "pointer",
-                      transition: "all 0.2s",
-                      display: "flex",
-                      justifyContent: "center",
-                      alignItems: "center",
-                      '&:hover': {
-                        transform: "scale(1.15)",
-                        boxShadow: "0 4px 12px rgba(0,0,0,0.08)",
-                        zIndex: 10
-                      }
-                    }}
-                  >
-                    <Typography sx={{ fontSize: { xs: 8, md: 10 }, fontWeight: 700, opacity: day.logged ? 0.9 : 0.4, color: day.logged ? "#fff" : "text.secondary" }}>
-                      {day.dayNum}
-                    </Typography>
-                  </Box>
-                </MuiTooltip>
-              );
-            })}
+                  <Typography component="span" sx={{ fontSize: 11, fontWeight: 700, fontVariantNumeric: "tabular-nums", color: heatText(day) }}>
+                    {day.dayNum}
+                  </Typography>
+                </Box>
+              </MuiTooltip>
+            ))}
           </Box>
-
-          {/* Color Legend */}
-          <Box sx={{ display: "flex", gap: 3, mt: 3, flexWrap: "wrap", justifyContent: "center" }}>
-            <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-              <Box sx={{ width: 14, height: 14, borderRadius: 1, border: "1px dashed rgba(0,0,0,0.15)", bgcolor: "rgba(0,0,0,0.03)" }} />
-              <Typography variant="caption" color="text.secondary">Pas de données</Typography>
+          <Box sx={{ display: "flex", gap: 2, flexWrap: "wrap" }}>
+            <Box sx={{ display: "flex", alignItems: "center", gap: 0.75 }}>
+              <Box sx={{ width: 12, height: 12, borderRadius: "3px", border: "1px dashed var(--mui-palette-divider)" }} />
+              <Typography variant="caption" color="text.secondary">Aucune saisie</Typography>
             </Box>
-
             {activeFieldObj?.fieldType === FieldType.BOOLEAN ? (
               <>
-                <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-                  <Box sx={{ width: 14, height: 14, borderRadius: 1, bgcolor: "#10b981" }} />
+                <Box sx={{ display: "flex", alignItems: "center", gap: 0.75 }}>
+                  <Box sx={{ width: 12, height: 12, borderRadius: "3px", bgcolor: "var(--chart-pos-3)" }} />
                   <Typography variant="caption" color="text.secondary">Oui</Typography>
                 </Box>
-                <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-                  <Box sx={{ width: 14, height: 14, borderRadius: 1, bgcolor: "#ef4444" }} />
+                <Box sx={{ display: "flex", alignItems: "center", gap: 0.75 }}>
+                  <Box sx={{ width: 12, height: 12, borderRadius: "3px", bgcolor: "var(--chart-neg-2)" }} />
                   <Typography variant="caption" color="text.secondary">Non</Typography>
                 </Box>
               </>
             ) : (
-              <>
-                <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-                  <Box sx={{ width: 14, height: 14, borderRadius: 1, bgcolor: activeFieldObj?.fieldType === FieldType.STRING ? "rgba(139, 92, 246, 0.25)" : "rgba(99, 102, 241, 0.25)" }} />
-                  <Typography variant="caption" color="text.secondary">Valeur Minime</Typography>
-                </Box>
-                <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-                  <Box sx={{ width: 14, height: 14, borderRadius: 1, bgcolor: activeFieldObj?.fieldType === FieldType.STRING ? "rgba(139, 92, 246, 0.95)" : "rgba(99, 102, 241, 0.95)" }} />
-                  <Typography variant="caption" color="text.secondary">Valeur Maximale</Typography>
-                </Box>
-              </>
+              <Box sx={{ display: "flex", alignItems: "center", gap: 0.75 }}>
+                <Typography variant="caption" color="text.secondary">Bas</Typography>
+                <Box sx={{ width: 72, height: 10, borderRadius: 1, background: "linear-gradient(90deg, color-mix(in oklab, var(--chart-s1) 25%, var(--chart-surface)), var(--chart-s1))" }} />
+                <Typography variant="caption" color="text.secondary">Haut</Typography>
+              </Box>
             )}
           </Box>
         </Paper>
+      </Grid>
+
+      <Grid size={{ xs: 12, md: 6 }}>
+        <ChartCard title="Profil de la semaine" subtitle="Moyenne par jour de la semaine." help="Quel jour de la semaine enregistre les niveaux moyens les plus hauts ou les plus bas.">
+          <ChartContainer aspect={1.6} minHeight={260}>
+            <BarChart data={weeklyProfileData} margin={{ top: 16, right: 12, left: 0, bottom: 0 }}>
+              <CartesianGrid vertical={false} stroke={chartColors.grid} />
+              <XAxis dataKey="subject" axisLine={{ stroke: chartColors.axis }} tickLine={false} tick={axisTick} tickFormatter={(v: string) => (isMobile ? v.slice(0, 3) : v)} />
+              <YAxis axisLine={false} tickLine={false} tick={axisTick} width={40} tickCount={4} tickFormatter={(v) => formatFieldValue(Number(v))} />
+              <Tooltip
+                {...chartTooltipProps}
+                cursor={{ fill: "var(--mui-palette-action-hover)" }}
+                formatter={(val: any) => {
+                  const numVal = Number(val);
+                  if (activeFieldObj?.fieldType === FieldType.BOOLEAN) return [`${(numVal * 100).toFixed(0)} % de oui`, "Fidélité"];
+                  return [formatFieldValue(numVal), "Moyenne"];
+                }}
+              />
+              <Bar dataKey="A" name="Moyenne" fill={chartColors.primary} radius={[4, 4, 0, 0]} maxBarSize={32} />
+            </BarChart>
+          </ChartContainer>
+        </ChartCard>
+      </Grid>
+
+      <Grid size={{ xs: 12, md: 6 }}>
+        <ChartCard title="Écart par jour" subtitle="Plage min-max et moyenne de chaque jour." help="La barre claire couvre la valeur la plus basse et la plus haute enregistrées ce jour-là, le point marque la moyenne. Une barre longue signale un jour instable.">
+          <ChartContainer aspect={1.6} minHeight={260}>
+            <ComposedChart data={weekdaySpreadData} margin={{ top: 16, right: 12, left: 0, bottom: 0 }}>
+              <CartesianGrid vertical={false} stroke={chartColors.grid} />
+              <XAxis dataKey="name" axisLine={{ stroke: chartColors.axis }} tickLine={false} tick={axisTick} />
+              <YAxis axisLine={false} tickLine={false} tick={axisTick} width={40} tickCount={4} tickFormatter={(v) => formatFieldValue(Number(v))} />
+              <Tooltip
+                {...chartTooltipProps}
+                cursor={{ fill: "var(--mui-palette-action-hover)" }}
+                formatter={(val: any, name: any) => {
+                  if (name === "Plage") return [`${formatFieldValue(val[0])} à ${formatFieldValue(val[1])}`, "Plage"];
+                  return [formatFieldValue(Number(val)), "Moyenne"];
+                }}
+              />
+              <Bar dataKey="range" name="Plage" fill={chartColors.primary} fillOpacity={0.28} radius={4} barSize={18} />
+              <Line type="monotone" dataKey="avg" name="Moyenne" stroke={chartColors.primary} strokeWidth={2} connectNulls dot={{ r: 4, fill: chartColors.primary, stroke: chartColors.surface, strokeWidth: 2 }} activeDot={{ r: 5 }} />
+            </ComposedChart>
+          </ChartContainer>
+        </ChartCard>
       </Grid>
     </Grid>
   );

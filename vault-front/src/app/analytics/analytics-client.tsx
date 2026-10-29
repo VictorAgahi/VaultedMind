@@ -10,15 +10,12 @@ import {
   Tab,
   CircularProgress,
   Alert,
-  Paper,
   useTheme,
-  ToggleButtonGroup,
-  ToggleButton,
+  Chip,
   Collapse,
   TextField,
   Button,
 } from "@mui/material";
-import TuneIcon from "@mui/icons-material/Tune";
 import { Navbar } from "@/components/navbar/navbar";
 import { apiService } from "@/services/api.service";
 import { DailyLog, CustomField, FieldType } from "@/types";
@@ -29,72 +26,9 @@ import { MultiTrendChart } from "@/components/analytics/multi-trend-chart";
 import { CorrelationStudy } from "@/components/correlation-study/correlation-study";
 import { AdvancedAnalyses } from "@/components/analytics/advanced-analyses";
 import { HabitImpactStudy } from "@/components/analytics/habit-impact-study";
-import { ResponsiveContainer } from "recharts";
+import { ChartContainer } from "@/components/analytics/chart-container";
 import { formatHourlyValue } from "@/utils/time-converter";
 import { Fade, useMediaQuery } from "@mui/material";
-
-// ─── ChartContainer ───────────────────────────────────────────────────────────
-
-interface ChartContainerProps {
-  children: React.ReactNode;
-  aspect: number;
-  mobileAspect?: number;
-  minHeight: number;
-  fullHeight?: boolean;
-}
-
-const ChartContainer: React.FC<ChartContainerProps> = ({
-  children,
-  aspect,
-  mobileAspect,
-  minHeight,
-  fullHeight,
-}) => {
-  const ref = React.useRef<HTMLDivElement>(null);
-  const [width, setWidth] = React.useState(0);
-  const theme = useTheme();
-  const isMobile = useMediaQuery(theme.breakpoints.down("sm"));
-
-  useEffect(() => {
-    if (!ref.current) return;
-    const target = ref.current;
-    const ro = new ResizeObserver((entries) => {
-      if (entries[0]) setWidth(entries[0].contentRect.width);
-    });
-    ro.observe(target);
-    return () => ro.unobserve(target);
-  }, []);
-
-  const finalAspect = isMobile && mobileAspect ? mobileAspect : aspect;
-  // On mobile, reduce aspect ratio for better readability
-  const mobileSafeAspect = isMobile ? Math.min(finalAspect, 1.2) : finalAspect;
-
-  return (
-    <Box
-      ref={ref}
-      sx={{
-        width: "100%",
-        minWidth: 0,
-        minHeight,
-        flexGrow: fullHeight ? 1 : 0,
-        height: fullHeight && !isMobile ? "100%" : "auto",
-        display: fullHeight ? "flex" : "block",
-        flexDirection: "column",
-      }}
-    >
-      {width > 0 && (
-        <ResponsiveContainer
-          width={width}
-          height={fullHeight && !isMobile ? "100%" : undefined}
-          aspect={fullHeight && !isMobile ? undefined : mobileSafeAspect}
-          debounce={50}
-        >
-          {children as React.ReactElement}
-        </ResponsiveContainer>
-      )}
-    </Box>
-  );
-};
 
 // ─── Date filter ─────────────────────────────────────────────────────────────
 
@@ -142,48 +76,46 @@ function DateFilterBar({ filter, onChange }: DateFilterBarProps) {
   };
 
   return (
-    <Box sx={{ mb: 4 }}>
-      <Box sx={{ display: "flex", alignItems: "center", gap: 2, flexWrap: "wrap" }}>
-        <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-          <TuneIcon sx={{ fontSize: 18, color: "text.secondary" }} />
-          <Typography variant="body2" sx={{ fontWeight: 700, color: "text.secondary", whiteSpace: "nowrap" }}>
-            Période
-          </Typography>
-        </Box>
-        <ToggleButtonGroup
-          value={filter.preset}
-          exclusive
-          onChange={handlePreset}
-          size="small"
-          sx={{
-            "& .MuiToggleButton-root": {
-              fontWeight: 700,
-              fontSize: "0.8rem",
-              px: { xs: 1.2, sm: 2 },
-              py: 0.6,
-              border: "1px solid rgba(0,0,0,0.1)",
-              textTransform: "none",
-              "&.Mui-selected": {
-                bgcolor: "#6366f1",
-                color: "white",
-                "&:hover": { bgcolor: "#4f46e5" },
-              },
-            },
-          }}
-        >
-          <ToggleButton value="7d">7 j</ToggleButton>
-          <ToggleButton value="30d">30 j</ToggleButton>
-          <ToggleButton value="90d">90 j</ToggleButton>
-          <ToggleButton value="all">Tout</ToggleButton>
-          <ToggleButton value="custom">Perso.</ToggleButton>
-        </ToggleButtonGroup>
+    <Box sx={{ mb: 2 }}>
+      <Box
+        role="group"
+        aria-label="Période"
+        sx={{ display: "flex", gap: 1, overflowX: "auto", mx: { xs: -2, sm: 0 }, px: { xs: 2, sm: 0 }, pb: 0.5, scrollbarWidth: "none", "&::-webkit-scrollbar": { display: "none" } }}
+      >
+        {([
+          ["7d", "7 j"],
+          ["30d", "30 j"],
+          ["90d", "90 j"],
+          ["all", "Tout"],
+          ["custom", "Dates…"],
+        ] as [DatePreset, string][]).map(([value, label]) => {
+          const selected = filter.preset === value || (value === "custom" && showCustom && filter.preset !== "custom");
+          return (
+            <Chip
+              key={value}
+              label={label}
+              clickable
+              onClick={(e) => handlePreset(e as unknown as React.MouseEvent<HTMLElement>, value)}
+              aria-pressed={selected}
+              sx={{
+                flex: "none",
+                height: 40,
+                px: 0.5,
+                fontSize: "0.8125rem",
+                bgcolor: selected ? "text.primary" : "background.paper",
+                color: selected ? "background.default" : "text.secondary",
+                "&:hover": { bgcolor: selected ? "text.primary" : "action.hover" },
+              }}
+            />
+          );
+        })}
       </Box>
 
       <Collapse in={showCustom} timeout={200}>
         <Box
           sx={{
             mt: 2, p: 2,
-            bgcolor: "rgba(99,102,241,0.04)", borderRadius: 3, border: "1px solid rgba(99,102,241,0.12)",
+            bgcolor: "background.paper", borderRadius: 4,
             display: "flex", flexDirection: { xs: "column", sm: "row" }, gap: 1.5,
             alignItems: { xs: "stretch", sm: "center" },
           }}
@@ -211,8 +143,6 @@ function DateFilterBar({ filter, onChange }: DateFilterBarProps) {
             variant="contained"
             size="small"
             onClick={applyCustom}
-            disableElevation
-            sx={{ bgcolor: "#6366f1", "&:hover": { bgcolor: "#4f46e5" }, fontWeight: 700, borderRadius: 2, px: 2.5 }}
           >
             Appliquer
           </Button>
@@ -610,7 +540,7 @@ export default function AnalyticsClient() {
         sx: {
           maxHeight: 300,
           "&::-webkit-scrollbar": { width: "8px" },
-          "&::-webkit-scrollbar-thumb": { backgroundColor: "rgba(0,0,0,0.1)", borderRadius: "4px" },
+          "&::-webkit-scrollbar-thumb": { backgroundColor: "var(--mui-palette-divider)", borderRadius: "4px" },
         },
       },
     },
@@ -619,71 +549,71 @@ export default function AnalyticsClient() {
   if (loading)
     return (
       <Box sx={{ display: "flex", justifyContent: "center", alignItems: "center", height: "100vh" }}>
-        <CircularProgress size={60} thickness={4} />
+        <CircularProgress />
       </Box>
     );
 
   return (
     <Box sx={{ minHeight: "100vh" }}>
       <Navbar />
-      <Container maxWidth={false} sx={{ py: 6, px: { xs: 2, md: 3, lg: 4 } }}>
-        <Box sx={{ mb: 4 }}>
-          <Typography variant="h4" sx={{ fontWeight: 900, mb: 1, color: "#142949", letterSpacing: "-0.02em" }}>
+      <Container maxWidth="lg" sx={{ py: { xs: 2, md: 5 }, px: { xs: 2, md: 3 } }}>
+        <Box sx={{ mb: { xs: 2, md: 3 } }}>
+          <Typography variant="h1" sx={{ fontSize: { xs: "1.75rem", md: "2.25rem" } }}>
             Analyses
           </Typography>
-          <Typography variant="h6" color="text.secondary">
-            Visualisez vos progrès et découvrez des corrélations.
+          <Typography variant="body1" color="text.secondary" sx={{ mt: 0.5 }}>
+            Visualisez vos progrès et découvrez des liens entre vos habitudes.
           </Typography>
         </Box>
 
-        {error && <Alert severity="error" sx={{ mb: 4, borderRadius: 3 }}>{error}</Alert>}
+        {error && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>}
 
-        {/* Date filter */}
+        <Tabs
+          value={tabValue}
+          onChange={(_, v) => dispatch({ type: "SET_TAB", value: v })}
+          variant="fullWidth"
+          aria-label="Type d'analyse"
+          sx={{
+            mb: 1.5,
+            p: 0.5,
+            minHeight: 44,
+            borderRadius: 999,
+            bgcolor: "action.hover",
+            "& .MuiTabs-indicator": { display: "none" },
+            "& .MuiTab-root": {
+              minHeight: 36,
+              minWidth: 0,
+              px: { xs: 0.5, sm: 2 },
+              py: 0.5,
+              borderRadius: 999,
+              fontSize: { xs: "0.75rem", sm: "0.875rem" },
+              color: "text.secondary",
+              transition: "background-color 160ms cubic-bezier(.2,0,0,1)",
+            },
+            "& .MuiTab-root.Mui-selected": { bgcolor: "background.paper", color: "text.primary", boxShadow: "0 1px 2px rgba(15, 20, 19, 0.12)" },
+          }}
+        >
+          <Tab label="Tendances" />
+          <Tab label={isMobile ? "Liens" : "Corrélations"} />
+          <Tab label={isMobile ? "Détails" : "Analyses détaillées"} />
+          <Tab label={isMobile ? "Habitudes" : "Impact des habitudes"} />
+        </Tabs>
+
         <DateFilterBar filter={dateFilter} onChange={setDateFilter} />
 
-        {/* Count badge */}
         {dateFilter.preset !== "all" && (
-          <Box sx={{ mb: 3 }}>
-            <Typography variant="caption" sx={{ color: "text.secondary", fontWeight: 600 }}>
+          <Box sx={{ mb: 2 }}>
+            <Typography variant="caption" sx={{ color: "text.secondary", fontVariantNumeric: "tabular-nums" }}>
               {filteredLogs.length} entrée{filteredLogs.length !== 1 ? "s" : ""} affichée{filteredLogs.length !== 1 ? "s" : ""}
               {" "}sur {logs.length} au total
             </Typography>
           </Box>
         )}
 
-        <Paper
-          elevation={0}
-          sx={{
-            borderRadius: 6,
-            overflow: "hidden",
-            mb: 6,
-            border: "1px solid rgba(0,0,0,0.05)",
-            boxShadow: "0 10px 15px -3px rgba(0,0,0,0.05)",
-          }}
-        >
-          <Tabs
-            value={tabValue}
-            onChange={(_, v) => dispatch({ type: "SET_TAB", value: v })}
-            variant={isMobile ? "scrollable" : "fullWidth"}
-            scrollButtons={isMobile ? "auto" : undefined}
-            allowScrollButtonsMobile
-            sx={{
-              "& .MuiTab-root": { fontWeight: 700, py: 2, fontSize: { xs: "0.8rem", sm: "0.9rem" } },
-              "& .Mui-selected": { color: "#6366f1" },
-              "& .MuiTabs-indicator": { backgroundColor: "#6366f1", height: 3 },
-            }}
-          >
-            <Tab label="Tendances" />
-            <Tab label="Corrélation" />
-            <Tab label="Analyses" />
-            <Tab label="Impact Habitudes" />
-          </Tabs>
-        </Paper>
-
-        <Box sx={{ minHeight: 600 }}>
+        <Box sx={{ minHeight: { xs: 0, md: 600 } }}>
           {tabValue === 0 && (
             <Fade in={tabValue === 0} timeout={400}>
-              <Grid container spacing={{ xs: 2, md: 4 }}>
+              <Grid container spacing={{ xs: 1.5, md: 3 }}>
                 <Grid size={{ xs: 12, md: 8 }}>
                   <EvolutionQualitativeChart
                     data={qualitativeData.data}
@@ -700,7 +630,7 @@ export default function AnalyticsClient() {
                     data={freqData}
                     selectedField={selectedFreqField}
                     setSelectedField={(id) => dispatch({ type: "SET_FIELD", key: "selectedFreqField", id })}
-                    stringAndBoolFields={fields}
+                    stringAndBoolFields={fields.filter((f) => f.fieldType === FieldType.STRING || f.fieldType === FieldType.BOOLEAN)}
                     ChartContainer={ChartContainer}
                   />
                 </Grid>

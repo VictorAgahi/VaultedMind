@@ -1,11 +1,12 @@
 "use client";
 
 import React from "react";
-import { Typography, Paper } from "@mui/material";
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend } from "recharts";
+import { Box, Paper, Typography, useMediaQuery, useTheme } from "@mui/material";
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip } from "recharts";
 
 import { SxProps, Theme } from "@mui/material";
 import { CustomField } from "@/types";
+import { axisTick, chartColors, chartTooltipProps, SERIES_COLORS, shortDateTick, percentTick } from "@/theme/chart-tokens";
 
 interface TemporalComparisonProps {
   temporalData: Record<string, string | number | null>[];
@@ -17,6 +18,7 @@ interface TemporalComparisonProps {
   refinedPaperStyle: SxProps<Theme>;
 }
 
+// Une seule échelle : les deux variables sont ramenées à 0-100 % de leur plage, jamais deux axes Y.
 export const TemporalComparison: React.FC<TemporalComparisonProps> = ({
   temporalData,
   ChartContainer,
@@ -25,49 +27,62 @@ export const TemporalComparison: React.FC<TemporalComparisonProps> = ({
   measurableFields,
   formatVal,
   refinedPaperStyle
-}) => (
-  <Paper elevation={0} sx={{ ...refinedPaperStyle, height: { xs: 500, md: 600 } }}>
-    <Typography variant="h6" sx={{ fontWeight: 800, mb: 4 }}>Comparaison Temporelle</Typography>
-    <ChartContainer aspect={1.8} mobileAspect={0.8} minHeight={400} fullHeight>
-      <LineChart data={temporalData} margin={{ top: 30, right: 30, left: 20, bottom: 20 }}>
-        <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="rgba(0,0,0,0.05)" />
-        <XAxis
-          dataKey="date"
-          axisLine={false}
-          tickLine={false}
-          tick={{ fontSize: 10, fontWeight: 600 }}
-          minTickGap={30}
-          padding={{ left: 10, right: 10 }}
-        />
-        <YAxis
-          yAxisId="left"
-          axisLine={false}
-          tickLine={false}
-          stroke="#6366f1"
-          tick={{ fontSize: 10, fontWeight: 700 }}
-          width={40}
-        />
-        <YAxis
-          yAxisId="right"
-          axisLine={false}
-          tickLine={false}
-          orientation="right"
-          stroke="#ec4899"
-          tick={{ fontSize: 10, fontWeight: 700 }}
-          width={40}
-        />
-        <Tooltip
-          contentStyle={{ borderRadius: 16, border: "none", boxShadow: "0 10px 25px -5px rgba(0,0,0,0.1)" }}
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          formatter={(value: any, _name: any, props: any) => [
-            formatVal(value, props.dataKey as string),
-            measurableFields.find(f => f.id === props.dataKey)?.name
-          ]}
-        />
-        <Legend verticalAlign="top" height={60} wrapperStyle={{ paddingBottom: '20px' }} />
-        <Line yAxisId="left" type="monotone" dataKey={activeFieldA} name={measurableFields.find(f => f.id === activeFieldA)?.name} stroke="#6366f1" strokeWidth={4} dot={{ r: 4, fill: "#6366f1" }} />
-        <Line yAxisId="right" type="monotone" dataKey={activeFieldB} name={measurableFields.find(f => f.id === activeFieldB)?.name} stroke="#ec4899" strokeWidth={3} strokeDasharray="5 5" dot={{ r: 4, fill: "#ec4899" }} />
-      </LineChart>
-    </ChartContainer>
-  </Paper>
-);
+}) => {
+  const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down("sm"));
+  const series = [
+    { id: activeFieldA, color: SERIES_COLORS[0], name: measurableFields.find(f => f.id === activeFieldA)?.name },
+    { id: activeFieldB, color: SERIES_COLORS[1], name: measurableFields.find(f => f.id === activeFieldB)?.name },
+  ];
+
+  const indexed = React.useMemo(() => {
+    const range = (id: string) => {
+      const values = temporalData.map(d => d[id]).filter((v): v is number => typeof v === "number");
+      return values.length ? { min: Math.min(...values), max: Math.max(...values) } : null;
+    };
+    const ra = range(activeFieldA);
+    const rb = range(activeFieldB);
+    const norm = (v: unknown, r: { min: number; max: number } | null) =>
+      typeof v === "number" && r ? (r.max === r.min ? 50 : Math.round(((v - r.min) / (r.max - r.min)) * 100)) : null;
+    return temporalData.map(d => ({ ...d, __a: norm(d[activeFieldA], ra), __b: norm(d[activeFieldB], rb) }));
+  }, [temporalData, activeFieldA, activeFieldB]);
+
+  const pointsA = indexed.filter(d => d.__a !== null).length;
+  const pointsB = indexed.filter(d => d.__b !== null).length;
+  const curve = Math.max(pointsA, pointsB) < 15 ? "linear" : "monotone";
+  const dotFor = (points: number, color: string) =>
+    points <= 3 ? { r: 3, fill: color, stroke: chartColors.surface, strokeWidth: 1.5 } : false;
+
+  return (
+    <Paper sx={{ ...refinedPaperStyle }}>
+      <Box sx={{ display: "grid", gap: 1, mb: 1 }}>
+        <Typography variant="h5" component="h2">Dans le temps</Typography>
+        <Box sx={{ display: "flex", flexWrap: "wrap", gap: 2 }}>
+          {series.map((s) => (
+            <Box key={s.id} sx={{ display: "flex", alignItems: "center", gap: 0.75 }}>
+              <Box sx={{ width: 10, height: 10, borderRadius: "3px", bgcolor: s.color }} />
+              <Typography variant="caption" color="text.secondary">{s.name}</Typography>
+            </Box>
+          ))}
+        </Box>
+      </Box>
+      <ChartContainer aspect={2.6} minHeight={300}>
+        <LineChart data={indexed} margin={isMobile ? { top: 12, right: 12, left: 0, bottom: 0 } : { top: 16, right: 24, left: 8, bottom: 8 }}>
+          <CartesianGrid vertical={false} stroke={chartColors.grid} />
+          <XAxis dataKey="date" tickFormatter={(v) => shortDateTick(v, isMobile)} axisLine={{ stroke: chartColors.axis }} tickLine={false} tick={axisTick} minTickGap={isMobile ? 36 : 30} padding={{ left: 8, right: 8 }} />
+          <YAxis axisLine={false} tickLine={false} tick={axisTick} domain={[0, 100]} ticks={[0, 50, 100]} tickFormatter={percentTick} width={isMobile ? 48 : 52} />
+          <Tooltip
+            {...chartTooltipProps}
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            formatter={(_value: any, _name: any, props: any) => {
+              const id = props.dataKey === "__a" ? activeFieldA : activeFieldB;
+              return [formatVal(props.payload?.[id] ?? null, id), measurableFields.find(f => f.id === id)?.name];
+            }}
+          />
+          <Line type={curve} dataKey="__a" name={series[0].name} stroke={series[0].color} strokeWidth={2} dot={dotFor(pointsA, series[0].color)} activeDot={{ r: 5, strokeWidth: 2, stroke: chartColors.surface, fill: series[0].color }} connectNulls />
+          <Line type={curve} dataKey="__b" name={series[1].name} stroke={series[1].color} strokeWidth={2} dot={dotFor(pointsB, series[1].color)} activeDot={{ r: 5, strokeWidth: 2, stroke: chartColors.surface, fill: series[1].color }} connectNulls />
+        </LineChart>
+      </ChartContainer>
+    </Paper>
+  );
+};

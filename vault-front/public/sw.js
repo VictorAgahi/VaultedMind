@@ -57,10 +57,13 @@ self.addEventListener("notificationclick", (event) => {
   event.notification.close();
   event.waitUntil(
     clients.matchAll({ type: "window" }).then((clientList) => {
+      // Un rappel vers le tableau de bord ouvre directement la saisie du jour.
+      const target = event.notification.data === "/dashboard" ? "/dashboard?new=1" : event.notification.data || "/";
       if (clientList.length > 0) {
-        return clientList[0].focus();
+        const client = clientList[0];
+        return (client.navigate ? client.navigate(target) : Promise.resolve(client)).then((c) => (c || client).focus());
       }
-      return clients.openWindow(event.notification.data);
+      return clients.openWindow(target);
     })
   );
 });

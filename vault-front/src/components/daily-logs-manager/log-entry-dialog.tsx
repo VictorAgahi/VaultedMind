@@ -22,8 +22,9 @@ import {
   Slider,
   InputAdornment,
   IconButton,
-  Paper,
   Chip,
+  ButtonBase,
+  LinearProgress,
 } from "@mui/material";
 import SearchIcon from "@mui/icons-material/Search";
 import CloseIcon from "@mui/icons-material/Close";
@@ -46,18 +47,18 @@ const StringFieldGridModal: React.FC<StringFieldGridModalProps> = ({
   fieldName,
 }) => {
   const [search, setSearch] = React.useState("");
-  
-
+  const theme = useTheme();
+  const fullScreen = useMediaQuery(theme.breakpoints.down("sm"));
 
   const filtered = options.filter(o => o.toLowerCase().includes(search.toLowerCase()));
 
   return (
-    <Dialog open={open} onClose={onClose} fullWidth maxWidth="sm" sx={{ "& .MuiDialog-paper": { borderRadius: 3, p: 1 } }}>
-      <DialogTitle sx={{ pb: 1, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-        <Typography variant="h6" sx={{ fontWeight: 700 }}>
+    <Dialog open={open} onClose={onClose} fullWidth maxWidth="sm" fullScreen={fullScreen}>
+      <DialogTitle sx={{ pb: 1, pt: { xs: "calc(12px + env(safe-area-inset-top, 0px))", sm: 2 }, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+        <Typography variant="h5" component="span">
           {fieldName}
         </Typography>
-        <IconButton onClick={onClose} size="small">
+        <IconButton onClick={onClose} aria-label="Fermer" sx={{ mr: -1 }}>
           <CloseIcon />
         </IconButton>
       </DialogTitle>
@@ -98,37 +99,31 @@ const StringFieldGridModal: React.FC<StringFieldGridModalProps> = ({
               display: "grid",
               gridTemplateColumns: "repeat(auto-fill, minmax(120px, 1fr))",
               gap: 1.5,
-              maxHeight: "40vh",
+              maxHeight: { xs: "none", sm: "40vh" },
               overflowY: "auto",
               p: 0.5
             }}
           >
             {filtered.map((opt, idx) => (
-              <Paper
+              <ButtonBase
                 key={idx}
-                variant="outlined"
                 onClick={() => {
                   onSelect(opt);
                   onClose();
                 }}
                 sx={{
+                  minHeight: 48,
                   p: 1.5,
-                  textAlign: "center",
-                  cursor: "pointer",
-                  borderRadius: 2,
-                  transition: "all 0.2s",
-                  borderColor: "divider",
-                  "&:hover": {
-                    borderColor: "primary.main",
-                    bgcolor: "primary.50",
-                    transform: "translateY(-2px)"
-                  }
+                  borderRadius: 3,
+                  bgcolor: "action.hover",
+                  transition: "background-color 160ms cubic-bezier(.2,0,0,1)",
+                  "&:hover": { bgcolor: "action.selected" },
                 }}
               >
                 <Typography variant="body2" sx={{ fontWeight: 500, wordBreak: "break-word" }}>
                   {opt}
                 </Typography>
-              </Paper>
+              </ButtonBase>
             ))}
             {filtered.length === 0 && search.trim() !== "" && (
               <Box sx={{ gridColumn: "1 / -1", textAlign: "center", py: 2 }}>
@@ -205,7 +200,7 @@ export const LogEntryDialog: React.FC<LogEntryDialogProps> = ({
   }, [activeFields]);
 
   const categories = Object.keys(groupedFields);
-  const steps = ["Résumé", ...categories];
+  const steps = ["Date et notes", ...categories];
 
   const handleNext = () => setActiveStep((prev) => prev + 1);
   const handleBack = () => setActiveStep((prev) => prev - 1);
@@ -216,7 +211,7 @@ export const LogEntryDialog: React.FC<LogEntryDialogProps> = ({
     if (field.fieldType === FieldType.BOOLEAN) {
       return (
         <Box key={field.id} sx={{ mb: 2 }}>
-          <Typography variant="body2" color="text.secondary" gutterBottom>
+          <Typography variant="subtitle2" gutterBottom>
             {field.name}
           </Typography>
           <ToggleButtonGroup
@@ -228,8 +223,8 @@ export const LogEntryDialog: React.FC<LogEntryDialogProps> = ({
             }}
             fullWidth
           >
-            <ToggleButton value="true" sx={{ fontWeight: 'bold' }}>Oui</ToggleButton>
-            <ToggleButton value="false" sx={{ fontWeight: 'bold' }}>Non</ToggleButton>
+            <ToggleButton value="true" sx={{ minHeight: 48, fontWeight: 700, borderRadius: 3 }}>Oui</ToggleButton>
+            <ToggleButton value="false" sx={{ minHeight: 48, fontWeight: 700, borderRadius: 3 }}>Non</ToggleButton>
           </ToggleButtonGroup>
         </Box>
       );
@@ -296,26 +291,41 @@ export const LogEntryDialog: React.FC<LogEntryDialogProps> = ({
 
     if (field.fieldType === FieldType.NUMBER && !isHourly) {
       if (field.min !== undefined && field.max !== undefined && field.min !== null && field.max !== null) {
-        const numValue = value === "" ? field.min : parseFloat(value);
+        // Tant que le curseur n'a pas été touché, rien n'est enregistré : on l'affiche comme "non renseigné",
+        // centré, pour ne pas suggérer une valeur (ni ancrer l'humeur au minimum).
+        const isUnset = value === "";
+        const step = field.max - field.min <= 10 ? 1 : 0.5;
+        const middle = field.min + Math.round((field.max - field.min) / 2 / step) * step;
+        const numValue = isUnset ? middle : parseFloat(value);
         return (
           <Box key={field.id} sx={{ mb: 2, px: 1 }}>
-            <Box sx={{ display: 'flex', flexDirection: 'row', justifyContent: 'space-between' }}>
-              <Typography variant="body2" color="text.secondary">
+            <Box sx={{ display: "flex", flexDirection: "row", justifyContent: "space-between", alignItems: "baseline" }}>
+              <Typography variant="subtitle2">
                 {field.name}
               </Typography>
-              <Typography variant="body2" sx={{ fontWeight: 'bold' }} color="primary">
-                {numValue}
+              <Typography sx={{ fontFamily: "var(--font-display)", fontWeight: 800, fontSize: "1.375rem", fontVariantNumeric: "tabular-nums", color: isUnset ? "text.disabled" : "primary.main" }}>
+                {isUnset ? "–" : numValue}
               </Typography>
             </Box>
             <Slider
               value={numValue}
               min={field.min}
               max={field.max}
-              step={0.5}
+              step={step}
+              marks={field.max - field.min <= 10}
               onChange={(_, val) => onFieldValueChange(field.id, val.toString())}
               valueLabelDisplay="auto"
-              sx={{ mt: 1 }}
+              aria-label={field.name}
+              sx={{ mt: 1, ...(isUnset && { "& .MuiSlider-thumb": { bgcolor: "background.paper", border: 2, borderColor: "divider" }, "& .MuiSlider-track": { display: "none" } }) }}
             />
+            {isUnset && (
+              <Typography variant="caption" color="text.secondary">Non renseigné. Touchez le curseur pour noter.</Typography>
+            )}
+            {!isUnset && (
+              <Button size="small" color="inherit" onClick={() => onFieldValueChange(field.id, "")} sx={{ minHeight: 32, px: 1, ml: -1, color: "text.secondary" }}>
+                Effacer
+              </Button>
+            )}
           </Box>
         );
       }
@@ -340,9 +350,8 @@ export const LogEntryDialog: React.FC<LogEntryDialogProps> = ({
           sx={{
             mt: 1.5,
             p: 2,
-            borderRadius: 2,
-            border: "1.5px dashed rgba(216, 24, 50, 0.4)",
-            bgcolor: "rgba(216, 24, 50, 0.03)",
+            borderRadius: 3,
+            bgcolor: "action.hover",
             display: "flex",
             flexDirection: "column",
             gap: 2,
@@ -356,7 +365,7 @@ export const LogEntryDialog: React.FC<LogEntryDialogProps> = ({
               <Box key={sf.id}>
                 <Box sx={{ display: "flex", alignItems: "center", gap: 0.75, mb: 1 }}>
                   <SubdirectoryArrowRightIcon sx={{ color: "primary.main", fontSize: 18 }} />
-                  <Typography variant="body2" sx={{ fontWeight: 700, color: "#142949" }}>
+                  <Typography variant="subtitle2">
                     {sf.name}
                   </Typography>
                 </Box>
@@ -376,15 +385,10 @@ export const LogEntryDialog: React.FC<LogEntryDialogProps> = ({
                             onSubFieldValueChange?.(f.id, sf.id, isSelected ? "" : choice);
                           }}
                           sx={{
+                            minHeight: 36,
                             fontWeight: isSelected ? 700 : 500,
-                            cursor: "pointer",
-                            transition: "all 0.15s ease-in-out",
                             bgcolor: isSelected ? "primary.main" : "background.paper",
-                            color: isSelected ? "#fff" : "text.primary",
-                            borderColor: isSelected ? "primary.main" : "rgba(0,0,0,0.15)",
-                            "&:hover": {
-                              bgcolor: isSelected ? "primary.dark" : "rgba(0,0,0,0.04)",
-                            }
+                            borderColor: isSelected ? "primary.main" : "divider",
                           }}
                         />
                       );
@@ -399,7 +403,7 @@ export const LogEntryDialog: React.FC<LogEntryDialogProps> = ({
                   value={currentSubVal}
                   onChange={(e) => onSubFieldValueChange?.(f.id, sf.id, e.target.value)}
                   variant="outlined"
-                  sx={{ bgcolor: "background.paper" }}
+                  margin="none"
                 />
               </Box>
             );
@@ -478,7 +482,7 @@ export const LogEntryDialog: React.FC<LogEntryDialogProps> = ({
       maxWidth="md" 
       fullScreen={fullScreen}
     >
-      <form onSubmit={(e) => {
+      <form style={{ display: "flex", flexDirection: "column", height: "100%", minHeight: 0 }} onSubmit={(e) => {
         e.preventDefault();
         if (activeStep === steps.length - 1) {
           onSubmit(e);
@@ -486,10 +490,28 @@ export const LogEntryDialog: React.FC<LogEntryDialogProps> = ({
           handleNext();
         }
       }}>
-        <DialogTitle sx={{ pt: { xs: 'calc(16px + env(safe-area-inset-top))', sm: 2 } }}>
-          {steps[activeStep]}
+        <DialogTitle sx={{ pt: { xs: "calc(12px + env(safe-area-inset-top, 0px))", sm: 2 }, pb: 1.5, display: "grid", gap: 1.5 }}>
+          <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 1 }}>
+            <Box sx={{ minWidth: 0 }}>
+              <Typography variant="caption" color="text.secondary" sx={{ display: "block", fontVariantNumeric: "tabular-nums" }}>
+                Étape {activeStep + 1} sur {steps.length}
+              </Typography>
+              <Typography variant="h4" component="span" noWrap sx={{ display: "block" }}>
+                {steps[activeStep]}
+              </Typography>
+            </Box>
+            <IconButton onClick={onClose} aria-label="Fermer" sx={{ mr: -1 }}>
+              <CloseIcon />
+            </IconButton>
+          </Box>
+          <LinearProgress
+            variant="determinate"
+            value={((activeStep + 1) / steps.length) * 100}
+            aria-label="Progression de la saisie"
+            sx={{ display: { xs: "block", sm: "none" }, height: 4, borderRadius: 2, bgcolor: "action.hover" }}
+          />
         </DialogTitle>
-        <DialogContent dividers>
+        <DialogContent sx={{ pt: "8px !important" }}>
           
           <Stepper activeStep={activeStep} alternativeLabel sx={{ mb: 4, display: { xs: 'none', sm: 'flex' } }}>
             {steps.map((label) => (
@@ -499,17 +521,7 @@ export const LogEntryDialog: React.FC<LogEntryDialogProps> = ({
             ))}
           </Stepper>
 
-          {/* Fallback simple stepper for mobile */}
-          <Box sx={{ display: { xs: 'flex', sm: 'none' }, justifyContent: 'space-between', mb: 3 }}>
-            <Typography variant="body2" color="text.secondary">
-              Étape {activeStep + 1} / {steps.length}
-            </Typography>
-            <Typography variant="body2" sx={{ fontWeight: 'bold' }}>
-              {steps[activeStep]}
-            </Typography>
-          </Box>
-
-          <Box sx={{ minHeight: { xs: '50vh', sm: '40vh' } }}>
+          <Box sx={{ minHeight: { xs: 0, sm: "40vh" } }}>
             {activeStep === 0 ? (
               <Box sx={{ display: "flex", flexDirection: "column", gap: 3 }}>
                 <TextField
@@ -549,26 +561,32 @@ export const LogEntryDialog: React.FC<LogEntryDialogProps> = ({
           </Box>
 
         </DialogContent>
-        <DialogActions sx={{ p: 2, pb: { xs: 'calc(16px + env(safe-area-inset-bottom))', sm: 2 }, justifyContent: 'space-between' }}>
-          <Button onClick={onClose} color="inherit">Annuler</Button>
-          <Box>
-            <Button
-              disabled={activeStep === 0}
-              onClick={handleBack}
-              sx={{ mr: 1 }}
-            >
-              Précédent
+        <DialogActions
+          sx={{
+            p: 2,
+            pb: { xs: "calc(16px + env(safe-area-inset-bottom, 0px))", sm: 2 },
+            gap: 1,
+            borderTop: 1,
+            borderColor: "divider",
+            position: { xs: "sticky", sm: "static" },
+            bottom: 0,
+            bgcolor: "background.paper",
+          }}
+        >
+          {activeStep === 0 ? (
+            <Button onClick={onClose} color="inherit" sx={{ flex: { xs: 1, sm: "none" } }}>Annuler</Button>
+          ) : (
+            <Button onClick={handleBack} color="inherit" sx={{ flex: { xs: 1, sm: "none" } }}>Précédent</Button>
+          )}
+          {activeStep === steps.length - 1 ? (
+            <Button type="submit" variant="contained" size="large" disabled={submitting} sx={{ flex: { xs: 2, sm: "none" } }}>
+              {submitting ? "Enregistrement..." : "Enregistrer"}
             </Button>
-            {activeStep === steps.length - 1 ? (
-              <Button type="submit" variant="contained" disabled={submitting}>
-                {submitting ? "Enregistrement..." : "Enregistrer"}
-              </Button>
-            ) : (
-              <Button type="submit" variant="contained">
-                Suivant
-              </Button>
-            )}
-          </Box>
+          ) : (
+            <Button type="submit" variant="contained" size="large" sx={{ flex: { xs: 2, sm: "none" } }}>
+              Suivant
+            </Button>
+          )}
         </DialogActions>
       </form>
     </Dialog>

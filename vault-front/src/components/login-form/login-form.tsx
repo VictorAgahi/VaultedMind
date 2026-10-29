@@ -16,7 +16,6 @@ import {
 } from "@mui/material";
 import { useAuth } from "@/context/auth-context";
 import { ApiError, LoginCredentials } from "@/types";
-import Image from "next/image";
 import Link from "next/link";
 
 export const LoginForm: React.FC = () => {
@@ -49,20 +48,16 @@ export const LoginForm: React.FC = () => {
 
   return (
     <Paper
-      elevation={0}
       sx={{
-        p: { xs: 3, sm: 4 },
+        p: { xs: 2.5, sm: 4 },
         width: "100%",
         maxWidth: 400,
+        mx: "auto",
         borderRadius: 4,
-        boxShadow: "0 10px 25px rgba(0, 0, 0, 0.05)"
       }}
     >
       <Box component="form" onSubmit={authenticateUser} noValidate>
-        <Box sx={{ display: "flex", justifyContent: "center", mb: 3 }}>
-          <Image src="/assets/logo.png" alt="VaultedMind Logo" width={64} height={64} priority />
-        </Box>
-        <Typography variant="h4" component="h1" gutterBottom align="center" sx={{ fontWeight: 700, fontSize: { xs: "1.6rem", sm: "2.125rem" } }}>
+        <Typography variant="h2" component="h1" gutterBottom align="center">
           Bon retour
         </Typography>
         <Typography variant="body1" color="text.secondary" align="center" sx={{ mb: 4 }}>
@@ -113,7 +108,7 @@ export const LoginForm: React.FC = () => {
             fullWidth
             size="large"
             disabled={isLoggingIn}
-            sx={{ py: 1.5, borderRadius: 2, fontSize: "1.1rem" }}
+            
           >
             {isLoggingIn ? <CircularProgress size={24} color="inherit" /> : "Se connecter"}
           </Button>

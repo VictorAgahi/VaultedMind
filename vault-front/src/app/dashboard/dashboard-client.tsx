@@ -4,7 +4,6 @@ import {
   Box,
   Typography,
   Container,
-  Grid,
   CircularProgress,
   Stack,
 } from "@mui/material";
@@ -12,21 +11,17 @@ import { DailyLogsManager } from "@/components/daily-logs-manager/daily-logs-man
 import { LatestAIReviewCard } from "@/components/dashboard/latest-ai-review-card";
 import { Navbar } from "@/components/navbar/navbar";
 import { useAuth } from "@/context/auth-context";
+import { useCurrentTime } from "@/utils/use-current-time";
+
+const greeting = (hour: number) => (hour >= 18 || hour < 5 ? "Bonsoir" : "Bonjour");
 
 export default function DashboardPage() {
   const { user, loading } = useAuth();
+  const now = useCurrentTime();
 
   if (loading) {
     return (
-      <Stack
-        sx={{
-          height: "100vh",
-          bgcolor: "#ede5d9",
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-        }}
-      >
+      <Stack sx={{ height: "100vh", alignItems: "center", justifyContent: "center" }}>
         <CircularProgress />
       </Stack>
     );
@@ -35,27 +30,20 @@ export default function DashboardPage() {
   if (!user) return null;
 
   return (
-    <Box sx={{ minHeight: "100vh", bgcolor: "#ede5d9" }}>
+    <Box sx={{ minHeight: "100vh" }}>
       <Navbar />
 
-      <Container maxWidth="lg" sx={{ py: { xs: 4, md: 8 }, px: { xs: 2, sm: 3 } }}>
-        <Box sx={{ mb: 6 }}>
-          <Typography variant="h3" component="h1" gutterBottom sx={{ fontWeight: 800, fontSize: { xs: "1.8rem", sm: "2.5rem", md: "3rem" } }}>
-            Tableau de bord
-          </Typography>
-          <Typography variant="h6" color="text.secondary">
-            Bienvenue{user.firstName ? `, ${user.firstName}` : ""}.
+      <Container maxWidth="lg" sx={{ py: { xs: 2, md: 5 }, px: { xs: 2, md: 3 } }}>
+        <Box sx={{ mb: { xs: 2, md: 3 } }}>
+          <Typography suppressHydrationWarning variant="h1" sx={{ fontSize: { xs: "1.75rem", md: "2.25rem" } }}>
+            {greeting(now ? new Date(now).getHours() : 12)}{user.firstName ? `, ${user.firstName}` : ""}
           </Typography>
         </Box>
 
-        {/* Latest AI Review Card */}
-        <LatestAIReviewCard />
-
-        <Grid container spacing={0}>
-          <Grid size={{ xs: 12 }}>
-            <DailyLogsManager />
-          </Grid>
-        </Grid>
+        <Box sx={{ display: "grid", gap: 1.5 }}>
+          <DailyLogsManager />
+          <LatestAIReviewCard />
+        </Box>
       </Container>
     </Box>
   );

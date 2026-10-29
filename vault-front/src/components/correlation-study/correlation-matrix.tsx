@@ -1,7 +1,8 @@
 "use client";
 
 import React from "react";
-import { Box, Typography, Tooltip as MuiTooltip } from "@mui/material";
+import { Box, Typography, Tooltip as MuiTooltip, ButtonBase } from "@mui/material";
+import { getCorrelationTextColor } from "@/utils/math";
 
 interface CorrelationMatrixProps {
   measurableFields: { id: string, name: string }[];
@@ -100,27 +101,24 @@ export const CorrelationMatrix: React.FC<CorrelationMatrixProps> = ({
               if (!cell) return <Box key={`empty-${colField.id}`} />;
               return (
                 <MuiTooltip key={`${cell.xId}-${cell.yId}`} title={`${cell.x} vs ${cell.y} : ${cell.value.toFixed(2)}`}>
-                  <Box
+                  <ButtonBase
                     onClick={() => onCellClick(cell)}
+                    aria-label={`${cell.x} et ${cell.y} : ${cell.value.toFixed(2)}`}
+                    aria-pressed={activeFieldA === cell.xId && activeFieldB === cell.yId}
                     sx={{
                       aspectRatio: "1/1",
                       bgcolor: cell.color,
-                      borderRadius: fieldCount <= 6 ? 2 : 1,
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "center",
-                      cursor: "pointer",
-                      transition: "all 0.2s",
-                      border: (activeFieldA === cell.xId && activeFieldB === cell.yId) ? "3px solid #142949" : "none",
-                      boxShadow: (activeFieldA === cell.xId && activeFieldB === cell.yId) ? "0 4px 12px rgba(0,0,0,0.2)" : "none",
-                      transform: (activeFieldA === cell.xId && activeFieldB === cell.yId) ? "scale(1.05)" : "none",
-                      "&:hover": { transform: "scale(1.05)", zIndex: 1, boxShadow: "0 4px 12px rgba(0,0,0,0.1)" }
+                      borderRadius: 1,
+                      outline: (activeFieldA === cell.xId && activeFieldB === cell.yId) ? "2px solid var(--mui-palette-text-primary)" : "none",
+                      outlineOffset: 2,
+                      transition: "transform 160ms cubic-bezier(.2,0,0,1)",
+                      "&:hover": { transform: "scale(1.06)", zIndex: 1 }
                     }}
                   >
-                    <Typography variant="caption" sx={{ color: Math.abs(cell.value) > 0.5 ? "white" : "text.primary", fontWeight: 800, fontSize: { xs: cellFontSize, sm: "0.7rem" }, whiteSpace: "nowrap", lineHeight: 1 }}>
-                      {cell.value.toFixed(1)}
+                    <Typography component="span" sx={{ color: getCorrelationTextColor(cell.value), fontWeight: 700, fontSize: { xs: cellFontSize, sm: "0.75rem" }, whiteSpace: "nowrap", lineHeight: 1, fontVariantNumeric: "tabular-nums" }}>
+                      {cell.value.toFixed(1).replace(".", ",")}
                     </Typography>
-                  </Box>
+                  </ButtonBase>
                 </MuiTooltip>
               );
             })}

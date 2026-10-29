@@ -1,24 +1,23 @@
 "use client";
 
-import React, { useState, useMemo, useCallback, useRef, useEffect } from "react";
+import React, { useState, useMemo, useCallback } from "react";
 import {
   Box,
   Typography,
   Paper,
   Grid,
-  useTheme,
-  useMediaQuery,
   MenuProps,
   FormControl,
   InputLabel,
   Select,
   MenuItem
 } from "@mui/material";
-import { ResponsiveContainer } from "recharts";
+import { ChartContainer } from "@/components/analytics/chart-container";
 import { CustomField, DailyLog, FieldType } from "@/types";
 import { calculatePearsonCorrelation, getCorrelationColor } from "@/utils/math";
 import { formatHourlyValue } from "@/utils/time-converter";
 
+import { CorrelationRanking, CorrelationLegend } from "./correlation-ranking";
 import { CorrelationMatrix } from "./correlation-matrix";
 import { CorrelationDetail } from "./correlation-detail";
 import { TemporalComparison } from "./temporal-comparison";
@@ -32,6 +31,7 @@ interface ActiveCellInfo {
   color: string;
   xId: string;
   yId: string;
+  n: number;
 }
 
 const getVal = (log: DailyLog, fieldId: string, fields: CustomField[], mappings: Record<string, Record<string, number>>) => {
@@ -58,62 +58,6 @@ const getInterpretation = (val: number, nameA: string, nameB: string) => {
   if (val < -0.7) return `Forte relation négative : quand "${nameA}" augmente, "${nameB}" diminue fortement.`;
   if (val < -0.4) return `Relation négative modérée : quand "${nameA}" augmente, "${nameB}" a tendance à diminuer.`;
   return `Une relation légère détectée entre ces deux variables.`;
-};
-
-// --- Local ChartContainer ---
-
-interface ChartContainerProps {
-  children: React.ReactNode;
-  aspect: number;
-  mobileAspect?: number;
-  minHeight: number;
-  fullHeight?: boolean;
-}
-
-const ChartContainer: React.FC<ChartContainerProps> = ({ children, aspect, mobileAspect, minHeight, fullHeight }) => {
-  const ref = useRef<HTMLDivElement>(null);
-  const [width, setWidth] = useState(0);
-  const theme = useTheme();
-  const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
-
-  useEffect(() => {
-    if (!ref.current) return;
-    const observeTarget = ref.current;
-    const resizeObserver = new ResizeObserver((entries) => {
-      if (entries[0]) {
-        const newWidth = Math.floor(entries[0].contentRect.width);
-        if (newWidth > 0) setWidth(newWidth);
-      }
-    });
-    resizeObserver.observe(observeTarget);
-    return () => resizeObserver.unobserve(observeTarget);
-  }, []);
-
-  const finalAspect = isMobile && mobileAspect ? mobileAspect : aspect;
-
-  return (
-    <Box ref={ref} sx={{
-      width: "100%",
-      minWidth: 0,
-      minHeight,
-      flexGrow: fullHeight ? 1 : 0,
-      height: fullHeight && !isMobile ? "100%" : "auto",
-      display: fullHeight ? "flex" : "block",
-      flexDirection: "column",
-      position: "relative"
-    }}>
-      {width > 0 && (
-        <ResponsiveContainer
-          width="100%"
-          height={fullHeight && !isMobile ? "100%" : undefined}
-          aspect={fullHeight && !isMobile ? undefined : finalAspect}
-          debounce={50}
-        >
-          {children as React.ReactElement}
-        </ResponsiveContainer>
-      )}
-    </Box>
-  );
 };
 
 // --- Main Component ---
@@ -181,7 +125,8 @@ export const CorrelationStudy: React.FC<CorrelationStudyProps> = ({ fields, logs
           xId: fa.id,
           yId: fb.id,
           value: correlation,
-          color: getCorrelationColor(correlation)
+          color: getCorrelationColor(correlation),
+          n: pairs.length
         });
       });
     });
@@ -237,20 +182,24 @@ export const CorrelationStudy: React.FC<CorrelationStudyProps> = ({ fields, logs
   }, [scatterData]);
 
   const refinedPaperStyle = {
-    p: { xs: 2, md: 4 },
-    borderRadius: 6,
-    border: "1px solid rgba(0,0,0,0.05)",
-    boxShadow: "0 10px 15px -3px rgba(0,0,0,0.05)",
-    bgcolor: "background.paper",
+    p: { xs: 2, md: 3 },
+    borderRadius: 4,
     display: "flex",
     flexDirection: "column"
   } as const;
 
+  const detailRef = React.useRef<HTMLDivElement>(null);
+  const selectPair = (xId: string, yId: string, scroll: boolean) => {
+    setSelectedFieldA(xId);
+    setSelectedFieldB(yId);
+    if (scroll) detailRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+  };
+
   if (measurableFields.length < 2) {
     return (
-      <Box sx={{ mt: 4 }}>
-        <Paper elevation={0} sx={{ p: 6, borderRadius: 6, textAlign: "center", border: "1px solid rgba(0,0,0,0.05)" }}>
-          <Typography variant="h6" color="text.secondary" sx={{ fontWeight: 700 }}>
+      <Box>
+        <Paper sx={{ p: { xs: 3, md: 6 }, borderRadius: 4, textAlign: "center" }}>
+          <Typography variant="h6" color="text.secondary">
             Pas assez de données pour l&apos;étude de corrélation
           </Typography>
           <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
@@ -262,14 +211,37 @@ export const CorrelationStudy: React.FC<CorrelationStudyProps> = ({ fields, logs
   }
 
   return (
-    <Box sx={{ mt: 4, position: "relative" }}>
-      <Grid container spacing={{ xs: 2, md: 4 }}>
+    <Box sx={{ position: "relative" }}>
+      <Grid container spacing={{ xs: 1.5, md: 3 }}>
         <Grid size={{ xs: 12, lg: 7 }}>
-          <Paper elevation={0} sx={{ ...refinedPaperStyle, position: "relative" }}>
-            <Box sx={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: 2, mb: 4 }}>
-              <Typography variant="h6" sx={{ fontWeight: 800 }}>Matrice de Corrélation</Typography>
-              <Box sx={{ flexGrow: 1 }} />
-              <FormControl size="small" sx={{ minWidth: 140 }}>
+          <Paper sx={{ ...refinedPaperStyle, gap: 2 }}>
+            <Box>
+              <Typography variant="h5" component="h2">Liens entre vos indicateurs</Typography>
+              <Typography variant="body2" color="text.secondary" sx={{ mt: 0.25 }}>
+                Touchez une paire pour voir le détail.
+              </Typography>
+            </Box>
+            <CorrelationLegend />
+            <Box sx={{ display: { xs: "block", md: "none" } }}>
+              <CorrelationRanking
+                matrixData={matrixData}
+                fieldOrder={measurableFields.map(f => f.id)}
+                activeFieldA={activeFieldA}
+                activeFieldB={activeFieldB}
+                onSelect={(cell) => selectPair(cell.xId, cell.yId, true)}
+              />
+            </Box>
+            <Box sx={{ display: { xs: "none", md: "block" } }}>
+              <CorrelationMatrix
+                measurableFields={measurableFields}
+                matrixData={matrixData}
+                activeFieldA={activeFieldA}
+                activeFieldB={activeFieldB}
+                onCellClick={(cell) => selectPair(cell.xId, cell.yId, false)}
+              />
+            </Box>
+            <Box sx={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 1.5 }}>
+              <FormControl size="small">
                 <InputLabel>Variable X</InputLabel>
                 <Select
                   value={activeFieldA}
@@ -279,7 +251,7 @@ export const CorrelationStudy: React.FC<CorrelationStudyProps> = ({ fields, logs
                   {measurableFields.map(f => <MenuItem key={f.id} value={f.id}>{f.name}</MenuItem>)}
                 </Select>
               </FormControl>
-              <FormControl size="small" sx={{ minWidth: 140 }}>
+              <FormControl size="small">
                 <InputLabel>Variable Y</InputLabel>
                 <Select
                   value={activeFieldB}
@@ -290,21 +262,11 @@ export const CorrelationStudy: React.FC<CorrelationStudyProps> = ({ fields, logs
                 </Select>
               </FormControl>
             </Box>
-            <CorrelationMatrix
-              measurableFields={measurableFields}
-              matrixData={matrixData}
-              activeFieldA={activeFieldA}
-              activeFieldB={activeFieldB}
-              onCellClick={(cell) => {
-                setSelectedFieldA(cell.xId);
-                setSelectedFieldB(cell.yId);
-              }}
-            />
           </Paper>
         </Grid>
 
-        <Grid size={{ xs: 12, lg: 5 }}>
-          <Paper elevation={0} sx={{ ...refinedPaperStyle, height: "100%", position: "relative", overflow: "hidden" }}>
+        <Grid size={{ xs: 12, lg: 5 }} ref={detailRef} sx={{ scrollMarginTop: 16 }}>
+          <Paper sx={{ ...refinedPaperStyle, height: "100%", position: "relative", overflow: "hidden" }}>
             <CorrelationDetail
               activeCell={matrixData.find(c => c.xId === activeFieldA && c.yId === activeFieldB) || null}
               onClose={() => { }} // Disabled close since we always show a cell

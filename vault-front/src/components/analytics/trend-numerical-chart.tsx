@@ -2,19 +2,14 @@
 
 import React from "react";
 import {
-  Box,
-  Typography,
-  Paper,
   FormControl,
   InputLabel,
   Select,
   MenuItem,
-  Tooltip as MuiTooltip,
   MenuProps,
   useTheme,
   useMediaQuery,
 } from "@mui/material";
-import InfoIcon from "@mui/icons-material/Info";
 
 import {
   AreaChart,
@@ -23,8 +18,10 @@ import {
   YAxis,
   CartesianGrid,
   Tooltip,
-  Legend,
+  ReferenceLine,
 } from "recharts";
+import { ChartCard, ChartEmpty } from "./chart-card";
+import { axisTick, chartColors, chartTooltipProps, shortDateTick } from "@/theme/chart-tokens";
 import { CustomField, FieldType } from "@/types";
 import { formatHourlyValue } from "@/utils/time-converter";
 
@@ -70,102 +67,88 @@ export const TrendNumericalChart: React.FC<TrendNumericalChartProps> = ({
     currentField?.fieldType === FieldType.NUMBER && (currentField.optionsOrder || []).includes("isHourly"),
     [currentField]);
 
+  const gradientId = `trendFill-${React.useId().replace(/:/g, "")}`;
+  const values = data.map(d => d.value).filter((v): v is number => v !== null && v !== undefined);
+  const sparse = values.length < 15;
+  const average = values.length ? values.reduce((a, b) => a + b, 0) / values.length : null;
+  const isBoolean = currentField?.fieldType === FieldType.BOOLEAN;
+  const formatValue = (val: number | string) => {
+    if (isBoolean) return Number(val) === 1 ? "Oui" : "Non";
+    if (isHourly) return formatHourlyValue(val.toString());
+    return typeof val === "number" ? String(Math.round(val * 10) / 10).replace(".", ",") : val;
+  };
+
   return (
-    <Paper elevation={0} sx={{ 
-      borderRadius: 6, 
-      border: "1px solid rgba(0,0,0,0.05)", 
-      boxShadow: "0 10px 15px -3px rgba(0,0,0,0.05)",
-      height: "100%",
-      display: "flex",
-      flexDirection: "column",
-      overflow: "hidden"
-    }}>
-      <Box sx={{ p: { xs: 2, md: 4 }, pb: 0 }}>
-        <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", mb: 4, flexWrap: "wrap", gap: 2 }}>
-          <Box>
-            <Box sx={{ display: "flex", alignItems: "center", gap: 1, mb: 1 }}>
-              <Typography variant="h6" sx={{ fontWeight: 800 }}>Tendances</Typography>
-              <MuiTooltip title="Observez les variations de vos indicateurs numériques ou binaires.">
-                <InfoIcon sx={{ fontSize: 18, color: "text.secondary", cursor: "help" }} />
-              </MuiTooltip>
-            </Box>
-            <Typography variant="body2" color="text.secondary">Analyse temporelle des valeurs.</Typography>
-          </Box>
-          <FormControl fullWidth size="small" sx={{ mb: 4 }}>
-            <InputLabel>Champ numérique</InputLabel>
-            <Select
-              value={selectedField}
-              label="Champ numérique"
-              onChange={(e) => setSelectedField(e.target.value)}
-              sx={{ borderRadius: 3 }}
-              MenuProps={menuProps}
-            >
-              {numberAndBoolFields.map(f => <MenuItem key={f.id} value={f.id}>{f.name}</MenuItem>)}
-            </Select>
-          </FormControl>
-        </Box>
-      </Box>
- 
-      <Box sx={{ flexGrow: 1 }}>
-        <ChartContainer aspect={1.5} mobileAspect={1.0} minHeight={350} fullHeight>
-          <AreaChart data={data} margin={isMobile ? { top: 15, right: 8, left: 0, bottom: 10 } : { top: 35, right: 20, left: 20, bottom: 20 }}>
+    <ChartCard
+      title="Tendances"
+      subtitle={average !== null && !isBoolean ? `Moyenne sur la période : ${formatValue(average)}` : "Variations de vos indicateurs numériques ou oui/non."}
+      help="La ligne pointillée indique la moyenne de la période sélectionnée."
+      controls={
+        <FormControl fullWidth size="small">
+          <InputLabel>Champ numérique</InputLabel>
+          <Select
+            value={selectedField}
+            label="Champ numérique"
+            onChange={(e) => setSelectedField(e.target.value)}
+            MenuProps={menuProps}
+          >
+            {numberAndBoolFields.map(f => <MenuItem key={f.id} value={f.id}>{f.name}</MenuItem>)}
+          </Select>
+        </FormControl>
+      }
+    >
+      {values.length === 0 ? (
+        <ChartEmpty>Aucune valeur sur cette période.</ChartEmpty>
+      ) : (
+        <ChartContainer aspect={2.6} minHeight={280} fullHeight>
+          <AreaChart data={data} margin={isMobile ? { top: 12, right: 12, left: 0, bottom: 0 } : { top: 16, right: 24, left: 8, bottom: 8 }}>
             <defs>
-              <linearGradient id="colorValue" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="5%" stopColor="#10b981" stopOpacity={0.3} />
-                <stop offset="95%" stopColor="#10b981" stopOpacity={0} />
+              <linearGradient id={gradientId} x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stopColor={chartColors.primary} stopOpacity={0.28} />
+                <stop offset="100%" stopColor={chartColors.primary} stopOpacity={0} />
               </linearGradient>
             </defs>
-            <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="rgba(0,0,0,0.05)" />
-            <XAxis 
-              dataKey="dateDisplay" 
-              axisLine={false} 
-              tickLine={false} 
-              tick={{ fontSize: 10, fill: "#666", fontWeight: 600 }} 
-              minTickGap={20}
-              padding={{ left: 10, right: 10 }}
+            <CartesianGrid vertical={false} stroke={chartColors.grid} />
+            <XAxis
+              dataKey="dateDisplay"
+            tickFormatter={(v) => shortDateTick(v, isMobile)}
+              axisLine={{ stroke: chartColors.axis }}
+              tickLine={false}
+              tick={axisTick}
+              minTickGap={isMobile ? 36 : 24}
+              padding={{ left: 8, right: 8 }}
             />
             <YAxis
               axisLine={false}
               tickLine={false}
-              tick={{ fontSize: 10, fill: "#666", fontWeight: 600 }}
-              tickFormatter={(val) => {
-                if (currentField?.fieldType === FieldType.BOOLEAN) {
-                  return Number(val) === 1 ? "Oui" : "Non";
-                }
-                if (isHourly) {
-                  return formatHourlyValue(val.toString());
-                }
-                return val;
-              }}
+              tick={axisTick}
+              tickCount={4}
+              tickFormatter={(val) => formatValue(val)}
               width={isMobile ? 40 : 50}
             />
             <Tooltip
-              contentStyle={{ borderRadius: 12, border: "none", boxShadow: "0 10px 15px -3px rgba(0,0,0,0.1)" }}
+              {...chartTooltipProps}
               // eslint-disable-next-line @typescript-eslint/no-explicit-any
-              formatter={(value: any) => {
-                if (currentField?.fieldType === FieldType.BOOLEAN) {
-                  return [Number(value) === 1 ? "Oui" : "Non", "Valeur"];
-                }
-                if (isHourly) {
-                  return [formatHourlyValue((value ?? "").toString()), "Valeur"];
-                }
-                return [value, "Valeur"];
-              }}
+              formatter={(value: any) => [formatValue(value ?? ""), currentField?.name || "Valeur"]}
             />
-            <Legend verticalAlign="top" height={50} />
+            {average !== null && !isBoolean && (
+              <ReferenceLine y={average} stroke={chartColors.tick} strokeDasharray="4 4" strokeWidth={1} />
+            )}
             <Area
-              type="monotone"
+              type={sparse ? "linear" : "monotone"}
               dataKey="value"
-              stroke="#10b981"
-              strokeWidth={3}
+              stroke={chartColors.primary}
+              strokeWidth={2}
               fillOpacity={1}
-              fill="url(#colorValue)"
+              fill={`url(#${gradientId})`}
+              dot={values.length <= 3 ? { r: 3, fill: chartColors.primary, stroke: chartColors.surface, strokeWidth: 1.5 } : false}
               name={currentField?.name || "Valeur"}
+              activeDot={{ r: 5, strokeWidth: 2, stroke: chartColors.surface, fill: chartColors.primary }}
               connectNulls
             />
           </AreaChart>
         </ChartContainer>
-      </Box>
-    </Paper>
+      )}
+    </ChartCard>
   );
 };

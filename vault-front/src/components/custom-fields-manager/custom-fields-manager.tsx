@@ -72,6 +72,13 @@ const customFieldsReducer = (state: CustomFieldsState, action: CustomFieldsActio
   }
 };
 
+const FIELD_TYPE_LABELS: Record<string, string> = {
+  [FieldType.NUMBER]: "Nombre",
+  [FieldType.BOOLEAN]: "Oui / Non",
+  [FieldType.STRING]: "Texte",
+  [FieldType.DATE]: "Date",
+};
+
 export const CustomFieldsManager: React.FC = () => {
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down("sm"));
@@ -217,122 +224,91 @@ export const CustomFieldsManager: React.FC = () => {
   };
 
   return (
-    <Paper sx={{ p: { xs: 2, md: 4 }, borderRadius: 4 }}>
+    <Paper sx={{ p: { xs: 2, md: 3 }, borderRadius: 4 }}>
       {loading && fields.length === 0 ? (
         <Box sx={{ display: "flex", justifyContent: "center", p: 4 }}><CircularProgress /></Box>
       ) : (
         <>
-          <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", mb: 4, flexWrap: "wrap", gap: 2 }}>
-            <Box sx={{ display: "flex", alignItems: "center", gap: 2, flexWrap: "wrap" }}>
-              <Typography variant="h6" sx={{ fontWeight: 800 }}>Champs Personnalisés</Typography>
+          <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", mb: 2, flexWrap: "wrap", gap: 1.5 }}>
+            <Typography variant="h5" component="h2">Mes champs</Typography>
+            <Box sx={{ display: "flex", gap: 1, alignItems: "center", width: { xs: "100%", sm: "auto" } }}>
               <Tabs
                 value={fieldsTab}
                 onChange={(_, v) => setFieldsTab(v)}
+                aria-label="Affichage des champs"
                 sx={{
+                  display: { xs: "none", md: "flex" },
                   minHeight: 36,
-                  '& .MuiTab-root': { minHeight: 36, py: 0.5, px: 2, fontWeight: 700, fontSize: '0.8rem', borderRadius: 2, textTransform: "none" },
-                  '& .Mui-selected': { color: '#6366f1 !important', bgcolor: 'rgba(99, 102, 241, 0.08)' },
-                  '& .MuiTabs-indicator': { display: 'none' }
+                  p: 0.375,
+                  borderRadius: 999,
+                  bgcolor: "action.hover",
+                  "& .MuiTabs-indicator": { display: "none" },
+                  "& .MuiTab-root": { minHeight: 32, minWidth: 0, px: 1.75, py: 0.5, borderRadius: 999, fontSize: "0.8125rem", color: "text.secondary" },
+                  "& .MuiTab-root.Mui-selected": { bgcolor: "background.paper", color: "text.primary", boxShadow: "0 1px 2px rgba(15, 20, 19, 0.12)" },
                 }}
               >
                 <Tab label="Cartes" value="chips" icon={<GridViewIcon sx={{ fontSize: 16 }} />} iconPosition="start" />
                 <Tab label="Tableau" value="list" icon={<TableRowsIcon sx={{ fontSize: 16 }} />} iconPosition="start" />
               </Tabs>
+              <Button
+                variant="contained"
+                startIcon={<AddIcon />}
+                onClick={() => handleOpen()}
+                sx={{ flex: { xs: 1, sm: "none" } }}
+              >
+                Nouveau champ
+              </Button>
             </Box>
-            <Button 
-              variant="contained" 
-              startIcon={<AddIcon />} 
-              onClick={() => handleOpen()}
-              sx={{ 
-                borderRadius: 2,
-                width: { xs: "100%", sm: "auto" }
-              }}
-            >
-              Nouveau Champ
-            </Button>
           </Box>
 
           {error && <Alert severity="error" sx={{ mb: 3 }} onClose={() => dispatch({ type: "SET_ERROR", error: null })}>{error}</Alert>}
 
-          {fieldsTab === "chips" ? (
-            <Grid container spacing={2}>
+          {fieldsTab === "chips" || isMobile ? (
+            <Grid container spacing={1.5}>
               {fields.map((field) => {
-                let color = "#6366f1";
-                let bgColor = "rgba(99, 102, 241, 0.04)";
-                let borderColor = "rgba(99, 102, 241, 0.12)";
-                
-                if (field.fieldType === FieldType.BOOLEAN) {
-                  color = "#10b981";
-                  bgColor = "rgba(16, 185, 129, 0.04)";
-                  borderColor = "rgba(16, 185, 129, 0.12)";
-                } else if (field.fieldType === FieldType.STRING) {
-                  color = "#8b5cf6";
-                  bgColor = "rgba(139, 92, 246, 0.04)";
-                  borderColor = "rgba(139, 92, 246, 0.12)";
-                }
-
                 return (
                   <Grid size={{ xs: 12, sm: 6, md: 4 }} key={field.id}>
                     <Paper
-                      elevation={0}
                       sx={{
-                        p: 2.5,
-                        borderRadius: 4,
-                        border: "1px solid",
-                        borderColor: borderColor,
-                        bgcolor: field.isActive ? "background.paper" : "rgba(0,0,0,0.02)",
-                        transition: "all 0.2s ease-in-out",
-                        opacity: field.isActive ? 1 : 0.75,
-                        boxShadow: "0 4px 6px -1px rgba(0,0,0,0.01)",
-                        '&:hover': {
-                          transform: "translateY(-2px)",
-                          boxShadow: "0 10px 15px -3px rgba(0,0,0,0.04)",
-                          borderColor: color
-                        }
+                        p: 2,
+                        borderRadius: 3,
+                        bgcolor: "action.hover",
+                        opacity: field.isActive ? 1 : 0.6,
+                        display: "grid",
+                        gap: 1,
                       }}
                     >
-                      <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", mb: 2 }}>
-                        <Box>
-                          <Typography variant="subtitle1" sx={{ fontWeight: 800, color: "#142949" }}>
+                      <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 1 }}>
+                        <Box sx={{ minWidth: 0 }}>
+                          <Typography variant="subtitle1" sx={{ overflowWrap: "anywhere" }}>
                             {field.name}
                           </Typography>
                           {field.subFields && field.subFields.length > 0 && (
-                            <Typography variant="caption" sx={{ color: "primary.main", fontWeight: 700, display: "block" }}>
-                              {field.subFields.length} sous-champ(s) conditionnel(s)
+                            <Typography variant="caption" color="text.secondary" sx={{ display: "block" }}>
+                              {field.subFields.length} sous-champ{field.subFields.length > 1 ? "s" : ""} conditionnel{field.subFields.length > 1 ? "s" : ""}
                             </Typography>
                           )}
                         </Box>
-                        <Chip 
-                          label={field.fieldType} 
-                          size="small" 
-                          sx={{ 
-                            fontWeight: 700, 
-                            color: color, 
-                            bgcolor: bgColor, 
-                            borderColor: borderColor,
-                            border: "1px solid"
-                          }} 
-                        />
+                        <Chip label={FIELD_TYPE_LABELS[field.fieldType] ?? field.fieldType} size="small" sx={{ bgcolor: "background.paper", color: "text.secondary", flex: "none" }} />
                       </Box>
 
-                      <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", mt: 2, pt: 1.5, borderTop: "1px solid rgba(0,0,0,0.04)" }}>
-                        <Box sx={{ display: "flex", alignItems: "center", gap: 0.5 }}>
-                          <Switch 
-                            checked={field.isActive} 
-                            onChange={() => handleToggleStatus(field)} 
-                            color="primary" 
-                            size="small" 
+                      <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                        <Box component="label" sx={{ display: "flex", alignItems: "center", gap: 0.5, ml: -1, cursor: "pointer" }}>
+                          <Switch
+                            checked={field.isActive}
+                            onChange={() => handleToggleStatus(field)}
+                            color="primary"
                           />
-                          <Typography variant="caption" sx={{ fontWeight: 700, color: "text.secondary" }}>
+                          <Typography variant="body2" color="text.secondary">
                             {field.isActive ? "Actif" : "Désactivé"}
                           </Typography>
                         </Box>
-                        
-                        <Box>
-                          <IconButton size="small" onClick={() => handleOpen(field)} color="primary">
+
+                        <Box sx={{ mr: -1 }}>
+                          <IconButton onClick={() => handleOpen(field)} aria-label={`Modifier ${field.name}`} sx={{ color: "text.secondary" }}>
                             <EditIcon fontSize="small" />
                           </IconButton>
-                          <IconButton size="small" onClick={() => handleDelete(field.id)} color="error">
+                          <IconButton onClick={() => handleDelete(field.id)} aria-label={`Supprimer ${field.name}`} sx={{ color: "text.secondary" }}>
                             <DeleteIcon fontSize="small" />
                           </IconButton>
                         </Box>
@@ -364,7 +340,7 @@ export const CustomFieldsManager: React.FC = () => {
                           </Typography>
                         )}
                       </TableCell>
-                      <TableCell><Chip label={field.fieldType} size="small" variant="outlined" /></TableCell>
+                      <TableCell><Chip label={FIELD_TYPE_LABELS[field.fieldType] ?? field.fieldType} size="small" variant="outlined" /></TableCell>
                       <TableCell>
                         <Tooltip title={field.isActive ? "Actif" : "Désactivé"}>
                           <Switch checked={field.isActive} onChange={() => handleToggleStatus(field)} color="primary" size="small" />

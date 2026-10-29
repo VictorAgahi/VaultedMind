@@ -46,18 +46,17 @@ const ChatHeader: React.FC<ChatHeaderProps> = ({ onClose, quota }) => (
       pt: { xs: "calc(env(safe-area-inset-top, 0px) + 16px)", sm: 2.5 },
       pb: 2.5,
       px: 2.5,
-      background: "linear-gradient(135deg, #4f46e5 0%, #6366f1 100%)",
-      color: "white",
+      bgcolor: "primary.main",
+      color: "primary.contrastText",
       display: "flex",
       alignItems: "center",
       justifyContent: "space-between",
       gap: 1.5,
       flexShrink: 0,
-      boxShadow: "0 4px 20px rgba(79, 70, 229, 0.15)",
     }}
   >
     <Box sx={{ display: "flex", alignItems: "center", gap: 1.5 }}>
-      <Avatar sx={{ bgcolor: "rgba(255,255,255,0.2)", width: 40, height: 40 }}>
+      <Avatar sx={{ bgcolor: "rgba(var(--mui-palette-primary-contrastTextChannel) / 0.16)", color: "inherit", width: 40, height: 40 }}>
         <SmartToyIcon />
       </Avatar>
       <Box>
@@ -69,8 +68,8 @@ const ChatHeader: React.FC<ChatHeaderProps> = ({ onClose, quota }) => (
             width: 8,
             height: 8,
             borderRadius: "50%",
-            bgcolor: "#10b981",
-            boxShadow: "0 0 8px #10b981",
+            bgcolor: "var(--mui-palette-success-main)",
+            boxShadow: "0 0 8px var(--mui-palette-success-main)",
           }} />
         </Box>
         <Typography variant="caption" sx={{ opacity: 0.9, fontSize: "0.75rem", mt: 0.2, display: "block" }}>
@@ -81,7 +80,7 @@ const ChatHeader: React.FC<ChatHeaderProps> = ({ onClose, quota }) => (
     <IconButton
       size="small"
       onClick={onClose}
-      sx={{ color: "white", display: { xs: "flex", sm: "none" } }}
+      sx={{ color: "primary.contrastText", display: { xs: "flex", sm: "none" } }}
     >
       <CloseIcon />
     </IconButton>
@@ -104,7 +103,7 @@ const MessageList: React.FC<MessageListProps> = ({ messages, isPending, thinking
       flexGrow: 1,
       p: { xs: 2, sm: 2.5 },
       overflowY: "auto",
-      bgcolor: "#f8fafc",
+      bgcolor: "var(--mui-palette-grey-100)",
       display: "flex",
       flexDirection: "column",
       gap: 2,
@@ -112,9 +111,9 @@ const MessageList: React.FC<MessageListProps> = ({ messages, isPending, thinking
       "&::-webkit-scrollbar": { width: 6 },
       "&::-webkit-scrollbar-track": { bgcolor: "transparent" },
       "&::-webkit-scrollbar-thumb": {
-        bgcolor: "rgba(0,0,0,0.06)",
+        bgcolor: "var(--mui-palette-action-hover)",
         borderRadius: 3,
-        "&:hover": { bgcolor: "rgba(0,0,0,0.12)" }
+        "&:hover": { bgcolor: "var(--mui-palette-action-hover)" }
       }
     }}
   >
@@ -142,7 +141,8 @@ const MessageList: React.FC<MessageListProps> = ({ messages, isPending, thinking
               sx={{
                 width: 28,
                 height: 28,
-                bgcolor: msg.sender === "user" ? "secondary.main" : "primary.main",
+                bgcolor: msg.sender === "user" ? "primary.light" : "primary.main",
+                    color: msg.sender === "user" ? "primary.main" : "primary.contrastText",
                 fontSize: "0.8rem",
                 mt: 0.5
               }}
@@ -155,12 +155,12 @@ const MessageList: React.FC<MessageListProps> = ({ messages, isPending, thinking
                 p: 1.5,
                 px: 2,
                 borderRadius: msg.sender === "user" ? "16px 16px 0px 16px" : "16px 16px 16px 0px",
-                bgcolor: msg.sender === "user" ? "primary.main" : "white",
-                color: msg.sender === "user" ? "white" : "text.primary",
-                border: msg.sender === "user" ? "none" : "1px solid #e2e8f0",
+                bgcolor: msg.sender === "user" ? "primary.main" : "background.paper",
+                color: msg.sender === "user" ? "primary.contrastText" : "text.primary",
+                border: msg.sender === "user" ? "none" : "1px solid var(--mui-palette-divider)",
                 wordBreak: "break-word",
                 overflowWrap: "anywhere",
-                boxShadow: msg.sender === "user" ? "0 4px 12px rgba(99, 102, 241, 0.15)" : "0 2px 4px rgba(0,0,0,0.02)"
+                boxShadow: msg.sender === "user" ? "0 4px 12px rgba(var(--mui-palette-primary-mainChannel) / 0.15)" : "0 2px 4px rgba(0,0,0,0.02)"
               }}
             >
               {msg.sender === "user" ? (
@@ -188,13 +188,13 @@ const MessageList: React.FC<MessageListProps> = ({ messages, isPending, thinking
               sx={{
                 p: 2,
                 borderRadius: "16px 16px 16px 0px",
-                bgcolor: "white",
-                border: "1px solid #e2e8f0",
+                bgcolor: "background.paper",
+                border: "1px solid var(--mui-palette-divider)",
                 display: "flex",
                 flexDirection: "column",
                 gap: 1.5,
                 maxWidth: "80%",
-                boxShadow: "0 2px 4px rgba(0,0,0,0.02)"
+                boxShadow: "none"
               }}
             >
               <Box sx={{ display: "flex", alignItems: "center", gap: 1.5 }}>
@@ -241,8 +241,8 @@ const ChatInput: React.FC<ChatInputProps> = ({ value, onChange, onSend, isPendin
       px: { xs: 1.5, sm: 2 },
       pt: 1.5,
       pb: { xs: "calc(env(safe-area-inset-bottom, 0px) + 12px)", sm: 2 },
-      bgcolor: "white",
-      borderTop: "1px solid #e2e8f0",
+      bgcolor: "background.paper",
+      borderTop: "1px solid var(--mui-palette-divider)",
       flexShrink: 0,
     }}>
       {isQuotaReached && (
@@ -250,18 +250,18 @@ const ChatInput: React.FC<ChatInputProps> = ({ value, onChange, onSend, isPendin
           variant="caption"
           sx={{
             display: "block",
-            color: "#e11d48",
+            color: "var(--mui-palette-error-main)",
             fontWeight: 700,
             fontSize: "0.72rem",
             mb: 1,
             textAlign: "center",
-            bgcolor: "#fff1f2",
+            bgcolor: "var(--mui-palette-action-hover)",
             py: 0.5,
             px: 1,
             borderRadius: 1.5,
           }}
         >
-          🔒 Limite de 2 messages / 12h atteinte.
+           Limite de 2 messages / 12h atteinte.
         </Typography>
       )}
       <Box
@@ -293,8 +293,8 @@ const ChatInput: React.FC<ChatInputProps> = ({ value, onChange, onSend, isPendin
           sx={{
             "& .MuiOutlinedInput-root": {
               borderRadius: 4,
-              bgcolor: isQuotaReached ? "#f1f5f9" : "#f8fafc",
-              border: "1px solid #e2e8f0",
+              bgcolor: isQuotaReached ? "var(--mui-palette-grey-100)" : "var(--mui-palette-grey-100)",
+              border: "1px solid var(--mui-palette-divider)",
               transition: "all 0.2s",
               minHeight: 44,
               alignItems: "center",
@@ -302,10 +302,10 @@ const ChatInput: React.FC<ChatInputProps> = ({ value, onChange, onSend, isPendin
               px: 1.5,
               "& fieldset": { border: "none" },
               "&.Mui-focused": {
-                bgcolor: "white",
+                bgcolor: "background.paper",
                 border: "1px solid",
                 borderColor: "primary.main",
-                boxShadow: "0 0 0 3px rgba(99, 102, 241, 0.12)",
+                boxShadow: "0 0 0 3px rgba(var(--mui-palette-primary-mainChannel) / 0.12)",
               },
             },
             "& .MuiInputBase-input": {
@@ -322,18 +322,18 @@ const ChatInput: React.FC<ChatInputProps> = ({ value, onChange, onSend, isPendin
           }}
           disabled={isSendDisabled}
           sx={{
-            bgcolor: !isSendDisabled ? "primary.main" : "#f1f5f9",
-            color: !isSendDisabled ? "white" : "#94a3b8",
+            bgcolor: !isSendDisabled ? "primary.main" : "var(--mui-palette-grey-100)",
+            color: !isSendDisabled ? "primary.contrastText" : "var(--mui-palette-text-disabled)",
             transition: "all 0.2s ease-in-out",
             flexShrink: 0,
             mb: "2px",
             "&:hover": {
-              bgcolor: !isSendDisabled ? "primary.dark" : "#e2e8f0",
+              bgcolor: !isSendDisabled ? "primary.dark" : "var(--mui-palette-divider)",
               transform: !isSendDisabled ? "scale(1.05)" : "none",
             },
             "&.Mui-disabled": {
-              bgcolor: "#f1f5f9",
-              color: "#cbd5e1",
+              bgcolor: "var(--mui-palette-grey-100)",
+              color: "var(--mui-palette-divider)",
             },
             width: 44,
             height: 44,
@@ -594,20 +594,21 @@ export function AIChatBot() {
     <>
       <Fab
         color="primary"
-        aria-label="chat"
+        aria-label="Ouvrir l'assistant"
         onClick={() => dispatch({ type: "SET_OPEN", payload: !isOpen })}
         sx={{
           position: "fixed",
           bottom: { xs: "calc(env(safe-area-inset-bottom, 0px) + 72px)", sm: 24 },
           right: { xs: 16, sm: 24 },
-          boxShadow: "0 8px 24px rgba(216, 24, 50, 0.3)",
+          boxShadow: "0 6px 16px rgba(15, 20, 19, 0.25)",
           zIndex: 1100,
           width: { xs: 52, sm: 56 },
           height: { xs: 52, sm: 56 },
-          display: { xs: isOpen ? "none" : "flex", sm: "flex" },
-          transition: "all 0.3s cubic-bezier(0.4, 0, 0.2, 1)",
+          // Sur mobile, l'assistant vit dans l'onglet IA de la barre du bas.
+          display: { xs: "none", md: "flex" },
+          transition: "transform 160ms cubic-bezier(.2,0,0,1)",
           "&:hover": {
-            transform: "scale(1.1) rotate(5deg)",
+            transform: "scale(1.05)",
           }
         }}
       >
@@ -633,7 +634,7 @@ export function AIChatBot() {
             boxShadow: { xs: "none", sm: "0 20px 48px rgba(0,0,0,0.15)" },
             top: { xs: 0, sm: "auto" },
             left: { xs: 0, sm: "auto" },
-            border: { xs: "none", sm: "1px solid rgba(0,0,0,0.06)" }
+            border: { xs: "none", sm: "1px solid var(--mui-palette-divider)" }
           }}
         >
           <ChatHeader onClose={() => dispatch({ type: "SET_OPEN", payload: false })} quota={chatQuota} />

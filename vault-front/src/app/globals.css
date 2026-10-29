@@ -1,56 +1,95 @@
 @import "tailwindcss";
 
+/*
+ * Tokens graphiques de la charte "Le carnet scellé".
+ * Clair sur :root, sombre sur .dark (classe posée par MUI InitColorSchemeScript).
+ * Palette des séries validée (lightness, chroma, CVD, contraste) sur #FFFFFF et #171D1C.
+ */
 :root {
-  --background: #ede5d9;
-  --foreground: #142949;
+  --chart-s1: #00927c;
+  --chart-s2: #eb6834;
+  --chart-s3: #6250d6;
+  --chart-s4: #eda100;
+  --chart-s5: #e87ba4;
+  --chart-s6: #2a78d6;
+  --chart-neg-3: #9a3412;
+  --chart-neg-2: #d46a43;
+  --chart-neg-1: #f2c6b3;
+  --chart-mid: #eceeeb;
+  /* Série neutre (ex. "sans l'habitude") : >= 3:1 sur la surface, contrairement au centre divergent */
+  --chart-neutral: #8a948f;
+  /* Texte posé sur les paliers 2 de l'échelle divergente, identique dans les deux modes */
+  --chart-on-mid: #0f1413;
+  --chart-pos-1: #bfe3da;
+  --chart-pos-2: #2e9c88;
+  --chart-pos-3: #1e5b53;
+  --chart-grid: #e6e9e5;
+  --chart-axis: #c5ccc7;
+  --chart-tick: #6b7672;
+  --chart-surface: #ffffff;
+  --chart-ink: #17201d;
+  --accent-glow: #f2b544;
+  /* Ambre lisible comme élément graphique sur fond clair (3,6:1) */
+  --accent-strong: #b87503;
+}
+
+.dark {
+  --chart-s1: #16a08a;
+  --chart-s2: #d95926;
+  --chart-s3: #9085e9;
+  --chart-s4: #c98500;
+  --chart-s5: #d55181;
+  --chart-s6: #3987e5;
+  --chart-neg-3: #f08a62;
+  --chart-neg-2: #d46a43;
+  --chart-neg-1: #6b3a2a;
+  --chart-mid: #2a3230;
+  --chart-neutral: #7d8a85;
+  --chart-on-mid: #0f1413;
+  --chart-pos-1: #2a5a51;
+  --chart-pos-2: #2e9c88;
+  --chart-pos-3: #6cc3b3;
+  --chart-grid: #232b29;
+  --chart-axis: #34403d;
+  --chart-tick: #7d8a85;
+  --chart-surface: #171d1c;
+  --chart-ink: #e8eeeb;
+  --accent-glow: #e8b04b;
+  --accent-strong: #e8b04b;
 }
 
 @theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --color-background: var(--mui-palette-background-default);
+  --color-foreground: var(--mui-palette-text-primary);
+  --font-sans: var(--font-body);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+html,
+body {
+  background-color: var(--mui-palette-background-default);
 }
 
 body {
-  background-color: #ede5d9;
-  background-image:
-    repeating-linear-gradient(
-      0deg,
-      transparent,
-      transparent 2px,
-      rgba(216, 24, 50, 0.02) 2px,
-      rgba(216, 24, 50, 0.02) 4px
-    ),
-    repeating-linear-gradient(
-      90deg,
-      transparent,
-      transparent 2px,
-      rgba(216, 24, 50, 0.02) 2px,
-      rgba(216, 24, 50, 0.02) 4px
-    );
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
-  padding-bottom: 0;
-  
-  /* Support for PWA safe areas (notch / home indicator) */
+  color: var(--mui-palette-text-primary);
+  /* Support des zones sûres PWA (encoche / indicateur d'accueil) */
   padding-top: env(safe-area-inset-top, 0px);
 }
 
-/* Ensure the background covers the safe area */
-html {
-  background-color: #ede5d9;
+/* Bande sous l'encoche : le contenu qui défile ne passe pas sous la barre d'état */
+body::before {
+  content: "";
+  position: fixed;
+  inset: 0 0 auto;
+  height: env(safe-area-inset-top, 0px);
+  z-index: 1200;
+  background-color: var(--mui-palette-background-default);
 }
 
-@media (max-width: 900px) {
-  body {
-    padding-bottom: 70px;
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
   }
 }

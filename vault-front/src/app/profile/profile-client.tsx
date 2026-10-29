@@ -30,6 +30,12 @@ import {
 import Link from "next/link";
 import { useAuth } from "@/context/auth-context";
 import { Navbar } from "@/components/navbar/navbar";
+import { ThemeModeSwitch } from "@/components/theme-mode-switch";
+import { CrisisResources } from "@/components/support/crisis-resources";
+import { List, ListItemButton, ListItemIcon, ListItemText } from "@mui/material";
+import TuneIcon from "@mui/icons-material/Tune";
+import CloudUploadIcon from "@mui/icons-material/CloudUpload";
+import ChevronRightIcon from "@mui/icons-material/ChevronRight";
 import { apiService } from "@/services/api.service";
 
 const getExportFilename = () => {
@@ -308,21 +314,21 @@ export default function ProfilePage() {
   return (
     <Box sx={{ minHeight: "100vh" }}>
       <Navbar />
-      <Container maxWidth="sm" sx={{ py: 6, pb: 10 }}>
-        <Typography variant="h4" component="h1" gutterBottom sx={{ fontWeight: 800, color: "#142949", mb: 4 }}>
-          Mon Profil
+      <Container maxWidth="sm" sx={{ py: { xs: 2, md: 5 }, px: { xs: 2, sm: 3 } }}>
+        <Typography variant="h1" sx={{ fontSize: { xs: "1.75rem", md: "2.25rem" }, mb: 2 }}>
+          Mon profil
         </Typography>
 
-        <Paper elevation={0} sx={{ p: 3, borderRadius: 4, bgcolor: "background.paper", border: "1px solid", borderColor: "divider", mb: 3 }}>
+        <Paper sx={{ p: { xs: 2, sm: 3 }, borderRadius: 4, mb: 1.5 }}>
           <Box sx={{ display: "flex", alignItems: "center", mb: 3 }}>
-            <Avatar sx={{ width: 64, height: 64, bgcolor: "primary.main", mr: 2 }}>
-              <PersonIcon sx={{ fontSize: 40 }} />
+            <Avatar sx={{ width: 56, height: 56, bgcolor: "primary.light", color: "primary.main", mr: 2 }}>
+              <PersonIcon sx={{ fontSize: 32 }} />
             </Avatar>
-            <Box>
-              <Typography variant="h6" sx={{ fontWeight: 600 }}>
-                Utilisateur VaultedMind
+            <Box sx={{ minWidth: 0 }}>
+              <Typography variant="h6">
+                {user.firstName || "Utilisateur VaultedMind"}
               </Typography>
-              <Typography variant="body2" color="text.secondary">
+              <Typography variant="body2" color="text.secondary" noWrap>
                 {user.email}
               </Typography>
             </Box>
@@ -359,7 +365,7 @@ export default function ProfilePage() {
                     }
                   }}
                   startIcon={<NotificationsIcon />}
-                  sx={{ borderRadius: 3, py: 1.2, textTransform: "none", fontWeight: 600 }}
+                 
                 >
                   Tester la notification (30s)
                 </Button>
@@ -367,7 +373,7 @@ export default function ProfilePage() {
             ) : (
               <Box sx={{ mt: 2 }}>
                 <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-                  Recevez des rappels quotidiens à 22h30 pour ne jamais oublier de remplir votre journal.
+                  Recevez un rappel le soir si vous n&apos;avez pas encore noté votre journée.
                 </Typography>
                 <Button
                   variant="contained"
@@ -375,7 +381,7 @@ export default function ProfilePage() {
                   onClick={handleEnableNotifications}
                   disabled={isSubscribing}
                   startIcon={isSubscribing ? <CircularProgress size={20} color="inherit" /> : <NotificationsIcon />}
-                  sx={{ borderRadius: 3, py: 1.2, textTransform: "none", fontWeight: 600 }}
+                 
                 >
                   {isSubscribing ? "Activation..." : "Activer les notifications"}
                 </Button>
@@ -384,8 +390,39 @@ export default function ProfilePage() {
           </Box>
         </Paper>
 
+        <Paper sx={{ borderRadius: 4, mb: 1.5, overflow: "hidden" }}>
+          <Typography variant="overline" color="text.secondary" sx={{ display: "block", px: { xs: 2, sm: 3 }, pt: 2 }}>
+            Mon espace
+          </Typography>
+          <List disablePadding>
+            {[
+              { href: "/fields", label: "Mes champs", hint: "Ce que vous suivez chaque jour", icon: TuneIcon },
+              { href: "/import", label: "Importer des données", hint: "Fichier CSV", icon: CloudUploadIcon },
+              { href: "/integrations", label: "Intégrations", hint: "Apple Santé, clés d'API", icon: LinkIcon },
+            ].map(({ href, label, hint, icon: Icon }) => (
+              <ListItemButton key={href} component={Link} href={href} sx={{ minHeight: 60, px: { xs: 2, sm: 3 } }}>
+                <ListItemIcon sx={{ minWidth: 40, color: "primary.main" }}><Icon /></ListItemIcon>
+                <ListItemText primary={label} secondary={hint} slotProps={{ primary: { sx: { fontWeight: 700 } } }} />
+                <ChevronRightIcon sx={{ color: "text.disabled" }} />
+              </ListItemButton>
+            ))}
+          </List>
+        </Paper>
+
+        <Paper sx={{ p: { xs: 2, sm: 3 }, borderRadius: 4, mb: 1.5 }}>
+          <Typography variant="subtitle1" sx={{ mb: 0.5 }}>Apparence</Typography>
+          <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+            Le mode sombre est plus doux pour écrire le soir.
+          </Typography>
+          <ThemeModeSwitch />
+        </Paper>
+
+        <Box sx={{ mb: 1.5 }}>
+          <CrisisResources />
+        </Box>
+
         {!loadingStatus && isAiEnabled && (
-          <Paper elevation={0} sx={{ p: 3, borderRadius: 4, bgcolor: "background.paper", border: "1px solid", borderColor: "divider", mb: 3 }}>
+          <Paper sx={{ p: { xs: 2, sm: 3 }, borderRadius: 4, mb: 1.5 }}>
             <Typography variant="subtitle1" gutterBottom sx={{ fontWeight: 600, display: "flex", alignItems: "center" }}>
               <SmartToyIcon sx={{ mr: 1, fontSize: 20, color: "primary.main" }} />
               Personnaliser l&apos;IA
@@ -399,7 +436,7 @@ export default function ProfilePage() {
               multiline
               rows={4}
               variant="outlined"
-              placeholder="Ex: J'aimerais que tu sois direct et que tu te concentres sur la productivité..."
+              placeholder="Ex. : J'aimerais que tu sois direct et que tu te concentres sur la productivité..."
               value={aiContext}
               onChange={(e) => dispatch({ type: "SET_AI_CONTEXT", payload: e.target.value })}
               sx={{ mb: 2 }}
@@ -413,9 +450,9 @@ export default function ProfilePage() {
                 onClick={handleOptimizeAiContext}
                 disabled={isOptimizingContext || !aiContext || aiContext.trim() === ""}
                 startIcon={isOptimizingContext ? <CircularProgress size={20} color="inherit" /> : <AutoAwesomeIcon />}
-                sx={{ borderRadius: 3, py: 1.2, textTransform: "none", fontWeight: 600 }}
+               
               >
-                {isOptimizingContext ? "Optimisation..." : "Optimiser via l'IA 💡"}
+                {isOptimizingContext ? "Optimisation..." : "Optimiser via l'IA"}
               </Button>
 
               <Button
@@ -425,7 +462,7 @@ export default function ProfilePage() {
                 onClick={handleSaveAiContext}
                 disabled={isSavingContext}
                 startIcon={isSavingContext ? <CircularProgress size={20} color="inherit" /> : <SaveIcon />}
-                sx={{ borderRadius: 3, py: 1.2, textTransform: "none", fontWeight: 600 }}
+               
               >
                 {aiContextSaved ? "Contexte sauvegardé !" : "Enregistrer le contexte"}
               </Button>
@@ -433,13 +470,13 @@ export default function ProfilePage() {
           </Paper>
         )}
 
-        <Paper elevation={0} sx={{ p: 3, borderRadius: 4, bgcolor: "background.paper", border: "1px solid", borderColor: "divider", mb: 3 }}>
+        <Paper sx={{ p: { xs: 2, sm: 3 }, borderRadius: 4, mb: 1.5 }}>
           <Typography variant="subtitle1" gutterBottom sx={{ fontWeight: 600, display: "flex", alignItems: "center" }}>
             <LinkIcon sx={{ mr: 1, fontSize: 20, color: "primary.main" }} />
             Intégrations (Apple Santé)
           </Typography>
           <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
-            Connectez vos appareils et applications externes (comme Apple Watch et Apple Santé) pour synchroniser automatiquement vos données de santé avec Vaulted Mind.
+            Connectez vos appareils et applications externes (comme Apple Watch et Apple Santé) pour synchroniser automatiquement vos données de santé avec VaultedMind.
           </Typography>
           <Button
             component={Link}
@@ -447,13 +484,13 @@ export default function ProfilePage() {
             variant="outlined"
             fullWidth
             startIcon={<LinkIcon />}
-            sx={{ borderRadius: 3, py: 1.2, textTransform: "none", fontWeight: 600 }}
+           
           >
             Gérer mes intégrations
           </Button>
         </Paper>
 
-        <Paper elevation={0} sx={{ p: 3, borderRadius: 4, bgcolor: "background.paper", border: "1px solid", borderColor: "divider", mb: 3 }}>
+        <Paper sx={{ p: { xs: 2, sm: 3 }, borderRadius: 4, mb: 1.5 }}>
           <Typography variant="subtitle1" gutterBottom sx={{ fontWeight: 600, display: "flex", alignItems: "center" }}>
             <ShieldIcon sx={{ mr: 1, fontSize: 20, color: "primary.main" }} />
             Sécurité et Données (RGPD)
@@ -483,9 +520,9 @@ export default function ProfilePage() {
                   dispatch({ type: "SET_ERROR", payload: "Échec de l'exportation des données." });
                 }
               }}
-              sx={{ borderRadius: 3, py: 1.2, textTransform: "none", fontWeight: 600 }}
+             
             >
-              Exporter mes données (JSON AES-256)
+              Exporter mes données (fichier JSON)
             </Button>
 
             <Button
@@ -503,7 +540,7 @@ export default function ProfilePage() {
                   }
                 }
               }}
-              sx={{ borderRadius: 3, py: 1.2, textTransform: "none", fontWeight: 600 }}
+             
             >
               Supprimer définitivement mon compte
             </Button>
@@ -516,7 +553,7 @@ export default function ProfilePage() {
           fullWidth
           onClick={logout}
           startIcon={<LogoutIcon />}
-          sx={{ borderRadius: 3, py: 1.2, textTransform: "none", fontWeight: 600 }}
+         
         >
           Se déconnecter
         </Button>

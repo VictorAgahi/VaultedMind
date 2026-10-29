@@ -11,7 +11,7 @@ import { CustomFieldsManager } from "@/components/custom-fields-manager/custom-f
 
 export default function FieldsPage() {
   return (
-    <Box sx={{ minHeight: "100vh", bgcolor: "#ede5d9" }}>
+    <Box sx={{ minHeight: "100vh", bgcolor: "var(--mui-palette-background-default)" }}>
       <Navbar />
 
       <Container maxWidth="lg" sx={{ py: 8 }}>

@@ -3,15 +3,13 @@
 
 import React, { useState, useMemo } from "react";
 import {
-  Box,
-  Typography,
-  Paper,
   Autocomplete,
   TextField,
   Chip,
-  Tooltip as MuiTooltip
+  Box,
+  useMediaQuery,
+  useTheme,
 } from "@mui/material";
-import InfoIcon from "@mui/icons-material/Info";
 import {
   LineChart,
   Line,
@@ -19,8 +17,9 @@ import {
   YAxis,
   CartesianGrid,
   Tooltip,
-  Legend
 } from "recharts";
+import { ChartCard, ChartEmpty } from "./chart-card";
+import { axisTick, chartColors, chartTooltipProps, MAX_SERIES_MOBILE, SERIES_COLORS, shortDateTick, percentTick } from "@/theme/chart-tokens";
 import { CustomField, FieldType, DailyLog } from "@/types";
 import { formatHourlyValue } from "@/utils/time-converter";
 
@@ -38,16 +37,6 @@ interface MultiTrendChartProps {
   ChartContainer: React.FC<ChartContainerProps & { fullHeight?: boolean }>;
 }
 
-const LINE_COLORS = [
-  "#6366f1", // Indigo
-  "#10b981", // Emerald
-  "#f43f5e", // Rose
-  "#f59e0b", // Amber
-  "#06b6d4", // Cyan
-  "#8b5cf6", // Violet
-  "#ec4899", // Pink
-  "#3b82f6"  // Blue
-];
 
 export const MultiTrendChart: React.FC<MultiTrendChartProps> = ({
   data,
@@ -55,20 +44,49 @@ export const MultiTrendChart: React.FC<MultiTrendChartProps> = ({
   logs,
   ChartContainer
 }) => {
+  const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down("sm"));
+  const maxSeries = isMobile ? MAX_SERIES_MOBILE : SERIES_COLORS.length;
+
   // Filter numerical, boolean, and string fields
-  const selectableFields = useMemo(() => 
-    fields.filter(f => 
-      f.fieldType === FieldType.NUMBER || 
-      f.fieldType === FieldType.BOOLEAN || 
+  const selectableFields = useMemo(() =>
+    fields.filter(f =>
+      f.fieldType === FieldType.NUMBER ||
+      f.fieldType === FieldType.BOOLEAN ||
       f.fieldType === FieldType.STRING
     ),
     [fields]
   );
 
-  // Default to selecting the first two fields if available
-  const [selectedFields, setSelectedFields] = useState<CustomField[]>(() => 
-    selectableFields.slice(0, 2)
+  // Chaque champ garde sa couleur tant qu'il reste sélectionné : retirer une courbe ne repeint pas les autres.
+  const [selection, setSelection] = useState<{ field: CustomField; slot: number }[]>(() =>
+    selectableFields.slice(0, 2).map((field, slot) => ({ field, slot }))
   );
+  // La limite mobile s'applique à l'affichage : une sélection faite sur grand écran n'est pas perdue.
+  const selectedFields = useMemo(
+    () => selection.filter(s => s.slot < maxSeries).map(s => s.field),
+    [selection, maxSeries]
+  );
+  const colorOf = (fieldId: string) => {
+    const entry = selection.find(s => s.field.id === fieldId);
+    return SERIES_COLORS[entry ? entry.slot : 0];
+  };
+
+  const handleSelectionChange = (next: CustomField[]) => {
+    setSelection(prev => {
+      const kept = prev.filter(p => next.some(n => n.id === p.field.id));
+      const used = new Set(kept.map(k => k.slot));
+      const added = next
+        .filter(n => !kept.some(k => k.field.id === n.id))
+        .map(field => {
+          let slot = 0;
+          while (used.has(slot)) slot++;
+          used.add(slot);
+          return { field, slot };
+        });
+      return [...kept, ...added].slice(0, maxSeries);
+    });
+  };
 
   // Helper maps for formatting qualitative fields
   const stringFieldMaps = useMemo(() => {
@@ -97,140 +115,136 @@ export const MultiTrendChart: React.FC<MultiTrendChartProps> = ({
     return maps;
   }, [fields, logs]);
 
-  return (
-    <Paper elevation={0} sx={{ 
-      borderRadius: 6, 
-      border: "1px solid rgba(0,0,0,0.05)", 
-      boxShadow: "0 10px 15px -3px rgba(0,0,0,0.05)",
-      height: "100%",
-      display: "flex",
-      flexDirection: "column",
-      overflow: "hidden"
-    }}>
-      <Box sx={{ p: { xs: 2, md: 4 }, pb: 0 }}>
-        <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", mb: 4, flexWrap: "wrap", gap: 2 }}>
-          <Box sx={{ flex: 1, minWidth: 280 }}>
-            <Box sx={{ display: "flex", alignItems: "center", gap: 1, mb: 1 }}>
-              <Typography variant="h6" sx={{ fontWeight: 800 }}>Comparatif Multicourbes</Typography>
-              <MuiTooltip title="Sélectionnez plusieurs indicateurs pour comparer leurs tendances sur le même graphique.">
-                <InfoIcon sx={{ fontSize: 18, color: "text.secondary", cursor: "help" }} />
-              </MuiTooltip>
-            </Box>
-            <Typography variant="body2" color="text.secondary">Superposez vos mesures pour identifier des corrélations visuelles.</Typography>
-          </Box>
-          
-          <Box sx={{ width: { xs: "100%", md: 400 } }}>
-            <Autocomplete<CustomField, true, false, false>
-              multiple
-              size="small"
-              options={selectableFields}
-              getOptionLabel={(option) => option.name}
-              value={selectedFields}
-              onChange={(_, newValue) => setSelectedFields(newValue as CustomField[])}
-              renderInput={(params) => (
-                <TextField 
-                  {...params} 
-                  variant="outlined" 
-                  label="Indicateurs à comparer" 
-                  placeholder="Ajouter..."
-                />
-              )}
-              renderValue={(tagValue, getTagProps) =>
-                tagValue.map((option, index) => {
-                  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-                  const { key: _key, ...tagProps } = getTagProps({ index });
-                  return (
-                    <Chip
-                      key={option.id}
-                      label={option.name}
-                      size="small"
-                      sx={{ 
-                        bgcolor: `${LINE_COLORS[index % LINE_COLORS.length]}20`,
-                        color: LINE_COLORS[index % LINE_COLORS.length],
-                        fontWeight: 700,
-                        border: `1px solid ${LINE_COLORS[index % LINE_COLORS.length]}40`
-                      }}
-                      {...tagProps}
-                    />
-                  );
-                })
-              }
-            />
-          </Box>
-        </Box>
-      </Box>
+  // Une seule échelle : chaque série est ramenée à 0-100 % de sa propre plage, la valeur brute reste dans l'infobulle.
+  const ranges = useMemo(() => {
+    const map = new Map<string, { min: number; max: number }>();
+    selectedFields.forEach(field => {
+      const values = data.map(d => d[field.id]).filter((v): v is number => typeof v === "number");
+      if (values.length) map.set(field.id, { min: Math.min(...values), max: Math.max(...values) });
+    });
+    return map;
+  }, [data, selectedFields]);
 
-      <Box sx={{ flexGrow: 1, p: { xs: 1, md: 2 } }}>
-        {selectedFields.length === 0 ? (
-          <Box sx={{ display: "flex", justifyContent: "center", alignItems: "center", height: 350 }}>
-            <Typography color="text.secondary" sx={{ fontWeight: 600 }}>
-              Sélectionnez au moins un indicateur pour l&apos;afficher sur le graphique.
-            </Typography>
-          </Box>
-        ) : (
-          <ChartContainer aspect={1.6} mobileAspect={1.0} minHeight={350} fullHeight>
-            <LineChart data={data} margin={{ top: 20, right: 30, left: 10, bottom: 20 }}>
-              <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="rgba(0,0,0,0.05)" />
-              <XAxis 
-                dataKey="dateDisplay" 
-                axisLine={false} 
-                tickLine={false} 
-                tick={{ fontSize: 10, fill: "#666", fontWeight: 600 }}
-                minTickGap={20}
-              />
-              <YAxis 
-                axisLine={false} 
-                tickLine={false} 
-                tick={{ fontSize: 10, fill: "#666", fontWeight: 600 }}
-                width={30}
-              />
-              <Tooltip
-                contentStyle={{ borderRadius: 12, border: "none", boxShadow: "0 10px 15px -3px rgba(0,0,0,0.1)" }}
-                formatter={(val: any, name: any) => {
-                  const field = selectedFields.find(f => f.name === name);
-                  if (!field) return [val, name];
-                  
-                  if (field.fieldType === FieldType.BOOLEAN) {
-                    return [val === 1 ? "Oui" : "Non", field.name];
-                  }
-                  if (field.fieldType === FieldType.NUMBER) {
-                    const isHourly = (field.optionsOrder || []).includes("isHourly");
-                    if (isHourly) {
-                      return [formatHourlyValue(val.toString()), field.name];
-                    }
-                    return [val, field.name];
-                  }
-                  if (field.fieldType === FieldType.STRING) {
-                    const mapInfo = stringFieldMaps.get(field.id);
-                    if (mapInfo) {
-                      const textVal = mapInfo.reverseMap[Number(val)];
-                      return [textVal || val, field.name];
-                    }
-                  }
-                  return [val, field.name];
-                }}
-              />
-              <Legend />
-              {selectedFields.map((field, index) => {
-                const color = LINE_COLORS[index % LINE_COLORS.length];
-                return (
-                  <Line
-                    key={field.id}
-                    type="monotone"
-                    dataKey={field.id}
-                    stroke={color}
-                    strokeWidth={3}
-                    dot={{ r: 3, fill: color, strokeWidth: 1.5, stroke: "#fff" }}
-                    activeDot={{ r: 5, strokeWidth: 0 }}
-                    name={field.name} // We use the friendly name for display in legend/tooltip
-                    connectNulls
-                  />
-                );
-              })}
-            </LineChart>
-          </ChartContainer>
-        )}
-      </Box>
-    </Paper>
+  const indexedData = useMemo(() => data.map(row => {
+    const out: Record<string, string | number | boolean | null> = { ...row };
+    selectedFields.forEach(field => {
+      const v = row[field.id];
+      const range = ranges.get(field.id);
+      out[`${field.id}__idx`] = typeof v === "number" && range
+        ? (range.max === range.min ? 50 : Math.round(((v - range.min) / (range.max - range.min)) * 100))
+        : null;
+    });
+    return out;
+  }), [data, selectedFields, ranges]);
+
+  const formatRaw = (field: CustomField, val: unknown) => {
+    if (val === null || val === undefined) return "-";
+    if (field.fieldType === FieldType.BOOLEAN) return val === 1 ? "Oui" : "Non";
+    if (field.fieldType === FieldType.NUMBER) {
+      if ((field.optionsOrder || []).includes("isHourly")) return formatHourlyValue(String(val));
+      return String(val).replace(".", ",");
+    }
+    if (field.fieldType === FieldType.STRING) {
+      const mapInfo = stringFieldMaps.get(field.id);
+      return mapInfo?.reverseMap[Number(val)] || String(val);
+    }
+    return String(val);
+  };
+
+  return (
+    <ChartCard
+      title="Comparatif"
+      subtitle="Superposez vos mesures pour repérer des liens visuels."
+      help="Chaque courbe est ramenée à sa propre plage (0 % = sa valeur la plus basse, 100 % = la plus haute), pour comparer des échelles différentes. L'infobulle affiche les vraies valeurs."
+      controls={
+        <Autocomplete<CustomField, true, false, false>
+          multiple
+          size="small"
+          options={selectableFields}
+          getOptionLabel={(option) => option.name}
+          value={selectedFields}
+          onChange={(_, newValue) => handleSelectionChange(newValue as CustomField[])}
+          getOptionDisabled={(option) => selectedFields.length >= maxSeries && !selectedFields.some(f => f.id === option.id)}
+          renderInput={(params) => (
+            <TextField
+              {...params}
+              margin="none"
+              variant="outlined"
+              label={`Indicateurs à comparer (${maxSeries} max.)`}
+              placeholder="Ajouter..."
+            />
+          )}
+          renderValue={(tagValue, getTagProps) =>
+            tagValue.map((option, index) => {
+              // eslint-disable-next-line @typescript-eslint/no-unused-vars
+              const { key: _key, ...tagProps } = getTagProps({ index });
+              return (
+                <Chip
+                  key={option.id}
+                  label={option.name}
+                  size="small"
+                  icon={<Box component="span" sx={{ width: 10, height: 10, borderRadius: "3px", bgcolor: colorOf(option.id), ml: "8px !important" }} />}
+                  sx={{ bgcolor: "background.paper", fontWeight: 700 }}
+                  {...tagProps}
+                />
+              );
+            })
+          }
+        />
+      }
+    >
+      {selectedFields.length === 0 ? (
+        <ChartEmpty>Sélectionnez au moins un indicateur pour l&apos;afficher.</ChartEmpty>
+      ) : (
+        <ChartContainer aspect={2.4} minHeight={300} fullHeight>
+          <LineChart data={indexedData} margin={isMobile ? { top: 12, right: 12, left: 0, bottom: 0 } : { top: 16, right: 24, left: 8, bottom: 8 }}>
+            <CartesianGrid vertical={false} stroke={chartColors.grid} />
+            <XAxis
+              dataKey="dateDisplay"
+            tickFormatter={(v) => shortDateTick(v, isMobile)}
+              axisLine={{ stroke: chartColors.axis }}
+              tickLine={false}
+              tick={axisTick}
+              minTickGap={isMobile ? 36 : 24}
+            />
+            <YAxis
+              axisLine={false}
+              tickLine={false}
+              tick={axisTick}
+              domain={[0, 100]}
+              ticks={[0, 50, 100]}
+              tickFormatter={percentTick}
+              width={isMobile ? 48 : 52}
+            />
+            <Tooltip
+              {...chartTooltipProps}
+              formatter={(_val: any, _name: any, item: any) => {
+                const fieldId = String(item?.dataKey ?? "").replace(/__idx$/, "");
+                const field = selectedFields.find(f => f.id === fieldId);
+                if (!field) return [_val, _name];
+                return [formatRaw(field, item?.payload?.[field.id]), field.name];
+              }}
+            />
+            {selectedFields.map((field) => {
+              const color = colorOf(field.id);
+              const points = indexedData.filter(r => r[`${field.id}__idx`] !== null).length;
+              return (
+                <Line
+                  key={field.id}
+                  type={points < 15 ? "linear" : "monotone"}
+                  dataKey={`${field.id}__idx`}
+                  stroke={color}
+                  strokeWidth={2.5}
+                  dot={points <= 3 ? { r: 3, fill: color, stroke: chartColors.surface, strokeWidth: 1.5 } : false}
+                  activeDot={{ r: 5, strokeWidth: 2, stroke: chartColors.surface, fill: color }}
+                  name={field.name}
+                  connectNulls
+                />
+              );
+            })}
+          </LineChart>
+        </ChartContainer>
+      )}
+    </ChartCard>
   );
 };

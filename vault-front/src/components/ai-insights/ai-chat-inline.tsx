@@ -158,8 +158,8 @@ export function ChatSuggestedActionsList({ actions }: { actions: ChatSuggestedAc
 
   return (
     <Box sx={{ mt: 2, display: "flex", flexDirection: "column", gap: 1 }}>
-      <Typography variant="caption" sx={{ fontWeight: 700, color: "primary.main", textTransform: "uppercase" }}>
-        ✨ Actions Suggérées ({actions.length - completed.length})
+      <Typography variant="caption" sx={{ fontWeight: 700, color: "text.secondary" }}>
+         Actions suggérées ({actions.length - completed.length})
       </Typography>
       <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1 }}>
         {actions.map((action, idx) => {
@@ -176,7 +176,7 @@ export function ChatSuggestedActionsList({ actions }: { actions: ChatSuggestedAc
               onClick={() => setSelectedAction({ action, idx, editedOptions: action.options ? [...action.options] : undefined })}
               color="primary"
               variant="outlined"
-              sx={{ fontWeight: 500, bgcolor: 'rgba(99, 102, 241, 0.05)', borderColor: 'primary.main' }}
+              sx={{ fontWeight: 500, bgcolor: 'rgba(var(--mui-palette-primary-mainChannel) / 0.05)', borderColor: 'primary.main' }}
             />
           );
         })}
@@ -239,7 +239,7 @@ export function ChatSuggestedActionsList({ actions }: { actions: ChatSuggestedAc
                   </Typography>
                 )}
                 {selectedAction.action.reason && (
-                  <Box sx={{ mt: 1, p: 2, bgcolor: '#f8fafc', borderRadius: 2 }}>
+                  <Box sx={{ mt: 1, p: 2, bgcolor: 'var(--mui-palette-grey-100)', borderRadius: 2 }}>
                     <Typography variant="caption" sx={{ fontWeight: 'bold', color: 'text.secondary', display: 'block', mb: 0.5 }}>
                       Pourquoi cette suggestion ?
                     </Typography>
@@ -456,10 +456,10 @@ export function AIChatInline() {
         flexDirection: "column",
         height: { xs: "calc(100dvh - 160px - env(safe-area-inset-top) - env(safe-area-inset-bottom))", md: "600px" },
         mt: { xs: "env(safe-area-inset-top)", md: 0 },
-        border: "1px solid #e2e8f0",
+        border: "1px solid var(--mui-palette-divider)",
         borderRadius: { xs: 3, sm: 4 },
         overflow: "hidden",
-        bgcolor: "#f8fafc",
+        bgcolor: "var(--mui-palette-grey-100)",
       }}
     >
       {/* Header bar */}
@@ -467,8 +467,8 @@ export function AIChatInline() {
         sx={{
           px: { xs: 2, sm: 2.5 },
           py: 1.5,
-          bgcolor: "white",
-          borderBottom: "1px solid #e2e8f0",
+          bgcolor: "background.paper",
+          borderBottom: "1px solid var(--mui-palette-divider)",
           display: "flex",
           alignItems: "center",
           justifyContent: "space-between",
@@ -497,8 +497,8 @@ export function AIChatInline() {
             sx={{
               fontWeight: 600,
               fontSize: "0.75rem",
-              bgcolor: chatQuota.remaining === 0 ? "#fee2e2" : undefined,
-              color: chatQuota.remaining === 0 ? "#b91c1c" : undefined,
+              bgcolor: chatQuota.remaining === 0 ? "rgba(var(--mui-palette-error-mainChannel) / 0.12)" : undefined,
+              color: chatQuota.remaining === 0 ? "error.main" : undefined,
             }}
           />
         )}
@@ -518,9 +518,9 @@ export function AIChatInline() {
           "&::-webkit-scrollbar": { width: 6 },
           "&::-webkit-scrollbar-track": { bgcolor: "transparent" },
           "&::-webkit-scrollbar-thumb": {
-            bgcolor: "rgba(0,0,0,0.06)",
+            bgcolor: "var(--mui-palette-action-hover)",
             borderRadius: 3,
-            "&:hover": { bgcolor: "rgba(0,0,0,0.12)" }
+            "&:hover": { bgcolor: "var(--mui-palette-action-hover)" }
           }
         }}
       >
@@ -548,7 +548,8 @@ export function AIChatInline() {
                   sx={{
                     width: 32,
                     height: 32,
-                    bgcolor: msg.sender === "user" ? "secondary.main" : "primary.main",
+                    bgcolor: msg.sender === "user" ? "primary.light" : "primary.main",
+                    color: msg.sender === "user" ? "primary.main" : "primary.contrastText",
                     fontSize: "0.9rem",
                     mt: 0.5
                   }}
@@ -560,12 +561,12 @@ export function AIChatInline() {
                   sx={{
                     p: 2,
                     borderRadius: msg.sender === "user" ? "16px 16px 0px 16px" : "16px 16px 16px 0px",
-                    bgcolor: msg.sender === "user" ? "primary.main" : "white",
-                    color: msg.sender === "user" ? "white" : "text.primary",
-                    border: msg.sender === "user" ? "none" : "1px solid #e2e8f0",
+                    bgcolor: msg.sender === "user" ? "primary.main" : "background.paper",
+                    color: msg.sender === "user" ? "primary.contrastText" : "text.primary",
+                    border: msg.sender === "user" ? "none" : "1px solid var(--mui-palette-divider)",
                     wordBreak: "break-word",
                     overflowWrap: "anywhere",
-                    boxShadow: msg.sender === "user" ? "0 4px 12px rgba(99, 102, 241, 0.15)" : "0 2px 4px rgba(0,0,0,0.02)"
+                    boxShadow: msg.sender === "user" ? "0 4px 12px rgba(var(--mui-palette-primary-mainChannel) / 0.15)" : "0 2px 4px rgba(0,0,0,0.02)"
                   }}
                 >
                   {msg.sender === "user" ? (
@@ -593,13 +594,13 @@ export function AIChatInline() {
                   sx={{
                     p: 2,
                     borderRadius: "16px 16px 16px 0px",
-                    bgcolor: "white",
-                    border: "1px solid #e2e8f0",
+                    bgcolor: "background.paper",
+                    border: "1px solid var(--mui-palette-divider)",
                     display: "flex",
                     flexDirection: "column",
                     gap: 1.5,
                     maxWidth: { xs: "92%", sm: "80%" },
-                    boxShadow: "0 2px 4px rgba(0,0,0,0.02)"
+                    boxShadow: "none"
                   }}
                 >
                   <Box sx={{ display: "flex", alignItems: "center", gap: 1.5 }}>
@@ -624,26 +625,26 @@ export function AIChatInline() {
         px: 2,
         pt: 2,
         pb: { xs: "calc(env(safe-area-inset-bottom) + 16px)", md: 2 },
-        bgcolor: "white",
-        borderTop: "1px solid #e2e8f0",
+        bgcolor: "background.paper",
+        borderTop: "1px solid var(--mui-palette-divider)",
       }}>
         {chatQuota !== null && chatQuota.remaining === 0 && (
           <Typography
             variant="caption"
             sx={{
               display: "block",
-              color: "#e11d48",
+              color: "var(--mui-palette-error-main)",
               fontWeight: 700,
               fontSize: "0.75rem",
               mb: 1.5,
               textAlign: "center",
-              bgcolor: "#fff1f2",
+              bgcolor: "var(--mui-palette-action-hover)",
               py: 0.75,
               px: 1.5,
               borderRadius: 2,
             }}
           >
-            🔒 Limite de 2 messages / 12h atteinte.
+             Limite de 2 messages / 12h atteinte.
           </Typography>
         )}
         <Box
@@ -677,14 +678,14 @@ export function AIChatInline() {
             sx={{
               "& .MuiOutlinedInput-root": {
                 borderRadius: 4,
-                bgcolor: chatQuota !== null && chatQuota.remaining === 0 ? "#f1f5f9" : "#f8fafc",
+                bgcolor: chatQuota !== null && chatQuota.remaining === 0 ? "var(--mui-palette-grey-100)" : "var(--mui-palette-grey-100)",
                 transition: "all 0.2s",
-                "& fieldset": { borderColor: "#e2e8f0" },
-                "&:hover fieldset": { borderColor: "#cbd5e1" },
+                "& fieldset": { borderColor: "var(--mui-palette-divider)" },
+                "&:hover fieldset": { borderColor: "var(--mui-palette-divider)" },
                 "&.Mui-focused": {
-                  bgcolor: "white",
+                  bgcolor: "background.paper",
                   "& fieldset": { borderColor: "primary.main" },
-                  boxShadow: "0 0 0 3px rgba(99, 102, 241, 0.1)",
+                  boxShadow: "0 0 0 3px rgba(var(--mui-palette-primary-mainChannel) / 0.1)",
                 },
               },
               "& .MuiInputBase-input": {
@@ -696,17 +697,17 @@ export function AIChatInline() {
             onClick={() => handleSendMessage()}
             disabled={!inputValue.trim() || isPending || (chatQuota !== null && chatQuota.remaining === 0)}
             sx={{
-              bgcolor: inputValue.trim() && !(chatQuota !== null && chatQuota.remaining === 0) ? "primary.main" : "#f1f5f9",
-              color: inputValue.trim() && !(chatQuota !== null && chatQuota.remaining === 0) ? "white" : "#94a3b8",
+              bgcolor: inputValue.trim() && !(chatQuota !== null && chatQuota.remaining === 0) ? "primary.main" : "var(--mui-palette-grey-100)",
+              color: inputValue.trim() && !(chatQuota !== null && chatQuota.remaining === 0) ? "primary.contrastText" : "var(--mui-palette-text-disabled)",
               transition: "all 0.2s ease-in-out",
               mb: 0.5,
               "&:hover": {
-                bgcolor: inputValue.trim() && !(chatQuota !== null && chatQuota.remaining === 0) ? "primary.dark" : "#e2e8f0",
+                bgcolor: inputValue.trim() && !(chatQuota !== null && chatQuota.remaining === 0) ? "primary.dark" : "var(--mui-palette-divider)",
                 transform: inputValue.trim() && !(chatQuota !== null && chatQuota.remaining === 0) ? "scale(1.05)" : "none",
               },
               "&.Mui-disabled": {
-                bgcolor: "#f1f5f9",
-                color: "#cbd5e1",
+                bgcolor: "var(--mui-palette-grey-100)",
+                color: "var(--mui-palette-divider)",
               },
               width: 48,
               height: 48,
