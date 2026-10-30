@@ -1,13 +1,21 @@
-import { Injectable, BadRequestException } from '@nestjs/common';
+import {
+  Injectable,
+  BadRequestException,
+  Logger,
+  OnApplicationBootstrap,
+} from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { IsNull, Not, Repository } from 'typeorm';
+import { EncryptionService } from '../../../../common/security/encryption.service.js';
 import { AppleWatchMetric } from '../../domain/enums/apple-watch-metric.enum.js';
 import { CustomFieldModel } from '../../../../database/models/custom-field.model.js';
 import { DailyLogModel } from '../../../../database/models/daily-log.model.js';
 import { FieldValueModel } from '../../../../database/models/field-value.model.js';
 
 @Injectable()
-export class HealthSyncService {
+export class HealthSyncService implements OnApplicationBootstrap {
+  private readonly logger = new Logger(HealthSyncService.name);
+
   constructor(
     @InjectRepository(CustomFieldModel)
     private readonly customFieldRepository: Repository<CustomFieldModel>,
@@ -15,7 +23,51 @@ export class HealthSyncService {
     private readonly dailyLogRepository: Repository<DailyLogModel>,
     @InjectRepository(FieldValueModel)
     private readonly fieldValueRepository: Repository<FieldValueModel>,
+    private readonly encryptionService: EncryptionService,
   ) {}
+
+  async onApplicationBootstrap(): Promise<void> {
+    try {
+      await this.encryptLegacyPlaintextValues();
+    } catch (error) {
+      this.logger.error(
+        'Could not encrypt legacy Apple Watch values',
+        error instanceof Error ? error.stack : String(error),
+      );
+    }
+  }
+
+  /**
+   * Values synced before the sync encrypted them were stored in plain text.
+   * Encrypts every Apple Watch value that does not decrypt; idempotent.
+   */
+  async encryptLegacyPlaintextValues(): Promise<number> {
+    const values = await this.fieldValueRepository.find({
+      where: { customField: { appleWatchMetric: Not(IsNull()) } },
+      relations: { customField: true },
+    });
+    let encrypted = 0;
+    for (const fieldValue of values) {
+      if (!fieldValue.value || this.isEncrypted(fieldValue.value)) continue;
+      await this.fieldValueRepository.update(fieldValue.id, {
+        value: this.encryptionService.encrypt(fieldValue.value),
+      });
+      encrypted++;
+    }
+    if (encrypted > 0) {
+      this.logger.log(`Encrypted ${encrypted} legacy Apple Watch values`);
+    }
+    return encrypted;
+  }
+
+  private isEncrypted(value: string): boolean {
+    try {
+      this.encryptionService.decrypt(value);
+      return true;
+    } catch {
+      return false;
+    }
+  }
 
   async syncAppleWatchData(
     userId: string,
@@ -85,7 +137,7 @@ export class HealthSyncService {
       finalValue = String(Math.round(numericValue * 10) / 10);
     }
 
-    fieldValue.value = finalValue;
+    fieldValue.value = this.encryptionService.encrypt(finalValue);
 
     await this.fieldValueRepository.save(fieldValue);
   }
