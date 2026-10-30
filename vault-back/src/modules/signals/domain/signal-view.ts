@@ -12,8 +12,8 @@ import type { SignalCorrections, SignalPayload } from './signal-payload.js';
 
 export const DISPLAY_NOUL_THRESHOLD = 0.7;
 export const DISPLAY_CONFIDENCE_THRESHOLD = 0.5;
-const HIGH_LEVEL_THRESHOLD = 3;
-const LOW_LEVEL_THRESHOLD = 1;
+export const HIGH_LEVEL_THRESHOLD = 3;
+export const LOW_LEVEL_THRESHOLD = 1;
 /** Neutral level used to dismiss a signal whose low end is the notable one. */
 const NEUTRAL_LEVEL = 2;
 

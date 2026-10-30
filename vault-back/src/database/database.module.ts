@@ -16,6 +16,8 @@ import { AIChatUsageModel } from './models/ai-chat-usage.model.js';
 import { AIChatUsageRepository } from './repositories/ai-chat-usage.repository.js';
 import { NoteSignalsModel } from './models/note-signals.model.js';
 import { NoteSignalsRepository } from './repositories/note-signals.repository.js';
+import { PatternReportModel } from './models/pattern-report.model.js';
+import { PatternReportRepository } from './repositories/pattern-report.repository.js';
 import { UserMapper } from './mappers/user.mapper.js';
 import { CustomFieldMapper } from './mappers/custom-field.mapper.js';
 import { DailyLogMapper } from './mappers/daily-log.mapper.js';
@@ -32,6 +34,7 @@ const models = [
   ApiKeyModel,
   AIChatUsageModel,
   NoteSignalsModel,
+  PatternReportModel,
 ];
 
 const repositories = [
@@ -43,6 +46,7 @@ const repositories = [
   ApiKeyRepository,
   AIChatUsageRepository,
   NoteSignalsRepository,
+  PatternReportRepository,
 ];
 
 const mappers = [

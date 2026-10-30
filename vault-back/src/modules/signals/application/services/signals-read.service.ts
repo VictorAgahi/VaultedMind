@@ -16,6 +16,12 @@ import {
   type CorrectionsInput,
 } from '../../domain/signal-corrections.js';
 import type { Person } from '../../domain/person.js';
+import type { LinguisticMarkers } from '../../domain/linguistic-markers.js';
+
+export interface FreshSignals {
+  views: SignalView[];
+  markers: LinguisticMarkers;
+}
 
 /**
  * Serves fresh signals with the daily logs and records the user's corrections.
@@ -34,9 +40,21 @@ export class SignalsReadService {
     userId: string,
     logs: DailyLog[],
   ): Promise<Map<string, SignalView[] | null>> {
-    const result = new Map<string, SignalView[] | null>(
-      logs.map((log) => [log.id, null]),
+    const fresh = await this.freshForLogs(userId, logs);
+    return new Map(
+      logs.map((log) => [log.id, fresh.get(log.id)?.views ?? null]),
     );
+  }
+
+  /**
+   * Fresh signals per log id with corrections applied, plus the linguistic markers of the note.
+   * Logs without fresh signals are absent from the map.
+   */
+  async freshForLogs(
+    userId: string,
+    logs: DailyLog[],
+  ): Promise<Map<string, FreshSignals>> {
+    const result = new Map<string, FreshSignals>();
     const user = await this.userRepository.findUserById(userId);
     if (!user.preferences.insightsV2Enabled) return result;
 
@@ -57,14 +75,14 @@ export class SignalsReadService {
       }
       const payload = this.noteSignalsRepository.decodePayload(row);
       if (!payload) continue;
-      result.set(
-        log.id,
-        buildSignalViews(
+      result.set(log.id, {
+        views: buildSignalViews(
           payload,
           this.noteSignalsRepository.decodeCorrections(row),
           people,
         ),
-      );
+        markers: payload.markers,
+      });
     }
     return result;
   }

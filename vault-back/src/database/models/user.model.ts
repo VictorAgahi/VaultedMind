@@ -5,6 +5,7 @@ import { CustomFieldModel } from './custom-field.model.js';
 import { DailyLogModel } from './daily-log.model.js';
 import { AIInsightModel } from './ai-insight.model.js';
 import { ApiKeyModel } from './api-key.model.js';
+import type { InsightTarget } from '../../modules/patterns/domain/insight-target.js';
 
 @Entity('users')
 export class UserModel extends BaseModel {
@@ -47,6 +48,9 @@ export class UserModel extends BaseModel {
 
   @Column({ name: 'people_encrypted', type: 'text', nullable: true })
   peopleEncrypted?: string | null;
+
+  @Column({ name: 'insight_targets', type: 'json', nullable: true })
+  insightTargets?: InsightTarget[] | null;
 
   @Column({ name: 'reminder_enabled', type: 'boolean', default: true })
   reminderEnabled!: boolean;

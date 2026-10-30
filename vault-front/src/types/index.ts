@@ -7,6 +7,15 @@ export interface UserPreferences {
   aiIncludeNotes: boolean;
   insightsV2Enabled?: boolean;
   people?: Person[];
+  insightTargets?: InsightTarget[];
+}
+
+export type TargetDirection = "HIGHER_IS_BETTER" | "LOWER_IS_BETTER";
+
+/** Ce que l'utilisateur veut comprendre : un champ et le sens qui est le bon. */
+export interface InsightTarget {
+  fieldId: string;
+  direction: TargetDirection;
 }
 
 /** Personne de l'entourage : seul l'alias quitte le serveur, les variantes sont remplacées avant l'envoi. */

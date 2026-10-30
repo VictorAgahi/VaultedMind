@@ -1,4 +1,5 @@
 import type { Person } from '../../../signals/domain/person.js';
+import type { InsightTarget } from '../../../patterns/domain/insight-target.js';
 
 /**
  * Preferences the user controls from the app (reminders, quick check-in, AI scope).
@@ -17,6 +18,8 @@ export interface UserPreferences {
   insightsV2Enabled: boolean;
   /** People from the user's life, replaced by their alias before notes leave the server. */
   people: Person[];
+  /** Up to 3 fields the user wants to understand, with the good direction of each. */
+  insightTargets: InsightTarget[];
   /** Local date ("YYYY-MM-DD") of the last reminder sent, to send at most one per day. */
   lastReminderOn?: string;
 }
@@ -36,6 +39,7 @@ export const DEFAULT_USER_PREFERENCES: UserPreferences = {
   aiIncludeNotes: true,
   insightsV2Enabled: false,
   people: [],
+  insightTargets: [],
 };
 
 /**

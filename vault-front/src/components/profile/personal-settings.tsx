@@ -4,8 +4,9 @@ import React from "react";
 import { Box, Button, FormControlLabel, Switch, TextField, Typography } from "@mui/material";
 import { apiService } from "@/services/api.service";
 import { useAuth } from "@/context/auth-context";
-import type { Person } from "@/types";
+import type { InsightTarget, Person } from "@/types";
 import { PeopleEditor } from "./people-editor";
+import { InsightTargetsEditor } from "./insight-targets-editor";
 
 export const PersonalSettings: React.FC = () => {
   const { user, refreshUser } = useAuth();
@@ -13,7 +14,7 @@ export const PersonalSettings: React.FC = () => {
   const [saving, setSaving] = React.useState(false);
   const [status, setStatus] = React.useState<string | null>(null);
 
-  const patch = async (update: Record<string, string | boolean | null | Person[]>, done: string) => {
+  const patch = async (update: Record<string, string | boolean | null | Person[] | InsightTarget[]>, done: string) => {
     setSaving(true);
     setStatus(null);
     try {
@@ -75,6 +76,14 @@ export const PersonalSettings: React.FC = () => {
             <Typography variant="caption" color="warning.main" role="note" sx={{ display: "block", ml: 6 }}>
               Pour l&apos;activer, acceptez d&apos;abord l&apos;envoi de vos données à l&apos;IA en incluant vos notes.
             </Typography>
+          )}
+          {user.preferences?.insightsV2Enabled && (
+            <InsightTargetsEditor
+              key={JSON.stringify(user.preferences?.insightTargets ?? [])}
+              initial={user.preferences?.insightTargets ?? []}
+              saving={saving}
+              onSave={(insightTargets) => patch({ insightTargets }, "Choix enregistrés.")}
+            />
           )}
           {user.preferences?.insightsV2Enabled && (
             <PeopleEditor

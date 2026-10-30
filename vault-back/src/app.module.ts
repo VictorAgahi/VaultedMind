@@ -13,6 +13,7 @@ import { HealthModule } from './modules/health/infrastructure/health.module.js';
 import { NotificationsModule } from './modules/notifications/notifications.module.js';
 import { AIInsightsModule } from './modules/ai-insights/infrastructure/ai-insights.module.js';
 import { SignalsModule } from './modules/signals/infrastructure/signals.module.js';
+import { PatternsModule } from './modules/patterns/infrastructure/patterns.module.js';
 import { ScheduleModule } from '@nestjs/schedule';
 import { APP_GUARD } from '@nestjs/core';
 
@@ -53,6 +54,7 @@ import { APP_GUARD } from '@nestjs/core';
     NotificationsModule,
     AIInsightsModule,
     SignalsModule,
+    PatternsModule,
   ],
   providers: [
     {

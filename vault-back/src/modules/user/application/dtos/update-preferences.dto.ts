@@ -4,6 +4,7 @@ import {
   ArrayMinSize,
   IsArray,
   IsBoolean,
+  IsIn,
   IsOptional,
   IsString,
   IsUUID,
@@ -18,6 +19,11 @@ import {
   PERSON_ID_PATTERN,
   PERSON_LIMITS,
 } from '../../../signals/domain/person.js';
+import {
+  MAX_INSIGHT_TARGETS,
+  TARGET_DIRECTIONS,
+  type TargetDirection,
+} from '../../../patterns/domain/insight-target.js';
 
 function IsIanaTimeZone(options?: ValidationOptions): PropertyDecorator {
   return ValidateBy(
@@ -54,6 +60,14 @@ export class PersonDto {
   @IsString({ each: true })
   @Length(1, PERSON_LIMITS.variantMaxLength, { each: true })
   variants!: string[];
+}
+
+export class InsightTargetDto {
+  @IsUUID()
+  fieldId!: string;
+
+  @IsIn(TARGET_DIRECTIONS)
+  direction!: TargetDirection;
 }
 
 export class UpdatePreferencesDto {
@@ -95,4 +109,11 @@ export class UpdatePreferencesDto {
   @ValidateNested({ each: true })
   @Type(() => PersonDto)
   people?: PersonDto[];
+
+  @IsOptional()
+  @IsArray()
+  @ArrayMaxSize(MAX_INSIGHT_TARGETS)
+  @ValidateNested({ each: true })
+  @Type(() => InsightTargetDto)
+  insightTargets?: InsightTargetDto[];
 }

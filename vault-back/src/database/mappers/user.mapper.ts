@@ -34,6 +34,7 @@ export class UserMapper {
         aiIncludeNotes: model.aiIncludeNotes ?? true,
         insightsV2Enabled: model.insightsV2Enabled ?? false,
         people: this.decryptPeople(model.peopleEncrypted),
+        insightTargets: model.insightTargets ?? [],
         lastReminderOn: model.lastReminderOn ?? undefined,
       },
       {
@@ -78,6 +79,10 @@ export class UserMapper {
         ? this.encryptionService.encrypt(
             JSON.stringify(entity.preferences.people),
           )
+        : null;
+    model.insightTargets =
+      entity.preferences.insightTargets.length > 0
+        ? entity.preferences.insightTargets
         : null;
     model.lastReminderOn = entity.preferences.lastReminderOn ?? null;
     model.healthDataConsentAt = entity.consents.healthDataConsentAt ?? null;

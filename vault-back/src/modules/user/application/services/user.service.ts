@@ -19,6 +19,7 @@ import {
   DEFAULT_USER_PREFERENCES,
 } from '../../domain/entities/user.entity.js';
 import type { Person } from '../../../signals/domain/person.js';
+import { findTargetProblems } from '../../../patterns/domain/insight-target.js';
 import { AIConsentRequiredException } from '../../../ai-insights/domain/exceptions/ai-consent-required.exception.js';
 import { AIInsightRepository } from '../../../../database/repositories/ai-insight.repository.js';
 import { EncryptionService } from '../../../../common/security/encryption.service.js';
@@ -88,6 +89,9 @@ export class UserService {
     if (updates.quickCheckinFieldId) {
       await this.assertFieldOwnership(userId, updates.quickCheckinFieldId);
     }
+    if (updates.insightTargets) {
+      await this.assertValidTargets(userId, updates.insightTargets);
+    }
     const { firstName, quickCheckinFieldId, people, ...rest } = updates;
     user.preferences = {
       ...user.preferences,
@@ -105,6 +109,15 @@ export class UserService {
     }
     const saved = await this.userRepository.saveUser(user);
     return this.toProfile(saved);
+  }
+
+  private async assertValidTargets(
+    userId: string,
+    targets: NonNullable<UserPreferencesUpdate['insightTargets']>,
+  ): Promise<void> {
+    const fields = await this.customFieldRepository.findByUserId(userId);
+    const problems = findTargetProblems(targets, fields);
+    if (problems.length > 0) throw new BadRequestException(problems);
   }
 
   private normalizePeople(people: Person[]): Person[] {
@@ -152,6 +165,7 @@ export class UserService {
         aiIncludeNotes: user.preferences.aiIncludeNotes,
         insightsV2Enabled: user.preferences.insightsV2Enabled,
         people: user.preferences.people,
+        insightTargets: user.preferences.insightTargets,
       },
       consents: {
         healthDataConsentAt: user.consents.healthDataConsentAt,
