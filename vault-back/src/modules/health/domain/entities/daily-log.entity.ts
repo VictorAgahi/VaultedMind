@@ -9,5 +9,7 @@ export class DailyLog {
     public readonly updatedAt: Date,
     public readonly notes?: string,
     public readonly fieldValues?: FieldValue[],
+    /** Clean rewrite of the notes; only set when it matches the current raw notes. */
+    public readonly notesClean?: string,
   ) {}
 }

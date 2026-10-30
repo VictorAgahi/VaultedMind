@@ -80,6 +80,8 @@ export class DailyLogResponseDto {
   id!: string;
   logDate!: Date;
   notes?: string;
+  /** Clean rewrite of the notes, null when absent or out of date with the raw notes. */
+  notesClean!: string | null;
   createdAt!: Date;
   fieldValues?: FieldValueResponseDto[];
 }

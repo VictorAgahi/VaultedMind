@@ -11,6 +11,8 @@ export interface UserPreferences {
   quickCheckinFieldId?: string;
   /** Whether free-text notes may be sent to the AI provider. */
   aiIncludeNotes: boolean;
+  /** Opt-in to the advanced journal analysis (clean rewrite of dictated notes, beta). */
+  insightsV2Enabled: boolean;
   /** Local date ("YYYY-MM-DD") of the last reminder sent, to send at most one per day. */
   lastReminderOn?: string;
 }
@@ -28,6 +30,7 @@ export const DEFAULT_USER_PREFERENCES: UserPreferences = {
   reminderTime: '21:00',
   timezone: 'Europe/Paris',
   aiIncludeNotes: true,
+  insightsV2Enabled: false,
 };
 
 /**
@@ -58,5 +61,19 @@ export class User {
 
   public hasGivenAIConsent(): boolean {
     return !!this.consents.aiConsentAt;
+  }
+
+  /**
+   * Notes may be sent to the AI provider only with consent and the notes scope accepted.
+   */
+  public allowsNotesInAI(): boolean {
+    return this.hasGivenAIConsent() && this.preferences.aiIncludeNotes;
+  }
+
+  /**
+   * The clean rewrite of dictated notes needs the v2 opt-in and the right to send notes to the AI.
+   */
+  public canCleanNotes(): boolean {
+    return this.preferences.insightsV2Enabled && this.allowsNotesInAI();
   }
 }

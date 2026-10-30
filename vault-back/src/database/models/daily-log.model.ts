@@ -12,6 +12,12 @@ export class DailyLogModel extends BaseModel {
   @Column({ type: 'text', nullable: true })
   notes?: string | null;
 
+  @Column({ name: 'notes_clean', type: 'text', nullable: true })
+  notesClean?: string | null;
+
+  @Column({ name: 'notes_clean_source', type: 'varchar', nullable: true })
+  notesCleanSource?: string | null;
+
   @Column({ name: 'user_id', type: 'uuid' })
   userId!: string;
 

@@ -9,6 +9,8 @@ import { PromptService } from '../application/services/prompt.service.js';
 import { LLMService } from '../application/services/llm.service.js';
 import { AIInsightController } from './controllers/ai-insight.controller.js';
 import { AIInsightsCronService } from './cron/ai-insights-cron.service.js';
+import { NoteCleanupCronService } from './cron/note-cleanup-cron.service.js';
+import { NoteCleanupService } from '../application/services/note-cleanup.service.js';
 import { AIChatService } from '../application/services/ai-chat.service.js';
 import { AIChatController } from './controllers/ai-chat.controller.js';
 import { DatabaseModule } from '../../../database/database.module.js';
@@ -23,6 +25,8 @@ import { DatabaseModule } from '../../../database/database.module.js';
     PromptService,
     LLMService,
     AIInsightsCronService,
+    NoteCleanupService,
+    NoteCleanupCronService,
     AIChatService,
   ],
   controllers: [AIInsightController, AIChatController],

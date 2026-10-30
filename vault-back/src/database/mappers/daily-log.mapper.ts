@@ -18,6 +18,7 @@ export class DailyLogMapper {
       model.fieldValues
         ? model.fieldValues.map((fv) => FieldValueMapper.toDomain(fv))
         : undefined,
+      model.notesClean ?? undefined,
     );
   }
 

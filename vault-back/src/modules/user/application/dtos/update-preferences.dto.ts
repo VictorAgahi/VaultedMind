@@ -58,4 +58,8 @@ export class UpdatePreferencesDto {
   @IsOptional()
   @IsBoolean()
   aiIncludeNotes?: boolean;
+
+  @IsOptional()
+  @IsBoolean()
+  insightsV2Enabled?: boolean;
 }

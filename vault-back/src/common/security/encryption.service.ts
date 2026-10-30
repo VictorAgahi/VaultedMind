@@ -74,4 +74,15 @@ export class EncryptionService {
       .update(text.toLowerCase().trim())
       .digest('hex');
   }
+
+  /**
+   * Creates a keyed, case-sensitive fingerprint of a text, used to detect that it changed.
+   * The purpose scopes the hash so it cannot be compared with other indexes.
+   */
+  createKeyedHash(text: string, purpose: string): string {
+    return createHmac('sha256', this.key)
+      .update(`${purpose}:`)
+      .update(text)
+      .digest('hex');
+  }
 }

@@ -210,6 +210,7 @@ describe('Health Tracking — CRUD (e2e)', () => {
           // Assert
           expect(body).toHaveProperty('id');
           expect(body.notes).toBe('Productive day');
+          expect(body.notesClean).toBeNull();
           logId = body.id;
         });
 

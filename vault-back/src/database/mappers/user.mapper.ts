@@ -31,6 +31,7 @@ export class UserMapper {
         timezone: model.timezone ?? 'Europe/Paris',
         quickCheckinFieldId: model.quickCheckinFieldId ?? undefined,
         aiIncludeNotes: model.aiIncludeNotes ?? true,
+        insightsV2Enabled: model.insightsV2Enabled ?? false,
         lastReminderOn: model.lastReminderOn ?? undefined,
       },
       {
@@ -60,6 +61,7 @@ export class UserMapper {
     model.timezone = entity.preferences.timezone;
     model.quickCheckinFieldId = entity.preferences.quickCheckinFieldId ?? null;
     model.aiIncludeNotes = entity.preferences.aiIncludeNotes;
+    model.insightsV2Enabled = entity.preferences.insightsV2Enabled;
     model.lastReminderOn = entity.preferences.lastReminderOn ?? null;
     model.healthDataConsentAt = entity.consents.healthDataConsentAt ?? null;
     model.aiConsentAt = entity.consents.aiConsentAt ?? null;

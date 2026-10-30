@@ -36,6 +36,7 @@ export interface UserPreferencesUpdate {
   timezone?: string;
   quickCheckinFieldId?: string | null;
   aiIncludeNotes?: boolean;
+  insightsV2Enabled?: boolean;
 }
 
 interface ExportedCustomField {

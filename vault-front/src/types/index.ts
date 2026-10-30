@@ -5,6 +5,7 @@ export interface UserPreferences {
   timezone: string;
   quickCheckinFieldId?: string;
   aiIncludeNotes: boolean;
+  insightsV2Enabled?: boolean;
 }
 
 export interface UserConsents {
@@ -157,6 +158,8 @@ export interface DailyLog {
   id: string;
   logDate: string;
   notes?: string;
+  /** Version reformulée des notes dictées ; null si absente ou périmée. */
+  notesClean?: string | null;
   createdAt: string;
   fieldValues?: FieldValue[];
   _ts?: number;

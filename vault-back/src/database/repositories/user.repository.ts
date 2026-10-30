@@ -60,6 +60,16 @@ export class UserRepository extends AbstractBaseRepository<UserModel> {
   }
 
   /**
+   * Users who opted in to the advanced journal analysis.
+   */
+  async findWithInsightsV2Enabled(): Promise<User[]> {
+    const models = await this.repository.find({
+      where: { insightsV2Enabled: true },
+    });
+    return models.map((model) => this.userMapper.toDomain(model));
+  }
+
+  /**
    * Records the local date of the last reminder sent, without touching other columns.
    */
   async markReminderSent(id: string, localDate: string): Promise<void> {

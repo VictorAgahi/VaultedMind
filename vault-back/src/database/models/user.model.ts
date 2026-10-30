@@ -42,6 +42,9 @@ export class UserModel extends BaseModel {
   @Column({ name: 'ai_include_notes', type: 'boolean', default: true })
   aiIncludeNotes!: boolean;
 
+  @Column({ name: 'insights_v2_enabled', type: 'boolean', default: false })
+  insightsV2Enabled!: boolean;
+
   @Column({ name: 'reminder_enabled', type: 'boolean', default: true })
   reminderEnabled!: boolean;
 

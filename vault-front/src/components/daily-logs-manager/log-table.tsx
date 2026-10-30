@@ -18,6 +18,7 @@ import { DailyLog, CustomField, FieldType } from "@/types";
 import { ClientOnlyDate } from "../ui/client-only-date";
 import { formatHourlyValue } from "@/utils/time-converter";
 import AccessTimeIcon from "@mui/icons-material/AccessTime";
+import { NoteText } from "./note-text";
 
 interface LogTableProps {
   logs: DailyLog[];
@@ -83,9 +84,7 @@ const LogCards: React.FC<LogTableProps> = ({ logs, activeFields, onEdit, onDelet
             </Box>
           )}
           {log.notes && (
-            <Typography variant="body2" color="text.secondary" sx={{ display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden" }}>
-              {log.notes}
-            </Typography>
+            <NoteText notes={log.notes} notesClean={log.notesClean} variant="card" />
           )}
         </Box>
       );
@@ -130,9 +129,7 @@ export const LogTable: React.FC<LogTableProps> = ({ logs, activeFields, onEdit, 
                 <TableCell key={field.id}>{getDisplayValue(log, field)}</TableCell>
               ))}
               <TableCell>
-                <Typography variant="body2" sx={{ maxWidth: { xs: 100, sm: 150, md: 200 }, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-                  {log.notes || "-"}
-                </Typography>
+                <NoteText notes={log.notes} notesClean={log.notesClean} variant="cell" />
               </TableCell>
               <TableCell align="right">
                 <IconButton size="small" onClick={() => onEdit(log)} color="primary" aria-label={`Modifier le journal du ${new Date(log.logDate).toLocaleDateString("fr-FR")}`}>

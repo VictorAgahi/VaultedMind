@@ -17,6 +17,7 @@ import {
   User,
   DEFAULT_USER_PREFERENCES,
 } from '../../domain/entities/user.entity.js';
+import { AIConsentRequiredException } from '../../../ai-insights/domain/exceptions/ai-consent-required.exception.js';
 import { AIInsightRepository } from '../../../../database/repositories/ai-insight.repository.js';
 import { EncryptionService } from '../../../../common/security/encryption.service.js';
 import { DailyLogRepository } from '../../../../database/repositories/daily-log.repository.js';
@@ -96,6 +97,9 @@ export class UserService {
         quickCheckinFieldId: quickCheckinFieldId ?? undefined,
       }),
     };
+    if (updates.insightsV2Enabled && !user.allowsNotesInAI()) {
+      throw new AIConsentRequiredException();
+    }
     const saved = await this.userRepository.saveUser(user);
     return this.toProfile(saved);
   }
@@ -122,6 +126,7 @@ export class UserService {
         timezone: user.preferences.timezone,
         quickCheckinFieldId: user.preferences.quickCheckinFieldId,
         aiIncludeNotes: user.preferences.aiIncludeNotes,
+        insightsV2Enabled: user.preferences.insightsV2Enabled,
       },
       consents: {
         healthDataConsentAt: user.consents.healthDataConsentAt,

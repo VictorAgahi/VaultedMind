@@ -111,6 +111,7 @@ export class DailyLogController {
       id: entity.id,
       logDate: entity.logDate,
       notes: entity.notes,
+      notesClean: entity.notesClean ?? null,
       createdAt: entity.createdAt,
       fieldValues: entity.fieldValues?.map((fv) => ({
         id: fv.id,
