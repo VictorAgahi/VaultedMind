@@ -37,7 +37,8 @@ class ApiService {
           };
         }
 
-        if (response.status === 401 || response.status === 403 || (response.status === 400 && errorData.message?.toLowerCase().includes("token"))) {
+        // Un 403 est un refus métier (ex. consentement IA absent), pas une session expirée : seul le 401 déconnecte.
+        if (response.status === 401 || (response.status === 400 && errorData.message?.toLowerCase().includes("token"))) {
           if (typeof window !== "undefined") {
             const publicRoutes = ["/", "/login", "/register", "/about", "/contact", "/privacy", "/terms"];
             const isPublicPage = publicRoutes.includes(window.location.pathname);
@@ -70,16 +71,7 @@ class ApiService {
         throw { message: "Vous êtes hors ligne.", statusCode: 0 } as ApiError;
       }
 
-      if (typeof window !== "undefined") {
-        const publicRoutes = ["/", "/login", "/register", "/about", "/contact", "/privacy", "/terms"];
-        const isPublicPage = publicRoutes.includes(window.location.pathname);
-        if (!isPublicPage) {
-          // localStorage est conservé : il contient les saisies hors ligne, le thème et le code de verrouillage.
-          window.sessionStorage.clear();
-          window.location.href = "/login?reason=network_error";
-        }
-      }
-
+      // Erreur réseau ou serveur injoignable : on remonte l'erreur à l'appelant sans déconnecter l'utilisateur.
       throw {
         message: (error as Error).message || "Network Error",
         statusCode: 500,

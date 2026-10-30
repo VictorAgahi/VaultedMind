@@ -21,7 +21,7 @@ No test suite is configured. UI verification requires running `npm run dev` and 
 ### Auth Flow
 - `src/middleware.ts` — Edge middleware that decodes JWT from `access_token` cookie and redirects unauthenticated requests to `/login`. Public routes: `/, /login, /register, /about, /contact, /privacy, /terms`.
 - `src/context/auth-context.tsx` — Client-side `AuthProvider` wrapping the entire app. Calls `/auth/me` on mount. Use `useAuth()` hook to access `user`, `isAuthenticated`, `login`, `logout`.
-- Session expiry (`401/403`) in `apiService` triggers `window.location.href = "/login?reason=session_expired"`, which middleware uses to clear the cookie.
+- Session expiry (`401` only; a `403` such as `AI_CONSENT_REQUIRED` is surfaced as an error message, and network errors never log out) in `apiService` triggers `window.location.href = "/login?reason=session_expired"`, which middleware uses to clear the cookie.
 
 ### API Layer
 - `src/services/api.service.ts` — Singleton `apiService` with typed `.get<T>()`, `.post<T,D>()`, `.put<T,D>()`, `.patch<T,D>()`, `.delete<T>()`. All requests use `credentials: "include"` for cookie-based auth. Always import from `@/services/api.service`.
