@@ -136,13 +136,13 @@ const LogCalendarView: React.FC<LogCalendarViewProps> = ({
     return `Modifier le journal du ${formattedDate}, ${level}`;
   };
 
-  // Plus le jour est complet, plus la teinte est profonde (rampe séquentielle du sceau).
+  // Plus le jour est complet, plus la teinte est profonde (rampe séquentielle corail).
   const getDayColors = (day: typeof calendarDays[number]) => {
     if (!day.isLogged) return { bgcolor: "action.hover", color: "text.secondary" };
     const ratio = day.filledRatio ?? 0;
-    if (ratio >= 0.7) return { bgcolor: "var(--chart-pos-3)", color: "primary.contrastText" };
-    if (ratio >= 0.35) return { bgcolor: "var(--chart-pos-2)", color: "var(--chart-on-mid)" };
-    return { bgcolor: "var(--chart-pos-1)", color: "text.primary" };
+    if (ratio >= 0.7) return { bgcolor: "primary.main", color: "primary.contrastText" };
+    if (ratio >= 0.35) return { bgcolor: "color-mix(in oklab, var(--chart-s1) 60%, var(--chart-surface))", color: "var(--chart-on-mid)" };
+    return { bgcolor: "color-mix(in oklab, var(--chart-s1) 28%, var(--chart-surface))", color: "text.primary" };
   };
 
   return (
