@@ -198,9 +198,9 @@ const LogCalendarView: React.FC<LogCalendarViewProps> = ({
 
       <Box sx={{ display: "flex", flexWrap: "wrap", gap: 2, mt: 2, color: "text.secondary" }}>
         {[
-          { label: "Partiel", bg: "var(--chart-pos-1)" },
-          { label: "Bien rempli", bg: "var(--chart-pos-2)" },
-          { label: "Complet", bg: "var(--chart-pos-3)" },
+          { label: "Partiel", bg: "color-mix(in oklab, var(--chart-s1) 28%, var(--chart-surface))" },
+          { label: "Bien rempli", bg: "color-mix(in oklab, var(--chart-s1) 60%, var(--chart-surface))" },
+          { label: "Complet", bg: "var(--mui-palette-primary-main)" },
         ].map((item) => (
           <Box key={item.label} sx={{ display: "flex", alignItems: "center", gap: 0.75 }}>
             <Box sx={{ width: 10, height: 10, borderRadius: "3px", bgcolor: item.bg }} />
