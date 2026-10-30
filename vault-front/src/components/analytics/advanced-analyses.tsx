@@ -23,7 +23,7 @@ import LocalFireDepartmentIcon from "@mui/icons-material/LocalFireDepartment";
 import CalendarMonthIcon from "@mui/icons-material/CalendarMonth";
 import AutoAwesomeIcon from "@mui/icons-material/AutoAwesome";
 import { CustomField, DailyLog, FieldType } from "@/types";
-import { calculatePearsonCorrelation } from "@/utils/math";
+import { calculatePearsonCorrelation, correlationPValue, benjaminiHochberg, MIN_RELIABLE_PAIRS } from "@/utils/math";
 
 import {
   Tooltip,
@@ -57,7 +57,7 @@ interface UseAdvancedAnalysesReturn {
   heatmapData: Array<{ date: Date; dateStr: string; logged: boolean; value: number | null; displayLabel: string; dayNum: number; formattedDate: string }>;
   activeFieldObj: CustomField | undefined;
   expertRecommendation: string;
-  autoDiscoveryInsight: { fieldA: CustomField; fieldB: CustomField; correlation: number } | null;
+  autoDiscoveryInsight: { fieldA: CustomField; fieldB: CustomField; correlation: number; n: number; p: number } | null;
   getAdvVal: (log: DailyLog, fieldId: string) => number | null;
 }
 
@@ -301,44 +301,36 @@ const useAdvancedAnalyses = (
     return `"${fieldName}" est très stable ces derniers temps (variabilité de ${volatility} %).`;
   }, [statsSummary, activeFieldObj]);
 
+  // Lien le plus fort parmi ceux qui survivent à la correction pour comparaisons multiples,
+  // sur au moins MIN_RELIABLE_PAIRS jours : sinon, on n'affiche rien plutôt qu'un faux lien.
   const autoDiscoveryInsight = useMemo(() => {
-    if (fields.length < 2 || logs.length < 5) return null;
-
     const measurable = fields.filter(f =>
       f.isActive && (f.fieldType === FieldType.NUMBER || f.fieldType === FieldType.BOOLEAN)
     );
+    if (measurable.length < 2 || logs.length < MIN_RELIABLE_PAIRS) return null;
 
-    let bestPair: { fieldA: CustomField; fieldB: CustomField; correlation: number } | null = null;
-    let maxAbs = 0;
-
+    const candidates: { fieldA: CustomField; fieldB: CustomField; correlation: number; n: number; p: number }[] = [];
     for (let i = 0; i < measurable.length; i++) {
       for (let j = i + 1; j < measurable.length; j++) {
         const fa = measurable[i];
         const fb = measurable[j];
-
         const pairs: [number, number][] = [];
         logs.forEach(log => {
           const va = getAdvVal(log, fa.id);
           const vb = getAdvVal(log, fb.id);
-          if (va !== null && vb !== null) {
-            pairs.push([va, vb]);
-          }
+          if (va !== null && vb !== null) pairs.push([va, vb]);
         });
-
-        if (pairs.length >= 5) {
-          const x = pairs.map(p => p[0]);
-          const y = pairs.map(p => p[1]);
-          const correlation = calculatePearsonCorrelation(x, y);
-          const abs = Math.abs(correlation);
-          if (!isNaN(abs) && abs > maxAbs && abs < 0.98) {
-            maxAbs = abs;
-            bestPair = { fieldA: fa, fieldB: fb, correlation };
-          }
-        }
+        if (pairs.length < MIN_RELIABLE_PAIRS) continue;
+        const correlation = calculatePearsonCorrelation(pairs.map(p => p[0]), pairs.map(p => p[1]));
+        if (!Number.isFinite(correlation) || Math.abs(correlation) >= 0.98) continue;
+        candidates.push({ fieldA: fa, fieldB: fb, correlation, n: pairs.length, p: correlationPValue(correlation, pairs.length) });
       }
     }
-
-    return bestPair;
+    if (candidates.length === 0) return null;
+    const significant = benjaminiHochberg(candidates.map(c => c.p));
+    const kept = candidates.filter((_, index) => significant[index]);
+    if (kept.length === 0) return null;
+    return kept.reduce((best, c) => (Math.abs(c.correlation) > Math.abs(best.correlation) ? c : best));
   }, [fields, logs, getAdvVal]);
 
   return {
@@ -478,7 +470,7 @@ export const AdvancedAnalyses: React.FC<AdvancedAnalysesProps> = ({
               <Typography variant="body1">
                 <strong>{autoDiscoveryInsight.fieldA.name}</strong> et <strong>{autoDiscoveryInsight.fieldB.name}</strong>{" "}
                 {autoDiscoveryInsight.correlation >= 0 ? "évoluent ensemble" : "évoluent en sens inverse"}
-                {" "}(r = {autoDiscoveryInsight.correlation.toFixed(2).replace(".", ",")}).
+                {" "}(r = {autoDiscoveryInsight.correlation.toFixed(2).replace(".", ",")}, sur {autoDiscoveryInsight.n} jours).
               </Typography>
               <Typography variant="body2" color="text.secondary">
                 {autoDiscoveryInsight.correlation >= 0

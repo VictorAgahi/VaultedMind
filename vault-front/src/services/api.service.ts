@@ -65,11 +65,16 @@ class ApiService {
         throw error;
       }
 
+      // Hors ligne : on laisse l'appelant gérer (file d'attente locale), sans déconnecter l'utilisateur.
+      if (typeof navigator !== "undefined" && !navigator.onLine) {
+        throw { message: "Vous êtes hors ligne.", statusCode: 0 } as ApiError;
+      }
+
       if (typeof window !== "undefined") {
         const publicRoutes = ["/", "/login", "/register", "/about", "/contact", "/privacy", "/terms"];
         const isPublicPage = publicRoutes.includes(window.location.pathname);
         if (!isPublicPage) {
-          window.localStorage.clear();
+          // localStorage est conservé : il contient les saisies hors ligne, le thème et le code de verrouillage.
           window.sessionStorage.clear();
           window.location.href = "/login?reason=network_error";
         }

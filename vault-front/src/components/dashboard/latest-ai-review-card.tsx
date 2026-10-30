@@ -1,5 +1,6 @@
 "use client";
 
+import { useRouter } from "next/navigation";
 import React, { useEffect, useState } from "react";
 import Link from "next/link";
 import {
@@ -37,6 +38,7 @@ const insightTypeLabels: Record<string, string> = {
 };
 
 export function LatestAIReviewCard() {
+  const router = useRouter();
   const [insight, setInsight] = useState<AIInsightResponseDto | null>(null);
   const [loading, setLoading] = useState(true);
   const [modalOpen, setModalOpen] = useState(false);
@@ -115,16 +117,10 @@ export function LatestAIReviewCard() {
 
   const handleAskAssistant = () => {
     if (!insight) return;
-    window.dispatchEvent(
-      new CustomEvent("ai-chat-open-with-message", {
-        detail: {
-          message: `Peux-tu m'expliquer plus en détail cette analyse : "${insight.title}" ?`,
-        },
-      })
-    );
-    const btn = document.getElementById("fab-ai-chat");
-    if (btn) btn.click();
+    const question = `Peux-tu m'expliquer plus en détail cette analyse : "${insight.title}" ?`;
+    router.push(`/ai/chat?prompt=${encodeURIComponent(question)}`);
   };
+
 
   const formatDate = (dateStr: string) => {
     try {

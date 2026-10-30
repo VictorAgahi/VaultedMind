@@ -6,6 +6,10 @@
   "display": "standalone",
   "background_color": "#F3F4F1",
   "theme_color": "#1E5B53",
+  "shortcuts": [
+    { "name": "Noter ma journée", "short_name": "Noter", "url": "/dashboard?new=1", "icons": [{ "src": "/icon.png", "sizes": "1024x1024" }] },
+    { "name": "Parler à l'assistant", "short_name": "Assistant", "url": "/ai/chat", "icons": [{ "src": "/icon.png", "sizes": "1024x1024" }] }
+  ],
   "icons": [
     {
       "src": "/icon.png",

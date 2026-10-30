@@ -1,11 +1,13 @@
 // Service Worker for VaultedMind
-const CACHE_NAME = "vault-mind-cache-v1";
+const CACHE_NAME = "vault-mind-cache-v2";
+// Pages de l'app gardées pour s'ouvrir hors ligne (réseau d'abord, cache en secours).
+const APP_SHELL_ROUTES = ["/dashboard", "/analytics", "/ai", "/profile", "/fields"];
 
 self.addEventListener("install", (event) => {
   event.waitUntil(
     caches.open(CACHE_NAME).then((cache) => {
       // Add essential assets here if needed
-      return cache.addAll(["/offline"]);
+      return cache.addAll(["/offline", "/icon.png"]);
     }).catch(() => {
       console.log("Install: Cache skip (offline page likely missing)");
     })
@@ -29,12 +31,38 @@ self.addEventListener("activate", (event) => {
 });
 
 self.addEventListener("fetch", (event) => {
-  // Pass-through for now, or add caching strategy
-  if (event.request.mode === "navigate") {
+  const request = event.request;
+  if (request.method !== "GET") return;
+  const url = new URL(request.url);
+  if (url.origin !== self.location.origin) return;
+
+  if (request.mode === "navigate") {
     event.respondWith(
-      fetch(event.request).catch(() => {
-        return caches.match("/offline") || Response.error();
-      })
+      fetch(request)
+        .then((response) => {
+          if (response.ok && APP_SHELL_ROUTES.includes(url.pathname)) {
+            const copy = response.clone();
+            caches.open(CACHE_NAME).then((cache) => cache.put(url.pathname, copy));
+          }
+          return response;
+        })
+        .catch(async () => (await caches.match(url.pathname)) || (await caches.match("/offline")) || Response.error())
+    );
+    return;
+  }
+
+  // Fichiers statiques versionnés de Next : cache d'abord, ils ne changent jamais à URL égale.
+  if (url.pathname.startsWith("/_next/static/")) {
+    event.respondWith(
+      caches.match(request).then(
+        (cached) =>
+          cached ||
+          fetch(request).then((response) => {
+            const copy = response.clone();
+            caches.open(CACHE_NAME).then((cache) => cache.put(request, copy));
+            return response;
+          })
+      )
     );
   }
 });

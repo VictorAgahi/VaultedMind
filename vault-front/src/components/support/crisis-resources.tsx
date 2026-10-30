@@ -8,7 +8,7 @@ import PhoneOutlinedIcon from "@mui/icons-material/PhoneOutlined";
 const RESOURCES = [
   { number: "3114", tel: "3114", label: "Prévention du suicide", hint: "24 h/24, gratuit" },
   { number: "15", tel: "15", label: "Urgence médicale (SAMU)", hint: "ou le 112 depuis l'Europe" },
-  { number: "09 72 39 40 50", tel: "0972394050", label: "SOS Amitié", hint: "Écoute 24 h/24" },
+  { number: "09 72 39 40 50", tel: "0972394050", label: "SOS Amitié", hint: "écoute 24 h/24" },
   { number: "0 800 235 236", tel: "0800235236", label: "Fil Santé Jeunes", hint: "12-25 ans, gratuit" },
 ];
 
@@ -34,7 +34,7 @@ export const CrisisResources: React.FC<{ compact?: boolean }> = ({ compact }) =>
           </Box>
           <Box sx={{ minWidth: 0 }}>
             <Typography sx={{ fontWeight: 700, fontVariantNumeric: "tabular-nums" }}>{r.number}</Typography>
-            <Typography variant="caption" color="text.secondary">{r.label}, {r.hint.toLowerCase()}</Typography>
+            <Typography variant="caption" color="text.secondary">{r.label}, {r.hint}</Typography>
           </Box>
         </ButtonBase>
       ))}

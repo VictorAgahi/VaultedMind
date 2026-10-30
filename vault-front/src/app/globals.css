@@ -93,3 +93,38 @@ body::before {
     transition-duration: 0.01ms !important;
   }
 }
+
+/* Impression de l'export thérapeute : seul le document est imprimé, en noir sur blanc. */
+@media print {
+  .no-print,
+  nav,
+  header.MuiAppBar-root,
+  footer,
+  .MuiFab-root {
+    display: none !important;
+  }
+  html,
+  body {
+    background: #ffffff !important;
+    color: #000000 !important;
+    padding: 0 !important;
+  }
+  body::before {
+    display: none !important;
+  }
+  .print-sheet {
+    box-shadow: none !important;
+    background: #ffffff !important;
+    color: #000000 !important;
+    padding: 0 !important;
+  }
+  .print-sheet * {
+    color: #000000 !important;
+  }
+  .print-avoid-break {
+    break-inside: avoid;
+  }
+  @page {
+    margin: 14mm;
+  }
+}

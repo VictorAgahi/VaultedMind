@@ -22,6 +22,8 @@ export const RegisterForm: React.FC = () => {
   const [formData, setFormData] = useState<RegisterData>({
     email: "",
     password: "",
+    firstName: "",
+    healthDataConsent: false,
   });
   const [acceptedTerms, setAcceptedTerms] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -34,14 +36,14 @@ export const RegisterForm: React.FC = () => {
 
   const registerUser = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!acceptedTerms) {
-      setError("Vous devez accepter les conditions d'utilisation.");
+    if (!acceptedTerms || !formData.healthDataConsent) {
+      setError("Les deux accords sont nécessaires pour créer votre carnet.");
       return;
     }
     setIsSubmitting(true);
     setError(null);
     try {
-      await register(formData);
+      await register({ ...formData, firstName: formData.firstName?.trim() || undefined });
     } catch (err: unknown) {
       const apiError = err as ApiError;
       setError(apiError.message || "Échec de l'inscription");
@@ -75,6 +77,15 @@ export const RegisterForm: React.FC = () => {
         )}
 
         <Box sx={{ display: "flex", flexDirection: "column", gap: 2, mb: 1 }}>
+          <TextField
+            label="Prénom (facultatif)"
+            name="firstName"
+            autoComplete="given-name"
+            fullWidth
+            value={formData.firstName}
+            onChange={updateFormField}
+            helperText="Pour vous saluer par votre prénom. Il est stocké chiffré."
+          />
           <TextField
             label="Email"
             name="email"
@@ -115,7 +126,23 @@ export const RegisterForm: React.FC = () => {
               </MuiLink>
             </Typography>
           }
-          sx={{ mb: 2, mt: 1 }}
+          sx={{ mt: 1, alignItems: "flex-start", "& .MuiCheckbox-root": { pt: 0.5 } }}
+        />
+
+        <FormControlLabel
+          control={
+            <Checkbox
+              checked={formData.healthDataConsent}
+              onChange={(e) => setFormData((prev) => ({ ...prev, healthDataConsent: e.target.checked }))}
+              color="primary"
+            />
+          }
+          label={
+            <Typography variant="body2" color="text.secondary">
+              J&apos;accepte que VaultedMind traite les données de bien-être que je saisis (humeur, sommeil, habitudes, notes) pour me les afficher et les analyser. Je peux les exporter ou les supprimer à tout moment.
+            </Typography>
+          }
+          sx={{ mb: 2, mt: 1, alignItems: "flex-start", "& .MuiCheckbox-root": { pt: 0.5 } }}
         />
 
         <Button
@@ -123,7 +150,7 @@ export const RegisterForm: React.FC = () => {
           variant="contained"
           fullWidth
           size="large"
-          disabled={isSubmitting || !acceptedTerms}
+          disabled={isSubmitting || !acceptedTerms || !formData.healthDataConsent}
           sx={{ py: 1.5, mt: 1, borderRadius: 2 }}
         >
           {isSubmitting ? <CircularProgress size={24} color="inherit" /> : "S'inscrire"}

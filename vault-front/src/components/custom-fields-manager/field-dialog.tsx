@@ -43,6 +43,8 @@ export interface FieldFormData {
   min?: number | "";
   max?: number | "";
   appleWatchMetric?: AppleWatchMetric | "";
+  goalTarget?: number | "";
+  goalDirection?: "AT_LEAST" | "AT_MOST";
 }
 
 interface FieldDialogProps {
@@ -199,6 +201,40 @@ export const FieldDialog: React.FC<FieldDialogProps> = ({
               onChange={(e) => setFormData((prev) => ({ ...prev, category: e.target.value }))}
               placeholder="Ex. : Général, Sommeil, Sport..."
             />
+
+            {(formData.fieldType === FieldType.BOOLEAN || formData.fieldType === FieldType.NUMBER) && (
+              <Box sx={{ p: 1.5, borderRadius: 3, bgcolor: "action.hover", display: "grid", gap: 1.5 }}>
+                <Box>
+                  <Typography variant="subtitle2">Objectif de la semaine (facultatif)</Typography>
+                  <Typography variant="caption" color="text.secondary">
+                    {formData.fieldType === FieldType.BOOLEAN
+                      ? "Nombre de jours par semaine. Ex. : sport au moins 3 jours."
+                      : "Moyenne de la semaine. Ex. : sommeil au moins 7, anxiété au plus 2."}
+                  </Typography>
+                </Box>
+                <Box sx={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 1.5 }}>
+                  <TextField
+                    select
+                    label="Sens"
+                    value={formData.goalDirection ?? "AT_LEAST"}
+                    onChange={(e) => setFormData((prev) => ({ ...prev, goalDirection: e.target.value as "AT_LEAST" | "AT_MOST" }))}
+                    margin="none"
+                    slotProps={{ select: { native: true } }}
+                  >
+                    <option value="AT_LEAST">Au moins</option>
+                    <option value="AT_MOST">Au plus</option>
+                  </TextField>
+                  <TextField
+                    label={formData.fieldType === FieldType.BOOLEAN ? "Jours" : "Valeur"}
+                    type="number"
+                    value={formData.goalTarget ?? ""}
+                    onChange={(e) => setFormData((prev) => ({ ...prev, goalTarget: e.target.value === "" ? "" : Number(e.target.value) }))}
+                    margin="none"
+                    slotProps={{ htmlInput: { min: 0, max: formData.fieldType === FieldType.BOOLEAN ? 7 : undefined, step: formData.fieldType === FieldType.BOOLEAN ? 1 : 0.5, inputMode: "decimal" } }}
+                  />
+                </Box>
+              </Box>
+            )}
 
             <FormControlLabel
               control={

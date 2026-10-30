@@ -7,11 +7,14 @@ import { BrandWordmark } from "@/components/brand/brand-mark";
 
 // Dans l'espace connecté, le pied de page n'apparaît que sur grand écran : sur mobile, la barre du bas suffit.
 const appRoutes = ["/dashboard", "/import", "/fields", "/analytics", "/profile", "/ai", "/integrations"];
+// Écrans plein écran : aucun pied de page.
+const immersiveRoutes = ["/ai/chat", "/onboarding"];
 
 export const Footer: React.FC = () => {
   const year = new Date().getFullYear();
   const pathname = usePathname();
   const inApp = appRoutes.includes(pathname);
+  if (immersiveRoutes.includes(pathname)) return null;
 
   return (
     <Box

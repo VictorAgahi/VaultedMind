@@ -32,6 +32,10 @@ import { useAuth } from "@/context/auth-context";
 import { Navbar } from "@/components/navbar/navbar";
 import { ThemeModeSwitch } from "@/components/theme-mode-switch";
 import { CrisisResources } from "@/components/support/crisis-resources";
+import { ReminderPreferences } from "@/components/profile/reminder-preferences";
+import { PersonalSettings } from "@/components/profile/personal-settings";
+import { AppLockSettings } from "@/components/app-lock/app-lock-settings";
+import DescriptionOutlinedIcon from "@mui/icons-material/DescriptionOutlined";
 import { List, ListItemButton, ListItemIcon, ListItemText } from "@mui/material";
 import TuneIcon from "@mui/icons-material/Tune";
 import CloudUploadIcon from "@mui/icons-material/CloudUpload";
@@ -369,6 +373,9 @@ export default function ProfilePage() {
                 >
                   Tester la notification (30s)
                 </Button>
+                <Box sx={{ mt: 2 }}>
+                  <ReminderPreferences onUnsubscribed={() => dispatch({ type: "SET_NOTIFICATION_STATUS", payload: "default" })} />
+                </Box>
               </Box>
             ) : (
               <Box sx={{ mt: 2 }}>
@@ -390,6 +397,11 @@ export default function ProfilePage() {
           </Box>
         </Paper>
 
+        <Paper sx={{ p: { xs: 2, sm: 3 }, borderRadius: 4, mb: 1.5 }}>
+          <Typography variant="subtitle1" sx={{ mb: 1.5 }}>Mes informations</Typography>
+          <PersonalSettings />
+        </Paper>
+
         <Paper sx={{ borderRadius: 4, mb: 1.5, overflow: "hidden" }}>
           <Typography variant="overline" color="text.secondary" sx={{ display: "block", px: { xs: 2, sm: 3 }, pt: 2 }}>
             Mon espace
@@ -399,6 +411,7 @@ export default function ProfilePage() {
               { href: "/fields", label: "Mes champs", hint: "Ce que vous suivez chaque jour", icon: TuneIcon },
               { href: "/import", label: "Importer des données", hint: "Fichier CSV", icon: CloudUploadIcon },
               { href: "/integrations", label: "Intégrations", hint: "Apple Santé, clés d'API", icon: LinkIcon },
+              { href: "/export", label: "Exporter pour mon thérapeute", hint: "Document à imprimer ou en PDF", icon: DescriptionOutlinedIcon },
             ].map(({ href, label, hint, icon: Icon }) => (
               <ListItemButton key={href} component={Link} href={href} sx={{ minHeight: 60, px: { xs: 2, sm: 3 } }}>
                 <ListItemIcon sx={{ minWidth: 40, color: "primary.main" }}><Icon /></ListItemIcon>
@@ -407,6 +420,11 @@ export default function ProfilePage() {
               </ListItemButton>
             ))}
           </List>
+        </Paper>
+
+        <Paper sx={{ p: { xs: 2, sm: 3 }, borderRadius: 4, mb: 1.5 }}>
+          <Typography variant="subtitle1" sx={{ mb: 0.5 }}>Verrouillage par code</Typography>
+          <AppLockSettings />
         </Paper>
 
         <Paper sx={{ p: { xs: 2, sm: 3 }, borderRadius: 4, mb: 1.5 }}>

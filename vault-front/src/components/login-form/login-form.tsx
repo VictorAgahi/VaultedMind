@@ -9,8 +9,6 @@ import {
   Paper,
   Alert,
   CircularProgress,
-  FormControlLabel,
-  Checkbox,
   Link as MuiLink,
   Stack
 } from "@mui/material";
@@ -91,16 +89,6 @@ export const LoginForm: React.FC = () => {
             onChange={updateLoginField}
             disabled={isLoggingIn}
           />
-
-          <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 1 }}>
-            <FormControlLabel
-              control={<Checkbox size="small" color="primary" defaultChecked />}
-              label={<Typography variant="body2">Se souvenir de moi</Typography>}
-            />
-            <MuiLink component={Link} href="/forgot-password" variant="body2" sx={{ fontWeight: 600, textDecoration: "none" }}>
-              Mot de passe oublié ?
-            </MuiLink>
-          </Box>
 
           <Button
             type="submit"

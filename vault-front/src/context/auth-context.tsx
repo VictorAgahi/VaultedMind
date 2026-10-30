@@ -2,6 +2,7 @@
 
 import React, { createContext, use, useState, useEffect, ReactNode } from "react";
 import { User, AuthResponse, LoginCredentials, RegisterData } from "@/types";
+import { clearOfflineData } from "@/utils/entry-outbox";
 import { apiService } from "@/services/api.service";
 import { useRouter } from "next/navigation";
 
@@ -10,6 +11,7 @@ interface AuthContextType {
   loading: boolean;
   login: (data: LoginCredentials) => Promise<void>;
   register: (data: RegisterData) => Promise<void>;
+  refreshUser: () => Promise<void>;
   logout: () => void;
   isAuthenticated: boolean;
 }
@@ -52,8 +54,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const login = async (credentials: LoginCredentials) => {
     setLoading(true);
     try {
-      const response = await apiService.post<AuthResponse, LoginCredentials>("/auth/login", credentials);
-      setUser(response.user);
+      await apiService.post<AuthResponse, LoginCredentials>("/auth/login", credentials);
+      setUser(await apiService.get<User>("/auth/me"));
       setTimeout(() => {
         push("/dashboard");
       }, 150);
@@ -67,10 +69,11 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const register = async (userData: RegisterData) => {
     setLoading(true);
     try {
-      const response = await apiService.post<AuthResponse, RegisterData>("/auth/register", userData);
-      setUser(response.user);
+      await apiService.post<AuthResponse, RegisterData>("/auth/register", userData);
+      setUser(await apiService.get<User>("/auth/me"));
+      // Un nouveau compte n'a aucun champ : on commence par choisir quoi suivre.
       setTimeout(() => {
-        push("/dashboard");
+        push("/onboarding");
       }, 150);
     } catch (error) {
       setLoading(false);
@@ -79,7 +82,12 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     setLoading(false);
   };
 
+  const refreshUser = async () => {
+    setUser(await apiService.get<User>("/auth/me"));
+  };
+
   const logout = async () => {
+    clearOfflineData();
     try {
       await apiService.post("/auth/logout");
     } catch (error) {
@@ -96,6 +104,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         loading,
         login,
         register,
+        refreshUser,
         logout,
         isAuthenticated: !!user,
       }}

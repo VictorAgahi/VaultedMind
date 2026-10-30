@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 
-const PUBLIC_ROUTES = new Set(["/", "/login", "/register", "/about", "/contact", "/privacy", "/terms"]);
+const PUBLIC_ROUTES = new Set(["/", "/login", "/register", "/about", "/contact", "/privacy", "/terms", "/offline"]);
 const AUTH_COOKIE_NAME = "access_token";
 const DEFAULT_AUTH_REDIRECT = "/dashboard";
 const LOGIN_PATH = "/login";

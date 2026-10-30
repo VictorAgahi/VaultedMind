@@ -158,7 +158,19 @@ interface LogEntryDialogProps {
   submitting: boolean;
   activeFields: CustomField[];
   historicalValues: Record<string, string[]>;
+  error?: string | null;
 }
+
+// Questions d'écriture en rotation quotidienne, pour ne pas affronter une page blanche.
+const WRITING_PROMPTS = [
+  "Qu'est-ce qui vous a fait du bien aujourd'hui ?",
+  "Qu'est-ce qui vous a pesé, même un peu ?",
+  "Une petite victoire du jour ?",
+  "Pour quoi êtes-vous reconnaissant·e aujourd'hui ?",
+  "Qu'aimeriez-vous faire différemment demain ?",
+  "Quelle émotion a dominé votre journée ?",
+  "Qui avez-vous eu plaisir à voir ou à entendre ?",
+];
 
 export const LogEntryDialog: React.FC<LogEntryDialogProps> = ({
   open,
@@ -174,8 +186,10 @@ export const LogEntryDialog: React.FC<LogEntryDialogProps> = ({
   onSubmit,
   submitting,
   activeFields,
-  historicalValues
+  historicalValues,
+  error,
 }) => {
+  const [todayPrompt] = React.useState(() => WRITING_PROMPTS[Math.floor(Date.now() / 86_400_000) % WRITING_PROMPTS.length]);
   const theme = useTheme();
   const fullScreen = useMediaQuery(theme.breakpoints.down("sm"));
 
@@ -200,7 +214,9 @@ export const LogEntryDialog: React.FC<LogEntryDialogProps> = ({
   }, [activeFields]);
 
   const categories = Object.keys(groupedFields);
-  const steps = ["Date et notes", ...categories];
+  // Les champs d'abord (rapides), les notes en dernier (facultatives).
+  const steps = [...categories, "Notes et date"];
+  const notesStepIndex = steps.length - 1;
 
   const handleNext = () => setActiveStep((prev) => prev + 1);
   const handleBack = () => setActiveStep((prev) => prev - 1);
@@ -512,6 +528,7 @@ export const LogEntryDialog: React.FC<LogEntryDialogProps> = ({
           />
         </DialogTitle>
         <DialogContent sx={{ pt: "8px !important" }}>
+          {error && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>}
           
           <Stepper activeStep={activeStep} alternativeLabel sx={{ mb: 4, display: { xs: 'none', sm: 'flex' } }}>
             {steps.map((label) => (
@@ -522,8 +539,23 @@ export const LogEntryDialog: React.FC<LogEntryDialogProps> = ({
           </Stepper>
 
           <Box sx={{ minHeight: { xs: 0, sm: "40vh" } }}>
-            {activeStep === 0 ? (
-              <Box sx={{ display: "flex", flexDirection: "column", gap: 3 }}>
+            {activeStep === notesStepIndex ? (
+              <Box sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
+                <Box sx={{ p: 1.5, borderRadius: 3, bgcolor: "primary.light" }}>
+                  <Typography variant="caption" sx={{ color: "primary.main", fontWeight: 700 }}>Question du jour</Typography>
+                  <Typography variant="body1">{todayPrompt}</Typography>
+                </Box>
+                <TextField
+                  label="Notes (facultatif)"
+                  fullWidth
+                  multiline
+                  minRows={4}
+                  variant="outlined"
+                  value={notes}
+                  onChange={(e) => setNotes(e.target.value)}
+                  placeholder="Quelques mots suffisent."
+                  margin="none"
+                />
                 <TextField
                   label="Date"
                   type="date"
@@ -533,16 +565,7 @@ export const LogEntryDialog: React.FC<LogEntryDialogProps> = ({
                   value={logDate}
                   onChange={(e) => setLogDate(e.target.value)}
                   required
-                />
-                <TextField
-                  label="Notes générales"
-                  fullWidth
-                  multiline
-                  rows={4}
-                  variant="outlined"
-                  value={notes}
-                  onChange={(e) => setNotes(e.target.value)}
-                  placeholder="Comment s'est passée votre journée ?"
+                  margin="none"
                 />
               </Box>
             ) : (
@@ -553,7 +576,7 @@ export const LogEntryDialog: React.FC<LogEntryDialogProps> = ({
                   </Alert>
                 ) : (
                   <Box sx={{ display: "flex", flexDirection: "column", gap: 3 }}>
-                    {groupedFields[categories[activeStep - 1]]?.map(renderFieldInput)}
+                    {groupedFields[categories[activeStep]]?.map(renderFieldInput)}
                   </Box>
                 )}
               </Box>

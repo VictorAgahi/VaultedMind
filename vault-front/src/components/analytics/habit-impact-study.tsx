@@ -120,7 +120,7 @@ export const HabitImpactStudy: React.FC<HabitImpactStudyProps> = ({
   const fmt = (v: number) => (isHourly ? formatHourlyValue(v.toString()) : String(v).replace(".", ","));
   const higher = comparisonStats ? comparisonStats.diff >= 0 : true;
   // Sans assez de jours de chaque côté, l'écart n'a pas de sens : on le dit au lieu d'afficher un faux chiffre.
-  const MIN_DAYS_PER_GROUP = 3;
+  const MIN_DAYS_PER_GROUP = 5;
   const enoughData = !!comparisonStats
     && comparisonStats.countWith >= MIN_DAYS_PER_GROUP
     && comparisonStats.countWithout >= MIN_DAYS_PER_GROUP;

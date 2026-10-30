@@ -21,6 +21,8 @@ import {
 } from "@mui/material";
 import AddIcon from "@mui/icons-material/Add";
 import { useRouter } from "next/navigation";
+import { useAuth } from "@/context/auth-context";
+import { WellbeingCards } from "@/components/dashboard/wellbeing-cards";
 import { NEW_ENTRY_EVENT } from "@/components/bottom-nav/bottom-nav";
 import CalendarMonthIcon from "@mui/icons-material/CalendarMonth";
 import ListIcon from "@mui/icons-material/List";
@@ -37,12 +39,15 @@ import { parseHourlyValue, formatHourlyValue } from "@/utils/time-converter";
 import { LogEntryDialog } from "./log-entry-dialog";
 import { LogTable } from "./log-table";
 import { localDateStr } from "@/utils/local-date";
+import { DailyEntryPayload, flushOutbox, isNetworkFailure, OUTBOX_FLUSHED_EVENT, queueEntry, readOfflineSnapshot, saveOfflineSnapshot } from "@/utils/entry-outbox";
 
 interface State {
   logs: DailyLog[];
   fields: CustomField[];
   loading: boolean;
   error: string | null;
+  notice: string | null;
+  dialogError: string | null;
   dialog: {
     open: boolean;
     isEditing: boolean;
@@ -65,6 +70,8 @@ type Action =
   | { type: "SET_DATA"; fields: CustomField[]; logs: DailyLog[] }
   | { type: "SET_LOADING"; loading: boolean }
   | { type: "SET_ERROR"; error: string | null }
+  | { type: "SET_NOTICE"; notice: string | null }
+  | { type: "SET_DIALOG_ERROR"; error: string | null }
   | { type: "OPEN_DIALOG"; isEditing: boolean; logId?: string | null; formData?: State["formData"] }
   | { type: "CLOSE_DIALOG" }
   | { type: "SET_SUBMITTING"; submitting: boolean }
@@ -76,8 +83,11 @@ const reducer = (state: State, action: Action): State => {
     case "SET_DATA": return { ...state, fields: action.fields, logs: action.logs, loading: false, error: null };
     case "SET_LOADING": return { ...state, loading: action.loading };
     case "SET_ERROR": return { ...state, error: action.error, loading: false };
+    case "SET_NOTICE": return { ...state, notice: action.notice };
+    case "SET_DIALOG_ERROR": return { ...state, dialogError: action.error };
     case "OPEN_DIALOG": return {
       ...state,
+      dialogError: null,
       dialog: { ...state.dialog, open: true, isEditing: action.isEditing, logId: action.logId || null },
       formData: action.formData || { date: localDateStr(), notes: "", fieldValues: {}, subFieldValues: {} }
     };
@@ -202,28 +212,87 @@ const LogCalendarView: React.FC<LogCalendarViewProps> = ({
   );
 };
 
+const MOOD_LEVELS = ["Difficile", "Bof", "Moyen", "Bien", "Très bien"] as const;
+
+// Ramène l'un des 5 niveaux d'humeur sur l'échelle du champ (1-5, 1-10…).
+const moodLevelToValue = (field: CustomField, level: number): string => {
+  const min = field.min ?? 1;
+  const max = field.max ?? 5;
+  return String(Math.round(min + (level * (max - min)) / (MOOD_LEVELS.length - 1)));
+};
+
+const valueToMoodLevel = (field: CustomField, value: string | undefined): number | null => {
+  if (value === undefined || value === "") return null;
+  const min = field.min ?? 1;
+  const max = field.max ?? 5;
+  const ratio = (parseFloat(value) - min) / (max - min || 1);
+  return Math.max(0, Math.min(MOOD_LEVELS.length - 1, Math.round(ratio * (MOOD_LEVELS.length - 1))));
+};
+
 interface TodayCardProps {
   todayLogged: boolean;
   streak: number;
   last7: boolean[];
   onOpenToday: () => void;
+  quickField?: CustomField;
+  quickLevel: number | null;
+  onQuickCheckin: (level: number) => void;
+  quickSaving: boolean;
 }
 
-const TodayCard: React.FC<TodayCardProps> = ({ todayLogged, streak, last7, onOpenToday }) => (
+const TodayCard: React.FC<TodayCardProps> = ({ todayLogged, streak, last7, onOpenToday, quickField, quickLevel, onQuickCheckin, quickSaving }) => (
   <Box sx={{ display: "grid", gap: 1.5, gridTemplateColumns: { xs: "1fr", md: "2fr 1fr" } }}>
     <Paper sx={{ p: 2.5, borderRadius: 4, bgcolor: "primary.main", color: "primary.contrastText", display: "grid", gap: 1.5 }}>
-      <Typography suppressHydrationWarning variant="overline" sx={{ opacity: 0.85, textTransform: "capitalize" }}>
+      <Typography suppressHydrationWarning variant="overline" sx={{ opacity: 0.85, display: "block", "&::first-letter": { textTransform: "uppercase" } }}>
         {new Date().toLocaleDateString("fr-FR", { weekday: "long", day: "numeric", month: "long" })}
       </Typography>
       <Typography variant="h3" component="p" sx={{ color: "inherit" }}>
-        {todayLogged ? "Votre journée est notée." : "Votre journée n'est pas encore notée."}
+        {quickField
+          ? quickLevel !== null ? "Merci, votre humeur est notée." : "Comment vous sentez-vous aujourd'hui ?"
+          : todayLogged ? "Votre journée est notée." : "Votre journée n'est pas encore notée."}
       </Typography>
+      {quickField && (
+        // Check-in express : un toucher enregistre l'humeur du jour.
+        <Box role="radiogroup" aria-label={`${quickField.name} du jour`} sx={{ display: "grid", gridTemplateColumns: "repeat(5, 1fr)", gap: 0.75 }}>
+          {MOOD_LEVELS.map((label, level) => {
+            const selected = quickLevel === level;
+            return (
+              <ButtonBase
+                key={label}
+                role="radio"
+                aria-checked={selected}
+                disabled={quickSaving}
+                onClick={() => onQuickCheckin(level)}
+                sx={{
+                  minHeight: 56,
+                  borderRadius: 3,
+                  px: 0.5,
+                  flexDirection: "column",
+                  gap: 0.5,
+                  bgcolor: selected ? "background.paper" : "rgba(var(--mui-palette-primary-contrastTextChannel) / 0.12)",
+                  color: selected ? "primary.main" : "inherit",
+                  transition: "background-color 160ms cubic-bezier(.2,0,0,1)",
+                }}
+              >
+                <Box aria-hidden sx={{ display: "flex", gap: "3px", alignItems: "flex-end", height: 14 }}>
+                  {MOOD_LEVELS.map((_, bar) => (
+                    <Box key={bar} sx={{ width: 3, height: 4 + bar * 2.5, borderRadius: 1, bgcolor: "currentColor", opacity: bar <= level ? 1 : 0.3 }} />
+                  ))}
+                </Box>
+                <Typography component="span" sx={{ fontSize: "0.6875rem", fontWeight: 700, lineHeight: 1.1, textAlign: "center" }}>{label}</Typography>
+              </ButtonBase>
+            );
+          })}
+        </Box>
+      )}
       <Button
         onClick={onOpenToday}
-        variant="contained"
-        sx={{ justifySelf: "start", bgcolor: "background.paper", color: "primary.main", "&:hover": { bgcolor: "background.default" } }}
+        variant={quickField ? "text" : "contained"}
+        sx={quickField
+          ? { justifySelf: "start", color: "inherit", px: 0, textDecoration: "underline", textUnderlineOffset: 3, minHeight: 44 }
+          : { justifySelf: "start", bgcolor: "background.paper", color: "primary.main", "&:hover": { bgcolor: "background.default" } }}
       >
-        {todayLogged ? "Modifier ma journée" : "Noter ma journée"}
+        {quickField ? (todayLogged ? "Compléter ma journée" : "Noter toute ma journée") : todayLogged ? "Modifier ma journée" : "Noter ma journée"}
       </Button>
     </Paper>
     <Paper sx={{ p: 2.5, borderRadius: 4, display: "grid", gap: 1.5, alignContent: "start" }}>
@@ -267,8 +336,23 @@ const LogListView: React.FC<LogListViewProps> = ({
   handleOpen,
   handleDelete
 }) => {
+  // Recherche dans les notes : retrouver le jour où l'on a parlé d'un sujet.
+  const [noteQuery, setNoteQuery] = React.useState("");
+  const normalizedQuery = noteQuery.trim().toLowerCase();
+  const visibleLogs = normalizedQuery
+    ? filteredLogs.filter(log => (log.notes ?? "").toLowerCase().includes(normalizedQuery))
+    : filteredLogs;
   return (
     <>
+      <TextField
+        type="search"
+        label="Rechercher dans mes notes"
+        value={noteQuery}
+        onChange={(e) => setNoteQuery(e.target.value)}
+        margin="none"
+        sx={{ mb: 1.5 }}
+        helperText={normalizedQuery ? `${visibleLogs.length} journée${visibleLogs.length > 1 ? "s" : ""} trouvée${visibleLogs.length > 1 ? "s" : ""}` : undefined}
+      />
       <Box sx={{ mb: 2, display: "flex", gap: 1.5, flexWrap: "wrap", alignItems: "center" }}>
         <Autocomplete
           multiple
@@ -304,7 +388,7 @@ const LogListView: React.FC<LogListViewProps> = ({
         <Box sx={{ display: "flex", justifyContent: "center", py: 4 }}><CircularProgress /></Box>
       ) : (
         <LogTable
-          logs={filteredLogs}
+          logs={visibleLogs}
           activeFields={activeFields}
           onEdit={handleOpen}
           onDelete={handleDelete}
@@ -343,6 +427,8 @@ const useDailyLogs = (): UseDailyLogsReturn => {
     fields: [],
     loading: true,
     error: null,
+    notice: null,
+    dialogError: null,
     dialog: { open: false, isEditing: false, logId: null, submitting: false },
     formData: { date: localDateStr(), notes: "", fieldValues: {}, subFieldValues: {} },
     filters: { selectedFields: [], sortOrder: "desc" }
@@ -363,10 +449,18 @@ const useDailyLogs = (): UseDailyLogsReturn => {
         apiService.get<CustomField[]>("/health/custom-fields", { signal }),
         apiService.get<DailyLog[]>("/health/daily-logs", { signal })
       ]);
-      dispatch({ type: "SET_DATA", fields: fieldsData, logs: logsData.sort((a, b) => new Date(a.logDate).getTime() - new Date(b.logDate).getTime()) });
+      const sortedLogs = logsData.sort((a, b) => new Date(a.logDate).getTime() - new Date(b.logDate).getTime());
+      dispatch({ type: "SET_DATA", fields: fieldsData, logs: sortedLogs });
+      saveOfflineSnapshot(fieldsData, sortedLogs);
     } catch (err: unknown) {
-      if (err instanceof Error && err.name !== "AbortError") {
-        dispatch({ type: "SET_ERROR", error: "Échec du chargement des données" });
+      if ((err as { name?: string })?.name === "AbortError") return;
+      // Hors ligne : on affiche la dernière copie connue pour pouvoir noter sa journée quand même.
+      const snapshot = isNetworkFailure(err) ? readOfflineSnapshot() : null;
+      if (snapshot) {
+        dispatch({ type: "SET_DATA", fields: snapshot.fields, logs: snapshot.logs });
+        dispatch({ type: "SET_NOTICE", notice: "Hors ligne : vous voyez la dernière version enregistrée sur cet appareil." });
+      } else {
+        dispatch({ type: "SET_ERROR", error: "Les données n'ont pas pu être chargées. Vérifiez votre connexion." });
       }
     }
   }, []);
@@ -379,13 +473,19 @@ const useDailyLogs = (): UseDailyLogsReturn => {
     });
 
     const refresh = () => { fetchData(); };
+    const flush = () => { flushOutbox(); };
     window.addEventListener("vaultedmind:fields-updated", refresh);
     window.addEventListener("vaultedmind:logs-imported", refresh);
+    window.addEventListener(OUTBOX_FLUSHED_EVENT, refresh);
+    window.addEventListener("online", flush);
+    flushOutbox();
 
     return () => {
       controller.abort();
       window.removeEventListener("vaultedmind:fields-updated", refresh);
       window.removeEventListener("vaultedmind:logs-imported", refresh);
+      window.removeEventListener(OUTBOX_FLUSHED_EVENT, refresh);
+      window.removeEventListener("online", flush);
     };
   }, [fetchData]);
 
@@ -474,58 +574,55 @@ const useDailyLogs = (): UseDailyLogsReturn => {
 
   const handleClose = () => dispatch({ type: "CLOSE_DIALOG" });
 
+  // Construit la journée complète : valeurs renseignées, et valeurs effacées à supprimer côté serveur.
+  const buildEntryPayload = (): DailyEntryPayload => {
+    const values: DailyEntryPayload["values"] = [];
+    Object.entries(formData.fieldValues).forEach(([fid, v]) => {
+      if (!v.trim()) return;
+      const field = fields.find(f => f.id === fid);
+      const value = field && field.fieldType === FieldType.NUMBER && (field.optionsOrder || []).includes("isHourly")
+        ? parseHourlyValue(v)
+        : v;
+      const subValues = Object.entries(formData.subFieldValues?.[fid] ?? {}).reduce<Record<string, string>>((acc, [sId, sVal]) => {
+        if (sVal && sVal.trim()) acc[sId] = sVal.trim();
+        return acc;
+      }, {});
+      values.push({ customFieldId: fid, value, subValues: Object.keys(subValues).length ? subValues : undefined });
+    });
+    const existingLog = dialog.isEditing ? logs.find(l => l.id === dialog.logId) : undefined;
+    const clearedFieldIds = (existingLog?.fieldValues ?? [])
+      .map(fv => fv.customFieldId)
+      .filter(fid => !formData.fieldValues[fid]?.trim());
+    return {
+      logId: dialog.isEditing && dialog.logId ? dialog.logId : undefined,
+      logDate: formData.date,
+      notes: formData.notes,
+      values,
+      clearedFieldIds,
+    };
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     dispatch({ type: "SET_SUBMITTING", submitting: true });
+    dispatch({ type: "SET_DIALOG_ERROR", error: null });
+    const payload = buildEntryPayload();
     try {
-      let lid = dialog.logId;
-      if (dialog.isEditing && lid) {
-        await apiService.patch(`/health/daily-logs/${lid}`, { logDate: formData.date, notes: formData.notes });
-      } else {
-        const newLog = await apiService.post<DailyLog, { logDate: string, notes: string }>("/health/daily-logs", { logDate: formData.date, notes: formData.notes });
-        lid = newLog.id;
-      }
-
-      const saveRequests = Object.entries(formData.fieldValues).reduce<Promise<unknown>[]>((acc, [fid, v]) => {
-        if (v.trim()) {
-          const field = fields.find(f => f.id === fid);
-          let valueToSave = v;
-          if (field && field.fieldType === FieldType.NUMBER && (field.optionsOrder || []).includes("isHourly")) {
-            valueToSave = parseHourlyValue(v);
-          }
-
-          const rawSubVals = formData.subFieldValues?.[fid];
-          let subValuesToSave: Record<string, string> | undefined = undefined;
-          if (rawSubVals) {
-            const filtered = Object.entries(rawSubVals).reduce<Record<string, string>>((sAcc, [sId, sVal]) => {
-              if (sVal && sVal.trim()) {
-                sAcc[sId] = sVal.trim();
-              }
-              return sAcc;
-            }, {});
-            if (Object.keys(filtered).length > 0) {
-              subValuesToSave = filtered;
-            }
-          }
-
-          acc.push(apiService.post(`/health/daily-logs/${lid}/values`, { 
-            customFieldId: fid, 
-            value: valueToSave,
-            subValues: subValuesToSave,
-          }));
-        }
-        return acc;
-      }, []);
-
-      await Promise.all(saveRequests);
-
+      // Un seul appel transactionnel : la journée est enregistrée entièrement ou pas du tout.
+      await apiService.post<DailyLog, DailyEntryPayload>("/health/daily-logs/entry", payload);
       startTransition(() => {
         fetchData();
       });
       handleClose();
     } catch (err: unknown) {
-      const error = err as AppError;
-      dispatch({ type: "SET_ERROR", error: error.message || "Erreur lors de l'enregistrement" });
+      if (isNetworkFailure(err)) {
+        queueEntry(payload);
+        dispatch({ type: "SET_NOTICE", notice: "Vous êtes hors ligne : la journée est gardée sur cet appareil et sera envoyée dès le retour du réseau." });
+        handleClose();
+      } else {
+        const error = err as AppError;
+        dispatch({ type: "SET_DIALOG_ERROR", error: error.message || "L'enregistrement a échoué. Réessayez." });
+      }
     } finally {
       dispatch({ type: "SET_SUBMITTING", submitting: false });
     }
@@ -709,6 +806,44 @@ export const DailyLogsManager: React.FC = () => {
     openToday,
   } = useDailyLogs();
   const router = useRouter();
+  const { user } = useAuth();
+  const [quickSaving, setQuickSaving] = React.useState(false);
+
+  // Champ du check-in express : celui choisi à l'onboarding, sinon un champ « Humeur » sur une échelle.
+  const quickField = React.useMemo(() => {
+    const chosen = activeFields.find(f => f.id === user?.preferences?.quickCheckinFieldId);
+    if (chosen && chosen.fieldType === FieldType.NUMBER) return chosen;
+    return activeFields.find(f => f.fieldType === FieldType.NUMBER && /humeur/i.test(f.name) && f.min != null && f.max != null);
+  }, [activeFields, user?.preferences?.quickCheckinFieldId]);
+  const todayLog = React.useMemo(
+    () => state.logs.find(l => new Date(l.logDate).toISOString().split("T")[0] === localDateStr()),
+    [state.logs],
+  );
+
+  const handleQuickCheckin = async (level: number) => {
+    if (!quickField) return;
+    setQuickSaving(true);
+    const payload: DailyEntryPayload = {
+      logId: todayLog?.id,
+      logDate: localDateStr(),
+      notes: todayLog?.notes,
+      values: [{ customFieldId: quickField.id, value: moodLevelToValue(quickField, level) }],
+      clearedFieldIds: [],
+    };
+    try {
+      await apiService.post("/health/daily-logs/entry", payload);
+      window.dispatchEvent(new CustomEvent("vaultedmind:fields-updated"));
+    } catch (err) {
+      if (isNetworkFailure(err)) {
+        queueEntry(payload);
+        dispatch({ type: "SET_NOTICE", notice: "Hors ligne : votre humeur est gardée sur cet appareil et sera envoyée dès le retour du réseau." });
+      } else {
+        dispatch({ type: "SET_ERROR", error: (err as AppError).message || "L'humeur n'a pas pu être enregistrée." });
+      }
+    } finally {
+      setQuickSaving(false);
+    }
+  };
 
   // Le bouton central de la barre du bas ouvre la saisie du jour.
   const openTodayRef = React.useRef(openToday);
@@ -734,6 +869,13 @@ export const DailyLogsManager: React.FC = () => {
     window.addEventListener(NEW_ENTRY_EVENT, onNewEntry);
     return () => window.removeEventListener(NEW_ENTRY_EVENT, onNewEntry);
   }, []);
+  // Un compte sans aucun champ n'a rien à saisir : on l'envoie choisir quoi suivre.
+  useEffect(() => {
+    if (!state.loading && mounted && !state.error && state.fields.length === 0) {
+      router.replace("/onboarding");
+    }
+  }, [state.loading, state.error, state.fields.length, mounted, router]);
+
   useEffect(() => {
     if (state.loading || !mounted) return;
     if (pendingNewRef.current) {
@@ -746,7 +888,7 @@ export const DailyLogsManager: React.FC = () => {
     }
   }, [state.loading, mounted, router, pendingTick]);
 
-  const { loading, error, dialog, formData } = state;
+  const { loading, error, notice, dialogError, dialog, formData } = state;
 
   return !mounted ? (
     <Paper sx={{ p: 2, borderRadius: 4, display: "flex", justifyContent: "center", alignItems: "center", minHeight: 320 }}>
@@ -754,7 +896,17 @@ export const DailyLogsManager: React.FC = () => {
     </Paper>
   ) : (
     <Box sx={{ display: "grid", gap: 1.5 }}>
-      <TodayCard todayLogged={todayLogged} streak={streak} last7={last7} onOpenToday={openToday} />
+      <TodayCard
+        todayLogged={todayLogged}
+        streak={streak}
+        last7={last7}
+        onOpenToday={openToday}
+        quickField={quickField}
+        quickLevel={quickField ? valueToMoodLevel(quickField, todayLog?.fieldValues?.find(fv => fv.customFieldId === quickField.id)?.value) : null}
+        onQuickCheckin={handleQuickCheckin}
+        quickSaving={quickSaving}
+      />
+      <WellbeingCards logs={state.logs} fields={state.fields} moodField={quickField} />
     <Paper sx={{ p: { xs: 2, md: 3 }, borderRadius: 4 }}>
       <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", mb: 2, gap: 1.5, flexWrap: "wrap" }}>
         <Typography variant="h5" component="h2">Mon journal</Typography>
@@ -787,7 +939,8 @@ export const DailyLogsManager: React.FC = () => {
         </Box>
       </Box>
 
-      {error && <Alert severity="error" sx={{ mb: 3 }} onClose={() => dispatch({ type: "SET_ERROR", error: null })}>{error}</Alert>}
+      {error && <Alert severity="error" sx={{ mb: 2 }} onClose={() => dispatch({ type: "SET_ERROR", error: null })}>{error}</Alert>}
+      {notice && <Alert severity="info" sx={{ mb: 2 }} onClose={() => dispatch({ type: "SET_NOTICE", notice: null })}>{notice}</Alert>}
 
       {managerTab === "calendar" && (
         <LogCalendarView
@@ -840,6 +993,7 @@ export const DailyLogsManager: React.FC = () => {
         }}
         onSubmit={handleSubmit}
         submitting={dialog.submitting}
+        error={dialogError}
         activeFields={activeFields}
         historicalValues={historicalValues}
       />

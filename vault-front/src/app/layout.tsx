@@ -11,6 +11,7 @@ import { theme } from "@/theme/theme";
 import { BottomNav } from "@/components/bottom-nav/bottom-nav";
 import PWAHandler from "@/components/pwa-handler";
 import { ThemeColorSync } from "@/components/theme-color-sync";
+import { AppLockGate } from "@/components/app-lock/app-lock-gate";
 import { AIChatBot } from "@/components/ai-insights/ai-chatbot";
 import Script from "next/script";
 
@@ -53,7 +54,7 @@ export const metadata: Metadata = {
     "suivi psychologique anonyme",
     "héritage numérique sécurisé",
     "santé mentale",
-    "chiffrement de bout en bout",
+    "données chiffrées",
     "E-E-A-T",
     "Privacy by Design",
     "RGPD",
@@ -119,7 +120,7 @@ export default function RootLayout({
         "@type": "Organization",
         "name": "VaultedMind"
       },
-      "securityDetails": "AES-256 End-to-End Encryption, OWASP Compliant, GDPR Compliant"
+      "securityDetails": "AES-256 encryption at rest, OWASP practices, GDPR compliant"
     },
     {
       "@context": "https://schema.org",
@@ -150,7 +151,7 @@ export default function RootLayout({
           "name": "Comment VaultedMind garantit-il la sécurité ?",
           "acceptedAnswer": {
             "@type": "Answer",
-            "text": "VaultedMind applique les principes de 'Privacy by Design', utilise le chiffrement AES-256 de bout en bout et respecte les standards OWASP et GDPR pour assurer une confidentialité absolue."
+            "text": "VaultedMind applique les principes de 'Privacy by Design', stocke vos données chiffrées en AES-256 et respecte les standards OWASP et GDPR pour assurer une confidentialité absolue."
           }
         }
       ]
@@ -181,6 +182,7 @@ export default function RootLayout({
                 <Footer />
                 <BottomNav />
                 <AIChatBot />
+                <AppLockGate />
               </Box>
             </AuthProvider>
           </ThemeProvider>

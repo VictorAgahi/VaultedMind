@@ -1,9 +1,27 @@
+export interface UserPreferences {
+  reminderEnabled: boolean;
+  /** Heure locale du rappel, "HH:MM" par quart d'heure. */
+  reminderTime: string;
+  timezone: string;
+  quickCheckinFieldId?: string;
+  aiIncludeNotes: boolean;
+}
+
+export interface UserConsents {
+  healthDataConsentAt?: string;
+  aiConsentAt?: string;
+}
+
 export interface User {
   id: string;
   email: string;
   firstName?: string;
   lastName?: string;
   avatarUrl?: string;
+  createdAt?: string;
+  preferences?: UserPreferences;
+  consents?: UserConsents;
+  aiInsightsEnabled?: boolean;
 }
 
 export interface UserProfile {
@@ -49,6 +67,9 @@ export interface LoginCredentials {
 export interface RegisterData {
   email: string;
   password?: string;
+  firstName?: string;
+  /** Consentement explicite et distinct au traitement des données de santé (RGPD art. 9). */
+  healthDataConsent: boolean;
 }
 
 export enum FieldType {
@@ -89,6 +110,9 @@ export interface CustomField {
   min?: number;
   max?: number;
   appleWatchMetric?: AppleWatchMetric;
+  /** Objectif hebdomadaire : nombre de jours (oui/non) ou moyenne (nombre). */
+  goalTarget?: number;
+  goalDirection?: "AT_LEAST" | "AT_MOST";
   createdAt: string;
 }
 
@@ -102,6 +126,8 @@ export interface CreateCustomFieldDto {
   min?: number;
   max?: number;
   appleWatchMetric?: AppleWatchMetric;
+  goalTarget?: number | null;
+  goalDirection?: "AT_LEAST" | "AT_MOST" | null;
 }
 
 export interface UpdateCustomFieldDto {
@@ -114,6 +140,8 @@ export interface UpdateCustomFieldDto {
   min?: number;
   max?: number;
   appleWatchMetric?: AppleWatchMetric;
+  goalTarget?: number | null;
+  goalDirection?: "AT_LEAST" | "AT_MOST" | null;
 }
 
 export interface FieldValue {
