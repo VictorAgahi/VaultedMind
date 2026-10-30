@@ -34,7 +34,7 @@ export const ThemeModeSwitch: React.FC = () => {
         "& .MuiToggleButton-root.Mui-selected": {
           bgcolor: "background.paper",
           color: "text.primary",
-          boxShadow: "0 1px 2px rgba(15, 20, 19, 0.12)",
+          boxShadow: "0 1px 2px rgba(20, 16, 16, 0.12)",
           "&:hover": { bgcolor: "background.paper" },
         },
       }}

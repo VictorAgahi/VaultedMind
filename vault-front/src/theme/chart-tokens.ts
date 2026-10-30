@@ -42,7 +42,7 @@ export const chartTooltipProps = {
     color: "var(--mui-palette-background-default)",
     fontSize: 12,
     padding: "6px 10px",
-    boxShadow: "0 6px 16px rgba(15, 20, 19, 0.25)",
+    boxShadow: "0 6px 16px rgba(20, 16, 16, 0.25)",
   },
   itemStyle: { color: "var(--mui-palette-background-default)", padding: 0 },
   labelStyle: { color: "var(--mui-palette-background-default)", fontWeight: 700, marginBottom: 2 },

@@ -590,7 +590,7 @@ export default function AnalyticsClient() {
               color: "text.secondary",
               transition: "background-color 160ms cubic-bezier(.2,0,0,1)",
             },
-            "& .MuiTab-root.Mui-selected": { bgcolor: "background.paper", color: "text.primary", boxShadow: "0 1px 2px rgba(15, 20, 19, 0.12)" },
+            "& .MuiTab-root.Mui-selected": { bgcolor: "background.paper", color: "text.primary", boxShadow: "0 1px 2px rgba(20, 16, 16, 0.12)" },
           }}
         >
           <Tab label="Tendances" />

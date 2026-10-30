@@ -3,11 +3,11 @@
 /*
  * Tokens graphiques de la charte "Le carnet scellé".
  * Clair sur :root, sombre sur .dark (classe posée par MUI InitColorSchemeScript).
- * Palette des séries validée (lightness, chroma, CVD, contraste) sur #FFFFFF et #171D1C.
+ * Palette des séries validée (lightness, chroma, CVD, contraste) sur #FFFFFF et #1D1817.
  */
 :root {
-  --chart-s1: #00927c;
-  --chart-s2: #eb6834;
+  --chart-s1: #d9503f;
+  --chart-s2: #00927c;
   --chart-s3: #6250d6;
   --chart-s4: #eda100;
   --chart-s5: #e87ba4;
@@ -15,27 +15,27 @@
   --chart-neg-3: #9a3412;
   --chart-neg-2: #d46a43;
   --chart-neg-1: #f2c6b3;
-  --chart-mid: #eceeeb;
+  --chart-mid: #eeeae7;
   /* Série neutre (ex. "sans l'habitude") : >= 3:1 sur la surface, contrairement au centre divergent */
-  --chart-neutral: #8a948f;
+  --chart-neutral: #948883;
   /* Texte posé sur les paliers 2 de l'échelle divergente, identique dans les deux modes */
-  --chart-on-mid: #0f1413;
+  --chart-on-mid: #141010;
   --chart-pos-1: #bfe3da;
   --chart-pos-2: #2e9c88;
   --chart-pos-3: #1e5b53;
-  --chart-grid: #e6e9e5;
-  --chart-axis: #c5ccc7;
-  --chart-tick: #6b7672;
+  --chart-grid: #ece6e2;
+  --chart-axis: #d1c8c3;
+  --chart-tick: #76665f;
   --chart-surface: #ffffff;
-  --chart-ink: #17201d;
+  --chart-ink: #231a18;
   --accent-glow: #f2b544;
   /* Ambre lisible comme élément graphique sur fond clair (3,6:1) */
   --accent-strong: #b87503;
 }
 
 .dark {
-  --chart-s1: #16a08a;
-  --chart-s2: #d95926;
+  --chart-s1: #ff7a63;
+  --chart-s2: #16a08a;
   --chart-s3: #9085e9;
   --chart-s4: #c98500;
   --chart-s5: #d55181;
@@ -43,17 +43,17 @@
   --chart-neg-3: #f08a62;
   --chart-neg-2: #d46a43;
   --chart-neg-1: #6b3a2a;
-  --chart-mid: #2a3230;
-  --chart-neutral: #7d8a85;
-  --chart-on-mid: #0f1413;
+  --chart-mid: #332a28;
+  --chart-neutral: #8c7e79;
+  --chart-on-mid: #141010;
   --chart-pos-1: #2a5a51;
   --chart-pos-2: #2e9c88;
   --chart-pos-3: #6cc3b3;
-  --chart-grid: #232b29;
-  --chart-axis: #34403d;
-  --chart-tick: #7d8a85;
-  --chart-surface: #171d1c;
-  --chart-ink: #e8eeeb;
+  --chart-grid: #2c2422;
+  --chart-axis: #443a37;
+  --chart-tick: #8c7e79;
+  --chart-surface: #1d1817;
+  --chart-ink: #f0e9e6;
   --accent-glow: #e8b04b;
   --accent-strong: #e8b04b;
 }

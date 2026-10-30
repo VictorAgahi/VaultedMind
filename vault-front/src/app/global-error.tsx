@@ -19,8 +19,8 @@ export default function GlobalError({
             display: "flex",
             alignItems: "center",
             justifyContent: "center",
-            bgcolor: "#0F1413",
-            color: "#E8EEEB",
+            bgcolor: "#141010",
+            color: "#F0E9E6",
             textAlign: "center",
             p: 3,
             fontFamily: "system-ui, -apple-system, sans-serif"
@@ -30,7 +30,7 @@ export default function GlobalError({
             <Typography variant="h3" component="h1" sx={{ fontWeight: 800, mb: 2 }}>
               L&apos;application s&apos;est arrêtée
             </Typography>
-            <Typography variant="body1" sx={{ color: "#A3B0AB", mb: 4 }}>
+            <Typography variant="body1" sx={{ color: "#B5A8A3", mb: 4 }}>
               Une erreur grave est survenue. L&apos;application s&apos;est arrêtée pour protéger votre carnet. Vos données ne sont pas perdues.
             </Typography>
             <Button
@@ -43,9 +43,9 @@ export default function GlobalError({
                 borderRadius: 999,
                 textTransform: "none",
                 fontWeight: 700,
-                bgcolor: "#6CC3B3",
-                color: "#0F1413",
-                "&:hover": { bgcolor: "#86D1C3" }
+                bgcolor: "#FF8F78",
+                color: "#141010",
+                "&:hover": { bgcolor: "#FFAA97" }
               }}
             >
               Relancer l&apos;application

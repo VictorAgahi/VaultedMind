@@ -3,7 +3,7 @@
 import { useEffect } from "react";
 import { useColorScheme } from "@mui/material/styles";
 
-const THEME_COLORS = { light: "#F3F4F1", dark: "#0F1413" } as const;
+const THEME_COLORS = { light: "#F6F3F0", dark: "#141010" } as const;
 
 // Aligne la couleur de la barre du navigateur (et de la barre d'état iOS) sur le mode réellement affiché,
 // y compris quand l'utilisateur force Clair ou Sombre dans son profil.

@@ -2,8 +2,8 @@
 
 import { createTheme } from "@mui/material/styles";
 
-// Charte "Le carnet scellé" : encre profonde (primary), lueur ambrée (secondary, usage rare),
-// neutres teintés de vert. Les valeurs sombres sont choisies, pas inversées.
+// Charte "Le carnet scellé" : corail (primary), lueur ambrée (secondary, usage rare),
+// neutres chauds. Les valeurs sombres sont choisies, pas inversées.
 // Les tokens graphiques (séries, divergente, axes) vivent dans globals.css et chart-tokens.ts.
 
 const DISPLAY_FONT = 'var(--font-display), "Avenir Next", "Segoe UI", system-ui, sans-serif';
@@ -14,32 +14,32 @@ export const theme = createTheme({
   colorSchemes: {
     light: {
       palette: {
-        primary: { main: "#1E5B53", dark: "#174943", light: "#DCEDE8", contrastText: "#FFFFFF" },
-        secondary: { main: "#F2B544", dark: "#D99A22", light: "#FBE7BF", contrastText: "#17201D" },
+        primary: { main: "#C7442E", dark: "#A63622", light: "#FBE3DD", contrastText: "#FFFFFF" },
+        secondary: { main: "#F2B544", dark: "#D99A22", light: "#FBE7BF", contrastText: "#231A18" },
         success: { main: "#2E7D4F", contrastText: "#FFFFFF" },
         warning: { main: "#8A5A00", contrastText: "#FFFFFF" },
-        error: { main: "#B3261E", contrastText: "#FFFFFF" },
+        error: { main: "#A3205C", contrastText: "#FFFFFF" },
         info: { main: "#2D5DA8", contrastText: "#FFFFFF" },
-        background: { default: "#F3F4F1", paper: "#FFFFFF" },
-        text: { primary: "#17201D", secondary: "#4E5A55", disabled: "#6B7672" },
-        divider: "#D8DDD8",
-        action: { hover: "rgba(23, 32, 29, 0.05)", selected: "rgba(30, 91, 83, 0.10)" },
-        grey: { 100: "#E9ECE7", 200: "#D8DDD8" },
+        background: { default: "#F6F3F0", paper: "#FFFFFF" },
+        text: { primary: "#231A18", secondary: "#5A4B47", disabled: "#76665F" },
+        divider: "#E0D8D3",
+        action: { hover: "rgba(35, 26, 24, 0.05)", selected: "rgba(199, 68, 46, 0.10)" },
+        grey: { 100: "#EEE8E4", 200: "#E0D8D3" },
       },
     },
     dark: {
       palette: {
-        primary: { main: "#6CC3B3", dark: "#86D1C3", light: "#1E3A35", contrastText: "#0F1413" },
-        secondary: { main: "#E8B04B", dark: "#F0C470", light: "#3A2E17", contrastText: "#0F1413" },
-        success: { main: "#7FD1A0", contrastText: "#0F1413" },
-        warning: { main: "#E8B04B", contrastText: "#0F1413" },
-        error: { main: "#F2B8B5", contrastText: "#0F1413" },
-        info: { main: "#9DB8F0", contrastText: "#0F1413" },
-        background: { default: "#0F1413", paper: "#171D1C" },
-        text: { primary: "#E8EEEB", secondary: "#A3B0AB", disabled: "#7D8A85" },
-        divider: "#2B3533",
-        action: { hover: "rgba(232, 238, 235, 0.06)", selected: "rgba(108, 195, 179, 0.14)" },
-        grey: { 100: "#1F2725", 200: "#2B3533" },
+        primary: { main: "#FF8F78", dark: "#FFAA97", light: "#3F2520", contrastText: "#141010" },
+        secondary: { main: "#E8B04B", dark: "#F0C470", light: "#3A2E17", contrastText: "#141010" },
+        success: { main: "#7FD1A0", contrastText: "#141010" },
+        warning: { main: "#E8B04B", contrastText: "#141010" },
+        error: { main: "#F29CC3", contrastText: "#141010" },
+        info: { main: "#9DB8F0", contrastText: "#141010" },
+        background: { default: "#141010", paper: "#1D1817" },
+        text: { primary: "#F0E9E6", secondary: "#B5A8A3", disabled: "#8C7E79" },
+        divider: "#3A302E",
+        action: { hover: "rgba(240, 233, 230, 0.06)", selected: "rgba(255, 143, 120, 0.14)" },
+        grey: { 100: "#2A2220", 200: "#3A302E" },
       },
     },
   },
@@ -97,7 +97,7 @@ export const theme = createTheme({
       styleOverrides: { root: { minWidth: 44, minHeight: 44 } },
     },
     MuiFab: {
-      styleOverrides: { root: { borderRadius: 18, boxShadow: "0 6px 16px rgba(15, 20, 19, 0.25)" } },
+      styleOverrides: { root: { borderRadius: 18, boxShadow: "0 6px 16px rgba(20, 16, 16, 0.25)" } },
     },
     MuiTextField: {
       defaultProps: { variant: "outlined", fullWidth: true, margin: "normal" },

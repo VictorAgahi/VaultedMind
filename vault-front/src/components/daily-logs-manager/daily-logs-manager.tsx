@@ -922,7 +922,7 @@ export const DailyLogsManager: React.FC = () => {
               bgcolor: "action.hover",
               "& .MuiTabs-indicator": { display: "none" },
               "& .MuiTab-root": { minHeight: 32, minWidth: 0, px: 1.75, py: 0.5, borderRadius: 999, fontSize: "0.8125rem", color: "text.secondary" },
-              "& .MuiTab-root.Mui-selected": { bgcolor: "background.paper", color: "text.primary", boxShadow: "0 1px 2px rgba(15, 20, 19, 0.12)" },
+              "& .MuiTab-root.Mui-selected": { bgcolor: "background.paper", color: "text.primary", boxShadow: "0 1px 2px rgba(20, 16, 16, 0.12)" },
             }}
           >
             <Tab label="Calendrier" value="calendar" icon={<CalendarMonthIcon sx={{ fontSize: 16 }} />} iconPosition="start" />

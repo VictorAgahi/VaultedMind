@@ -119,7 +119,7 @@ export const BottomNav: React.FC = () => {
               borderRadius: "18px",
               bgcolor: "primary.main",
               color: "primary.contrastText",
-              boxShadow: "0 6px 16px rgba(15, 20, 19, 0.25)",
+              boxShadow: "0 6px 16px rgba(20, 16, 16, 0.25)",
               transition: "transform 160ms cubic-bezier(.2,0,0,1)",
               "&:active": { transform: "scale(0.94)" },
             }}

@@ -33,8 +33,8 @@ const displayFont = Bricolage_Grotesque({
 
 export const viewport: Viewport = {
   themeColor: [
-    { media: "(prefers-color-scheme: light)", color: "#F3F4F1" },
-    { media: "(prefers-color-scheme: dark)", color: "#0F1413" },
+    { media: "(prefers-color-scheme: light)", color: "#F6F3F0" },
+    { media: "(prefers-color-scheme: dark)", color: "#141010" },
   ],
   width: "device-width",
   initialScale: 1,
