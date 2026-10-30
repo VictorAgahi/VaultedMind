@@ -3,6 +3,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { AbstractBaseRepository } from './base.repository.js';
 import { CustomFieldModel } from '../models/custom-field.model.js';
+import type { CustomFieldGoalUpdate } from '../../modules/health/domain/entities/custom-field.entity.js';
 import { CustomField } from '../../modules/health/domain/entities/custom-field.entity.js';
 import { CustomFieldMapper } from '../mappers/custom-field.mapper.js';
 
@@ -46,7 +47,8 @@ export class CustomFieldRepository extends AbstractBaseRepository<CustomFieldMod
         | 'appleWatchMetric'
         | 'subFields'
       >
-    >,
+    > &
+      CustomFieldGoalUpdate,
   ): Promise<CustomField> {
     await this.repository.update(id, updates);
     return this.findDomainById(id);

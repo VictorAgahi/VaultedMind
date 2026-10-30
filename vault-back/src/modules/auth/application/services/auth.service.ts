@@ -20,7 +20,10 @@ export class AuthService {
 
   async register(dto: RegisterDto) {
     this.logger.log('Registering new user');
-    const user = await this.userService.createUser(dto.email, dto.password);
+    const user = await this.userService.createUser(dto.email, dto.password, {
+      firstName: dto.firstName?.trim() || undefined,
+      healthDataConsentAt: new Date(),
+    });
     const token = await this.tokenService.generateToken(user);
     return { user, token };
   }

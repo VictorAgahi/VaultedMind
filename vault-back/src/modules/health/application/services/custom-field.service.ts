@@ -5,6 +5,7 @@ import {
   Logger,
 } from '@nestjs/common';
 import { CustomFieldRepository } from '../../../../database/repositories/custom-field.repository.js';
+import type { CustomFieldGoalUpdate } from '../../domain/entities/custom-field.entity.js';
 import { CustomField } from '../../domain/entities/custom-field.entity.js';
 
 @Injectable()
@@ -54,7 +55,8 @@ export class CustomFieldService {
         | 'appleWatchMetric'
         | 'subFields'
       >
-    >,
+    > &
+      CustomFieldGoalUpdate,
   ): Promise<CustomField> {
     await this.findById(id, requestingUserId);
     return this.customFieldRepository.updateDomain(id, updates);

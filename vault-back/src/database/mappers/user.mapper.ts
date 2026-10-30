@@ -10,6 +10,9 @@ export class UserMapper {
   public toDomain(model: UserModel): User {
     // Decrypt email for the domain
     const plainEmail = this.encryptionService.decrypt(model.emailEncrypted);
+    const firstName = model.firstNameEncrypted
+      ? this.encryptionService.decrypt(model.firstNameEncrypted)
+      : undefined;
 
     return new User(
       model.id,
@@ -21,6 +24,19 @@ export class UserMapper {
       model.aiContext,
       model.isGeneratingInsights,
       model.deletedAt,
+      {
+        firstName,
+        reminderEnabled: model.reminderEnabled ?? true,
+        reminderTime: model.reminderTime ?? '21:00',
+        timezone: model.timezone ?? 'Europe/Paris',
+        quickCheckinFieldId: model.quickCheckinFieldId ?? undefined,
+        aiIncludeNotes: model.aiIncludeNotes ?? true,
+        lastReminderOn: model.lastReminderOn ?? undefined,
+      },
+      {
+        healthDataConsentAt: model.healthDataConsentAt ?? undefined,
+        aiConsentAt: model.aiConsentAt ?? undefined,
+      },
     );
   }
 
@@ -36,6 +52,17 @@ export class UserMapper {
     model.aiInsightsEnabled = entity.aiInsightsEnabled;
     model.aiContext = entity.aiContext;
     model.isGeneratingInsights = entity.isGeneratingInsights;
+    model.firstNameEncrypted = entity.preferences.firstName
+      ? this.encryptionService.encrypt(entity.preferences.firstName)
+      : null;
+    model.reminderEnabled = entity.preferences.reminderEnabled;
+    model.reminderTime = entity.preferences.reminderTime;
+    model.timezone = entity.preferences.timezone;
+    model.quickCheckinFieldId = entity.preferences.quickCheckinFieldId ?? null;
+    model.aiIncludeNotes = entity.preferences.aiIncludeNotes;
+    model.lastReminderOn = entity.preferences.lastReminderOn ?? null;
+    model.healthDataConsentAt = entity.consents.healthDataConsentAt ?? null;
+    model.aiConsentAt = entity.consents.aiConsentAt ?? null;
     model.createdAt = entity.createdAt;
     model.updatedAt = entity.updatedAt;
     model.deletedAt = entity.deletedAt;

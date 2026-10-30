@@ -5,11 +5,14 @@ import {
   UseGuards,
   Request,
   Logger,
+  Delete,
+  HttpCode,
+  HttpStatus,
 } from '@nestjs/common';
 import { NotificationsService } from '../../application/services/notifications.service.js';
 import { JwtAuthGuard } from '../../../auth/infrastructure/guards/jwt-auth.guard.js';
 
-import { SubscribeDto } from '../dtos/subscribe.dto.js';
+import { SubscribeDto, UnsubscribeDto } from '../dtos/subscribe.dto.js';
 
 @Controller('notifications')
 export class NotificationsController {
@@ -29,6 +32,19 @@ export class NotificationsController {
       subscription,
     );
   }
+  @UseGuards(JwtAuthGuard)
+  @Delete('subscribe')
+  @HttpCode(HttpStatus.NO_CONTENT)
+  async unsubscribe(
+    @Request() req: { user: { id: string } },
+    @Body() body: UnsubscribeDto,
+  ): Promise<void> {
+    await this.notificationsService.deleteSubscriptions(
+      req.user.id,
+      body?.endpoint,
+    );
+  }
+
   @UseGuards(JwtAuthGuard)
   @Post('test')
   testNotification(@Request() req: { user: { id: string } }) {

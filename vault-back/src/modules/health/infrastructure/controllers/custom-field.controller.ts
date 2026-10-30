@@ -47,6 +47,8 @@ export class CustomFieldController {
       dto.max,
       dto.appleWatchMetric,
       dto.subFields,
+      dto.goalTarget ?? undefined,
+      dto.goalDirection ?? undefined,
     );
 
     const saved = await this.customFieldService.createField(entity);
@@ -106,6 +108,8 @@ export class CustomFieldController {
       max: entity.max,
       appleWatchMetric: entity.appleWatchMetric,
       subFields: entity.subFields,
+      goalTarget: entity.goalTarget,
+      goalDirection: entity.goalDirection,
       createdAt: entity.createdAt,
     };
   }

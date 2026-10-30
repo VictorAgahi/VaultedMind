@@ -16,10 +16,15 @@ import { LoginDto, RegisterDto } from '../../application/dtos/auth.dto.js';
 import { Public } from '../../../../common/decorators/public.decorator.js';
 import { JwtAuthGuard } from '../guards/jwt-auth.guard.js';
 import { Throttle, SkipThrottle } from '@nestjs/throttler';
+import { UserService } from '../../../user/application/services/user.service.js';
+import type { UserProfile } from '../../../user/application/types/user-profile.types.js';
 
 @Controller('auth')
 export class AuthController {
-  constructor(private readonly authService: AuthService) {}
+  constructor(
+    private readonly authService: AuthService,
+    private readonly userService: UserService,
+  ) {}
 
   @Public()
   @SkipThrottle({ default: process.env.NODE_ENV === 'test' })
@@ -31,7 +36,13 @@ export class AuthController {
   ) {
     const { user, token } = await this.authService.register(dto);
     this.setCookie(response, token);
-    return { user: { id: user.id, email: user.email } };
+    return {
+      user: {
+        id: user.id,
+        email: user.email,
+        firstName: user.preferences.firstName,
+      },
+    };
   }
 
   @Public()
@@ -76,11 +87,10 @@ export class AuthController {
 
   @UseGuards(JwtAuthGuard)
   @Get('me')
-  getMe(@Request() req: { user: { id: string; email: string } }): {
-    id: string;
-    email: string;
-  } {
-    return req.user;
+  async getMe(
+    @Request() req: { user: { id: string; email: string } },
+  ): Promise<UserProfile> {
+    return this.userService.getProfile(req.user.id);
   }
 
   @UseGuards(JwtAuthGuard)

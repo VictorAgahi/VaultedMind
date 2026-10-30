@@ -31,6 +31,10 @@ export class AIChatController {
     if (!message) {
       return { response: "Je n'ai pas reçu de message." };
     }
-    return this.aiChatService.getChatResponse(req.user.id, message);
+    return this.aiChatService.getChatResponse(
+      req.user.id,
+      message,
+      body.history ?? [],
+    );
   }
 }

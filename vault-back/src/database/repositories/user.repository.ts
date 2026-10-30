@@ -60,6 +60,23 @@ export class UserRepository extends AbstractBaseRepository<UserModel> {
   }
 
   /**
+   * Records the local date of the last reminder sent, without touching other columns.
+   */
+  async markReminderSent(id: string, localDate: string): Promise<void> {
+    await this.repository.update(id, { lastReminderOn: localDate });
+  }
+
+  /**
+   * Records AI consent and the notes scope chosen at that moment.
+   */
+  async recordAIConsent(id: string, includeNotes: boolean): Promise<void> {
+    await this.repository.update(id, {
+      aiConsentAt: new Date(),
+      aiIncludeNotes: includeNotes,
+    });
+  }
+
+  /**
    * Hard deletes a user from the database.
    */
   async deleteUser(id: string): Promise<void> {

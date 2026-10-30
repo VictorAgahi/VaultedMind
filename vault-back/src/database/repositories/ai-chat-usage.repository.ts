@@ -27,7 +27,7 @@ export interface AIUsageReservation {
 export class AIChatUsageRepository extends AbstractBaseRepository<AIChatUsageModel> {
   private readonly logger = new Logger(AIChatUsageRepository.name);
   private static readonly MAX_USAGES_PER_WINDOW: Record<AIUsageKind, number> = {
-    chat: 2,
+    chat: 5,
     insight: 1,
     optimize: 3,
   };

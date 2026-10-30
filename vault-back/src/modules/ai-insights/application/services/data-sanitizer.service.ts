@@ -37,9 +37,17 @@ interface SanitizedData {
   lastEntryDate?: string;
 }
 
+export interface SanitizeOptions {
+  includeNotes: boolean;
+}
+
 @Injectable()
 export class DataSanitizerService {
-  sanitizeLogsForAI(logs: DailyLog[], fields: CustomField[]): SanitizedData {
+  sanitizeLogsForAI(
+    logs: DailyLog[],
+    fields: CustomField[],
+    options: SanitizeOptions = { includeNotes: true },
+  ): SanitizedData {
     if (!logs || logs.length === 0) {
       return {
         dateRange: 'No data',
@@ -166,7 +174,8 @@ export class DataSanitizerService {
 
       dailyEntries.push({
         date: dateFormatter.format(new Date(log.logDate)),
-        notes: log.notes || undefined,
+        // Free-text notes leave the server only if the user allowed it
+        notes: options.includeNotes ? log.notes || undefined : undefined,
         fieldValues: entryFieldValues,
       });
     }

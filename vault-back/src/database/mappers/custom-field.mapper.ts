@@ -18,6 +18,8 @@ export class CustomFieldMapper {
       model.max,
       model.appleWatchMetric,
       model.subFields,
+      model.goalTarget ?? undefined,
+      model.goalDirection ?? undefined,
     );
   }
 
@@ -37,6 +39,8 @@ export class CustomFieldMapper {
     model.max = entity.max;
     model.appleWatchMetric = entity.appleWatchMetric;
     model.subFields = entity.subFields;
+    model.goalTarget = entity.goalTarget ?? null;
+    model.goalDirection = entity.goalDirection ?? null;
     return model;
   }
 }

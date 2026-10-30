@@ -10,7 +10,7 @@ export class DailyLogModel extends BaseModel {
   logDate!: Date;
 
   @Column({ type: 'text', nullable: true })
-  notes?: string;
+  notes?: string | null;
 
   @Column({ name: 'user_id', type: 'uuid' })
   userId!: string;

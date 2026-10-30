@@ -10,7 +10,7 @@ export class FieldValueMapper {
       model.value,
       model.createdAt,
       model.updatedAt,
-      model.subValues,
+      model.subValues ?? undefined,
     );
   }
 

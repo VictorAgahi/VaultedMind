@@ -14,6 +14,9 @@ import { DataSanitizerService } from './data-sanitizer.service.js';
 import { PromptService, AgentEvidenceBundle } from './prompt.service.js';
 import { LLMService } from './llm.service.js';
 
+import { assessDistress } from '../../domain/services/distress-detector.js';
+import { AIConsentRequiredException } from '../../domain/exceptions/ai-consent-required.exception.js';
+
 @Injectable()
 export class AIInsightService {
   private readonly logger = new Logger(AIInsightService.name);
@@ -40,8 +43,10 @@ export class AIInsightService {
     let usageId: string | null = null;
     try {
       const user = await this.userRepository.findUserById(userId);
-      if (!user.aiInsightsEnabled) {
-        this.logger.debug(`AI insights disabled for user ${userId}`);
+      if (!user.aiInsightsEnabled || !user.hasGivenAIConsent()) {
+        this.logger.debug(
+          `AI insights disabled or not consented for user ${userId}`,
+        );
         return null;
       }
 
@@ -74,6 +79,14 @@ export class AIInsightService {
       const sanitizedData = this.dataSanitizer.sanitizeLogsForAI(
         recentLogs,
         activeFields,
+        { includeNotes: user.preferences.aiIncludeNotes },
+      );
+      const sevenDaysAgo = new Date();
+      sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+      const recentDistress = assessDistress(
+        recentLogs
+          .filter((log) => new Date(log.logDate) >= sevenDaysAgo)
+          .map((log) => log.notes ?? ''),
       );
 
       // Reserve the 12-hour review slot atomically (1 review max per 12h).
@@ -130,7 +143,7 @@ export class AIInsightService {
       };
 
       // ── PHASE 2 : SEQUENTIAL — Agent 4 (Prediction) ──────────────────────
-      this.logger.log(`[Phase 2] Agent 4 — Prediction Strategist...`);
+      this.logger.log(`[Phase 2] Agent 4 — Signals to watch...`);
 
       evidence.predictionBrief = await this.runAgent4PredictionStrategist(
         promptParams,
@@ -231,6 +244,8 @@ export class AIInsightService {
           analysisModel: this.llmService.getAnalysisModel(),
           actionSuggestions:
             actionSuggestions.length > 0 ? actionSuggestions : undefined,
+          // Lets the app show crisis resources next to this insight
+          safetyNotice: recentDistress.level !== 'none' ? true : undefined,
         },
         new Date(),
         new Date(),
@@ -372,10 +387,23 @@ export class AIInsightService {
     return this.aiInsightRepository.findByUserId(userId, limit);
   }
 
-  async enableAIInsights(userId: string): Promise<void> {
+  /**
+   * AI can only be turned on with an explicit consent naming what is sent to the AI provider.
+   */
+  async enableAIInsights(
+    userId: string,
+    consent: { accepted: boolean; includeNotes: boolean },
+  ): Promise<void> {
     const user = await this.userRepository.findUserById(userId);
-    user.aiInsightsEnabled = true;
-    await this.userRepository.saveUser(user);
+    if (!consent.accepted && !user.hasGivenAIConsent()) {
+      throw new AIConsentRequiredException();
+    }
+    if (consent.accepted) {
+      await this.userRepository.recordAIConsent(userId, consent.includeNotes);
+    }
+    const refreshed = await this.userRepository.findUserById(userId);
+    refreshed.aiInsightsEnabled = true;
+    await this.userRepository.saveUser(refreshed);
     this.logger.log(`AI insights enabled for user ${userId}`);
   }
 

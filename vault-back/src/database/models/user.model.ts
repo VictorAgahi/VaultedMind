@@ -26,6 +26,47 @@ export class UserModel extends BaseModel {
   @Column({ name: 'is_generating_insights', type: 'boolean', default: false })
   isGeneratingInsights!: boolean;
 
+  @Column({ name: 'first_name_encrypted', type: 'varchar', nullable: true })
+  firstNameEncrypted?: string | null;
+
+  @Column({
+    name: 'health_data_consent_at',
+    type: 'timestamptz',
+    nullable: true,
+  })
+  healthDataConsentAt?: Date | null;
+
+  @Column({ name: 'ai_consent_at', type: 'timestamptz', nullable: true })
+  aiConsentAt?: Date | null;
+
+  @Column({ name: 'ai_include_notes', type: 'boolean', default: true })
+  aiIncludeNotes!: boolean;
+
+  @Column({ name: 'reminder_enabled', type: 'boolean', default: true })
+  reminderEnabled!: boolean;
+
+  @Column({
+    name: 'reminder_time',
+    type: 'varchar',
+    length: 5,
+    default: '21:00',
+  })
+  reminderTime!: string;
+
+  @Column({
+    name: 'timezone',
+    type: 'varchar',
+    length: 64,
+    default: 'Europe/Paris',
+  })
+  timezone!: string;
+
+  @Column({ name: 'quick_checkin_field_id', type: 'uuid', nullable: true })
+  quickCheckinFieldId?: string | null;
+
+  @Column({ name: 'last_reminder_on', type: 'date', nullable: true })
+  lastReminderOn?: string | null;
+
   @OneToMany(() => CustomFieldModel, (customField) => customField.user)
   customFields?: Relation<CustomFieldModel>[];
 

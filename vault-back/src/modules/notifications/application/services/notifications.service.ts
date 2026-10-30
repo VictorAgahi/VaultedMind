@@ -7,19 +7,19 @@ import { ConfigService } from '@nestjs/config';
 import { NotificationSubscriptionModel } from '../../../../database/models/notification-subscription.model.js';
 import { DailyLogService } from '../../../health/application/services/daily-log.service.js';
 import { isAllowedPushEndpoint } from '../utils/push-endpoint.util.js';
+import { UserRepository } from '../../../../database/repositories/user.repository.js';
+import {
+  isReminderDue,
+  toLocalMoment,
+} from '../../domain/reminder-schedule.js';
+
+const REMINDER_PAYLOAD = JSON.stringify({
+  title: "Comment s'est passée votre journée ?",
+  body: 'Une minute pour la noter, quand vous en avez envie.',
+  url: '/dashboard?new=1',
+});
 
 interface PushSubscription {
-  endpoint: string;
-  expirationTime?: number | null;
-  keys: {
-    p256dh: string;
-    auth: string;
-  };
-}
-
-interface INotificationSubscription {
-  id: string;
-  userId: string;
   endpoint: string;
   expirationTime?: number | null;
   keys: {
@@ -37,6 +37,7 @@ export class NotificationsService {
     private readonly subscriptionRepository: Repository<NotificationSubscriptionModel>,
     private readonly configService: ConfigService,
     private readonly dailyLogService: DailyLogService,
+    private readonly userRepository: UserRepository,
   ) {
     const vapidPublicKey =
       this.configService.getOrThrow<string>('VAPID_PUBLIC_KEY');
@@ -68,93 +69,72 @@ export class NotificationsService {
     return this.subscriptionRepository.save(newSub);
   }
 
-  private async processReminders(title: string, body: string) {
-    const subscriptions =
-      (await this.subscriptionRepository.find()) as unknown as INotificationSubscription[];
+  async deleteSubscriptions(userId: string, endpoint?: string): Promise<void> {
+    await this.subscriptionRepository.delete(
+      endpoint ? { userId, endpoint } : { userId },
+    );
+  }
 
-    const notificationPayload = JSON.stringify({
-      title,
-      body,
-      url: '/dashboard',
-    });
-
-    const checkedUsers = new Map<string, boolean>();
-
+  /**
+   * One gentle reminder per day, at the time each user chose, in their own time zone.
+   * Skipped when the user already logged that local day.
+   */
+  @Cron('*/15 * * * *')
+  async sendDueReminders(now: Date = new Date()): Promise<void> {
+    const subscriptions = await this.subscriptionRepository.find();
+    const subscriptionsByUser = new Map<
+      string,
+      NotificationSubscriptionModel[]
+    >();
     for (const sub of subscriptions) {
-      if (!checkedUsers.has(sub.userId)) {
-        const hasLogged = await this.dailyLogService.hasLoggedToday(sub.userId);
-        checkedUsers.set(sub.userId, hasLogged);
-      }
+      const list = subscriptionsByUser.get(sub.userId) ?? [];
+      list.push(sub);
+      subscriptionsByUser.set(sub.userId, list);
+    }
 
-      if (checkedUsers.get(sub.userId)) {
-        continue; // Skip sending if user already logged today
-      }
+    for (const [userId, userSubscriptions] of subscriptionsByUser) {
+      const user = await this.userRepository.findUserById(userId);
+      if (!isReminderDue(now, user.preferences)) continue;
 
-      // Rows stored before endpoint validation could point to arbitrary hosts (SSRF)
-      if (!isAllowedPushEndpoint(sub.endpoint)) {
-        this.logger.warn(
-          `Deleting subscription ${sub.id} with disallowed push endpoint`,
-        );
-        await this.subscriptionRepository.delete(sub.id);
-        continue;
-      }
+      const localDate = toLocalMoment(now, user.preferences.timezone).date;
+      // Marked first so a slow push service never causes a second reminder the same day
+      await this.userRepository.markReminderSent(userId, localDate);
+      if (await this.dailyLogService.hasLoggedOn(userId, localDate)) continue;
 
-      try {
-        await webpush.sendNotification(
-          {
-            endpoint: sub.endpoint,
-            keys: sub.keys,
-          },
-          notificationPayload,
-        );
-      } catch (error: any) {
-        const webPushError = error as { statusCode?: number };
-        if (webPushError.statusCode === 410) {
-          this.logger.warn(
-            `Subscription for user ${sub.userId} expired, deleting.`,
-          );
-          await this.subscriptionRepository.delete(sub.id);
-        } else {
-          this.logger.error(`Error sending push to user ${sub.userId}:`, error);
-        }
+      for (const sub of userSubscriptions) {
+        await this.sendToSubscription(sub, REMINDER_PAYLOAD);
       }
     }
   }
 
-  @Cron('0 20 * * *', { timeZone: 'Europe/Paris' })
-  async sendSoftReminder() {
-    this.logger.log('Running 20:00 soft reminder...');
-    await this.processReminders(
-      "Bonsoir ! L'heure de ton point quotidien 📝",
-      "Prends 2 petites minutes pour faire le point sur ta journée. Ton cerveau te remerciera demain pour avoir posé tout ça à l'écrit !",
-    );
-  }
-
-  @Cron('30 21 * * *', { timeZone: 'Europe/Paris' })
-  async sendNormalReminder() {
-    this.logger.log('Running 21:30 normal reminder...');
-    await this.processReminders(
-      'Hey, tu aurais pas oublié quelque chose ? 👀',
-      "Ton journal t'attend pour vider ton esprit avant de te détendre. Vider son sac, ça fait du bien !",
-    );
-  }
-
-  @Cron('30 22 * * *', { timeZone: 'Europe/Paris' })
-  async sendInsistentReminder() {
-    this.logger.log('Running 22:30 insistent reminder...');
-    await this.processReminders(
-      "La journée s'achève bientôt... ⏳",
-      "Ne laisse pas tes idées s'envoler ou tes tracas t'empêcher de dormir. Viens vite les déposer dans ton Daily Log.",
-    );
-  }
-
-  @Cron('30 23 * * *', { timeZone: 'Europe/Paris' })
-  async sendUrgentReminder() {
-    this.logger.log('Running 23:30 urgent reminder...');
-    await this.processReminders(
-      '🚨 Dernier appel avant minuit !',
-      "Plus que 30 minutes pour sauvegarder tes pensées du jour. Ne brise pas ta série, c'est maintenant ou jamais !",
-    );
+  private async sendToSubscription(
+    sub: NotificationSubscriptionModel,
+    payload: string,
+  ): Promise<void> {
+    // Rows stored before endpoint validation could point to arbitrary hosts (SSRF)
+    if (!isAllowedPushEndpoint(sub.endpoint)) {
+      this.logger.warn(
+        `Deleting subscription ${sub.id} with disallowed push endpoint`,
+      );
+      await this.subscriptionRepository.delete(sub.id);
+      return;
+    }
+    try {
+      await webpush.sendNotification(
+        { endpoint: sub.endpoint, keys: sub.keys },
+        payload,
+      );
+    } catch (error) {
+      const webPushError = error as { statusCode?: number };
+      if (webPushError.statusCode === 404 || webPushError.statusCode === 410) {
+        this.logger.warn(
+          `Subscription for user ${sub.userId} expired, deleting.`,
+        );
+        await this.subscriptionRepository.delete(sub.id);
+      } else {
+        this.logger.error(`Error sending push to user ${sub.userId}`, error);
+      }
+    }
   }
 
   async sendTestNotification(userId: string) {
@@ -163,8 +143,8 @@ export class NotificationsService {
     });
 
     const payload = JSON.stringify({
-      title: 'Test de Notification !',
-      body: 'Ceci est une notification de test envoyée 30 secondes après ta demande.',
+      title: 'Notification de test',
+      body: 'Les rappels fonctionnent sur cet appareil.',
       url: '/profile',
     });
 
@@ -183,8 +163,8 @@ export class NotificationsService {
           },
           payload,
         );
-      } catch (error: any) {
-        this.logger.error(`Error sending test push to user ${userId}:`, error);
+      } catch (error) {
+        this.logger.error(`Error sending test push to user ${userId}`, error);
       }
     }
   }

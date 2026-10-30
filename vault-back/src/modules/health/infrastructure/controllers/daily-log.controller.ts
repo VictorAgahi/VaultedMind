@@ -13,6 +13,7 @@ import {
 } from '@nestjs/common';
 import { DailyLogService } from '../../application/services/daily-log.service.js';
 import {
+  SaveDailyEntryDto,
   CreateDailyLogDto,
   UpdateDailyLogDto,
   DailyLogResponseDto,
@@ -42,6 +43,22 @@ export class DailyLogController {
     );
 
     const saved = await this.dailyLogService.createLog(entity);
+    return this.mapToResponse(saved);
+  }
+
+  @Post('entry')
+  async saveEntry(
+    @Body() dto: SaveDailyEntryDto,
+    @Req() req: { user: AuthUser },
+  ): Promise<DailyLogResponseDto> {
+    const saved = await this.dailyLogService.saveEntry({
+      userId: req.user.id,
+      logId: dto.logId,
+      logDate: dto.logDate.slice(0, 10),
+      notes: dto.notes,
+      values: dto.values.filter((value) => value.value.trim() !== ''),
+      clearedFieldIds: dto.clearedFieldIds ?? [],
+    });
     return this.mapToResponse(saved);
   }
 

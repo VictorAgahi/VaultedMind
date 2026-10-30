@@ -6,6 +6,9 @@ import {
   Matches,
   ValidateBy,
   ValidationOptions,
+  Equals,
+  IsBoolean,
+  IsOptional,
 } from 'class-validator';
 
 // bcrypt silently ignores everything after 72 bytes
@@ -41,6 +44,19 @@ export class RegisterDto {
       'Le mot de passe doit contenir au moins une lettre et un chiffre ou symbole',
   })
   password!: string;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(60)
+  firstName?: string;
+
+  // GDPR art. 9: explicit, separate consent to process health data
+  @IsBoolean()
+  @Equals(true, {
+    message:
+      'Le consentement au traitement des données de santé est obligatoire',
+  })
+  healthDataConsent!: boolean;
 }
 
 export class LoginDto {

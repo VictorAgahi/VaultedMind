@@ -1,11 +1,12 @@
 import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { UserService } from '../application/services/user.service.js';
+import { UserController } from './controllers/user.controller.js';
 import { NotificationSubscriptionModel } from '../../../database/models/notification-subscription.model.js';
 
 @Module({
   imports: [TypeOrmModule.forFeature([NotificationSubscriptionModel])],
-  controllers: [],
+  controllers: [UserController],
   providers: [UserService],
   exports: [UserService],
 })

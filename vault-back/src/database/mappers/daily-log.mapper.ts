@@ -14,7 +14,7 @@ export class DailyLogMapper {
       model.updatedAt instanceof Date
         ? model.updatedAt
         : new Date(model.updatedAt),
-      model.notes,
+      model.notes ?? undefined,
       model.fieldValues
         ? model.fieldValues.map((fv) => FieldValueMapper.toDomain(fv))
         : undefined,

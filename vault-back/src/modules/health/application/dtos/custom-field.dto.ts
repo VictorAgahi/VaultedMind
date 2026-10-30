@@ -7,10 +7,17 @@ import {
   IsArray,
   MaxLength,
   ArrayMaxSize,
+  IsIn,
+  Min,
 } from 'class-validator';
 import { FieldType } from '../../domain/enums/field-type.enum.js';
 import { AppleWatchMetric } from '../../domain/enums/apple-watch-metric.enum.js';
-import type { SubFieldDefinition } from '../../domain/entities/custom-field.entity.js';
+import type {
+  SubFieldDefinition,
+  GoalDirection,
+} from '../../domain/entities/custom-field.entity.js';
+
+const GOAL_DIRECTIONS: GoalDirection[] = ['AT_LEAST', 'AT_MOST'];
 
 export class CreateCustomFieldDto {
   @IsString()
@@ -51,6 +58,15 @@ export class CreateCustomFieldDto {
   @IsOptional()
   @IsEnum(AppleWatchMetric)
   appleWatchMetric?: AppleWatchMetric;
+
+  @IsOptional()
+  @IsNumber()
+  @Min(0)
+  goalTarget?: number | null;
+
+  @IsOptional()
+  @IsIn(GOAL_DIRECTIONS)
+  goalDirection?: GoalDirection | null;
 }
 
 export class UpdateCustomFieldDto {
@@ -94,6 +110,15 @@ export class UpdateCustomFieldDto {
   @IsOptional()
   @IsEnum(AppleWatchMetric)
   appleWatchMetric?: AppleWatchMetric;
+
+  @IsOptional()
+  @IsNumber()
+  @Min(0)
+  goalTarget?: number | null;
+
+  @IsOptional()
+  @IsIn(GOAL_DIRECTIONS)
+  goalDirection?: GoalDirection | null;
 }
 
 export class CustomFieldResponseDto {
@@ -108,5 +133,7 @@ export class CustomFieldResponseDto {
   min?: number;
   max?: number;
   appleWatchMetric?: AppleWatchMetric;
+  goalTarget?: number;
+  goalDirection?: GoalDirection;
   createdAt!: Date;
 }

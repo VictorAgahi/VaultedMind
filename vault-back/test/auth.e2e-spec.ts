@@ -30,20 +30,37 @@ describe('Authentication (e2e)', () => {
       const registerDto: RegisterDto = {
         email: `register-${uuidv4()}@example.com`,
         password: 'Password123!',
+        firstName: 'Camille',
+        healthDataConsent: true,
       };
 
       // Act
       const response = await client
         .post('/auth/register', registerDto)
         .expect(201);
-      const body = response.body as { user: { id: string; email: string } };
+      const body = response.body as {
+        user: { id: string; email: string; firstName?: string };
+      };
 
       // Assert
       expect(body).toHaveProperty('user');
       expect(body.user.email).toBe(registerDto.email);
+      expect(body.user.firstName).toBe('Camille');
       expect(body.user).not.toHaveProperty('passwordHash');
       expect(response.header['set-cookie']).toBeDefined();
       expect(response.header['set-cookie'][0]).toContain('access_token');
+    });
+
+    it('should return 400 without explicit health data consent', async (): Promise<void> => {
+      // Arrange
+      const dtoWithoutConsent = {
+        email: `noconsent-${uuidv4()}@example.com`,
+        password: 'Password123!',
+        healthDataConsent: false,
+      };
+
+      // Act & Assert
+      await client.post('/auth/register', dtoWithoutConsent).expect(400);
     });
 
     it('should return 400 for an invalid email format', async (): Promise<void> => {
@@ -68,12 +85,20 @@ describe('Authentication (e2e)', () => {
       // Arrange
       const email = `duplicate-${uuidv4()}@example.com`;
       await client
-        .post('/auth/register', { email, password: 'Password123!' })
+        .post('/auth/register', {
+          email,
+          password: 'Password123!',
+          healthDataConsent: true,
+        })
         .expect(201);
 
       // Act & Assert
       await client
-        .post('/auth/register', { email, password: 'Password123!' })
+        .post('/auth/register', {
+          email,
+          password: 'Password123!',
+          healthDataConsent: true,
+        })
         .expect(409);
     });
   });
@@ -83,7 +108,7 @@ describe('Authentication (e2e)', () => {
     const password = 'Password123!';
 
     beforeAll(async (): Promise<void> => {
-      await client.post('/auth/register', { email, password }).expect(201);
+      await client.post('/auth/register', { email, password, healthDataConsent: true }).expect(201);
     });
 
     it('should login successfully and set a cookie', async (): Promise<void> => {

@@ -1,3 +1,4 @@
+import { SAFETY_GUIDELINES } from '../../domain/services/safety-guidelines.js';
 import { Injectable } from '@nestjs/common';
 import { InsightType } from '../../domain/enums/insight-type.enum.js';
 
@@ -205,7 +206,9 @@ FORMAT DE SORTIE :
 ## Timeline des événements clés
 ## Hypothèses comportementales à explorer
 
-Réponds en français. Sois précis et empathique. Ne projette aucune interprétation qui ne soit soutenue par le texte réel des notes.`;
+Réponds en français. Sois précis et empathique. Ne projette aucune interprétation qui ne soit soutenue par le texte réel des notes.
+
+${SAFETY_GUIDELINES}`;
   }
 
   // ════════════════════════════════════════════════════════════════════════════
@@ -223,9 +226,9 @@ Réponds en français. Sois précis et empathique. Ne projette aucune interprét
       ? `\n[CONTEXTE PERSONNEL]\n${userContext}\n`
       : '';
 
-    return `Tu es l'agent STRATÈGE DE PRÉDICTION de VaultedMind. Tu utilises l'analyse de données, les corrélations et l'interprétation contextuelle produites par les agents précédents pour formuler des scénarios prédictifs.
+    return `Tu es l'agent SIGNAUX À OBSERVER de VaultedMind. Tu t'appuies sur l'analyse de données, les corrélations et l'interprétation contextuelle produites par les agents précédents.
 
-TON UNIQUE MISSION : Créer des scénarios de prédiction COURT TERME (7 jours) et LONG TERME (30 jours) basés sur les tendances et corrélations observées.
+TON UNIQUE MISSION : Identifier ce qui mérite d'être observé dans les jours qui viennent, sans jamais prédire l'humeur ou l'état de santé de la personne.
 
 Période analysée: ${sanitizedData.dateRange}
 Nombre d'entrées: ${sanitizedData.totalLogs}
@@ -246,40 +249,22 @@ ${fieldText}
 Dernières entrées :
 ${dailyLogsText}
 
+${SAFETY_GUIDELINES}
+
 INSTRUCTIONS PRÉCISES :
 
-1. SCÉNARIOS COURT TERME (7 prochains jours) :
-   - Basé sur les tendances actuelles, les corrélations temporelles décalées et les patterns hebdomadaires détectés
-   - Scénario OPTIMISTE : si les tendances positives se maintiennent, que peut-on attendre ?
-   - Scénario RÉALISTE : projection linéaire des tendances actuelles
-   - Scénario À RISQUE : si les signaux faibles négatifs se confirment, quels indicateurs pourraient se dégrader ?
-   - Pour chaque scénario, identifie les indicateurs les plus susceptibles de varier et dans quelle direction
+1. SIGNAUX À OBSERVER : 2 à 4 tendances ou liens qui valent la peine d'être suivis (ex. "le sommeil semble plus court les jours d'écrans tardifs : à observer cette semaine"). Pas de chiffre projeté, pas de date de basculement.
+2. LEVIERS POSSIBLES : les habitudes sur lesquelles la personne peut agir si elle le souhaite, toujours formulées comme des expériences à tenter, jamais comme des obligations.
+3. POINTS D'ATTENTION BIENVEILLANTS : si une baisse durable apparaît, suggère avec douceur de prendre soin de soi et, si cela pèse, d'en parler à un proche ou à un professionnel. Jamais de ton alarmiste.
 
-2. SCÉNARIOS LONG TERME (30 prochains jours) :
-   - Basé sur les tendances de fond, les cycles détectés et les corrélations structurelles
-   - Identifie les trajectoires probables pour les 2-3 indicateurs les plus importants
-   - Formule des hypothèses sur les points de basculement potentiels
-
-3. FACTEURS DÉCLENCHEURS :
-   - Identifie les "leviers" que l'utilisateur peut actionner pour influencer positivement ses indicateurs
-   - Basé sur les corrélations les plus fortes détectées par l'Agent 2
-
-4. ALERTES PRÉVENTIVES :
-   - Si des patterns à risque sont en cours de formation, signale-les
-   - Ex: "Si votre sommeil continue de baisser au même rythme, dans X jours vous serez sous le seuil critique observé le [date]"
-
-NIVEAU DE CONFIANCE : Chaque prédiction doit porter un niveau de confiance (🔴 haute, 🟡 moyenne, ⚪ exploratoire)
+NIVEAU DE CONFIANCE : chaque signal porte un niveau (élevé, moyen, exploratoire) et le nombre de jours sur lequel il repose.
 
 FORMAT DE SORTIE :
-## Scénarios Court Terme (7 jours)
-### Optimiste
-### Réaliste
-### À risque
-## Scénarios Long Terme (30 jours)
-## Facteurs déclencheurs (leviers d'action)
-## Alertes préventives
+## Signaux à observer
+## Leviers possibles
+## Points d'attention
 
-Réponds en français. Sois ambitieux dans les prédictions mais toujours honnête sur les limites. Ne confonds jamais prédiction et certitude.`;
+Réponds en français. Une corrélation n'est jamais une cause.`;
   }
 
   // ════════════════════════════════════════════════════════════════════════════
@@ -308,7 +293,7 @@ ${evidence.correlationBrief || 'Non disponible'}
 [DOSSIER AGENT 3 — INTERPRÉTATION CONTEXTUELLE]
 ${evidence.contextBrief || 'Non disponible'}
 
-[DOSSIER AGENT 4 — PRÉDICTIONS]
+[DOSSIER AGENT 4 — SIGNAUX À OBSERVER]
 ${evidence.predictionBrief || 'Non disponible'}
 
 INSTRUCTIONS PRÉCISES :
@@ -390,12 +375,12 @@ Réponds en français. Sois impitoyable sur la rigueur.`;
 
     return `${header}
 
-Tu es l'agent final de synthèse de VaultedMind. Tu reçois les dossiers de 5 agents spécialisés (analyse statistique, corrélation, interprétation contextuelle, prédictions, quality gate) et ton rôle est de les transformer en un insight EXCEPTIONNEL, profondément personnalisé et actionnable.
+Tu es l'agent final de synthèse de VaultedMind. Tu reçois les dossiers de 5 agents spécialisés (analyse statistique, corrélation, interprétation contextuelle, signaux à observer, quality gate) et ton rôle est de les transformer en un insight EXCEPTIONNEL, profondément personnalisé et actionnable.
 
 Règles non négociables:
 1. BANNIS LES PHRASES BANALES ET LES STATISTIQUES SIMPLES SANS VALEUR AJOUTÉE (ex: "Vous dormez en moyenne X heures"). L'utilisateur connaît déjà ses moyennes. Donne-lui plutôt des faits marquants sur sa propre personne (ex: "Votre sommeil chute drastiquement de 2h les jours précédant vos épisodes de migraine").
 2. Connecte les données chiffrées aux notes quotidiennes et au contexte personnel (migraines, stress, habitudes) pour formuler des hypothèses de corrélation intelligentes et des conseils d'hygiène de vie adaptés.
-3. INTÈGRE LES PRÉDICTIONS : Présente les scénarios court terme et long terme de manière engageante et motivante, pas alarmiste.
+3. INTÈGRE LES SIGNAUX À OBSERVER : présente-les comme des pistes d'auto-observation, sans chiffre projeté ni prédiction de l'humeur.
 4. INTÈGRE LES CORRÉLATIONS : Mets en valeur les corrélations les plus fortes et les plus surprenantes découvertes par l'agent de corrélation.
 5. RESPECTE LE QUALITY GATE : Suis les recommandations de l'agent quality gate. N'inclus PAS les insights marqués comme hallucinations ou trop risqués.
 6. Propose des conseils et recommandations extrêmement personnalisés, concrets et actionnables. Évite les conseils génériques évidents (comme "dormez plus" ou "buvez de l'eau").
@@ -440,12 +425,14 @@ ${fieldText}
 
 Format attendu (sans mentionner les noms des sections mais en respectant cette structure de pensée) :
 - **Un titre accrocheur, personnalisé et bienveillant** (qui résume la découverte principale de la période)
-- **Faits & Corrélations sur vous** : Révèle les observations les plus profondes issues de la corrélation croisée des données. Mets en avant les patterns les plus surprenants et les liens causaux potentiels.
-- **Ce que cela prédit pour vous** : Résumé des scénarios court terme (7j) et long terme (30j) les plus probables. Présente-les de manière engageante, pas comme un bulletin météo.
+- **Faits & Corrélations sur vous** : Révèle les observations les plus profondes issues de la corrélation croisée des données. Mets en avant les patterns les plus surprenants, en rappelant qu'un lien statistique n'est pas une cause.
+- **Ce qui mérite d'être observé** : les 2 ou 3 signaux les plus utiles à suivre dans les prochains jours, formulés comme des pistes, jamais comme des prédictions.
 - **Ce que cela suggère** : Une lecture comportementale ou d'hygiène de vie basée sur le profil de l'utilisateur et les corrélations détectées.
-- **2 à 3 actions concrètes** : Recommandations ultra-personnalisées basées sur les corrélations et prédictions. Chaque action doit être liée à un levier identifié dans les données (ex: "Les jours où vous [action], votre [indicateur] s'améliore de [X]%").
+- **2 à 3 actions concrètes** : expériences à tenter, ultra-personnalisées, basées sur les corrélations observées. Chaque action doit être liée à un levier identifié dans les données (ex: "Les jours où vous [action], votre [indicateur] s'améliore de [X]%").
 
-Garde un ton qui valorise la curiosité et l'auto-observation, sans faire de diagnostic médical mais en étant un vrai compagnon analytique de son bien-être.`;
+Garde un ton qui valorise la curiosité et l'auto-observation, sans faire de diagnostic médical mais en étant un vrai compagnon analytique de son bien-être.
+
+${SAFETY_GUIDELINES}`;
   }
 
   // ════════════════════════════════════════════════════════════════════════════

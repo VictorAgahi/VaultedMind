@@ -8,6 +8,22 @@ import {
 } from '../../../../database/repositories/ai-chat-usage.repository.js';
 import { DataSanitizerService } from './data-sanitizer.service.js';
 import { LLMService } from './llm.service.js';
+import { assessDistress } from '../../domain/services/distress-detector.js';
+import {
+  CRISIS_RESPONSE,
+  SAFETY_GUIDELINES,
+} from '../../domain/services/safety-guidelines.js';
+import { AIConsentRequiredException } from '../../domain/exceptions/ai-consent-required.exception.js';
+import type { AIChatTurnDto } from '../dtos/ai-insight.dto.js';
+
+export interface AIChatReply {
+  response: string;
+  suggestedActions?: Record<string, unknown>[];
+  remainingPrompts?: number;
+  nextAvailableAt?: Date | null;
+  /** True when the app must show crisis resources next to the reply. */
+  safety?: boolean;
+}
 
 @Injectable()
 export class AIChatService {
@@ -29,13 +45,26 @@ export class AIChatService {
   async getChatResponse(
     userId: string,
     userMessage: string,
-  ): Promise<{
-    response: string;
-    suggestedActions?: Record<string, unknown>[];
-    remainingPrompts?: number;
-    nextAvailableAt?: Date | null;
-  }> {
-    // Reserve a slot atomically (2 prompts max per 12 hours) before calling the LLM
+    history: AIChatTurnDto[] = [],
+  ): Promise<AIChatReply> {
+    const user = await this.userRepository.findUserById(userId);
+    if (!user.aiInsightsEnabled || !user.hasGivenAIConsent()) {
+      throw new AIConsentRequiredException();
+    }
+
+    // A person in crisis gets human resources right away: no quota, no model, no network dependency
+    const distress = assessDistress([userMessage]);
+    if (distress.level === 'crisis') {
+      const status = await this.aiChatUsageRepository.getUsageStatus(userId);
+      return {
+        response: CRISIS_RESPONSE,
+        safety: true,
+        remainingPrompts: status.remaining,
+        nextAvailableAt: status.nextAvailableAt,
+      };
+    }
+
+    // Reserve a slot atomically before calling the LLM
     const { status: usageStatus, usageId } =
       await this.aiChatUsageRepository.tryReserve(userId, 'chat');
     if (!usageId) {
@@ -52,7 +81,7 @@ export class AIChatService {
       throw new HttpException(
         {
           statusCode: HttpStatus.TOO_MANY_REQUESTS,
-          message: `Limite de messages atteinte : vous avez droit à 2 questions toutes les 12 heures. Prochaine question disponible dans ${timeStr}.`,
+          message: `Limite de messages atteinte : vous avez droit à ${usageStatus.maxAllowed} questions toutes les 12 heures. Prochaine question disponible dans ${timeStr}.`,
           remainingPrompts: 0,
           nextAvailableAt: usageStatus.nextAvailableAt,
         },
@@ -77,13 +106,13 @@ export class AIChatService {
         const sanitizedData = this.dataSanitizer.sanitizeLogsForAI(
           recentLogs,
           fields,
+          { includeNotes: user.preferences.aiIncludeNotes },
         );
         context = `Données de l'utilisateur sur les 60 derniers jours :\n${JSON.stringify(sanitizedData, null, 2)}`;
       } else {
         context = "L'utilisateur n'a pas encore assez de données enregistrées.";
       }
 
-      const user = await this.userRepository.findUserById(userId);
       const userContext = user.aiContext
         ? `\n[CONTEXTE PERSONNALISÉ À RESPECTER : ${user.aiContext}]\n`
         : '';
@@ -101,6 +130,8 @@ CONSIGNES :
 5. Quand tu cites des corrélations ou des tendances, sois précis sur les données qui les soutiennent.
 6. N'hésite pas à proposer des hypothèses de corrélation entre les indicateurs si les données les soutiennent.
 7. Quand une durée apparaît, écris-la en format humain : 5h30, 2h15, 45 min. Jamais 5.5 h.
+
+${SAFETY_GUIDELINES}
 
 ACTIONS PROACTIVES :
 Tu peux suggérer des modifications au formulaire de l'utilisateur pour mieux organiser ses données ou tracker de nouvelles habitudes.
@@ -143,7 +174,17 @@ Exemple de format :
 
 ATTENTION EXTRÊME : NE propose PAS les changements sous forme de texte, de liste ou de tableau markdown dans ta réponse. Tu dois OBLIGATOIREMENT et EXCLUSIVEMENT utiliser le bloc JSON dans les balises <action_suggestions> pour proposer ces modifications. Le système va lire ce JSON automatiquement pour afficher des boutons à l'utilisateur.`;
 
-      const prompt = `Message de l'utilisateur : "${userMessage}"\n\nAssistant, réponds à l'utilisateur :`;
+      const conversation = history
+        .slice(-6)
+        .map(
+          (turn) =>
+            `${turn.role === 'user' ? 'Utilisateur' : 'Assistant'} : ${turn.content}`,
+        )
+        .join('\n');
+      const conversationBlock = conversation
+        ? `Échanges précédents (pour le contexte) :\n${conversation}\n\n`
+        : '';
+      const prompt = `${conversationBlock}Message de l'utilisateur : "${userMessage}"\n\nAssistant, réponds à l'utilisateur :`;
 
       const rawResponse = await this.llmService.generateTextWithConfig(
         `${systemPrompt}\n\n${prompt}`,
@@ -166,7 +207,12 @@ ATTENTION EXTRÊME : NE propose PAS les changements sous forme de texte, de list
           /* eslint-disable */
           const findActionsArray = (obj: any): any[] | null => {
             if (Array.isArray(obj)) {
-              if (obj.length > 0 && obj[0] && typeof obj[0] === 'object' && 'type' in obj[0]) {
+              if (
+                obj.length > 0 &&
+                obj[0] &&
+                typeof obj[0] === 'object' &&
+                'type' in obj[0]
+              ) {
                 return obj;
               }
             } else if (obj && typeof obj === 'object') {
@@ -259,10 +305,9 @@ ATTENTION EXTRÊME : NE propose PAS les changements sous forme de texte, de list
         }
       }
 
-      this.logger.log(`[AIChat] Raw LLM Response for user ${userId}:`);
-      this.logger.log(rawResponse);
+      // Never log the model output: it contains health interpretations
       this.logger.log(
-        `[AIChat] Parsed suggestedActions: ${JSON.stringify(suggestedActions)}`,
+        `[AIChat] Reply generated for user ${userId} (${suggestedActions ? 'with' : 'without'} suggested actions)`,
       );
 
       return {
@@ -270,6 +315,7 @@ ATTENTION EXTRÊME : NE propose PAS les changements sous forme de texte, de list
         suggestedActions,
         remainingPrompts: Math.max(0, usageStatus.remaining - 1),
         nextAvailableAt: usageStatus.nextAvailableAt,
+        safety: distress.level === 'concern' ? true : undefined,
       };
     } catch (error) {
       // The LLM call failed: give the slot back to the user

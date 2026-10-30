@@ -150,13 +150,15 @@ describe('PromptService', () => {
   // ── Agent 4 — generatePredictionPrompt ────────────────────────────────
 
   describe('generatePredictionPrompt', () => {
-    it('should include evidence from agents 1-3 and prediction structure', () => {
+    it('should include evidence from agents 1-3 and signals to watch without predictions', () => {
       const prompt = service.generatePredictionPrompt(baseParams, baseEvidence);
 
-      expect(prompt).toContain('STRATÈGE DE PRÉDICTION');
-      expect(prompt).toContain('SCÉNARIOS COURT TERME');
-      expect(prompt).toContain('SCÉNARIOS LONG TERME');
-      expect(prompt).toContain('ALERTES PRÉVENTIVES');
+      expect(prompt).toContain('SIGNAUX À OBSERVER');
+      expect(prompt).toContain('3114');
+      expect(prompt).toContain('Signaux à observer');
+      expect(prompt).not.toContain('SCÉNARIOS COURT TERME');
+      expect(prompt).toContain('Leviers possibles');
+      expect(prompt).toContain("Points d'attention");
       // Evidence from previous agents
       expect(prompt).toContain('AGENT 1: Sommeil en baisse');
       expect(prompt).toContain('AGENT 2: Corrélation forte négative');
@@ -222,10 +224,11 @@ describe('PromptService', () => {
       expect(prompt).toContain('DOSSIER AGENT 4');
       expect(prompt).toContain('DOSSIER AGENT 5');
       // New features
-      expect(prompt).toContain('INTÈGRE LES PRÉDICTIONS');
+      expect(prompt).toContain('INTÈGRE LES SIGNAUX À OBSERVER');
+      expect(prompt).toContain('3114');
       expect(prompt).toContain('INTÈGRE LES CORRÉLATIONS');
       expect(prompt).toContain('RESPECTE LE QUALITY GATE');
-      expect(prompt).toContain('Ce que cela prédit pour vous');
+      expect(prompt).toContain("Ce qui mérite d'être observé");
     });
   });
 });

@@ -50,3 +50,10 @@ export class SubscribeDto {
   @Type(() => PushKeysDto)
   keys!: PushKeysDto;
 }
+
+export class UnsubscribeDto {
+  @IsOptional()
+  @IsString()
+  @MaxLength(2048)
+  endpoint?: string;
+}

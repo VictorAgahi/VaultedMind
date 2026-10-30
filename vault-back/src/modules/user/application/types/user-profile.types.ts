@@ -1,0 +1,94 @@
+import type {
+  UserConsents,
+  UserPreferences,
+} from '../../domain/entities/user.entity.js';
+import type { AppleWatchMetric } from '../../../health/domain/enums/apple-watch-metric.enum.js';
+import type { FieldType } from '../../../health/domain/enums/field-type.enum.js';
+import type {
+  GoalDirection,
+  SubFieldDefinition,
+} from '../../../health/domain/entities/custom-field.entity.js';
+
+export interface RegistrationDetails {
+  firstName?: string;
+  healthDataConsentAt?: Date;
+}
+
+export type PublicUserPreferences = Omit<
+  UserPreferences,
+  'firstName' | 'lastReminderOn'
+>;
+
+export interface UserProfile {
+  id: string;
+  email: string;
+  firstName?: string;
+  createdAt: Date;
+  preferences: PublicUserPreferences;
+  consents: UserConsents;
+  aiInsightsEnabled: boolean;
+}
+
+export interface UserPreferencesUpdate {
+  firstName?: string | null;
+  reminderEnabled?: boolean;
+  reminderTime?: string;
+  timezone?: string;
+  quickCheckinFieldId?: string | null;
+  aiIncludeNotes?: boolean;
+}
+
+interface ExportedCustomField {
+  id: string;
+  name: string;
+  fieldType: FieldType;
+  isActive: boolean;
+  category?: string;
+  optionsOrder?: string[];
+  subFields?: SubFieldDefinition[];
+  min?: number;
+  max?: number;
+  rememberLastValue: boolean;
+  appleWatchMetric?: AppleWatchMetric;
+  goalTarget?: number;
+  goalDirection?: GoalDirection;
+  createdAt: Date;
+}
+
+interface ExportedDailyLog {
+  id: string;
+  date: Date;
+  notes?: string;
+  createdAt: Date;
+  values: {
+    fieldId: string;
+    value: string;
+    subValues?: Record<string, string>;
+  }[];
+}
+
+interface ExportedInsight {
+  id: string;
+  type: string;
+  title: string;
+  content: string;
+  createdAt: Date;
+}
+
+export interface UserDataExport {
+  exportedAt: string;
+  format: string;
+  user: {
+    email: string;
+    firstName?: string;
+    createdAt: Date;
+    preferences: UserPreferences;
+    consents: UserConsents;
+    aiInsightsEnabled: boolean;
+    aiContext?: string;
+  };
+  customFields: ExportedCustomField[];
+  dailyLogs: ExportedDailyLog[];
+  aiInsights: ExportedInsight[];
+  notifications: { endpoint: string; createdAt: Date }[];
+}

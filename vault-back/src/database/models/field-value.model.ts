@@ -11,7 +11,7 @@ export class FieldValueModel extends BaseModel {
   value!: string;
 
   @Column({ name: 'sub_values', type: 'json', nullable: true })
-  subValues?: Record<string, string>;
+  subValues?: Record<string, string> | null;
 
   @Column({ name: 'daily_log_id', type: 'uuid' })
   dailyLogId!: string;

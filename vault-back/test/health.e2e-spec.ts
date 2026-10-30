@@ -20,7 +20,7 @@ import { FieldType } from '../src/modules/health/domain/enums/field-type.enum.js
 async function registerAndLogin(client: TestClient): Promise<string> {
   const email = `health-${uuidv4()}@example.com`;
   const password = 'Password123!';
-  await client.post('/auth/register', { email, password }).expect(201);
+  await client.post('/auth/register', { email, password, healthDataConsent: true }).expect(201);
   const res = await client.post('/auth/login', { email, password }).expect(200);
   return res.header['set-cookie'][0];
 }
@@ -429,6 +429,172 @@ describe('Health Tracking — CRUD (e2e)', () => {
           expect(body.every((v) => v.id !== valueId)).toBe(true);
         });
       });
+    });
+  });
+
+  // ─── Daily entry (atomic save) and preferences ─────────────────────────────
+
+  describe('POST /health/daily-logs/entry', () => {
+    let moodFieldId: string;
+    let sleepFieldId: string;
+
+    beforeAll(async (): Promise<void> => {
+      const mood = await clientA
+        .post('/health/custom-fields', {
+          name: 'Humeur entrée',
+          fieldType: FieldType.NUMBER,
+          min: 1,
+          max: 10,
+          goalTarget: 7,
+          goalDirection: 'AT_LEAST',
+        })
+        .expect(201);
+      moodFieldId = (mood.body as CustomFieldResponseDto).id;
+      const sleep = await clientA
+        .post('/health/custom-fields', {
+          name: 'Sommeil entrée',
+          fieldType: FieldType.NUMBER,
+        })
+        .expect(201);
+      sleepFieldId = (sleep.body as CustomFieldResponseDto).id;
+    });
+
+    it('should persist the field goal', async (): Promise<void> => {
+      // Act
+      const res = await clientA.get('/health/custom-fields').expect(200);
+      const field = (res.body as CustomFieldResponseDto[]).find(
+        (f) => f.id === moodFieldId,
+      );
+
+      // Assert
+      expect(field?.goalTarget).toBe(7);
+      expect(field?.goalDirection).toBe('AT_LEAST');
+    });
+
+    it('should save a whole day in one request', async (): Promise<void> => {
+      // Arrange
+      const entry = {
+        logDate: '2026-03-10',
+        notes: 'Journée calme',
+        values: [
+          { customFieldId: moodFieldId, value: '7' },
+          { customFieldId: sleepFieldId, value: '7.5' },
+        ],
+      };
+
+      // Act
+      const res = await clientA
+        .post('/health/daily-logs/entry', entry)
+        .expect(201);
+      const body = res.body as DailyLogResponseDto;
+
+      // Assert
+      expect(body.notes).toBe('Journée calme');
+      expect(body.fieldValues).toHaveLength(2);
+    });
+
+    it('should update the same day instead of creating a duplicate, and remove cleared values', async (): Promise<void> => {
+      // Arrange
+      const entry = {
+        logDate: '2026-03-10',
+        notes: '',
+        values: [{ customFieldId: moodFieldId, value: '8' }],
+        clearedFieldIds: [sleepFieldId],
+      };
+
+      // Act
+      await clientA.post('/health/daily-logs/entry', entry).expect(201);
+      const res = await clientA.get('/health/daily-logs').expect(200);
+      const sameDay = (res.body as DailyLogResponseDto[]).filter((log) =>
+        new Date(log.logDate).toISOString().startsWith('2026-03-10'),
+      );
+
+      // Assert
+      expect(sameDay).toHaveLength(1);
+      expect(sameDay[0].fieldValues).toHaveLength(1);
+      expect(sameDay[0].fieldValues?.[0].value).toBe('8');
+      expect(sameDay[0].notes ?? '').toBe('');
+    });
+
+    it("should return 403 when saving values on another user's field", async (): Promise<void> => {
+      // Arrange
+      const entry = {
+        logDate: '2026-03-11',
+        values: [{ customFieldId: moodFieldId, value: '5' }],
+      };
+
+      // Act & Assert
+      await clientB.post('/health/daily-logs/entry', entry).expect(403);
+    });
+
+    it('should return 401 when unauthenticated', async (): Promise<void> => {
+      await unauthClient
+        .post('/health/daily-logs/entry', { logDate: '2026-03-12', values: [] })
+        .expect(401);
+    });
+  });
+
+  describe('PATCH /users/me/preferences', () => {
+    it('should update reminder preferences and expose them on /auth/me', async (): Promise<void> => {
+      // Arrange
+      const update = {
+        firstName: 'Alex',
+        reminderTime: '20:30',
+        timezone: 'Europe/Brussels',
+        reminderEnabled: false,
+      };
+
+      // Act
+      await clientA.patch('/users/me/preferences', update).expect(200);
+      const res = await clientA.get('/auth/me').expect(200);
+      const body = res.body as {
+        firstName?: string;
+        preferences: { reminderTime: string; timezone: string; reminderEnabled: boolean };
+      };
+
+      // Assert
+      expect(body.firstName).toBe('Alex');
+      expect(body.preferences).toMatchObject({
+        reminderTime: '20:30',
+        timezone: 'Europe/Brussels',
+        reminderEnabled: false,
+      });
+    });
+
+    it('should reject a reminder time outside quarter-hour slots', async (): Promise<void> => {
+      await clientA
+        .patch('/users/me/preferences', { reminderTime: '20:07' })
+        .expect(400);
+    });
+
+    it('should reject an unknown time zone', async (): Promise<void> => {
+      await clientA
+        .patch('/users/me/preferences', { timezone: 'Mars/Olympus' })
+        .expect(400);
+    });
+  });
+
+  describe('AI consent', () => {
+    it('should refuse to enable AI without consent', async (): Promise<void> => {
+      await clientA.post('/health/ai-insights/enable', {}).expect(403);
+    });
+
+    it('should enable AI with explicit consent and record it', async (): Promise<void> => {
+      // Act
+      await clientA
+        .post('/health/ai-insights/enable', { consent: true, includeNotes: false })
+        .expect(201);
+      const res = await clientA.get('/auth/me').expect(200);
+      const body = res.body as {
+        aiInsightsEnabled: boolean;
+        consents: { aiConsentAt?: string };
+        preferences: { aiIncludeNotes: boolean };
+      };
+
+      // Assert
+      expect(body.aiInsightsEnabled).toBe(true);
+      expect(body.consents.aiConsentAt).toBeDefined();
+      expect(body.preferences.aiIncludeNotes).toBe(false);
     });
   });
 });

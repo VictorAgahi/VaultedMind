@@ -1,8 +1,23 @@
-import { Injectable, ConflictException, Logger } from '@nestjs/common';
+import {
+  Injectable,
+  ConflictException,
+  Logger,
+  NotFoundException,
+} from '@nestjs/common';
+import type {
+  RegistrationDetails,
+  UserPreferencesUpdate,
+  UserProfile,
+  UserDataExport,
+} from '../types/user-profile.types.js';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { UserRepository } from '../../../../database/repositories/user.repository.js';
-import { User } from '../../domain/entities/user.entity.js';
+import {
+  User,
+  DEFAULT_USER_PREFERENCES,
+} from '../../domain/entities/user.entity.js';
+import { AIInsightRepository } from '../../../../database/repositories/ai-insight.repository.js';
 import { EncryptionService } from '../../../../common/security/encryption.service.js';
 import { DailyLogRepository } from '../../../../database/repositories/daily-log.repository.js';
 import { CustomFieldRepository } from '../../../../database/repositories/custom-field.repository.js';
@@ -18,11 +33,16 @@ export class UserService {
     private readonly encryptionService: EncryptionService,
     private readonly dailyLogRepository: DailyLogRepository,
     private readonly customFieldRepository: CustomFieldRepository,
+    private readonly aiInsightRepository: AIInsightRepository,
     @InjectRepository(NotificationSubscriptionModel)
     private readonly subscriptionRepository: Repository<NotificationSubscriptionModel>,
   ) {}
 
-  async createUser(email: string, password: string): Promise<User> {
+  async createUser(
+    email: string,
+    password: string,
+    registration: RegistrationDetails = {},
+  ): Promise<User> {
     const emailIndex = this.encryptionService.createBlindIndex(email);
     const existingUser = await this.userRepository.findByEmailIndex(emailIndex);
 
@@ -39,6 +59,12 @@ export class UserService {
       passwordHash,
       new Date(),
       new Date(),
+      false,
+      undefined,
+      false,
+      undefined,
+      { ...DEFAULT_USER_PREFERENCES, firstName: registration.firstName },
+      { healthDataConsentAt: registration.healthDataConsentAt },
     );
 
     const savedUser = await this.userRepository.saveUser(user);
@@ -46,42 +72,127 @@ export class UserService {
     return savedUser;
   }
 
+  async getProfile(userId: string): Promise<UserProfile> {
+    const user = await this.userRepository.findUserById(userId);
+    return this.toProfile(user);
+  }
+
+  async updatePreferences(
+    userId: string,
+    updates: UserPreferencesUpdate,
+  ): Promise<UserProfile> {
+    const user = await this.userRepository.findUserById(userId);
+    if (updates.quickCheckinFieldId) {
+      await this.assertFieldOwnership(userId, updates.quickCheckinFieldId);
+    }
+    const { firstName, quickCheckinFieldId, ...rest } = updates;
+    user.preferences = {
+      ...user.preferences,
+      ...rest,
+      ...(firstName !== undefined && {
+        firstName: firstName?.trim() || undefined,
+      }),
+      ...(quickCheckinFieldId !== undefined && {
+        quickCheckinFieldId: quickCheckinFieldId ?? undefined,
+      }),
+    };
+    const saved = await this.userRepository.saveUser(user);
+    return this.toProfile(saved);
+  }
+
+  private async assertFieldOwnership(
+    userId: string,
+    fieldId: string,
+  ): Promise<void> {
+    const fields = await this.customFieldRepository.findByUserId(userId);
+    if (!fields.some((field) => field.id === fieldId)) {
+      throw new NotFoundException(`Custom field with ID ${fieldId} not found`);
+    }
+  }
+
+  private toProfile(user: User): UserProfile {
+    return {
+      id: user.id,
+      email: user.email,
+      firstName: user.preferences.firstName,
+      createdAt: user.createdAt,
+      preferences: {
+        reminderEnabled: user.preferences.reminderEnabled,
+        reminderTime: user.preferences.reminderTime,
+        timezone: user.preferences.timezone,
+        quickCheckinFieldId: user.preferences.quickCheckinFieldId,
+        aiIncludeNotes: user.preferences.aiIncludeNotes,
+      },
+      consents: {
+        healthDataConsentAt: user.consents.healthDataConsentAt,
+        aiConsentAt: user.consents.aiConsentAt,
+      },
+      aiInsightsEnabled: user.aiInsightsEnabled,
+    };
+  }
+
   async deleteUser(userId: string): Promise<void> {
     this.logger.log(`Hard deleting user with ID: ${userId}`);
     await this.userRepository.deleteUser(userId);
   }
 
-  async exportUserData(userId: string) {
+  async exportUserData(userId: string): Promise<UserDataExport> {
     this.logger.log(`Exporting all data for user ID: ${userId}`);
 
     const user = await this.userRepository.findUserById(userId);
     const logs = await this.dailyLogRepository.findByUserId(userId);
     const customFields = await this.customFieldRepository.findByUserId(userId);
+    const insights = await this.aiInsightRepository.findByUserId(userId, 10000);
     const subscriptions = await this.subscriptionRepository.find({
       where: { userId },
     });
 
     return {
       exportedAt: new Date().toISOString(),
+      format:
+        "JSON lisible. Ce fichier n'est pas chiffré : conservez-le en lieu sûr.",
       user: {
         email: user.email,
+        firstName: user.preferences.firstName,
         createdAt: user.createdAt,
+        preferences: user.preferences,
+        consents: user.consents,
+        aiInsightsEnabled: user.aiInsightsEnabled,
+        aiContext: user.aiContext,
       },
       customFields: customFields.map((cf) => ({
         id: cf.id,
         name: cf.name,
         fieldType: cf.fieldType,
         isActive: cf.isActive,
+        category: cf.category,
         optionsOrder: cf.optionsOrder,
+        subFields: cf.subFields,
+        min: cf.min,
+        max: cf.max,
+        rememberLastValue: cf.rememberLastValue,
+        appleWatchMetric: cf.appleWatchMetric,
+        goalTarget: cf.goalTarget,
+        goalDirection: cf.goalDirection,
+        createdAt: cf.createdAt,
       })),
       dailyLogs: logs.map((log) => ({
         id: log.id,
         date: log.logDate,
         notes: log.notes,
-        values: log.fieldValues?.map((fv) => ({
+        createdAt: log.createdAt,
+        values: (log.fieldValues ?? []).map((fv) => ({
           fieldId: fv.customFieldId,
           value: fv.value,
+          subValues: fv.subValues,
         })),
+      })),
+      aiInsights: insights.map((insight) => ({
+        id: insight.id,
+        type: insight.type,
+        title: insight.title,
+        content: insight.content,
+        createdAt: insight.createdAt,
       })),
       notifications: subscriptions.map((sub) => ({
         endpoint: sub.endpoint,

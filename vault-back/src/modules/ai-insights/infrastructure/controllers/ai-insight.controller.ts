@@ -12,6 +12,7 @@ import { AIInsightService } from '../../application/services/ai-insight.service.
 import {
   AIInsightResponseDto,
   AIContextDto,
+  EnableAIInsightsDto,
 } from '../../application/dtos/ai-insight.dto.js';
 import { JwtAuthGuard } from '../../../auth/infrastructure/guards/jwt-auth.guard.js';
 import { AuthUser } from '../../../auth/domain/interfaces/auth-user.interface.js';
@@ -69,8 +70,14 @@ export class AIInsightController {
 
   @UseGuards(JwtAuthGuard)
   @Post('enable')
-  async enableAIInsights(@Request() req: { user: AuthUser }) {
-    await this.aiInsightService.enableAIInsights(req.user.id);
+  async enableAIInsights(
+    @Request() req: { user: AuthUser },
+    @Body() body: EnableAIInsightsDto,
+  ) {
+    await this.aiInsightService.enableAIInsights(req.user.id, {
+      accepted: body?.consent === true,
+      includeNotes: body?.includeNotes ?? true,
+    });
     return { message: 'AI Insights enabled' };
   }
 

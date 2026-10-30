@@ -61,7 +61,11 @@ describe('User Account Management (e2e)', () => {
     const password = 'Password123!';
 
     // Register
-    const registerDto: RegisterDto = { email, password };
+    const registerDto: RegisterDto = {
+      email,
+      password,
+      healthDataConsent: true,
+    };
     await client.post('/auth/register', registerDto).expect(201);
 
     // Login
@@ -179,7 +183,11 @@ describe('User Account Management (e2e)', () => {
       await client.get('/auth/me').expect(401);
 
       // 3. Verify that the email is now available for a new registration (Hard Delete proof)
-      const newRegisterDto: RegisterDto = { email, password };
+      const newRegisterDto: RegisterDto = {
+        email,
+        password,
+        healthDataConsent: true,
+      };
       await client.post('/auth/register', newRegisterDto).expect(201);
     });
   });
