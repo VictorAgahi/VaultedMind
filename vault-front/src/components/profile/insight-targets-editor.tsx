@@ -24,21 +24,24 @@ interface InsightTargetsEditorProps {
 // Choix des 1 à 3 champs que l'utilisateur veut comprendre, avec le sens qui est le bon pour chacun.
 export const InsightTargetsEditor: React.FC<InsightTargetsEditorProps> = ({ initial, saving, onSave }) => {
   const [targets, setTargets] = React.useState<InsightTarget[]>(initial);
-  const [fields, setFields] = React.useState<CustomField[]>([]);
+  const [allFields, setAllFields] = React.useState<CustomField[]>([]);
 
   React.useEffect(() => {
     const controller = new AbortController();
     apiService
       .get<CustomField[]>("/health/custom-fields", { signal: controller.signal })
-      .then((data) => setFields(data.filter(isTargetable)))
+      .then((data) => setAllFields(data))
       .catch(() => undefined);
     return () => controller.abort();
   }, []);
 
-  const nameOf = (fieldId: string): string => fields.find((field) => field.id === fieldId)?.name ?? "Champ indisponible";
+  const fields = allFields.filter(isTargetable);
+  const nameOf = (fieldId: string): string => allFields.find((field) => field.id === fieldId)?.name ?? "Champ indisponible";
+  const isNoLongerActive = (fieldId: string): boolean =>
+    allFields.length > 0 && !fields.some((field) => field.id === fieldId);
   const available = fields.filter((field) => !targets.some((target) => target.fieldId === field.id));
   const unchanged = JSON.stringify(targets) === JSON.stringify(initial);
-  const everyKnown = targets.every((target) => fields.some((field) => field.id === target.fieldId));
+  const everyKnown = targets.every((target) => allFields.some((field) => field.id === target.fieldId));
 
   const setDirection = (fieldId: string, direction: TargetDirection | null) => {
     if (!direction) return;
@@ -46,7 +49,7 @@ export const InsightTargetsEditor: React.FC<InsightTargetsEditorProps> = ({ init
   };
 
   return (
-    <Box sx={{ display: "grid", gap: 1.5, mt: 1.5 }}>
+    <Box id="insight-targets" sx={{ display: "grid", gap: 1.5, mt: 1.5, scrollMarginTop: 80 }}>
       <Box>
         <Typography variant="body2" sx={{ fontWeight: 700 }}>Ce que je veux comprendre</Typography>
         <Typography variant="caption" color="text.secondary">
@@ -65,6 +68,11 @@ export const InsightTargetsEditor: React.FC<InsightTargetsEditorProps> = ({ init
               <DeleteIcon fontSize="small" />
             </IconButton>
           </Box>
+          {isNoLongerActive(target.fieldId) && (
+            <Typography variant="caption" color="text.secondary" role="status">
+              Ce champ n&apos;est plus actif : il est laissé de côté dans l&apos;analyse. Vous pouvez le retirer ou le réactiver dans vos champs.
+            </Typography>
+          )}
           <ToggleButtonGroup
             exclusive
             fullWidth

@@ -1,6 +1,12 @@
 import { Injectable, Logger, HttpException, HttpStatus } from '@nestjs/common';
 import { DailyLogRepository } from '../../../../database/repositories/daily-log.repository.js';
 import { CustomFieldRepository } from '../../../../database/repositories/custom-field.repository.js';
+import { PatternReportRepository } from '../../../../database/repositories/pattern-report.repository.js';
+import {
+  canUseEngineBrief,
+  renderSolidFindingsForChat,
+} from '../../../patterns/domain/pattern-brief.js';
+import { ENGINE_FIGURES_RULES } from './prompt.service.js';
 import { UserRepository } from '../../../../database/repositories/user.repository.js';
 import {
   AIChatUsageRepository,
@@ -34,6 +40,7 @@ export class AIChatService {
     private readonly customFieldRepository: CustomFieldRepository,
     private readonly userRepository: UserRepository,
     private readonly aiChatUsageRepository: AIChatUsageRepository,
+    private readonly patternReportRepository: PatternReportRepository,
     private readonly dataSanitizer: DataSanitizerService,
     private readonly llmService: LLMService,
   ) {}
@@ -113,6 +120,19 @@ export class AIChatService {
         context = "L'utilisateur n'a pas encore assez de données enregistrées.";
       }
 
+      const stored = await this.patternReportRepository.findByUserId(userId);
+      const report = stored?.report ?? null;
+      const solidFindings = canUseEngineBrief(
+        report,
+        user.preferences.insightsV2Enabled,
+        new Date(),
+      )
+        ? renderSolidFindingsForChat(report)
+        : null;
+      const engineBlock = solidFindings
+        ? `\n[LIENS SOLIDES CALCULÉS SUR SES DONNÉES]\n${solidFindings}\n\n${ENGINE_FIGURES_RULES.replace('(dossier AGENT 2)', '(liens ci-dessus)')}\n`
+        : '';
+
       const userContext = user.aiContext
         ? `\n[CONTEXTE PERSONNALISÉ À RESPECTER : ${user.aiContext}]\n`
         : '';
@@ -121,7 +141,7 @@ export class AIChatService {
 Ton rôle est d'aider l'utilisateur à comprendre ses données, à identifier des modèles et à lui donner des conseils bienveillants.
 ${userContext}
 ${context}
-
+${engineBlock}
 CONSIGNES :
 1. Réponds de manière empathique, chaleureuse et professionnelle.
 2. Basse tes réponses sur les données de l'utilisateur fournies ci-dessus si elles sont pertinentes pour sa question.

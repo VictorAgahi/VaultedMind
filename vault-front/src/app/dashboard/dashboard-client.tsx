@@ -3,12 +3,15 @@
 import {
   Box,
   Typography,
+  Button,
   Container,
   CircularProgress,
+  Paper,
   Stack,
 } from "@mui/material";
 import { DailyLogsManager } from "@/components/daily-logs-manager/daily-logs-manager";
 import { LatestAIReviewCard } from "@/components/dashboard/latest-ai-review-card";
+import Link from "next/link";
 import { Navbar } from "@/components/navbar/navbar";
 import { useAuth } from "@/context/auth-context";
 import { useCurrentTime } from "@/utils/use-current-time";
@@ -43,6 +46,17 @@ export default function DashboardPage() {
         <Box sx={{ display: "grid", gap: 1.5 }}>
           <DailyLogsManager />
           <LatestAIReviewCard />
+          {user.preferences?.insightsV2Enabled && (
+            <Paper component="section" aria-labelledby="levers-entry-title" sx={{ p: 2.5, borderRadius: 4, display: "grid", gap: 1 }}>
+              <Typography id="levers-entry-title" variant="h5" component="h2">Mes leviers</Typography>
+              <Typography variant="body2" color="text.secondary">
+                Ce qui semble t&apos;aider et ce qui pèse, repéré dans tes propres données.
+              </Typography>
+              <Button component={Link} href="/analytics?tab=leviers" variant="outlined" sx={{ justifySelf: "start" }}>
+                Voir mes leviers
+              </Button>
+            </Paper>
+          )}
         </Box>
       </Container>
     </Box>

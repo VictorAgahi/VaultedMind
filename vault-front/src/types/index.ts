@@ -244,3 +244,91 @@ export interface AIChatStatusResponseDto {
   cooldownRemainingMs: number;
 }
 
+
+// ─── Mes leviers (moteur de motifs déterministe) ─────────────────────────────
+
+export type PatternStrength = "solide" | "piste";
+export type PatternReportStatus = "ok" | "insufficient_data" | "no_targets";
+
+export interface PatternEffect {
+  kind: "binary" | "continuous";
+  meanWhenHigh: number;
+  meanWhenLow: number;
+  countHigh: number;
+  countLow: number;
+  difference: number;
+}
+
+export interface PatternFinding {
+  key: string;
+  label: string;
+  category: string;
+  lag: 0 | 1;
+  rho: number;
+  partial: boolean;
+  n: number;
+  p: number;
+  q: number;
+  strength: PatternStrength;
+  effect: PatternEffect | null;
+  /** Vrai si l'effet va dans le sens voulu par la personne, null si on ne peut pas le dire. */
+  favourable: boolean | null;
+  /** Jours du prédicteur qui illustrent le mieux le lien ("AAAA-MM-JJ"). */
+  exampleDates: string[];
+  summary: string;
+}
+
+export interface PatternBeforeItem {
+  key: string;
+  label: string;
+  countBefore: number;
+  daysBefore: number;
+  lift: number | null;
+  q: number;
+  moreFrequentBefore: boolean;
+  summary: string;
+}
+
+export interface PatternChangePoint {
+  key: string;
+  label: string;
+  date: string;
+  meanBefore: number;
+  meanAfter: number;
+  favourable: boolean | null;
+  summary: string;
+}
+
+export interface PatternScoreTextGap {
+  date: string;
+  summary: string;
+}
+
+export interface PatternTargetReport {
+  fieldId: string;
+  key: string;
+  label: string;
+  direction: TargetDirection;
+  /** Faux si le champ a été désactivé depuis le calcul. */
+  targetStillValid: boolean;
+  findings: PatternFinding[];
+  beforeDifficultDays: { difficultDayCount: number; items: PatternBeforeItem[] } | null;
+  changePoints: PatternChangePoint[];
+  scoreTextGaps: PatternScoreTextGap[];
+}
+
+export interface PatternReport {
+  status: PatternReportStatus;
+  computedAt: string;
+  daysCovered: number;
+  daysLogged: number;
+  requiredLoggedDays: number;
+  targets: PatternTargetReport[];
+  stateChangePoints: PatternChangePoint[];
+}
+
+export interface PatternNotComputed {
+  status: "not_computed";
+}
+
+export type PatternResponse = PatternReport | PatternNotComputed;

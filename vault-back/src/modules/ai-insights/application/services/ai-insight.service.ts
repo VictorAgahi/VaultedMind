@@ -3,6 +3,11 @@ import { v4 as uuidv4 } from 'uuid';
 import { AIInsightRepository } from '../../../../database/repositories/ai-insight.repository.js';
 import { DailyLogRepository } from '../../../../database/repositories/daily-log.repository.js';
 import { CustomFieldRepository } from '../../../../database/repositories/custom-field.repository.js';
+import { PatternReportRepository } from '../../../../database/repositories/pattern-report.repository.js';
+import {
+  canUseEngineBrief,
+  renderPatternBrief,
+} from '../../../patterns/domain/pattern-brief.js';
 import { UserRepository } from '../../../../database/repositories/user.repository.js';
 import {
   AIChatUsageRepository,
@@ -27,6 +32,7 @@ export class AIInsightService {
     private readonly customFieldRepository: CustomFieldRepository,
     private readonly userRepository: UserRepository,
     private readonly aiChatUsageRepository: AIChatUsageRepository,
+    private readonly patternReportRepository: PatternReportRepository,
     private readonly dataSanitizer: DataSanitizerService,
     private readonly promptService: PromptService,
     private readonly llmService: LLMService,
@@ -124,10 +130,17 @@ export class AIInsightService {
       // ── PHASE 1 : PARALLEL — Agents 1 + 2 + 3 ────────────────────────────
       this.logger.log(`[Phase 1] Launching agents 1-3 in parallel...`);
 
+      const engineBrief = await this.findEngineBrief(
+        userId,
+        user.preferences.insightsV2Enabled,
+      );
+
       const [analysisBrief, correlationBrief, contextBrief] = await Promise.all(
         [
           this.runAgent1DataAnalyst(insightType, promptParams),
-          this.runAgent2CorrelationEngine(promptParams),
+          engineBrief !== null
+            ? Promise.resolve(engineBrief)
+            : this.runAgent2CorrelationEngine(promptParams),
           this.runAgent3ContextInterpreter(promptParams),
         ],
       );
@@ -139,6 +152,7 @@ export class AIInsightService {
       const evidence: AgentEvidenceBundle = {
         analysisBrief,
         correlationBrief,
+        correlationBriefFromEngine: engineBrief !== null,
         contextBrief,
       };
 
@@ -288,6 +302,18 @@ export class AIInsightService {
       maxTokens: 3000,
       reasoningEffort: 'low',
     });
+  }
+
+  /** Deterministic brief standing in for Agent 2, or null to keep the LLM agent. */
+  private async findEngineBrief(
+    userId: string,
+    insightsV2Enabled: boolean,
+  ): Promise<string | null> {
+    const stored = await this.patternReportRepository.findByUserId(userId);
+    const report = stored?.report ?? null;
+    return canUseEngineBrief(report, insightsV2Enabled, new Date())
+      ? renderPatternBrief(report)
+      : null;
   }
 
   private async runAgent2CorrelationEngine(promptParams: {

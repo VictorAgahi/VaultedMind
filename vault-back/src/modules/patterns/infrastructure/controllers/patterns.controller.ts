@@ -5,7 +5,7 @@ import {
   PatternsService,
   type NotComputedReport,
 } from '../../application/services/patterns.service.js';
-import type { PatternReport } from '../../domain/pattern-types.js';
+import type { PatternReportView } from '../../domain/pattern-report-view.js';
 
 @Controller('insights/patterns')
 @UseGuards(JwtAuthGuard)
@@ -15,12 +15,12 @@ export class PatternsController {
   @Get()
   async getReport(
     @Req() req: { user: AuthUser },
-  ): Promise<PatternReport | NotComputedReport> {
+  ): Promise<PatternReportView | NotComputedReport> {
     return this.patternsService.getReport(req.user.id);
   }
 
   @Post('recompute')
-  async recompute(@Req() req: { user: AuthUser }): Promise<PatternReport> {
+  async recompute(@Req() req: { user: AuthUser }): Promise<PatternReportView> {
     return this.patternsService.recompute(req.user.id);
   }
 }

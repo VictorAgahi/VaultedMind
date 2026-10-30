@@ -231,4 +231,42 @@ describe('PromptService', () => {
       expect(prompt).toContain("Ce qui mérite d'être observé");
     });
   });
+  describe('engine-computed correlation brief', () => {
+    const engineEvidence: AgentEvidenceBundle = {
+      ...baseEvidence,
+      correlationBriefFromEngine: true,
+    };
+
+    it('should add the computed-figures rules to the quality gate and the narrative', () => {
+      // Arrange / Act
+      const qualityGate = service.generateQualityGatePrompt(
+        baseParams,
+        engineEvidence,
+      );
+      const narrative = service.generateInsightNarrativePrompt(
+        InsightType.WEEKLY_TREND,
+        baseParams,
+        null,
+        engineEvidence,
+      );
+
+      // Assert
+      for (const prompt of [qualityGate, narrative]) {
+        expect(prompt).toContain('RÈGLES POUR LES CHIFFRES CALCULÉS');
+        expect(prompt).toContain('piste');
+        expect(prompt).toContain("n'est pas une causalité");
+      }
+    });
+
+    it('should not add the rules when the brief comes from the LLM', () => {
+      // Arrange / Act
+      const prompt = service.generateQualityGatePrompt(
+        baseParams,
+        baseEvidence,
+      );
+
+      // Assert
+      expect(prompt).not.toContain('RÈGLES POUR LES CHIFFRES CALCULÉS');
+    });
+  });
 });

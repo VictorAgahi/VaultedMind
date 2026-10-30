@@ -37,6 +37,9 @@ kubectl create secret generic postgres-secret \
 kubectl create secret generic vault-backend-secret \
   --from-literal=jwt-secret='YOUR_JWT_SECRET' \
   --from-literal=encryption-key='YOUR_AES_256_HEX_KEY' \
+  --from-literal=openai-api-key='YOUR_OPENAI_API_KEY' \
+  --from-literal=jev-api-key='YOUR_JEV_API_KEY' \
+  --from-literal=jev-api-base='https://api.typesafe.ai/v1' \
   -n vault-prod
 ```
 

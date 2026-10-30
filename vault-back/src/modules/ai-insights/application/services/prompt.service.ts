@@ -44,6 +44,13 @@ interface FieldSummaryLine {
   values?: string[];
 }
 
+export const ENGINE_FIGURES_RULES = `RÈGLES POUR LES CHIFFRES CALCULÉS (dossier AGENT 2) :
+- Les chiffres du dossier AGENT 2 ont été calculés par un moteur statistique, pas estimés : cite-les tels quels, sans jamais les modifier, les arrondir autrement ni les extrapoler.
+- Conserve toujours le niveau de force indiqué : un lien "solide" peut être présenté comme un lien observé de façon fiable ; un lien "piste" est présenté comme une hypothèse à confirmer avec plus de jours.
+- Une corrélation n'est pas une causalité : décris un lien observé, n'affirme jamais qu'une chose en provoque une autre.
+- Décris, sans jamais culpabiliser ni prescrire : pas de "tu devrais", pas de "à cause de", aucun mot de diagnostic (dépression, trouble, symptôme clinique), n'emploie jamais le mot "risque".
+- N'ajoute aucun lien qui ne figure pas dans ce dossier.`;
+
 /**
  * Multi-agent evidence bundle produced by the first 3 parallel agents
  * and enriched by subsequent agents.
@@ -51,6 +58,8 @@ interface FieldSummaryLine {
 export interface AgentEvidenceBundle {
   analysisBrief?: string;
   correlationBrief?: string;
+  /** True when the correlation brief holds figures computed by the statistics engine. */
+  correlationBriefFromEngine?: boolean;
   contextBrief?: string;
   predictionBrief?: string;
   qualityReview?: string;
@@ -211,6 +220,12 @@ Réponds en français. Sois précis et empathique. Ne projette aucune interprét
 ${SAFETY_GUIDELINES}`;
   }
 
+  private engineRulesBlock(evidence?: AgentEvidenceBundle): string {
+    return evidence?.correlationBriefFromEngine
+      ? `\n${ENGINE_FIGURES_RULES}\n`
+      : '';
+  }
+
   // ════════════════════════════════════════════════════════════════════════════
   //  AGENT 4 — PREDICTION STRATEGIST
   // ════════════════════════════════════════════════════════════════════════════
@@ -295,7 +310,7 @@ ${evidence.contextBrief || 'Non disponible'}
 
 [DOSSIER AGENT 4 — SIGNAUX À OBSERVER]
 ${evidence.predictionBrief || 'Non disponible'}
-
+${this.engineRulesBlock(evidence)}
 INSTRUCTIONS PRÉCISES :
 
 1. VÉRIFICATION DES FAITS :
@@ -416,7 +431,7 @@ Période: ${sanitizedData.dateRange}
 Nombre d'entrées: ${sanitizedData.totalLogs}
 ${contextBlock}
 ${evidenceBlocks}
-
+${this.engineRulesBlock(evidence)}
 Journaux quotidiens et notes de l'utilisateur :
 ${dailyLogsText}
 

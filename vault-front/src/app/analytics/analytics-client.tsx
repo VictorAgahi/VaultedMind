@@ -26,6 +26,8 @@ import { MultiTrendChart } from "@/components/analytics/multi-trend-chart";
 import { CorrelationStudy } from "@/components/correlation-study/correlation-study";
 import { AdvancedAnalyses } from "@/components/analytics/advanced-analyses";
 import { HabitImpactStudy } from "@/components/analytics/habit-impact-study";
+import { LeversView } from "@/components/analytics/levers/levers-view";
+import { useAuth } from "@/context/auth-context";
 import { ChartContainer } from "@/components/analytics/chart-container";
 import { formatHourlyValue } from "@/utils/time-converter";
 import { Fade, useMediaQuery } from "@mui/material";
@@ -504,11 +506,15 @@ const useAnalytics = (
   };
 };
 
+const LEVERS_TAB = 4;
+
 // ─── AnalyticsClient ──────────────────────────────────────────────────────────
 
 export default function AnalyticsClient() {
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down("sm"));
+  const { user } = useAuth();
+  const leversEnabled = Boolean(user?.preferences?.insightsV2Enabled);
 
   const [dateFilter, setDateFilter] = useState<DateFilterState>({
     preset: "all",
@@ -533,6 +539,13 @@ export default function AnalyticsClient() {
     qualitativeData,
     multiTrendData,
   } = useAnalytics(dateFilter);
+
+  // Lien direct depuis le tableau de bord : /analytics?tab=leviers
+  useEffect(() => {
+    if (leversEnabled && new URLSearchParams(window.location.search).get("tab") === "leviers") {
+      dispatch({ type: "SET_TAB", value: LEVERS_TAB });
+    }
+  }, [leversEnabled, dispatch]);
 
   const SELECT_MENU_PROPS = {
     slotProps: {
@@ -569,7 +582,7 @@ export default function AnalyticsClient() {
         {error && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>}
 
         <Tabs
-          value={tabValue}
+          value={tabValue === LEVERS_TAB && !leversEnabled ? 0 : tabValue}
           onChange={(_, v) => dispatch({ type: "SET_TAB", value: v })}
           variant="fullWidth"
           aria-label="Type d'analyse"
@@ -597,11 +610,12 @@ export default function AnalyticsClient() {
           <Tab label={isMobile ? "Liens" : "Corrélations"} />
           <Tab label={isMobile ? "Détails" : "Analyses détaillées"} />
           <Tab label={isMobile ? "Habitudes" : "Impact des habitudes"} />
+          {leversEnabled && <Tab label={isMobile ? "Leviers" : "Mes leviers"} />}
         </Tabs>
 
-        <DateFilterBar filter={dateFilter} onChange={setDateFilter} />
+        {tabValue !== LEVERS_TAB && <DateFilterBar filter={dateFilter} onChange={setDateFilter} />}
 
-        {dateFilter.preset !== "all" && (
+        {tabValue !== LEVERS_TAB && dateFilter.preset !== "all" && (
           <Box sx={{ mb: 2 }}>
             <Typography variant="caption" sx={{ color: "text.secondary", fontVariantNumeric: "tabular-nums" }}>
               {filteredLogs.length} entrée{filteredLogs.length !== 1 ? "s" : ""} affichée{filteredLogs.length !== 1 ? "s" : ""}
@@ -673,6 +687,14 @@ export default function AnalyticsClient() {
                   setAdvSelectedField={(id) => dispatch({ type: "SET_FIELD", key: "advSelectedField", id })}
                   ChartContainer={ChartContainer}
                 />
+              </Box>
+            </Fade>
+          )}
+
+          {tabValue === LEVERS_TAB && leversEnabled && (
+            <Fade in={tabValue === LEVERS_TAB} timeout={400}>
+              <Box>
+                <LeversView />
               </Box>
             </Fade>
           )}

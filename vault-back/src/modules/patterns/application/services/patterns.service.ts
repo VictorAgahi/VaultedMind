@@ -10,6 +10,11 @@ import {
 } from '../../domain/daily-matrix.js';
 import { computePatternReport } from '../../domain/pattern-engine.js';
 import type { PatternReport } from '../../domain/pattern-types.js';
+import { isTargetableField } from '../../domain/insight-target.js';
+import {
+  buildPatternReportView,
+  type PatternReportView,
+} from '../../domain/pattern-report-view.js';
 
 export const RECOMPUTE_COOLDOWN_MS = 15 * 60 * 1000;
 
@@ -30,13 +35,35 @@ export class PatternsService {
     private readonly signalsReadService: SignalsReadService,
   ) {}
 
-  async getReport(userId: string): Promise<PatternReport | NotComputedReport> {
+  async getReport(
+    userId: string,
+  ): Promise<PatternReportView | NotComputedReport> {
     const stored = await this.patternReportRepository.findByUserId(userId);
-    return stored?.report ?? { status: 'not_computed' };
+    if (!stored) return { status: 'not_computed' };
+    return this.toView(userId, stored.report);
+  }
+
+  private async toView(
+    userId: string,
+    report: PatternReport,
+  ): Promise<PatternReportView> {
+    const [user, fields] = await Promise.all([
+      this.userRepository.findUserById(userId),
+      this.customFieldRepository.findByUserId(userId),
+    ]);
+    const targetableIds = new Set(
+      fields.filter((field) => isTargetableField(field)).map((f) => f.id),
+    );
+    const stillValid = new Set(
+      user.preferences.insightTargets
+        .map((target) => target.fieldId)
+        .filter((fieldId) => targetableIds.has(fieldId)),
+    );
+    return buildPatternReportView(report, stillValid);
   }
 
   /** On-demand recomputation, at most once every 15 minutes per user. */
-  async recompute(userId: string): Promise<PatternReport> {
+  async recompute(userId: string): Promise<PatternReportView> {
     const stored = await this.patternReportRepository.findByUserId(userId);
     const tooSoon =
       stored !== null &&
@@ -47,7 +74,7 @@ export class PatternsService {
         HttpStatus.TOO_MANY_REQUESTS,
       );
     }
-    return this.compute(userId);
+    return this.toView(userId, await this.compute(userId));
   }
 
   /** Nightly run for every user eligible to the advanced analysis. */

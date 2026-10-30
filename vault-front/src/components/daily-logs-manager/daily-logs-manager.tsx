@@ -847,8 +847,16 @@ export const DailyLogsManager: React.FC = () => {
 
   // Le bouton central de la barre du bas ouvre la saisie du jour.
   const openTodayRef = React.useRef(openToday);
+  const openDayRef = React.useRef<(dateStr: string) => void>(() => undefined);
   useEffect(() => {
     openTodayRef.current = openToday;
+    // Ouvre la journée demandée par un lien (?date=AAAA-MM-JJ) si elle existe dans le journal.
+    openDayRef.current = (dateStr: string) => {
+      const log = state.logs.find(l => new Date(l.logDate).toISOString().split("T")[0] === dateStr);
+      if (!log) return;
+      setCalendarDate(new Date(`${dateStr}T12:00:00`));
+      handleOpen(log);
+    };
   });
   // Tant que les journaux chargent, on diffère l'ouverture : sinon la saisie partirait en création et doublerait l'entrée du jour.
   const loadingRef = React.useRef(state.loading);
@@ -884,6 +892,11 @@ export const DailyLogsManager: React.FC = () => {
     }
     if (new URLSearchParams(window.location.search).get("new") === "1") {
       openTodayRef.current();
+      router.replace("/dashboard", { scroll: false });
+    }
+    const dateParam = new URLSearchParams(window.location.search).get("date");
+    if (dateParam && /^\d{4}-\d{2}-\d{2}$/.test(dateParam)) {
+      openDayRef.current(dateParam);
       router.replace("/dashboard", { scroll: false });
     }
   }, [state.loading, mounted, router, pendingTick]);
