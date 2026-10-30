@@ -74,16 +74,13 @@ export class UserMapper {
     model.quickCheckinFieldId = entity.preferences.quickCheckinFieldId ?? null;
     model.aiIncludeNotes = entity.preferences.aiIncludeNotes;
     model.insightsV2Enabled = entity.preferences.insightsV2Enabled;
+    const people = entity.preferences.people ?? [];
+    const insightTargets = entity.preferences.insightTargets ?? [];
     model.peopleEncrypted =
-      entity.preferences.people.length > 0
-        ? this.encryptionService.encrypt(
-            JSON.stringify(entity.preferences.people),
-          )
+      people.length > 0
+        ? this.encryptionService.encrypt(JSON.stringify(people))
         : null;
-    model.insightTargets =
-      entity.preferences.insightTargets.length > 0
-        ? entity.preferences.insightTargets
-        : null;
+    model.insightTargets = insightTargets.length > 0 ? insightTargets : null;
     model.lastReminderOn = entity.preferences.lastReminderOn ?? null;
     model.healthDataConsentAt = entity.consents.healthDataConsentAt ?? null;
     model.aiConsentAt = entity.consents.aiConsentAt ?? null;

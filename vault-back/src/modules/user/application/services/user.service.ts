@@ -93,9 +93,13 @@ export class UserService {
       await this.assertValidTargets(userId, updates.insightTargets);
     }
     const { firstName, quickCheckinFieldId, people, ...rest } = updates;
+    // The validated DTO carries absent fields as undefined: they must not erase stored values
+    const provided = Object.fromEntries(
+      Object.entries(rest).filter(([, value]) => value !== undefined),
+    );
     user.preferences = {
       ...user.preferences,
-      ...rest,
+      ...provided,
       ...(firstName !== undefined && {
         firstName: firstName?.trim() || undefined,
       }),
