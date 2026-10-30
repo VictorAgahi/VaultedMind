@@ -138,6 +138,28 @@ describe('NoteCleanupService', () => {
     );
   });
 
+  it('should reject a rewrite much shorter than the raw notes', async () => {
+    // Arrange
+    userRepository.findWithInsightsV2Enabled.mockResolvedValue([
+      buildUser('u1', {}),
+    ]);
+    dailyLogRepository.findLogsNeedingCleanup.mockResolvedValue([
+      {
+        id: 'log-1',
+        userId: 'u1',
+        notes: 'une longue note dictee qui raconte toute la journee en detail',
+      },
+    ]);
+    llmService.generateTextWithConfig.mockResolvedValueOnce('Une longue');
+
+    // Act
+    const summary = await service.cleanPendingNotes();
+
+    // Assert
+    expect(summary).toEqual({ cleaned: 0, failed: 1 });
+    expect(dailyLogRepository.saveCleanNotes).not.toHaveBeenCalled();
+  });
+
   it('should continue after a failure and share the batch across users', async () => {
     // Arrange
     userRepository.findWithInsightsV2Enabled.mockResolvedValue([

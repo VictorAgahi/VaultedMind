@@ -7,6 +7,7 @@ import { buildNoteCleanupPrompt } from './note-cleanup-prompt.js';
 
 export const NOTE_CLEANUP_BATCH_SIZE = 20;
 const NOTE_CLEANUP_MAX_TOKENS = 6000;
+const NOTE_CLEANUP_MIN_LENGTH_RATIO = 0.5;
 
 export interface NoteCleanupSummary {
   cleaned: number;
@@ -68,6 +69,13 @@ export class NoteCleanupService {
       const cleanNotes = rewritten.trim();
       if (!cleanNotes) {
         throw new Error('Empty rewrite');
+      }
+      // A rewrite only drops filler words: a much shorter one was truncated or lost content
+      if (
+        cleanNotes.length <
+        candidate.notes.trim().length * NOTE_CLEANUP_MIN_LENGTH_RATIO
+      ) {
+        throw new Error('Rewrite too short, likely truncated');
       }
       await this.dailyLogRepository.saveCleanNotes(
         candidate.id,
