@@ -2,6 +2,7 @@ import type {
   UserConsents,
   UserPreferences,
 } from '../../domain/entities/user.entity.js';
+import type { Person } from '../../../signals/domain/person.js';
 import type { AppleWatchMetric } from '../../../health/domain/enums/apple-watch-metric.enum.js';
 import type { FieldType } from '../../../health/domain/enums/field-type.enum.js';
 import type {
@@ -37,6 +38,7 @@ export interface UserPreferencesUpdate {
   quickCheckinFieldId?: string | null;
   aiIncludeNotes?: boolean;
   insightsV2Enabled?: boolean;
+  people?: Person[];
 }
 
 interface ExportedCustomField {

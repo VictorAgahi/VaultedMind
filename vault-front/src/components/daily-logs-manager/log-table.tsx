@@ -84,7 +84,7 @@ const LogCards: React.FC<LogTableProps> = ({ logs, activeFields, onEdit, onDelet
             </Box>
           )}
           {log.notes && (
-            <NoteText notes={log.notes} notesClean={log.notesClean} variant="card" />
+            <NoteText notes={log.notes} notesClean={log.notesClean} logId={log.id} signals={log.signals} variant="card" />
           )}
         </Box>
       );
@@ -129,7 +129,7 @@ export const LogTable: React.FC<LogTableProps> = ({ logs, activeFields, onEdit, 
                 <TableCell key={field.id}>{getDisplayValue(log, field)}</TableCell>
               ))}
               <TableCell>
-                <NoteText notes={log.notes} notesClean={log.notesClean} variant="cell" />
+                <NoteText notes={log.notes} notesClean={log.notesClean} logId={log.id} signals={log.signals} variant="cell" />
               </TableCell>
               <TableCell align="right">
                 <IconButton size="small" onClick={() => onEdit(log)} color="primary" aria-label={`Modifier le journal du ${new Date(log.logDate).toLocaleDateString("fr-FR")}`}>

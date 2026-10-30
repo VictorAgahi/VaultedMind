@@ -1,3 +1,5 @@
+import type { Person } from '../../../signals/domain/person.js';
+
 /**
  * Preferences the user controls from the app (reminders, quick check-in, AI scope).
  */
@@ -13,6 +15,8 @@ export interface UserPreferences {
   aiIncludeNotes: boolean;
   /** Opt-in to the advanced journal analysis (clean rewrite of dictated notes, beta). */
   insightsV2Enabled: boolean;
+  /** People from the user's life, replaced by their alias before notes leave the server. */
+  people: Person[];
   /** Local date ("YYYY-MM-DD") of the last reminder sent, to send at most one per day. */
   lastReminderOn?: string;
 }
@@ -31,6 +35,7 @@ export const DEFAULT_USER_PREFERENCES: UserPreferences = {
   timezone: 'Europe/Paris',
   aiIncludeNotes: true,
   insightsV2Enabled: false,
+  people: [],
 };
 
 /**

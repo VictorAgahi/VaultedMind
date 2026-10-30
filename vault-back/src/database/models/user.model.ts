@@ -45,6 +45,9 @@ export class UserModel extends BaseModel {
   @Column({ name: 'insights_v2_enabled', type: 'boolean', default: false })
   insightsV2Enabled!: boolean;
 
+  @Column({ name: 'people_encrypted', type: 'text', nullable: true })
+  peopleEncrypted?: string | null;
+
   @Column({ name: 'reminder_enabled', type: 'boolean', default: true })
   reminderEnabled!: boolean;
 

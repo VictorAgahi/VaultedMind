@@ -12,6 +12,7 @@ import { CustomThrottlerGuard } from './common/guards/custom-throttler.guard.js'
 import { HealthModule } from './modules/health/infrastructure/health.module.js';
 import { NotificationsModule } from './modules/notifications/notifications.module.js';
 import { AIInsightsModule } from './modules/ai-insights/infrastructure/ai-insights.module.js';
+import { SignalsModule } from './modules/signals/infrastructure/signals.module.js';
 import { ScheduleModule } from '@nestjs/schedule';
 import { APP_GUARD } from '@nestjs/core';
 
@@ -51,6 +52,7 @@ import { APP_GUARD } from '@nestjs/core';
     HealthModule,
     NotificationsModule,
     AIInsightsModule,
+    SignalsModule,
   ],
   providers: [
     {

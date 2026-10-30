@@ -31,6 +31,7 @@ const SECTIONS: { title: string; paragraphs: React.ReactNode[] }[] = [
     paragraphs: [
       "Quand l'IA est activée, nous envoyons à OpenAI (OpenAI, L.L.C., États-Unis) les valeurs de vos 30 à 60 derniers jours, le nom de vos champs et, uniquement si vous l'avez accepté, vos notes libres. Votre e-mail et votre prénom ne sont jamais envoyés.",
       "Ce transfert hors de l'Union européenne repose sur les clauses contractuelles types de la Commission européenne prévues dans l'accord de traitement des données d'OpenAI. Les données servent uniquement à générer votre réponse.",
+      "Si vous activez l'analyse avancée du journal, vos notes sont envoyées à OpenAI pour être reformulées, puis à TypeSafe AI (modèle Jev) pour en extraire des repères (événements, thèmes, tonalité). Avant tout envoi, les noms de personnes que vous avez listés dans « Mon entourage » sont remplacés par leurs alias. Votre e-mail et votre prénom ne sont jamais envoyés.",
       "Nous ne vendons ni ne louons vos données, et nous ne les utilisons pas à des fins publicitaires.",
     ],
   },

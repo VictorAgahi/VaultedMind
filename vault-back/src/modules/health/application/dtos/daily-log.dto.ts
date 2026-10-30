@@ -74,6 +74,7 @@ export class SaveDailyEntryDto {
   clearedFieldIds?: string[];
 }
 
+import type { SignalView } from '../../../signals/domain/signal-view.js';
 import { FieldValueResponseDto } from './field-value.dto.js';
 
 export class DailyLogResponseDto {
@@ -82,6 +83,8 @@ export class DailyLogResponseDto {
   notes?: string;
   /** Clean rewrite of the notes, null when absent or out of date with the raw notes. */
   notesClean!: string | null;
+  /** Signals extracted from the notes, null when the feature is off or they are not up to date. */
+  signals!: SignalView[] | null;
   createdAt!: Date;
   fieldValues?: FieldValueResponseDto[];
 }

@@ -1,13 +1,23 @@
+import { Type } from 'class-transformer';
 import {
+  ArrayMaxSize,
+  ArrayMinSize,
+  IsArray,
   IsBoolean,
   IsOptional,
   IsString,
   IsUUID,
+  Length,
   Matches,
   MaxLength,
   ValidateBy,
+  ValidateNested,
   ValidationOptions,
 } from 'class-validator';
+import {
+  PERSON_ID_PATTERN,
+  PERSON_LIMITS,
+} from '../../../signals/domain/person.js';
 
 function IsIanaTimeZone(options?: ValidationOptions): PropertyDecorator {
   return ValidateBy(
@@ -28,6 +38,22 @@ function IsIanaTimeZone(options?: ValidationOptions): PropertyDecorator {
     },
     options,
   );
+}
+
+export class PersonDto {
+  @Matches(PERSON_ID_PATTERN, { message: 'Identifiant de personne invalide' })
+  id!: string;
+
+  @IsString()
+  @Length(1, PERSON_LIMITS.aliasMaxLength)
+  alias!: string;
+
+  @IsArray()
+  @ArrayMinSize(1)
+  @ArrayMaxSize(PERSON_LIMITS.maxVariants)
+  @IsString({ each: true })
+  @Length(1, PERSON_LIMITS.variantMaxLength, { each: true })
+  variants!: string[];
 }
 
 export class UpdatePreferencesDto {
@@ -62,4 +88,11 @@ export class UpdatePreferencesDto {
   @IsOptional()
   @IsBoolean()
   insightsV2Enabled?: boolean;
+
+  @IsOptional()
+  @IsArray()
+  @ArrayMaxSize(PERSON_LIMITS.maxPeople)
+  @ValidateNested({ each: true })
+  @Type(() => PersonDto)
+  people?: PersonDto[];
 }

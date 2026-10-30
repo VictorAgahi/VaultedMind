@@ -4,6 +4,8 @@ import React from "react";
 import { Box, Button, FormControlLabel, Switch, TextField, Typography } from "@mui/material";
 import { apiService } from "@/services/api.service";
 import { useAuth } from "@/context/auth-context";
+import type { Person } from "@/types";
+import { PeopleEditor } from "./people-editor";
 
 export const PersonalSettings: React.FC = () => {
   const { user, refreshUser } = useAuth();
@@ -11,7 +13,7 @@ export const PersonalSettings: React.FC = () => {
   const [saving, setSaving] = React.useState(false);
   const [status, setStatus] = React.useState<string | null>(null);
 
-  const patch = async (update: Record<string, string | boolean | null>, done: string) => {
+  const patch = async (update: Record<string, string | boolean | null | Person[]>, done: string) => {
     setSaving(true);
     setStatus(null);
     try {
@@ -64,7 +66,7 @@ export const PersonalSettings: React.FC = () => {
             label={
               <Box>
                 <Typography variant="body2" sx={{ fontWeight: 700 }}>Analyse avancée du journal (beta)</Typography>
-                <Typography variant="caption" color="text.secondary">Reformule vos notes dictées en texte propre, sans jamais modifier l&apos;original.</Typography>
+                <Typography variant="caption" color="text.secondary">Reformule vos notes dictées en texte propre et en retient les repères de la journée, sans jamais modifier l&apos;original. Vos notes, dont les noms listés plus bas sont remplacés par des alias, sont envoyées à OpenAI pour la reformulation et à TypeSafe AI (modèle Jev) pour l&apos;analyse.</Typography>
               </Box>
             }
             sx={{ alignItems: "flex-start", "& .MuiSwitch-root": { mt: -0.5 } }}
@@ -73,6 +75,14 @@ export const PersonalSettings: React.FC = () => {
             <Typography variant="caption" color="warning.main" role="note" sx={{ display: "block", ml: 6 }}>
               Pour l&apos;activer, acceptez d&apos;abord l&apos;envoi de vos données à l&apos;IA en incluant vos notes.
             </Typography>
+          )}
+          {user.preferences?.insightsV2Enabled && (
+            <PeopleEditor
+              key={JSON.stringify(user.preferences?.people ?? [])}
+              initial={user.preferences?.people ?? []}
+              saving={saving}
+              onSave={(people) => patch({ people }, "Entourage enregistré.")}
+            />
           )}
         </Box>
       )}

@@ -1,5 +1,6 @@
 import {
   Injectable,
+  BadRequestException,
   ConflictException,
   Logger,
   NotFoundException,
@@ -17,6 +18,7 @@ import {
   User,
   DEFAULT_USER_PREFERENCES,
 } from '../../domain/entities/user.entity.js';
+import type { Person } from '../../../signals/domain/person.js';
 import { AIConsentRequiredException } from '../../../ai-insights/domain/exceptions/ai-consent-required.exception.js';
 import { AIInsightRepository } from '../../../../database/repositories/ai-insight.repository.js';
 import { EncryptionService } from '../../../../common/security/encryption.service.js';
@@ -86,13 +88,14 @@ export class UserService {
     if (updates.quickCheckinFieldId) {
       await this.assertFieldOwnership(userId, updates.quickCheckinFieldId);
     }
-    const { firstName, quickCheckinFieldId, ...rest } = updates;
+    const { firstName, quickCheckinFieldId, people, ...rest } = updates;
     user.preferences = {
       ...user.preferences,
       ...rest,
       ...(firstName !== undefined && {
         firstName: firstName?.trim() || undefined,
       }),
+      ...(people !== undefined && { people: this.normalizePeople(people) }),
       ...(quickCheckinFieldId !== undefined && {
         quickCheckinFieldId: quickCheckinFieldId ?? undefined,
       }),
@@ -102,6 +105,27 @@ export class UserService {
     }
     const saved = await this.userRepository.saveUser(user);
     return this.toProfile(saved);
+  }
+
+  private normalizePeople(people: Person[]): Person[] {
+    const normalized = people.map((person) => ({
+      id: person.id,
+      alias: person.alias.trim(),
+      variants: [
+        ...new Set(
+          person.variants.map((variant) => variant.trim()).filter(Boolean),
+        ),
+      ],
+    }));
+    const invalid = normalized.some(
+      (person) => !person.alias || person.variants.length === 0,
+    );
+    const duplicatedId =
+      new Set(normalized.map((person) => person.id)).size !== normalized.length;
+    if (invalid || duplicatedId) {
+      throw new BadRequestException('Invalid people configuration');
+    }
+    return normalized;
   }
 
   private async assertFieldOwnership(
@@ -127,6 +151,7 @@ export class UserService {
         quickCheckinFieldId: user.preferences.quickCheckinFieldId,
         aiIncludeNotes: user.preferences.aiIncludeNotes,
         insightsV2Enabled: user.preferences.insightsV2Enabled,
+        people: user.preferences.people,
       },
       consents: {
         healthDataConsentAt: user.consents.healthDataConsentAt,

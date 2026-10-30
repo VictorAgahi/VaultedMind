@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { User } from '../../modules/user/domain/entities/user.entity.js';
 import { UserModel } from '../models/user.model.js';
+import type { Person } from '../../modules/signals/domain/person.js';
 import { EncryptionService } from '../../common/security/encryption.service.js';
 
 @Injectable()
@@ -32,6 +33,7 @@ export class UserMapper {
         quickCheckinFieldId: model.quickCheckinFieldId ?? undefined,
         aiIncludeNotes: model.aiIncludeNotes ?? true,
         insightsV2Enabled: model.insightsV2Enabled ?? false,
+        people: this.decryptPeople(model.peopleEncrypted),
         lastReminderOn: model.lastReminderOn ?? undefined,
       },
       {
@@ -39,6 +41,15 @@ export class UserMapper {
         aiConsentAt: model.aiConsentAt ?? undefined,
       },
     );
+  }
+
+  private decryptPeople(encrypted?: string | null): Person[] {
+    if (!encrypted) return [];
+    try {
+      return JSON.parse(this.encryptionService.decrypt(encrypted)) as Person[];
+    } catch {
+      return [];
+    }
   }
 
   public toPersistence(entity: User): UserModel {
@@ -62,6 +73,12 @@ export class UserMapper {
     model.quickCheckinFieldId = entity.preferences.quickCheckinFieldId ?? null;
     model.aiIncludeNotes = entity.preferences.aiIncludeNotes;
     model.insightsV2Enabled = entity.preferences.insightsV2Enabled;
+    model.peopleEncrypted =
+      entity.preferences.people.length > 0
+        ? this.encryptionService.encrypt(
+            JSON.stringify(entity.preferences.people),
+          )
+        : null;
     model.lastReminderOn = entity.preferences.lastReminderOn ?? null;
     model.healthDataConsentAt = entity.consents.healthDataConsentAt ?? null;
     model.aiConsentAt = entity.consents.aiConsentAt ?? null;

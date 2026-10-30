@@ -6,6 +6,29 @@ export interface UserPreferences {
   quickCheckinFieldId?: string;
   aiIncludeNotes: boolean;
   insightsV2Enabled?: boolean;
+  people?: Person[];
+}
+
+/** Personne de l'entourage : seul l'alias quitte le serveur, les variantes sont remplacées avant l'envoi. */
+export interface Person {
+  id: string;
+  alias: string;
+  variants: string[];
+}
+
+export interface SignalView {
+  key: string;
+  category: "event" | "theme" | "state" | "person";
+  label: string;
+  type: "noul" | "score";
+  value: number;
+  confidence?: number;
+  levelLabel?: string;
+  levelLabels?: string[];
+  toneLabel?: string | null;
+  corrected: boolean;
+  displayed: boolean;
+  dismissValue: number;
 }
 
 export interface UserConsents {
@@ -160,6 +183,8 @@ export interface DailyLog {
   notes?: string;
   /** Version reformulée des notes dictées ; null si absente ou périmée. */
   notesClean?: string | null;
+  /** Ce qui a été retenu de la note ; null si absent ou périmé. */
+  signals?: SignalView[] | null;
   createdAt: string;
   fieldValues?: FieldValue[];
   _ts?: number;

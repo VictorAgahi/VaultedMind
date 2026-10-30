@@ -9,6 +9,7 @@ import { NotificationSubscriptionModel } from './models/notification-subscriptio
 import { AIInsightModel } from './models/ai-insight.model.js';
 import { ApiKeyModel } from './models/api-key.model.js';
 import { AIChatUsageModel } from './models/ai-chat-usage.model.js';
+import { NoteSignalsModel } from './models/note-signals.model.js';
 
 config();
 
@@ -29,6 +30,7 @@ export const dataSourceOptions: DataSourceOptions = {
     AIInsightModel,
     ApiKeyModel,
     AIChatUsageModel,
+    NoteSignalsModel,
   ],
   migrations: ['dist/database/migrations/*.js'],
   synchronize: false,

@@ -3,15 +3,19 @@
 import React from "react";
 import { Box, Button, Typography } from "@mui/material";
 import type { SxProps, Theme } from "@mui/material/styles";
+import type { SignalView } from "@/types";
+import { SignalsBlock } from "./signals-block";
 
 interface NoteTextProps {
   notes?: string;
   notesClean?: string | null;
+  logId: string;
+  signals?: SignalView[] | null;
   variant: "card" | "cell";
 }
 
 // Affiche la version reformulée par défaut quand elle existe ; l'original reste accessible et seul modifiable.
-export const NoteText: React.FC<NoteTextProps> = ({ notes, notesClean, variant }) => {
+export const NoteText: React.FC<NoteTextProps> = ({ notes, notesClean, logId, signals, variant }) => {
   const [showOriginal, setShowOriginal] = React.useState(false);
   const hasClean = Boolean(notesClean);
   const text = (hasClean && !showOriginal ? notesClean : notes) || "-";
@@ -31,6 +35,7 @@ export const NoteText: React.FC<NoteTextProps> = ({ notes, notesClean, variant }
           {showOriginal ? "Voir la version reformulée" : "Voir le texte original"}
         </Button>
       )}
+      {signals && signals.length > 0 && <SignalsBlock logId={logId} signals={signals} />}
     </Box>
   );
 };

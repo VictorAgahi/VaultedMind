@@ -30,6 +30,7 @@ const buildUser = (
       timezone: 'Europe/Paris',
       aiIncludeNotes: options.aiIncludeNotes ?? true,
       insightsV2Enabled: options.insightsV2Enabled ?? true,
+      people: [],
     },
     { aiConsentAt: options.consented === false ? undefined : new Date() },
   );

@@ -14,6 +14,8 @@ import { AIInsightRepository } from './repositories/ai-insight.repository.js';
 import { ApiKeyRepository } from './repositories/api-key.repository.js';
 import { AIChatUsageModel } from './models/ai-chat-usage.model.js';
 import { AIChatUsageRepository } from './repositories/ai-chat-usage.repository.js';
+import { NoteSignalsModel } from './models/note-signals.model.js';
+import { NoteSignalsRepository } from './repositories/note-signals.repository.js';
 import { UserMapper } from './mappers/user.mapper.js';
 import { CustomFieldMapper } from './mappers/custom-field.mapper.js';
 import { DailyLogMapper } from './mappers/daily-log.mapper.js';
@@ -29,6 +31,7 @@ const models = [
   AIInsightModel,
   ApiKeyModel,
   AIChatUsageModel,
+  NoteSignalsModel,
 ];
 
 const repositories = [
@@ -39,6 +42,7 @@ const repositories = [
   AIInsightRepository,
   ApiKeyRepository,
   AIChatUsageRepository,
+  NoteSignalsRepository,
 ];
 
 const mappers = [

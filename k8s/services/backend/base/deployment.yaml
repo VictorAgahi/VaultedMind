@@ -108,6 +108,18 @@ spec:
             secretKeyRef:
               name: vault-backend-secret
               key: openai-api-key
+        - name: JEV_API_KEY
+          valueFrom:
+            secretKeyRef:
+              name: vault-backend-secret
+              key: jev-api-key
+              optional: true
+        - name: JEV_API_BASE
+          valueFrom:
+            secretKeyRef:
+              name: vault-backend-secret
+              key: jev-api-base
+              optional: true
         - name: OPENAI_MODEL
           value: "gpt-4o-mini"
         - name: OPENAI_MINI_MODEL

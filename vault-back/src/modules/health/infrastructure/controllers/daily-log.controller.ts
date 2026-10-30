@@ -11,6 +11,8 @@ import {
   HttpStatus,
   UseGuards,
 } from '@nestjs/common';
+import { SignalsReadService } from '../../../signals/application/services/signals-read.service.js';
+import type { SignalView } from '../../../signals/domain/signal-view.js';
 import { DailyLogService } from '../../application/services/daily-log.service.js';
 import {
   SaveDailyEntryDto,
@@ -26,7 +28,10 @@ import { JwtAuthGuard } from '../../../auth/infrastructure/guards/jwt-auth.guard
 @Controller('health/daily-logs')
 @UseGuards(JwtAuthGuard)
 export class DailyLogController {
-  constructor(private readonly dailyLogService: DailyLogService) {}
+  constructor(
+    private readonly dailyLogService: DailyLogService,
+    private readonly signalsReadService: SignalsReadService,
+  ) {}
 
   @Post()
   async create(
@@ -43,7 +48,7 @@ export class DailyLogController {
     );
 
     const saved = await this.dailyLogService.createLog(entity);
-    return this.mapToResponse(saved);
+    return this.respondWith(req.user.id, saved);
   }
 
   @Post('entry')
@@ -59,7 +64,7 @@ export class DailyLogController {
       values: dto.values.filter((value) => value.value.trim() !== ''),
       clearedFieldIds: dto.clearedFieldIds ?? [],
     });
-    return this.mapToResponse(saved);
+    return this.respondWith(req.user.id, saved);
   }
 
   @Get()
@@ -67,7 +72,8 @@ export class DailyLogController {
     @Req() req: { user: AuthUser },
   ): Promise<DailyLogResponseDto[]> {
     const logs = await this.dailyLogService.findByUserId(req.user.id);
-    return logs.map((l) => this.mapToResponse(l));
+    const signals = await this.signalsReadService.forLogs(req.user.id, logs);
+    return logs.map((l) => this.mapToResponse(l, signals.get(l.id) ?? null));
   }
 
   @Get(':id')
@@ -76,7 +82,7 @@ export class DailyLogController {
     @Req() req: { user: AuthUser },
   ): Promise<DailyLogResponseDto> {
     const log = await this.dailyLogService.findById(id, req.user.id);
-    return this.mapToResponse(log);
+    return this.respondWith(req.user.id, log);
   }
 
   @Patch(':id')
@@ -94,7 +100,7 @@ export class DailyLogController {
       req.user.id,
       updates,
     );
-    return this.mapToResponse(updated);
+    return this.respondWith(req.user.id, updated);
   }
 
   @Delete(':id')
@@ -106,12 +112,24 @@ export class DailyLogController {
     await this.dailyLogService.deleteLog(id, req.user.id);
   }
 
-  private mapToResponse(entity: DailyLog): DailyLogResponseDto {
+  private async respondWith(
+    userId: string,
+    log: DailyLog,
+  ): Promise<DailyLogResponseDto> {
+    const signals = await this.signalsReadService.forLogs(userId, [log]);
+    return this.mapToResponse(log, signals.get(log.id) ?? null);
+  }
+
+  private mapToResponse(
+    entity: DailyLog,
+    signals: SignalView[] | null,
+  ): DailyLogResponseDto {
     return {
       id: entity.id,
       logDate: entity.logDate,
       notes: entity.notes,
       notesClean: entity.notesClean ?? null,
+      signals,
       createdAt: entity.createdAt,
       fieldValues: entity.fieldValues?.map((fv) => ({
         id: fv.id,
