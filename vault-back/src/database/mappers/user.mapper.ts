@@ -35,6 +35,7 @@ export class UserMapper {
         insightsV2Enabled: model.insightsV2Enabled ?? false,
         people: this.decryptPeople(model.peopleEncrypted),
         insightTargets: model.insightTargets ?? [],
+        patternObviousOverrides: model.patternObviousOverrides ?? {},
         lastReminderOn: model.lastReminderOn ?? undefined,
       },
       {
@@ -81,6 +82,9 @@ export class UserMapper {
         ? this.encryptionService.encrypt(JSON.stringify(people))
         : null;
     model.insightTargets = insightTargets.length > 0 ? insightTargets : null;
+    const obviousOverrides = entity.preferences.patternObviousOverrides ?? {};
+    model.patternObviousOverrides =
+      Object.keys(obviousOverrides).length > 0 ? obviousOverrides : null;
     model.lastReminderOn = entity.preferences.lastReminderOn ?? null;
     model.healthDataConsentAt = entity.consents.healthDataConsentAt ?? null;
     model.aiConsentAt = entity.consents.aiConsentAt ?? null;

@@ -3,7 +3,10 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { AbstractBaseRepository } from './base.repository.js';
 import { CustomFieldModel } from '../models/custom-field.model.js';
-import type { CustomFieldGoalUpdate } from '../../modules/health/domain/entities/custom-field.entity.js';
+import type {
+  CustomFieldConstructOverrideUpdate,
+  CustomFieldGoalUpdate,
+} from '../../modules/health/domain/entities/custom-field.entity.js';
 import { CustomField } from '../../modules/health/domain/entities/custom-field.entity.js';
 import { CustomFieldMapper } from '../mappers/custom-field.mapper.js';
 
@@ -48,10 +51,20 @@ export class CustomFieldRepository extends AbstractBaseRepository<CustomFieldMod
         | 'subFields'
       >
     > &
-      CustomFieldGoalUpdate,
+      CustomFieldGoalUpdate &
+      CustomFieldConstructOverrideUpdate,
   ): Promise<CustomField> {
     await this.repository.update(id, updates);
     return this.findDomainById(id);
+  }
+
+  /** Stores the automatic construct together with the hash of what it was computed from. */
+  async saveConstruct(
+    id: string,
+    construct: string,
+    constructNameHash: string,
+  ): Promise<void> {
+    await this.repository.update(id, { construct, constructNameHash });
   }
 
   async deleteById(id: string): Promise<void> {

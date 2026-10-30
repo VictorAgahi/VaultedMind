@@ -26,6 +26,7 @@ import ArrowDownwardIcon from "@mui/icons-material/ArrowDownward";
 import SubdirectoryArrowRightIcon from "@mui/icons-material/SubdirectoryArrowRight";
 import AddCircleOutlineIcon from "@mui/icons-material/AddCircleOutlineOutlined";
 import { FieldType, AppleWatchMetric, SubFieldDefinition } from "@/types";
+import { CONSTRUCT_OPTIONS } from "./constructs";
 
 interface OptionItem {
   id: string;
@@ -45,6 +46,8 @@ export interface FieldFormData {
   appleWatchMetric?: AppleWatchMetric | "";
   goalTarget?: number | "";
   goalDirection?: "AT_LEAST" | "AT_MOST";
+  /** Ce que mesure le champ ; vide pour le classement automatique. */
+  constructOverride?: string;
 }
 
 interface FieldDialogProps {
@@ -201,6 +204,19 @@ export const FieldDialog: React.FC<FieldDialogProps> = ({
               onChange={(e) => setFormData((prev) => ({ ...prev, category: e.target.value }))}
               placeholder="Ex. : Général, Sommeil, Sport..."
             />
+
+            <TextField
+              select
+              label="Ce que mesure ce champ"
+              value={formData.constructOverride ?? ""}
+              onChange={(e) => setFormData((prev) => ({ ...prev, constructOverride: e.target.value }))}
+              helperText="Sert à ne pas comparer deux champs qui mesurent la même chose. « Automatique » laisse l'analyse avancée décider."
+            >
+              <MenuItem value="">Automatique</MenuItem>
+              {CONSTRUCT_OPTIONS.map((option) => (
+                <MenuItem key={option.value} value={option.value}>{option.label}</MenuItem>
+              ))}
+            </TextField>
 
             {(formData.fieldType === FieldType.BOOLEAN || formData.fieldType === FieldType.NUMBER) && (
               <Box sx={{ p: 1.5, borderRadius: 3, bgcolor: "action.hover", display: "grid", gap: 1.5 }}>

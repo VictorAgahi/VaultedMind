@@ -1,4 +1,5 @@
 import { gaussian, mulberry32 } from '../prng.js';
+import type { ConstructKey } from '../../../signals/domain/constructs.js';
 import type {
   ColumnCategory,
   ColumnKind,
@@ -37,8 +38,9 @@ export function column(
   category: ColumnCategory,
   kind: ColumnKind,
   values: (number | null)[],
+  construct: ConstructKey = 'other',
 ): MatrixColumn {
-  return { key, label: key, category, kind, values };
+  return { key, label: key, category, kind, construct, values };
 }
 
 /** A matrix where every day is logged. */

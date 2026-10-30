@@ -1,21 +1,38 @@
-import { HttpException, HttpStatus, Injectable, Logger } from '@nestjs/common';
+import {
+  BadRequestException,
+  HttpException,
+  HttpStatus,
+  Injectable,
+  Logger,
+} from '@nestjs/common';
 import { UserRepository } from '../../../../database/repositories/user.repository.js';
 import { DailyLogRepository } from '../../../../database/repositories/daily-log.repository.js';
 import { CustomFieldRepository } from '../../../../database/repositories/custom-field.repository.js';
 import { PatternReportRepository } from '../../../../database/repositories/pattern-report.repository.js';
+import { FieldConstructService } from '../../../signals/application/services/field-construct.service.js';
 import { SignalsReadService } from '../../../signals/application/services/signals-read.service.js';
 import {
   buildDailyMatrix,
   type MatrixDayInput,
 } from '../../domain/daily-matrix.js';
-import { computePatternReport } from '../../domain/pattern-engine.js';
 import type { PatternReport } from '../../domain/pattern-types.js';
-import { isTargetableField } from '../../domain/insight-target.js';
+import {
+  isTargetUsable,
+  isValueTarget,
+  targetIdentity,
+} from '../../domain/insight-target.js';
+import {
+  MAX_OBVIOUS_OVERRIDES,
+  type PatternObviousOverrides,
+} from '../../domain/pattern-obviousness.js';
+import { PatternEngineRunner } from '../../infrastructure/workers/pattern-engine.runner.js';
+import { ObviousnessService } from './obviousness.service.js';
 import {
   buildPatternReportView,
   type PatternReportView,
 } from '../../domain/pattern-report-view.js';
 
+export const MAX_FIELD_VALUES = 30;
 export const RECOMPUTE_COOLDOWN_MS = 15 * 60 * 1000;
 
 export interface NotComputedReport {
@@ -33,6 +50,9 @@ export class PatternsService {
     private readonly customFieldRepository: CustomFieldRepository,
     private readonly patternReportRepository: PatternReportRepository,
     private readonly signalsReadService: SignalsReadService,
+    private readonly fieldConstructService: FieldConstructService,
+    private readonly obviousnessService: ObviousnessService,
+    private readonly engineRunner: PatternEngineRunner,
   ) {}
 
   async getReport(
@@ -51,15 +71,68 @@ export class PatternsService {
       this.userRepository.findUserById(userId),
       this.customFieldRepository.findByUserId(userId),
     ]);
-    const targetableIds = new Set(
-      fields.filter((field) => isTargetableField(field)).map((f) => f.id),
-    );
+    const fieldById = new Map(fields.map((field) => [field.id, field]));
     const stillValid = new Set(
       user.preferences.insightTargets
-        .map((target) => target.fieldId)
-        .filter((fieldId) => targetableIds.has(fieldId)),
+        .filter((target) =>
+          isTargetUsable(target, fieldById.get(target.fieldId)),
+        )
+        .map((target) => targetIdentity(target.fieldId, target.value)),
     );
-    return buildPatternReportView(report, stillValid);
+    return buildPatternReportView(
+      report,
+      stillValid,
+      user.preferences.patternObviousOverrides ?? {},
+    );
+  }
+
+  /** Stores (or with null, removes) the user's verdict on whether a link is obvious. */
+  async setObviousOverride(
+    userId: string,
+    findingKey: string,
+    obvious: boolean | null,
+  ): Promise<PatternObviousOverrides> {
+    const user = await this.userRepository.findUserById(userId);
+    const overrides = { ...(user.preferences.patternObviousOverrides ?? {}) };
+    if (obvious === null) {
+      delete overrides[findingKey];
+    } else if (
+      !(findingKey in overrides) &&
+      Object.keys(overrides).length >= MAX_OBVIOUS_OVERRIDES
+    ) {
+      throw new BadRequestException('Too many obvious overrides');
+    } else {
+      overrides[findingKey] = obvious;
+    }
+    user.preferences = {
+      ...user.preferences,
+      patternObviousOverrides: overrides,
+    };
+    await this.userRepository.saveUser(user);
+    return overrides;
+  }
+
+  /** Distinct values logged for a field, most frequent first: the choices of a value target. */
+  async listFieldValues(userId: string, fieldId: string): Promise<string[]> {
+    const [logs, fields] = await Promise.all([
+      this.dailyLogRepository.findByUserId(userId),
+      this.customFieldRepository.findByUserId(userId),
+    ]);
+    if (!fields.some((field) => field.id === fieldId)) return [];
+    const counts = new Map<string, number>();
+    for (const log of logs) {
+      for (const value of log.fieldValues ?? []) {
+        const text = value.value?.trim();
+        if (value.customFieldId !== fieldId || !text) continue;
+        counts.set(text, (counts.get(text) ?? 0) + 1);
+      }
+    }
+    return [...counts.entries()]
+      .sort(
+        (left, right) => right[1] - left[1] || left[0].localeCompare(right[0]),
+      )
+      .slice(0, MAX_FIELD_VALUES)
+      .map(([text]) => text);
   }
 
   /** On-demand recomputation, at most once every 15 minutes per user. */
@@ -110,10 +183,17 @@ export class PatternsService {
     this.computing.add(userId);
     try {
       const user = await this.userRepository.findUserById(userId);
-      const [logs, fields] = await Promise.all([
+      const [logs, loadedFields] = await Promise.all([
         this.dailyLogRepository.findByUserId(userId),
         this.customFieldRepository.findByUserId(userId),
       ]);
+      // Field names go to Jev only for users who allowed the advanced analysis
+      const mayUseJev = user.canCleanNotes();
+      const fields =
+        mayUseJev &&
+        (await this.fieldConstructService.classifyFields(loadedFields)) > 0
+          ? await this.customFieldRepository.findByUserId(userId)
+          : loadedFields;
       const signals = await this.signalsReadService.freshForLogs(userId, logs);
 
       const days: MatrixDayInput[] = logs.map((log) => ({
@@ -126,12 +206,26 @@ export class PatternsService {
         ),
         signals: signals.get(log.id) ?? null,
       }));
-      const matrix = buildDailyMatrix(days, fields, user.preferences.people);
-      const report = computePatternReport(
-        matrix,
-        user.preferences.insightTargets,
-        { userId, computedAt: new Date().toISOString() },
+      const targets = user.preferences.insightTargets;
+      const matrix = buildDailyMatrix(
+        days,
+        fields,
+        user.preferences.people,
+        targets.filter(isValueTarget),
       );
+      const computed = await this.engineRunner.run({
+        matrix,
+        targets,
+        options: { userId, computedAt: new Date().toISOString() },
+      });
+      const previous = await this.patternReportRepository.findByUserId(userId);
+      const report =
+        mayUseJev && computed.status === 'ok'
+          ? await this.obviousnessService.annotate(
+              computed,
+              previous?.report ?? null,
+            )
+          : computed;
       await this.patternReportRepository.saveForUser(userId, report);
       return report;
     } finally {

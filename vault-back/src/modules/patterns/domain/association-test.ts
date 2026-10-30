@@ -55,12 +55,16 @@ function hasEnoughOnBothSides(values: number[]): boolean {
 export function skipReason(
   sample: PairedSample,
   kind: ColumnKind,
+  targetBinary: boolean = false,
 ): string | null {
   if (sample.predictor.length < MIN_PAIRS) return 'too_few_pairs';
   if (new Set(sample.predictor).size < 2) return 'constant_predictor';
   if (new Set(sample.target).size < 2) return 'constant_target';
   if (kind === 'binary' && !hasEnoughOnBothSides(sample.predictor)) {
     return 'unbalanced_binary';
+  }
+  if (targetBinary && !hasEnoughOnBothSides(sample.target)) {
+    return 'unbalanced_target';
   }
   return null;
 }

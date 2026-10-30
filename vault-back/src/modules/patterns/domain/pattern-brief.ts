@@ -4,6 +4,10 @@ import type {
   TargetReport,
 } from './pattern-types.js';
 import {
+  splitByObviousness,
+  type PatternObviousOverrides,
+} from './pattern-obviousness.js';
+import {
   formatFrenchDate,
   formatFrenchNumber,
   summarizeBeforeDifficultItem,
@@ -36,7 +40,11 @@ function lagLabel(finding: PatternFinding): string {
   return finding.lag === 1 ? 'le lendemain' : 'le même jour';
 }
 
-function directionLabel(finding: PatternFinding): string {
+function directionLabel(finding: PatternFinding, target: TargetReport): string {
+  if (target.direction === 'NEUTRAL') {
+    const direction = finding.effect?.difference ?? finding.rho;
+    return direction >= 0 ? 'le fait monter' : 'le fait baisser';
+  }
   if (finding.favourable === null) return 'sens indéterminé';
   return finding.favourable
     ? 'dans le sens souhaité'
@@ -52,22 +60,28 @@ function renderFindingLine(
     `décalage: ${lagLabel(finding)}`,
     `n=${finding.n} jours`,
     `rho=${formatFrenchNumber(finding.rho)}`,
-    directionLabel(finding),
+    directionLabel(finding, target),
   ].join(', ');
   return `- ${summarizeFinding(finding, target.label)} [${details}]`;
 }
 
-function renderTarget(target: TargetReport): string[] {
-  const goal =
-    target.direction === 'HIGHER_IS_BETTER'
-      ? 'plus haut est mieux'
-      : 'plus bas est mieux';
+const GOAL_LABELS: Record<TargetReport['direction'], string> = {
+  HIGHER_IS_BETTER: 'plus haut est mieux',
+  LOWER_IS_BETTER: 'plus bas est mieux',
+  NEUTRAL: 'aucun sens souhaité, comprendre ce qui le fait varier',
+};
+
+function renderTarget(
+  target: TargetReport,
+  mainFindings: PatternFinding[],
+): string[] {
+  const goal = GOAL_LABELS[target.direction] ?? GOAL_LABELS.NEUTRAL;
   const lines = [`Objectif suivi : « ${target.label} » (${goal})`];
 
   lines.push('Liens observés :');
   lines.push(
-    ...(target.findings.length > 0
-      ? target.findings.map((finding) => renderFindingLine(finding, target))
+    ...(mainFindings.length > 0
+      ? mainFindings.map((finding) => renderFindingLine(finding, target))
       : ['- Aucun lien assez net.']),
   );
 
@@ -96,12 +110,22 @@ function renderTarget(target: TargetReport): string[] {
 }
 
 /** Deterministic text standing in for the correlation agent; every figure comes from the engine. */
-export function renderPatternBrief(report: PatternReport): string {
+export function renderPatternBrief(
+  report: PatternReport,
+  overrides: PatternObviousOverrides = {},
+): string {
   const lines = [
     `RÉSULTATS CALCULÉS (moteur statistique ${report.engineVersion}, calculés le ${formatFrenchDate(report.computedAt.slice(0, 10))}, ${report.daysLogged} jours saisis sur ${report.daysCovered}).`,
   ];
+  const expected: string[] = [];
   for (const target of report.targets) {
-    lines.push('', ...renderTarget(target));
+    const split = splitByObviousness(target, overrides);
+    expected.push(
+      ...split.expected.map(
+        (finding) => `« ${finding.label} » et « ${target.label} »`,
+      ),
+    );
+    lines.push('', ...renderTarget(target, split.main));
   }
   if (report.stateChangePoints.length > 0) {
     lines.push('', 'Changements des signaux de ton état :');
@@ -111,6 +135,12 @@ export function renderPatternBrief(report: PatternReport): string {
       ),
     );
   }
+  if (expected.length > 0) {
+    lines.push(
+      '',
+      `Liens attendus (à ne pas mettre en avant) : ${expected.join(' ; ')}.`,
+    );
+  }
   return lines.join('\n');
 }
 
@@ -118,11 +148,12 @@ export function renderPatternBrief(report: PatternReport): string {
 export function renderSolidFindingsForChat(
   report: PatternReport,
   limit: number = CHAT_MAX_FINDING_LINES,
+  overrides: PatternObviousOverrides = {},
 ): string | null {
   const lines = report.targets
     .flatMap((target) =>
-      target.findings
-        .filter((finding) => finding.strength === 'solide')
+      splitByObviousness(target, overrides)
+        .main.filter((finding) => finding.strength === 'solide')
         .map(
           (finding) =>
             `- ${summarizeFinding(finding, target.label)} [solide, n=${finding.n} jours, ${lagLabel(finding)}]`,

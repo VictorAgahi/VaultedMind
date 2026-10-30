@@ -127,7 +127,11 @@ export class AIChatService {
         user.preferences.insightsV2Enabled,
         new Date(),
       )
-        ? renderSolidFindingsForChat(report)
+        ? renderSolidFindingsForChat(
+            report,
+            undefined,
+            user.preferences.patternObviousOverrides,
+          )
         : null;
       const engineBlock = solidFindings
         ? `\n[LIENS SOLIDES CALCULÉS SUR SES DONNÉES]\n${solidFindings}\n\n${ENGINE_FIGURES_RULES.replace('(dossier AGENT 2)', '(liens ci-dessus)')}\n`

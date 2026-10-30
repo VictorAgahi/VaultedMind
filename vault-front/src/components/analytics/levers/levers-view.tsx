@@ -118,7 +118,7 @@ export const LeversView: React.FC = () => {
       {response.status === "no_targets" && (
         <Paper sx={{ p: { xs: 2, md: 2.5 }, borderRadius: 4, display: "grid", gap: 0.5 }}>
           <Typography variant="body2">
-            Aucun repère n&apos;est choisi pour l&apos;instant. Choisis jusqu&apos;à 3 repères dans la section{" "}
+            Aucun repère n&apos;est choisi pour l&apos;instant. Choisis jusqu&apos;à 6 repères dans la section{" "}
             <MuiLink component={Link} href="/profile#insight-targets">Ce que je veux comprendre</MuiLink> de ton profil.
           </Typography>
         </Paper>

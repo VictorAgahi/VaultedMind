@@ -21,6 +21,7 @@ import {
 } from '../../../signals/domain/person.js';
 import {
   MAX_INSIGHT_TARGETS,
+  MAX_TARGET_VALUE_LENGTH,
   TARGET_DIRECTIONS,
   type TargetDirection,
 } from '../../../patterns/domain/insight-target.js';
@@ -68,6 +69,12 @@ export class InsightTargetDto {
 
   @IsIn(TARGET_DIRECTIONS)
   direction!: TargetDirection;
+
+  // Text fields only: the target is then "the field equals this value"
+  @IsOptional()
+  @IsString()
+  @Length(1, MAX_TARGET_VALUE_LENGTH)
+  value?: string;
 }
 
 export class UpdatePreferencesDto {

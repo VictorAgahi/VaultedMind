@@ -49,6 +49,9 @@ export class CustomFieldController {
       dto.subFields,
       dto.goalTarget ?? undefined,
       dto.goalDirection ?? undefined,
+      undefined,
+      undefined,
+      dto.constructOverride ?? undefined,
     );
 
     const saved = await this.customFieldService.createField(entity);
@@ -110,6 +113,8 @@ export class CustomFieldController {
       subFields: entity.subFields,
       goalTarget: entity.goalTarget,
       goalDirection: entity.goalDirection,
+      construct: entity.construct,
+      constructOverride: entity.constructOverride,
       createdAt: entity.createdAt,
     };
   }

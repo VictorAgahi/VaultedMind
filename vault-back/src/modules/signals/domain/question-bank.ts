@@ -1,3 +1,4 @@
+import { personConstruct, type ConstructKey } from './constructs.js';
 import type { Person } from './person.js';
 
 export const QUESTION_BANK_VERSION = 'v1';
@@ -8,6 +9,8 @@ export type QuestionType = 'noul' | 'score';
 interface QuestionBase {
   key: string;
   category: QuestionCategory;
+  /** What the question measures, used to keep duplicated measures apart. */
+  construct: ConstructKey;
   /** Instructions sent to Jev, in French. */
   instructions: string;
   /** Short French label shown in the UI. */
@@ -30,8 +33,14 @@ export interface ScoreQuestion extends QuestionBase {
 
 export type BankQuestion = NoulQuestion | ScoreQuestion;
 
-const event = (key: string, label: string, subject: string): NoulQuestion => ({
+const event = (
+  key: string,
+  construct: ConstructKey,
+  label: string,
+  subject: string,
+): NoulQuestion => ({
   key,
+  construct,
   category: 'event',
   type: 'noul',
   label,
@@ -41,70 +50,84 @@ const event = (key: string, label: string, subject: string): NoulQuestion => ({
 export const EVENT_QUESTIONS: NoulQuestion[] = [
   event(
     'conflict',
+    'conflict',
     'Tension',
     "La personne décrit-elle une tension ou un conflit avec quelqu'un ?",
   ),
   event(
+    'physical_activity',
     'physical_activity',
     'Sport',
     'La personne décrit-elle une activité physique ou sportive ?',
   ),
   event(
     'social_time',
+    'social',
     'Moment avec des proches',
     'La personne décrit-elle un moment passé avec des proches ou des amis ?',
   ),
   event(
     'busy_work',
+    'work',
     'Journée chargée',
     "La personne décrit-elle une journée de travail ou d'études chargée ou stressante ?",
   ),
   event(
     'poor_sleep',
+    'sleep',
     'Mauvaise nuit',
     'La personne décrit-elle une mauvaise nuit ou un manque de sommeil ?',
   ),
   event(
     'alcohol',
+    'substances',
     'Alcool',
     "La personne décrit-elle une consommation d'alcool ?",
   ),
   event(
     'other_substance',
+    'substances',
     'Autre substance',
     "La personne décrit-elle une consommation de cannabis ou d'une autre substance ?",
   ),
   event(
     'late_screens',
+    'screens',
     'Écrans tardifs',
     'La personne décrit-elle des écrans ou des réseaux sociaux tard le soir ou en excès ?',
   ),
   event(
+    'outdoors',
     'outdoors',
     'Dehors',
     'La personne décrit-elle du temps passé dehors ou dans la nature ?',
   ),
   event(
     'accomplishment',
+    'achievement',
     'Accomplissement',
     'La personne décrit-elle un accomplissement ou un sentiment de fierté ?',
   ),
   event(
     'bad_news',
+    'other',
     'Imprévu',
     'La note mentionne-t-elle un imprévu ou une mauvaise nouvelle ?',
   ),
   event(
+    'pleasure',
     'pleasure',
     'Détente',
     'La personne décrit-elle un moment de détente ou de plaisir choisi ?',
   ),
   event(
     'physical_pain',
+    'pain',
     'Douleur',
     'La personne décrit-elle une douleur ou un symptôme physique ?',
   ),
   event(
+    'avoidance',
     'avoidance',
     'Évitement',
     "La personne décrit-elle de la procrastination ou l'évitement de quelque chose ?",
@@ -119,8 +142,14 @@ const THEME_LEVEL_LABELS = [
   'Dominant',
 ];
 
-const theme = (key: string, label: string, subject: string): ScoreQuestion => ({
+const theme = (
+  key: string,
+  construct: ConstructKey,
+  label: string,
+  subject: string,
+): ScoreQuestion => ({
   key,
+  construct,
   category: 'theme',
   type: 'score',
   label,
@@ -136,19 +165,25 @@ const theme = (key: string, label: string, subject: string): ScoreQuestion => ({
 });
 
 export const THEME_QUESTIONS: ScoreQuestion[] = [
-  theme('work_studies', 'Travail', 'le travail ou les études'),
-  theme('romance', 'Couple', 'le couple ou la vie amoureuse'),
-  theme('family', 'Famille', 'la famille'),
-  theme('friends', 'Amis', 'les amis et la vie sociale'),
-  theme('physical_health', 'Santé physique', 'la santé physique'),
-  theme('money', 'Argent', "l'argent"),
-  theme('future', 'Avenir', "l'avenir, les projets ou l'incertitude"),
+  theme('work_studies', 'work', 'Travail', 'le travail ou les études'),
+  theme('romance', 'romance', 'Couple', 'le couple ou la vie amoureuse'),
+  theme('family', 'family', 'Famille', 'la famille'),
+  theme('friends', 'social', 'Amis', 'les amis et la vie sociale'),
+  theme(
+    'physical_health',
+    'physical_health',
+    'Santé physique',
+    'la santé physique',
+  ),
+  theme('money', 'money', 'Argent', "l'argent"),
+  theme('future', 'future', 'Avenir', "l'avenir, les projets ou l'incertitude"),
 ];
 
 export const STATE_QUESTIONS: ScoreQuestion[] = [
   {
     key: 'rumination',
     category: 'state',
+    construct: 'rumination',
     type: 'score',
     label: 'Rumination',
     instructions:
@@ -165,6 +200,7 @@ export const STATE_QUESTIONS: ScoreQuestion[] = [
   {
     key: 'expressed_anxiety',
     category: 'state',
+    construct: 'anxiety',
     type: 'score',
     label: 'Anxiété',
     instructions:
@@ -181,6 +217,7 @@ export const STATE_QUESTIONS: ScoreQuestion[] = [
   {
     key: 'low_mood',
     category: 'state',
+    construct: 'mood',
     type: 'score',
     label: 'Humeur basse',
     instructions:
@@ -197,6 +234,7 @@ export const STATE_QUESTIONS: ScoreQuestion[] = [
   {
     key: 'fatigue',
     category: 'state',
+    construct: 'fatigue',
     type: 'score',
     label: 'Fatigue',
     instructions:
@@ -213,6 +251,7 @@ export const STATE_QUESTIONS: ScoreQuestion[] = [
   {
     key: 'sense_of_control',
     category: 'state',
+    construct: 'control',
     type: 'score',
     label: 'Contrôle',
     instructions:
@@ -230,6 +269,7 @@ export const STATE_QUESTIONS: ScoreQuestion[] = [
   {
     key: 'overall_tone',
     category: 'state',
+    construct: 'mood',
     type: 'score',
     label: 'Tonalité',
     instructions: 'Quelle est la tonalité générale de la note ?',
@@ -252,6 +292,7 @@ export const STATE_QUESTIONS: ScoreQuestion[] = [
   {
     key: 'loneliness',
     category: 'state',
+    construct: 'loneliness',
     type: 'score',
     label: 'Solitude',
     instructions:
@@ -268,6 +309,7 @@ export const STATE_QUESTIONS: ScoreQuestion[] = [
   {
     key: 'self_criticism',
     category: 'state',
+    construct: 'self_view',
     type: 'score',
     label: 'Autocritique',
     instructions:
@@ -305,6 +347,7 @@ export function buildPersonQuestions(person: Person): BankQuestion[] {
     {
       key: personPresentKey(person.id),
       category: 'person',
+      construct: personConstruct(person.id),
       type: 'noul',
       label: person.alias,
       instructions: `La personne a-t-elle passé un moment avec ${reference} ou interagi avec ${reference} ?`,
@@ -312,6 +355,7 @@ export function buildPersonQuestions(person: Person): BankQuestion[] {
     {
       key: personToneKey(person.id),
       category: 'person',
+      construct: personConstruct(person.id),
       type: 'score',
       label: person.alias,
       instructions: `Comment s'est passée l'interaction avec ${reference} ?`,

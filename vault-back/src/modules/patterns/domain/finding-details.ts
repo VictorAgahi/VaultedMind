@@ -11,13 +11,15 @@ function averageOf(values: number[], indices: number[]): number {
 }
 
 /**
- * Mean target for high versus low predictor days, in the unit of the target.
+ * Mean target for high versus low predictor days, in the unit of the target
+ * (a frequency in [0, 1] when the target is a yes/no series).
  * Binary predictors: >= 0.7 versus <= 0.3 (the middle is left out).
  * Continuous predictors: top third versus bottom third of the days.
  */
 export function computeEffect(
   sample: PairedSample,
   kind: ColumnKind,
+  targetBinary: boolean = false,
 ): PatternEffect | null {
   const count = sample.predictor.length;
   let highIndices: number[];
@@ -45,6 +47,7 @@ export function computeEffect(
   const meanWhenLow = averageOf(sample.target, lowIndices);
   return {
     kind,
+    ...(targetBinary && { targetBinary: true }),
     meanWhenHigh,
     meanWhenLow,
     countHigh: highIndices.length,
@@ -53,12 +56,16 @@ export function computeEffect(
   };
 }
 
-/** Favourable when the target moves the way the user wants when the predictor is high. */
+/**
+ * Favourable when the target moves the way the user wants when the predictor is high.
+ * A neutral target (`higherIsBetter` null) has no favourable side.
+ */
 export function isFavourable(
   effect: PatternEffect | null,
   rho: number,
-  higherIsBetter: boolean,
+  higherIsBetter: boolean | null,
 ): boolean | null {
+  if (higherIsBetter === null) return null;
   const direction = effect && effect.difference !== 0 ? effect.difference : rho;
   if (direction === 0 || Number.isNaN(direction)) return null;
   return direction > 0 === higherIsBetter;

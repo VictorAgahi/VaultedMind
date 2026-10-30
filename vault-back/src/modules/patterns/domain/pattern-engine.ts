@@ -11,15 +11,24 @@ import {
   binaryItemsOf,
   compareBeforeDifficultDays,
   findDifficultDays,
+  findUnfavourableValueDays,
 } from './before-difficult-days.js';
+import {
+  sharesConstruct,
+  type ConstructKey,
+} from '../../signals/domain/constructs.js';
 import { findChangePoint } from './change-points.js';
-import { fieldColumnKey } from './daily-matrix.js';
+import { fieldColumnKey, valueColumnKey } from './daily-matrix.js';
 import {
   computeEffect,
   isFavourable,
   pickExampleDates,
 } from './finding-details.js';
-import type { InsightTarget } from './insight-target.js';
+import {
+  isValueTarget,
+  type InsightTarget,
+  type TargetDirection,
+} from './insight-target.js';
 import {
   PATTERN_ENGINE_VERSION,
   type BeforeDifficultDays,
@@ -69,6 +78,7 @@ interface Predictor {
   label: string;
   category: ColumnCategory;
   kind: ColumnKind;
+  construct: ConstructKey;
   series: EncodedSeries;
   /** Whether the test controls for the target of the previous day. */
   allowsPartial: boolean;
@@ -76,8 +86,13 @@ interface Predictor {
 
 interface ResolvedTarget {
   fieldId: string;
+  value: string | null;
   column: MatrixColumn;
-  higherIsBetter: boolean;
+  direction: TargetDirection;
+  /** Null for a neutral target: no side is the good one. */
+  higherIsBetter: boolean | null;
+  /** A value target: a yes/no series. */
+  binary: boolean;
   series: EncodedSeries;
 }
 
@@ -119,27 +134,42 @@ function emptyReport(
   };
 }
 
+/** A field is never a predictor of itself, nor are two values of the same field. */
+function isSameField(left: MatrixColumn, right: MatrixColumn): boolean {
+  return left.fieldId !== undefined && left.fieldId === right.fieldId;
+}
+
 function buildPredictors(
   matrix: DailyMatrix,
-  targetKey: string,
+  target: MatrixColumn,
   lag: Lag,
   encodedByKey: Map<string, EncodedSeries>,
 ): Predictor[] {
-  return matrix.columns
-    .filter((column) => column.key !== targetKey)
-    .filter(
-      (column) => lag === 1 || SAME_DAY_CATEGORIES.includes(column.category),
-    )
-    .map(
-      (column): Predictor => ({
-        key: column.key,
-        label: column.label,
-        category: column.category,
-        kind: column.kind,
-        series: encodedByKey.get(column.key) as EncodedSeries,
-        allowsPartial: lag === 1,
-      }),
-    );
+  return (
+    matrix.columns
+      .filter(
+        (column) =>
+          column.key !== target.key &&
+          !column.targetOnly &&
+          !isSameField(column, target),
+      )
+      // The same construct measured twice (mood field and mood read from the note) teaches nothing
+      .filter((column) => !sharesConstruct(column.construct, target.construct))
+      .filter(
+        (column) => lag === 1 || SAME_DAY_CATEGORIES.includes(column.category),
+      )
+      .map(
+        (column): Predictor => ({
+          key: column.key,
+          label: column.label,
+          category: column.category,
+          kind: column.kind,
+          construct: column.construct,
+          series: encodedByKey.get(column.key) as EncodedSeries,
+          allowsPartial: lag === 1,
+        }),
+      )
+  );
 }
 
 function runAssociationTests(
@@ -157,6 +187,7 @@ function runAssociationTests(
     label: 'Veille sans saisie',
     category: 'logging',
     kind: 'binary',
+    construct: 'logging',
     series: encodeSeries(matrix.logged.map((flag) => 1 - flag)),
     allowsPartial: false,
   };
@@ -166,11 +197,13 @@ function runAssociationTests(
     for (const lag of [0, 1] as const) {
       const predictors = buildPredictors(
         matrix,
-        target.column.key,
+        target.column,
         lag,
         encodedByKey,
       );
-      if (lag === 1) predictors.push(noLogPreviousDay);
+      if (lag === 1 && !sharesConstruct('logging', target.column.construct)) {
+        predictors.push(noLogPreviousDay);
+      }
 
       for (const predictor of predictors) {
         const partial = predictor.allowsPartial;
@@ -180,7 +213,7 @@ function runAssociationTests(
           lag,
           partial,
         );
-        if (skipReason(sample, predictor.kind)) continue;
+        if (skipReason(sample, predictor.kind, target.binary)) continue;
         const rho = observedStatistic(sample, partial);
         if (Number.isNaN(rho)) continue;
         const p = blockPermutationPValue({
@@ -223,7 +256,7 @@ function toFinding(
     test.lag,
     test.partial,
   );
-  const effect = computeEffect(sample, test.predictor.kind);
+  const effect = computeEffect(sample, test.predictor.kind, target.binary);
   return {
     key: test.predictor.key,
     label: test.predictor.label,
@@ -251,20 +284,21 @@ function buildFindings(
   targets: ResolvedTarget[],
   matrix: DailyMatrix,
 ): PatternFinding[][] {
-  const adjusted = benjaminiHochberg(tests.map((test) => test.p));
   const byTarget: PatternFinding[][] = targets.map(() => []);
-  tests.forEach((test, index) => {
-    const strength = classifyStrength(adjusted[index], test.p, test.rho);
-    if (!strength) return;
-    byTarget[test.targetIndex].push(
-      toFinding(
-        test,
-        adjusted[index],
-        strength,
-        targets[test.targetIndex],
-        matrix,
-      ),
+  // Each target is its own family of tests: adding a target must never change the verdict on
+  // the findings of another one, so Benjamini-Hochberg runs separately for each target.
+  targets.forEach((target, targetIndex) => {
+    const targetTests = tests.filter(
+      (test) => test.targetIndex === targetIndex,
     );
+    const adjusted = benjaminiHochberg(targetTests.map((test) => test.p));
+    targetTests.forEach((test, index) => {
+      const strength = classifyStrength(adjusted[index], test.p, test.rho);
+      if (!strength) return;
+      byTarget[targetIndex].push(
+        toFinding(test, adjusted[index], strength, target, matrix),
+      );
+    });
   });
   for (const findings of byTarget) {
     findings.sort(
@@ -283,13 +317,20 @@ function analyseBeforeDifficultDays(
   targets: ResolvedTarget[],
 ): (BeforeDifficultDays | null)[] {
   const perTarget = targets.map((target) => {
-    const difficult = findDifficultDays(
-      target.series.values,
-      target.higherIsBetter,
-    );
+    // No good side, no difficult days
+    if (target.higherIsBetter === null) return null;
+    const difficult = target.binary
+      ? findUnfavourableValueDays(target.series.values, target.higherIsBetter)
+      : findDifficultDays(target.series.values, target.higherIsBetter);
     if (!difficult) return null;
     const items = binaryItemsOf(
-      matrix.columns.filter((column) => column.key !== target.column.key),
+      matrix.columns.filter(
+        (column) =>
+          column.key !== target.column.key &&
+          !column.targetOnly &&
+          !isSameField(column, target.column) &&
+          !sharesConstruct(column.construct, target.column.construct),
+      ),
     );
     return {
       difficultCount: difficult.filter(Boolean).length,
@@ -297,11 +338,14 @@ function analyseBeforeDifficultDays(
     };
   });
 
-  const everyResult = perTarget.flatMap((entry) => entry?.results ?? []);
-  const adjusted = benjaminiHochberg(everyResult.map((result) => result.p));
-  everyResult.forEach((result, index) => {
-    result.q = adjusted[index];
-  });
+  // One family of tests per target, like the association tests
+  for (const entry of perTarget) {
+    if (!entry) continue;
+    const adjusted = benjaminiHochberg(entry.results.map((result) => result.p));
+    entry.results.forEach((result, index) => {
+      result.q = adjusted[index];
+    });
+  }
   return perTarget.map((entry) => {
     if (!entry) return null;
     const items = entry.results
@@ -352,16 +396,27 @@ function resolveTargets(
 ): ResolvedTarget[] {
   const resolved: ResolvedTarget[] = [];
   for (const target of targets) {
+    const value = isValueTarget(target) ? target.value : null;
+    const columnKey =
+      value === null
+        ? fieldColumnKey(target.fieldId)
+        : valueColumnKey(target.fieldId, value);
     const column = matrix.columns.find(
-      (candidate) => candidate.key === fieldColumnKey(target.fieldId),
+      (candidate) => candidate.key === columnKey,
     );
     if (!column) continue;
     const series = encodeSeries(column.values);
     if (countObserved(series.values) === 0) continue;
     resolved.push({
       fieldId: target.fieldId,
+      value,
       column,
-      higherIsBetter: target.direction === 'HIGHER_IS_BETTER',
+      direction: target.direction,
+      higherIsBetter:
+        target.direction === 'NEUTRAL'
+          ? null
+          : target.direction === 'HIGHER_IS_BETTER',
+      binary: value !== null,
       series,
     });
   }
@@ -395,30 +450,35 @@ export function computePatternReport(
       fieldId: target.fieldId,
       key: target.column.key,
       label: target.column.label,
-      direction: target.higherIsBetter ? 'HIGHER_IS_BETTER' : 'LOWER_IS_BETTER',
+      direction: target.direction,
+      ...(target.binary && { value: target.value, binary: true }),
       testsRun: tests.filter((test) => test.targetIndex === index).length,
       findings: findings[index],
       beforeDifficultDays: beforeDifficult[index],
-      changePoints: findChangePoints(
-        [
-          {
-            key: target.column.key,
-            label: target.column.label,
-            series: target.series,
-            higherIsBetter: target.higherIsBetter,
-          },
-        ],
-        matrix,
-        options,
-      ),
-      scoreTextGaps: toneSeries
-        ? findScoreTextGaps(
-            target.series.values,
-            toneSeries,
-            target.higherIsBetter,
-            matrix.dates,
-          )
-        : [],
+      // A mean shift of a yes/no series is not told in the units of a scale: left out
+      changePoints: target.binary
+        ? []
+        : findChangePoints(
+            [
+              {
+                key: target.column.key,
+                label: target.column.label,
+                series: target.series,
+                higherIsBetter: target.higherIsBetter ?? undefined,
+              },
+            ],
+            matrix,
+            options,
+          ),
+      scoreTextGaps:
+        toneSeries && target.higherIsBetter !== null && !target.binary
+          ? findScoreTextGaps(
+              target.series.values,
+              toneSeries,
+              target.higherIsBetter,
+              matrix.dates,
+            )
+          : [],
     }),
   );
 

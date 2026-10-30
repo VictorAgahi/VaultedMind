@@ -1,6 +1,7 @@
+import type { ConstructKey } from '../../signals/domain/constructs.js';
 import type { TargetDirection } from './insight-target.js';
 
-export const PATTERN_ENGINE_VERSION = 'patterns-v1';
+export const PATTERN_ENGINE_VERSION = 'patterns-v2';
 
 export type ColumnCategory =
   | 'field'
@@ -19,6 +20,12 @@ export interface MatrixColumn {
   label: string;
   category: ColumnCategory;
   kind: ColumnKind;
+  /** What the column measures; two columns of the same construct are never tested together. */
+  construct: ConstructKey;
+  /** Custom field the column comes from, so that a field is never its own predictor. */
+  fieldId?: string;
+  /** Value targets only: the column can be a target but never a predictor. */
+  targetOnly?: boolean;
   /** Score columns only: which end of the scale is the notable one. */
   notableEnd?: 'high' | 'low';
   /** One value per calendar day, null when unknown. */
@@ -39,6 +46,8 @@ export type Lag = 0 | 1;
 
 export interface PatternEffect {
   kind: 'binary' | 'continuous';
+  /** True when the target is a yes/no series: the means below are then frequencies in [0, 1]. */
+  targetBinary?: boolean;
   /** Mean target when the predictor is high (yes, or top third). */
   meanWhenHigh: number;
   /** Mean target when the predictor is low (no, or bottom third). */
@@ -46,6 +55,12 @@ export interface PatternEffect {
   countHigh: number;
   countLow: number;
   difference: number;
+}
+
+/** The AI reading of how obvious a link is: level 0 (surprising) to 3 (obvious to everyone). */
+export interface LinkObviousness {
+  level: number;
+  confidence: number;
 }
 
 export interface PatternFinding {
@@ -61,10 +76,12 @@ export interface PatternFinding {
   q: number;
   strength: FindingStrength;
   effect: PatternEffect | null;
-  /** Whether the effect goes the way the user wants; null when it cannot be told. */
+  /** Whether the effect goes the way the user wants; null when it cannot be told or for a neutral target. */
   favourable: boolean | null;
   /** Days of the predictor that best illustrate the finding. */
   exampleDates: string[];
+  /** AI score of how expected the link is; null or absent when it could not be scored. */
+  obviousness?: LinkObviousness | null;
 }
 
 export interface BeforeDifficultDaysItem {
@@ -116,6 +133,10 @@ export interface TargetReport {
   key: string;
   label: string;
   direction: TargetDirection;
+  /** Value targets only: the text value whose presence is the target. */
+  value?: string | null;
+  /** True for a value target (1 when the field equals the value, else 0). */
+  binary?: boolean;
   testsRun: number;
   findings: PatternFinding[];
   beforeDifficultDays: BeforeDifficultDays | null;

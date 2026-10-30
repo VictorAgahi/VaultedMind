@@ -20,6 +20,9 @@ export class CustomFieldMapper {
       model.subFields,
       model.goalTarget ?? undefined,
       model.goalDirection ?? undefined,
+      model.construct ?? undefined,
+      model.constructNameHash ?? undefined,
+      model.constructOverride ?? undefined,
     );
   }
 
@@ -41,6 +44,9 @@ export class CustomFieldMapper {
     model.subFields = entity.subFields;
     model.goalTarget = entity.goalTarget ?? null;
     model.goalDirection = entity.goalDirection ?? null;
+    model.construct = entity.construct ?? null;
+    model.constructNameHash = entity.constructNameHash ?? null;
+    model.constructOverride = entity.constructOverride ?? null;
     return model;
   }
 }

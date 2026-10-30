@@ -18,7 +18,7 @@ export interface RegistrationDetails {
 
 export type PublicUserPreferences = Omit<
   UserPreferences,
-  'firstName' | 'lastReminderOn'
+  'firstName' | 'lastReminderOn' | 'patternObviousOverrides'
 >;
 
 export interface UserProfile {

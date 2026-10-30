@@ -52,6 +52,9 @@ export class UserModel extends BaseModel {
   @Column({ name: 'insight_targets', type: 'json', nullable: true })
   insightTargets?: InsightTarget[] | null;
 
+  @Column({ name: 'pattern_obvious_overrides', type: 'json', nullable: true })
+  patternObviousOverrides?: Record<string, boolean> | null;
+
   @Column({ name: 'reminder_enabled', type: 'boolean', default: true })
   reminderEnabled!: boolean;
 

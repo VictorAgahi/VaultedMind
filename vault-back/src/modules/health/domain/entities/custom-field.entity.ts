@@ -24,6 +24,11 @@ export interface CustomFieldGoalUpdate {
   goalDirection?: GoalDirection | null;
 }
 
+/** The construct override accepts null on update to go back to the automatic one. */
+export interface CustomFieldConstructOverrideUpdate {
+  constructOverride?: string | null;
+}
+
 export class CustomField {
   constructor(
     public readonly id: string,
@@ -42,5 +47,11 @@ export class CustomField {
     public readonly subFields?: SubFieldDefinition[],
     public readonly goalTarget?: number,
     public readonly goalDirection?: GoalDirection,
+    /** Automatic classification of what the field measures (see signals constructs). */
+    public readonly construct?: string,
+    /** Keyed hash of the name, category and options the construct was computed from. */
+    public readonly constructNameHash?: string,
+    /** Construct chosen by the user, which beats the automatic one. */
+    public readonly constructOverride?: string,
   ) {}
 }

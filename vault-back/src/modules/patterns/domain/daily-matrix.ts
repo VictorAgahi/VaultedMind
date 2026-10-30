@@ -1,4 +1,8 @@
 import { FieldType } from '../../health/domain/enums/field-type.enum.js';
+import {
+  effectiveConstruct,
+  type ConstructFieldSource,
+} from '../../signals/domain/constructs.js';
 import type { LinguisticMarkers } from '../../signals/domain/linguistic-markers.js';
 import type { Person } from '../../signals/domain/person.js';
 import {
@@ -15,13 +19,23 @@ export const MIN_SCORE_CONFIDENCE = 0.3;
 /** A person's tone only counts when the person was present with at least this probability. */
 export const MIN_PERSON_PRESENCE = 0.5;
 
-export interface MatrixField {
+export interface MatrixField extends ConstructFieldSource {
   id: string;
   name: string;
   fieldType: FieldType;
   isActive: boolean;
   optionsOrder?: string[];
   appleWatchMetric?: string;
+}
+
+/** A value of a text field that the user wants to understand, turned into a yes/no column. */
+export interface MatrixValueTarget {
+  fieldId: string;
+  value: string;
+}
+
+export function valueColumnKey(fieldId: string, value: string): string {
+  return `${fieldColumnKey(fieldId)}=${value}`;
 }
 
 export interface MatrixDaySignals {
@@ -91,10 +105,55 @@ function buildFieldColumn(
     label: field.name,
     category: field.appleWatchMetric ? 'body' : 'field',
     kind: field.fieldType === FieldType.BOOLEAN ? 'binary' : 'continuous',
+    construct: effectiveConstruct(field),
+    fieldId: field.id,
     values: days.map((day) =>
       day ? parseFieldValue(field, day.fieldValues.get(field.id)) : null,
     ),
   };
+}
+
+/**
+ * 1 on the logged days where the field equals the value, 0 on logged days with another value,
+ * null when the field is empty that day (or the day has no log).
+ */
+function buildValueColumn(
+  field: MatrixField,
+  value: string,
+  days: (MatrixDayInput | undefined)[],
+): MatrixColumn {
+  return {
+    key: valueColumnKey(field.id, value),
+    label: `${field.name} : ${value}`,
+    category: 'field',
+    kind: 'binary',
+    construct: effectiveConstruct(field),
+    fieldId: field.id,
+    targetOnly: true,
+    values: days.map((day) => {
+      const raw = day?.fieldValues.get(field.id);
+      if (raw === undefined || raw.trim() === '') return null;
+      return raw === value ? 1 : 0;
+    }),
+  };
+}
+
+function buildValueColumns(
+  days: (MatrixDayInput | undefined)[],
+  fields: MatrixField[],
+  valueTargets: MatrixValueTarget[],
+): MatrixColumn[] {
+  const columns: MatrixColumn[] = [];
+  const seen = new Set<string>();
+  for (const target of valueTargets) {
+    const key = valueColumnKey(target.fieldId, target.value);
+    const field = fields.find((candidate) => candidate.id === target.fieldId);
+    if (seen.has(key) || !field?.isActive) continue;
+    if (field.fieldType !== FieldType.STRING) continue;
+    seen.add(key);
+    columns.push(buildValueColumn(field, target.value, days));
+  }
+  return columns;
 }
 
 function signalValue(
@@ -131,6 +190,7 @@ function buildSignalColumns(
       key: question.key,
       label: isPersonTone ? `${question.label} (ton)` : question.label,
       category: question.category,
+      construct: question.construct,
       kind: question.type === 'noul' ? 'binary' : 'continuous',
       ...(question.type === 'score' && {
         notableEnd: question.lowEndIsNotable
@@ -153,6 +213,7 @@ function buildMarkerColumns(
     key,
     label,
     category: 'language',
+    construct: 'language',
     kind: 'continuous',
     values: days.map((day) =>
       day?.signals ? read(day.signals.markers) : null,
@@ -173,11 +234,13 @@ function buildMarkerColumns(
  * Builds the daily matrix: one row per calendar day between the first and the last log.
  * Log dates are already local calendar dates of the user, so no time zone conversion is needed.
  * Days without a log are null in every column. Columns without any value are dropped.
+ * Value targets add one yes/no column each, which can only be a target.
  */
 export function buildDailyMatrix(
   logs: MatrixDayInput[],
   fields: MatrixField[],
   people: Person[],
+  valueTargets: MatrixValueTarget[] = [],
 ): DailyMatrix {
   if (logs.length === 0) return { dates: [], logged: [], columns: [] };
 
@@ -197,6 +260,7 @@ export function buildDailyMatrix(
     ...fields
       .filter(isUsableField)
       .map((field) => buildFieldColumn(field, days)),
+    ...buildValueColumns(days, fields, valueTargets),
     ...buildSignalColumns(days, people),
     ...buildMarkerColumns(days),
   ].filter((column) => column.values.some((value) => value !== null));

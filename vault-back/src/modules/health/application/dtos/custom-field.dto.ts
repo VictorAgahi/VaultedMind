@@ -17,6 +17,8 @@ import type {
   GoalDirection,
 } from '../../domain/entities/custom-field.entity.js';
 
+import { CONSTRUCTS } from '../../../signals/domain/constructs.js';
+
 const GOAL_DIRECTIONS: GoalDirection[] = ['AT_LEAST', 'AT_MOST'];
 
 export class CreateCustomFieldDto {
@@ -67,6 +69,10 @@ export class CreateCustomFieldDto {
   @IsOptional()
   @IsIn(GOAL_DIRECTIONS)
   goalDirection?: GoalDirection | null;
+
+  @IsOptional()
+  @IsIn(CONSTRUCTS)
+  constructOverride?: string | null;
 }
 
 export class UpdateCustomFieldDto {
@@ -119,6 +125,10 @@ export class UpdateCustomFieldDto {
   @IsOptional()
   @IsIn(GOAL_DIRECTIONS)
   goalDirection?: GoalDirection | null;
+
+  @IsOptional()
+  @IsIn(CONSTRUCTS)
+  constructOverride?: string | null;
 }
 
 export class CustomFieldResponseDto {
@@ -135,5 +145,7 @@ export class CustomFieldResponseDto {
   appleWatchMetric?: AppleWatchMetric;
   goalTarget?: number;
   goalDirection?: GoalDirection;
+  construct?: string;
+  constructOverride?: string;
   createdAt!: Date;
 }

@@ -26,6 +26,8 @@ interface RawJevAnswer {
   noul?: number;
   score?: number;
   confidence?: number;
+  choice?: string;
+  probabilities?: Record<string, number>;
 }
 
 interface RawJevResponse {
@@ -129,9 +131,26 @@ export class JevClient {
           score: raw.score,
           confidence: typeof raw.confidence === 'number' ? raw.confidence : 0,
         };
+      } else if (raw.type === 'choice' && typeof raw.choice === 'string') {
+        answers[key] = {
+          type: 'choice',
+          choice: raw.choice,
+          confidence: typeof raw.confidence === 'number' ? raw.confidence : 0,
+          probabilities: this.parseProbabilities(raw.probabilities),
+        };
       }
     }
     return { model: body.model ?? JEV_MODEL, answers };
+  }
+
+  private parseProbabilities(
+    raw: Record<string, number> | undefined,
+  ): Record<string, number> {
+    const probabilities: Record<string, number> = {};
+    for (const [option, value] of Object.entries(raw ?? {})) {
+      if (typeof value === 'number') probabilities[option] = value;
+    }
+    return probabilities;
   }
 
   private apiKey(): string | undefined {

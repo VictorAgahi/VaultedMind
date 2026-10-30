@@ -61,6 +61,25 @@ export class CustomFieldModel extends BaseModel {
   })
   goalDirection?: GoalDirection | null;
 
+  @Column({ type: 'varchar', length: 40, nullable: true })
+  construct?: string | null;
+
+  @Column({
+    name: 'construct_name_hash',
+    type: 'varchar',
+    length: 64,
+    nullable: true,
+  })
+  constructNameHash?: string | null;
+
+  @Column({
+    name: 'construct_override',
+    type: 'varchar',
+    length: 40,
+    nullable: true,
+  })
+  constructOverride?: string | null;
+
   @Column({ name: 'user_id', type: 'uuid' })
   userId!: string;
 

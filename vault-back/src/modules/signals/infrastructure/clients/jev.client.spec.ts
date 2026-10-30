@@ -94,4 +94,48 @@ describe('JevClient', () => {
     await expect(client.analyze('t', {})).rejects.toBeInstanceOf(JevApiError);
     expect(overloaded).toHaveBeenCalledTimes(3);
   });
+
+  it('should parse choice answers with their probabilities and send the criteria map', async () => {
+    // Arrange
+    const fetchMock = jest.fn<typeof fetch>().mockResolvedValue(
+      ok({
+        model: 'jev-1.14.0',
+        answers: {
+          c: {
+            type: 'choice',
+            choice: 'mood',
+            confidence: 0.91,
+            probabilities: { sleep: 0.05, mood: 0.91, other: 0.04 },
+          },
+          broken: { type: 'choice' },
+        },
+      }),
+    );
+    globalThis.fetch = fetchMock;
+    const client = new FastJevClient(
+      config({ JEV_API_KEY: 'k', JEV_API_BASE: 'https://x' }),
+    );
+
+    // Act
+    const response = await client.analyze('Nom du champ : Humeur', {
+      c: {
+        type: 'choice',
+        instructions: 'Que mesure ce champ ?',
+        criteria: { sleep: 'Le sommeil', mood: "L'humeur", other: 'Autre' },
+      },
+    });
+
+    // Assert
+    const body = JSON.parse(fetchMock.mock.calls[0][1]?.body as string) as {
+      questions: { c: { criteria: Record<string, string> } };
+    };
+    expect(body.questions.c.criteria.mood).toBe("L'humeur");
+    expect(response.answers['c']).toEqual({
+      type: 'choice',
+      choice: 'mood',
+      confidence: 0.91,
+      probabilities: { sleep: 0.05, mood: 0.91, other: 0.04 },
+    });
+    expect(response.answers['broken']).toBeUndefined();
+  });
 });

@@ -3,6 +3,7 @@ import { v4 as uuidv4 } from 'uuid';
 import { AIInsightRepository } from '../../../../database/repositories/ai-insight.repository.js';
 import { DailyLogRepository } from '../../../../database/repositories/daily-log.repository.js';
 import { CustomFieldRepository } from '../../../../database/repositories/custom-field.repository.js';
+import type { PatternObviousOverrides } from '../../../patterns/domain/pattern-obviousness.js';
 import { PatternReportRepository } from '../../../../database/repositories/pattern-report.repository.js';
 import {
   canUseEngineBrief,
@@ -133,6 +134,7 @@ export class AIInsightService {
       const engineBrief = await this.findEngineBrief(
         userId,
         user.preferences.insightsV2Enabled,
+        user.preferences.patternObviousOverrides,
       );
 
       const [analysisBrief, correlationBrief, contextBrief] = await Promise.all(
@@ -308,11 +310,12 @@ export class AIInsightService {
   private async findEngineBrief(
     userId: string,
     insightsV2Enabled: boolean,
+    obviousOverrides: PatternObviousOverrides,
   ): Promise<string | null> {
     const stored = await this.patternReportRepository.findByUserId(userId);
     const report = stored?.report ?? null;
     return canUseEngineBrief(report, insightsV2Enabled, new Date())
-      ? renderPatternBrief(report)
+      ? renderPatternBrief(report, obviousOverrides)
       : null;
   }
 

@@ -1,3 +1,4 @@
+import type { ConstructKey } from '../../signals/domain/constructs.js';
 import type {
   BeforeDifficultDaysItem,
   ColumnCategory,
@@ -20,6 +21,7 @@ export interface BinaryItem {
   key: string;
   label: string;
   category: ColumnCategory;
+  construct: ConstructKey;
   present: (boolean | null)[];
 }
 
@@ -35,6 +37,7 @@ export function binaryItemsOf(columns: MatrixColumn[]): BinaryItem[] {
         key: column.key,
         label: column.label,
         category: column.category,
+        construct: column.construct,
         present: column.values.map((value) =>
           value === null ? null : value >= 0.5,
         ),
@@ -45,6 +48,7 @@ export function binaryItemsOf(columns: MatrixColumn[]): BinaryItem[] {
         key: `${column.key}:notable`,
         label: `${column.label} (niveau ${lowEnd ? 'faible' : 'fort'})`,
         category: column.category,
+        construct: column.construct,
         present: column.values.map((value) => {
           if (value === null) return null;
           return lowEnd
@@ -55,6 +59,20 @@ export function binaryItemsOf(columns: MatrixColumn[]): BinaryItem[] {
     }
   }
   return items;
+}
+
+/**
+ * Days with the unfavourable value of a yes/no target: absent when presence is the good side,
+ * present otherwise. Null with too few observed days.
+ */
+export function findUnfavourableValueDays(
+  target: Float64Array,
+  higherIsBetter: boolean,
+): boolean[] | null {
+  const observed = Array.from(target).filter((value) => !Number.isNaN(value));
+  if (observed.length < MIN_DAYS_WITH_TARGET) return null;
+  const unfavourable = higherIsBetter ? 0 : 1;
+  return Array.from(target).map((value) => value === unfavourable);
 }
 
 /** Days in the worst 20% of the target given its direction, or null with too few values. */

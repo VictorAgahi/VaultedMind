@@ -10,12 +10,15 @@ export interface UserPreferences {
   insightTargets?: InsightTarget[];
 }
 
-export type TargetDirection = "HIGHER_IS_BETTER" | "LOWER_IS_BETTER";
+/** NEUTRAL : comprendre ce qui fait varier le repère, sans sens souhaité. */
+export type TargetDirection = "HIGHER_IS_BETTER" | "LOWER_IS_BETTER" | "NEUTRAL";
 
-/** Ce que l'utilisateur veut comprendre : un champ et le sens qui est le bon. */
+/** Ce que l'utilisateur veut comprendre : un champ (ou une valeur d'un champ texte) et le sens qui est le bon. */
 export interface InsightTarget {
   fieldId: string;
   direction: TargetDirection;
+  /** Champ texte seulement : le repère est alors "le champ vaut cette valeur". */
+  value?: string;
 }
 
 /** Personne de l'entourage : seul l'alias quitte le serveur, les variantes sont remplacées avant l'envoi. */
@@ -146,6 +149,10 @@ export interface CustomField {
   /** Objectif hebdomadaire : nombre de jours (oui/non) ou moyenne (nombre). */
   goalTarget?: number;
   goalDirection?: "AT_LEAST" | "AT_MOST";
+  /** Ce que mesure le champ, classé automatiquement. */
+  construct?: string;
+  /** Choix de la personne, prioritaire sur le classement automatique. */
+  constructOverride?: string;
   createdAt: string;
 }
 
@@ -161,6 +168,7 @@ export interface CreateCustomFieldDto {
   appleWatchMetric?: AppleWatchMetric;
   goalTarget?: number | null;
   goalDirection?: "AT_LEAST" | "AT_MOST" | null;
+  constructOverride?: string | null;
 }
 
 export interface UpdateCustomFieldDto {
@@ -175,6 +183,7 @@ export interface UpdateCustomFieldDto {
   appleWatchMetric?: AppleWatchMetric;
   goalTarget?: number | null;
   goalDirection?: "AT_LEAST" | "AT_MOST" | null;
+  constructOverride?: string | null;
 }
 
 export interface FieldValue {
@@ -248,10 +257,13 @@ export interface AIChatStatusResponseDto {
 // ─── Mes leviers (moteur de motifs déterministe) ─────────────────────────────
 
 export type PatternStrength = "solide" | "piste";
+export type PatternObviousSource = "user" | "jev";
 export type PatternReportStatus = "ok" | "insufficient_data" | "no_targets";
 
 export interface PatternEffect {
   kind: "binary" | "continuous";
+  /** Repère oui/non (valeur d'un champ texte) : les moyennes sont alors des fréquences entre 0 et 1. */
+  targetBinary?: boolean;
   meanWhenHigh: number;
   meanWhenLow: number;
   countHigh: number;
@@ -276,6 +288,11 @@ export interface PatternFinding {
   /** Jours du prédicteur qui illustrent le mieux le lien ("AAAA-MM-JJ"). */
   exampleDates: string[];
   summary: string;
+  /** Identité stable du lien, renvoyée pour enregistrer l'avis de la personne. Absent des anciens rapports. */
+  findingKey?: string;
+  /** Lien connu de tous. Absent des anciens rapports : traité comme non évident. */
+  obvious?: boolean;
+  obviousSource?: PatternObviousSource | null;
 }
 
 export interface PatternBeforeItem {
@@ -309,6 +326,9 @@ export interface PatternTargetReport {
   key: string;
   label: string;
   direction: TargetDirection;
+  /** Repère "le champ vaut cette valeur" (champ texte). */
+  value?: string | null;
+  binary?: boolean;
   /** Faux si le champ a été désactivé depuis le calcul. */
   targetStillValid: boolean;
   findings: PatternFinding[];

@@ -1,3 +1,10 @@
+import { targetIdentity } from './insight-target.js';
+import {
+  buildFindingKey,
+  resolveObviousness,
+  type ObviousSource,
+  type PatternObviousOverrides,
+} from './pattern-obviousness.js';
 import type {
   BeforeDifficultDaysItem,
   ChangePointFinding,
@@ -18,7 +25,13 @@ export interface Summarized {
   summary: string;
 }
 
-export type PatternFindingView = PatternFinding & Summarized;
+export type PatternFindingView = PatternFinding &
+  Summarized & {
+    /** Stable identity of the link, sent back to record the user's verdict. */
+    findingKey: string;
+    obvious: boolean;
+    obviousSource: ObviousSource | null;
+  };
 export type BeforeDifficultDaysItemView = BeforeDifficultDaysItem &
   Summarized & { moreFrequentBefore: boolean };
 export type ChangePointView = ChangePointFinding & Summarized;
@@ -51,27 +64,45 @@ function viewChangePoint(changePoint: ChangePointFinding): ChangePointView {
   return { ...changePoint, summary: summarizeChangePoint(changePoint) };
 }
 
+function viewFinding(
+  finding: PatternFinding,
+  target: TargetReport,
+  overrides: PatternObviousOverrides,
+): PatternFindingView {
+  const findingKey = buildFindingKey(target.key, finding);
+  const verdict = resolveObviousness(finding, findingKey, overrides);
+  return {
+    ...finding,
+    summary: summarizeFinding(finding, target.label),
+    findingKey,
+    obvious: verdict.obvious,
+    obviousSource: verdict.source,
+  };
+}
+
 function viewTarget(
   target: TargetReport,
-  activeTargetFieldIds: ReadonlySet<string>,
+  activeTargets: ReadonlySet<string>,
+  overrides: PatternObviousOverrides,
 ): TargetReportView {
   return {
     ...target,
-    targetStillValid: activeTargetFieldIds.has(target.fieldId),
-    findings: target.findings.map((finding) => ({
-      ...finding,
-      summary: summarizeFinding(finding, target.label),
-    })),
+    targetStillValid: activeTargets.has(
+      targetIdentity(target.fieldId, target.value),
+    ),
+    findings: (target.findings ?? []).map((finding) =>
+      viewFinding(finding, target, overrides),
+    ),
     beforeDifficultDays: target.beforeDifficultDays && {
       difficultDayCount: target.beforeDifficultDays.difficultDayCount,
       items: target.beforeDifficultDays.items.map((item) => ({
         ...item,
         moreFrequentBefore: isMoreFrequentBefore(item),
-        summary: summarizeBeforeDifficultItem(item),
+        summary: summarizeBeforeDifficultItem(item, target),
       })),
     },
-    changePoints: target.changePoints.map(viewChangePoint),
-    scoreTextGaps: target.scoreTextGaps.map((gap) => ({
+    changePoints: (target.changePoints ?? []).map(viewChangePoint),
+    scoreTextGaps: (target.scoreTextGaps ?? []).map((gap) => ({
       ...gap,
       summary: summarizeScoreTextGap(gap),
     })),
@@ -81,13 +112,14 @@ function viewTarget(
 /** Adds the French sentences at read time so the wording can evolve without recomputing. */
 export function buildPatternReportView(
   report: PatternReport,
-  activeTargetFieldIds: ReadonlySet<string>,
+  activeTargets: ReadonlySet<string>,
+  overrides: PatternObviousOverrides = {},
 ): PatternReportView {
   return {
     ...report,
-    targets: report.targets.map((target) =>
-      viewTarget(target, activeTargetFieldIds),
+    targets: (report.targets ?? []).map((target) =>
+      viewTarget(target, activeTargets, overrides),
     ),
-    stateChangePoints: report.stateChangePoints.map(viewChangePoint),
+    stateChangePoints: (report.stateChangePoints ?? []).map(viewChangePoint),
   };
 }
