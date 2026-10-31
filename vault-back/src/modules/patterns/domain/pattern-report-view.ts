@@ -1,3 +1,4 @@
+import type { TrackedSubject } from '../../signals/domain/tracked-subject.js';
 import { targetIdentity } from './insight-target.js';
 import {
   buildFindingKey,
@@ -84,6 +85,7 @@ function viewTarget(
   target: TargetReport,
   activeTargets: ReadonlySet<string>,
   overrides: PatternObviousOverrides,
+  subject?: TrackedSubject,
 ): TargetReportView {
   return {
     ...target,
@@ -98,13 +100,13 @@ function viewTarget(
       items: target.beforeDifficultDays.items.map((item) => ({
         ...item,
         moreFrequentBefore: isMoreFrequentBefore(item),
-        summary: summarizeBeforeDifficultItem(item, target),
+        summary: summarizeBeforeDifficultItem(item, target, subject),
       })),
     },
     changePoints: (target.changePoints ?? []).map(viewChangePoint),
     scoreTextGaps: (target.scoreTextGaps ?? []).map((gap) => ({
       ...gap,
-      summary: summarizeScoreTextGap(gap),
+      summary: summarizeScoreTextGap(gap, subject),
     })),
   };
 }
@@ -114,11 +116,12 @@ export function buildPatternReportView(
   report: PatternReport,
   activeTargets: ReadonlySet<string>,
   overrides: PatternObviousOverrides = {},
+  subject?: TrackedSubject,
 ): PatternReportView {
   return {
     ...report,
     targets: (report.targets ?? []).map((target) =>
-      viewTarget(target, activeTargets, overrides),
+      viewTarget(target, activeTargets, overrides, subject),
     ),
     stateChangePoints: (report.stateChangePoints ?? []).map(viewChangePoint),
   };

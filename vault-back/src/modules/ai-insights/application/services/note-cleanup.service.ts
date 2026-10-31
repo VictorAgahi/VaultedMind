@@ -2,6 +2,7 @@ import { Injectable, Logger } from '@nestjs/common';
 import { UserRepository } from '../../../../database/repositories/user.repository.js';
 import { DailyLogRepository } from '../../../../database/repositories/daily-log.repository.js';
 import type { DailyLogCleanupCandidate } from '../../../health/domain/entities/daily-log-cleanup-candidate.js';
+import type { TrackedSubject } from '../../../signals/domain/tracked-subject.js';
 import { LLMService } from './llm.service.js';
 import { buildNoteCleanupPrompt } from './note-cleanup-prompt.js';
 
@@ -44,7 +45,10 @@ export class NoteCleanupService {
         remaining,
       );
       for (const candidate of candidates) {
-        const succeeded = await this.cleanOne(candidate);
+        const succeeded = await this.cleanOne(
+          candidate,
+          user.preferences.trackedSubject,
+        );
         if (succeeded) summary.cleaned++;
         else summary.failed++;
         remaining--;
@@ -56,10 +60,11 @@ export class NoteCleanupService {
 
   private async cleanOne(
     candidate: DailyLogCleanupCandidate,
+    subject: TrackedSubject,
   ): Promise<boolean> {
     try {
       const rewritten = await this.llmService.generateTextWithConfig(
-        buildNoteCleanupPrompt(candidate.notes),
+        buildNoteCleanupPrompt(candidate.notes, subject),
         {
           model: this.llmService.getAnalysisModel(),
           maxTokens: NOTE_CLEANUP_MAX_TOKENS,

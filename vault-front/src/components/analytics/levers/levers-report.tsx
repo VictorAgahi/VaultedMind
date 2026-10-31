@@ -4,6 +4,8 @@ import React from "react";
 import Link from "next/link";
 import { Box, Button, FormControlLabel, Link as MuiLink, Paper, Switch, Typography } from "@mui/material";
 import { apiService } from "@/services/api.service";
+import { useAuth } from "@/context/auth-context";
+import { leversWording } from "@/utils/tracked-subject";
 import type { PatternChangePoint, PatternFinding, PatternReport, PatternTargetReport } from "@/types";
 import { DayLinks, InsightCard, SectionTitle, ShowMoreList, StrengthChip } from "./levers-parts";
 
@@ -163,6 +165,8 @@ interface TargetSectionProps {
 }
 
 const TargetSection: React.FC<TargetSectionProps> = ({ target, index, isObvious, onVerdict }) => {
+  const { user } = useAuth();
+  const wording = leversWording(user?.preferences?.trackedSubject);
   const headingId = `target-${index}`;
   const findings = target.findings ?? [];
   const main = findings.filter((finding) => !isObvious(finding));
@@ -202,8 +206,8 @@ const TargetSection: React.FC<TargetSectionProps> = ({ target, index, isObvious,
             </>
           ) : (
             <>
-              <FindingGroup id={`help-${index}`} title="Ce qui t'aide" subtitle="Des liens qui vont dans le sens que tu souhaites." findings={helping} tone="help" obvious={false} onVerdict={onVerdict} />
-              <FindingGroup id={`weigh-${index}`} title="Ce qui pèse" subtitle="Des liens qui vont à l'inverse de ce que tu souhaites." findings={weighing} tone="neutral" obvious={false} onVerdict={onVerdict} />
+              <FindingGroup id={`help-${index}`} title={wording.helps} subtitle={wording.helpsSubtitle} findings={helping} tone="help" obvious={false} onVerdict={onVerdict} />
+              <FindingGroup id={`weigh-${index}`} title={wording.weighs} subtitle={wording.weighsSubtitle} findings={weighing} tone="neutral" obvious={false} onVerdict={onVerdict} />
               <FindingGroup id={`other-${index}`} title="Autres liens observés" subtitle="Le sens de ces liens ne peut pas être tranché." findings={undetermined} tone="neutral" obvious={false} onVerdict={onVerdict} />
             </>
           )}

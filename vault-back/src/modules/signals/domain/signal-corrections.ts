@@ -1,4 +1,4 @@
-import type { Person } from './person.js';
+import type { SignalContext } from './signal-context.js';
 import { buildQuestionBank } from './question-bank.js';
 
 export type CorrectionsInput = Record<string, number | null>;
@@ -9,10 +9,10 @@ export type CorrectionsInput = Record<string, number | null>;
  */
 export function validateCorrections(
   corrections: CorrectionsInput,
-  people: Person[],
+  context: SignalContext,
 ): string[] {
   const questions = new Map(
-    buildQuestionBank(people).map((question) => [question.key, question]),
+    buildQuestionBank(context).map((question) => [question.key, question]),
   );
   const problems: string[] = [];
 

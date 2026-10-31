@@ -40,6 +40,14 @@ const CONSTRUCT_DESCRIPTIONS: Record<Construct, string> = {
   mindfulness: 'La méditation, la pleine conscience, la respiration',
   language: "La façon d'écrire ou de parler",
   logging: 'Le fait de remplir ou non le journal',
+  aggression: "L'agressivité, les morsures, les griffures, les bagarres",
+  elimination:
+    'Les besoins (urine, selles), la propreté, les accidents hors du lieu prévu',
+  play: 'Le jeu, les jouets, les moments ludiques',
+  environment_change:
+    "Les changements d'environnement ou de routine, les visites, le bruit",
+  solitude: "Les moments passés seul, l'absence des proches",
+  vet: 'Le vétérinaire, les traitements, les soins',
   other: "Autre chose, ou impossible à dire d'après le nom",
 };
 

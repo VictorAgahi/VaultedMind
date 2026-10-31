@@ -7,7 +7,27 @@ export interface UserPreferences {
   aiIncludeNotes: boolean;
   insightsV2Enabled?: boolean;
   people?: Person[];
+  trackedSubject?: TrackedSubject;
+  customSignals?: CustomSignal[];
   insightTargets?: InsightTarget[];
+}
+
+export type TrackedSubjectKind = "SELF" | "ANIMAL" | "OTHER_PERSON";
+
+/** Qui est suivi : l'utilisateur, son animal ou une autre personne dont il note les journées. */
+export interface TrackedSubject {
+  kind: TrackedSubjectKind;
+  name?: string;
+  /** Animaux seulement, par exemple « chat ». */
+  species?: string;
+}
+
+/** Question oui/non écrite par l'utilisateur, posée sur chaque note. */
+export interface CustomSignal {
+  id: string;
+  label: string;
+  question: string;
+  kind: "yes_no";
 }
 
 /** NEUTRAL : comprendre ce qui fait varier le repère, sans sens souhaité. */
@@ -30,7 +50,7 @@ export interface Person {
 
 export interface SignalView {
   key: string;
-  category: "event" | "theme" | "state" | "person";
+  category: "event" | "theme" | "state" | "person" | "custom";
   label: string;
   type: "noul" | "score";
   value: number;

@@ -1,4 +1,5 @@
 import type { Person } from './person.js';
+import type { SignalContext } from './signal-context.js';
 import {
   PERSON_TONE_LEVEL_LABELS,
   buildQuestionBank,
@@ -149,10 +150,11 @@ function buildView(
 export function buildSignalViews(
   payload: SignalPayload,
   corrections: SignalCorrections,
-  people: Person[],
+  context: SignalContext,
 ): SignalView[] {
   const views: SignalView[] = [];
-  for (const question of buildQuestionBank(people)) {
+  const { people } = context;
+  for (const question of buildQuestionBank(context)) {
     const resolved = resolveAnswer(question.key, payload, corrections);
     if (!resolved) continue;
     views.push(buildView(question, resolved, people, payload, corrections));

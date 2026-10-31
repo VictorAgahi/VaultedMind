@@ -4,6 +4,7 @@ import { Repository } from 'typeorm';
 import { AbstractBaseRepository } from './base.repository.js';
 import { UserModel } from '../models/user.model.js';
 import { User } from '../../modules/user/domain/entities/user.entity.js';
+import type { CustomSignal } from '../../modules/signals/domain/custom-signal.js';
 import { UserMapper } from '../mappers/user.mapper.js';
 
 @Injectable()
@@ -67,6 +68,19 @@ export class UserRepository extends AbstractBaseRepository<UserModel> {
       where: { insightsV2Enabled: true },
     });
     return models.map((model) => this.userMapper.toDomain(model));
+  }
+
+  /**
+   * Replaces the custom signals only, so that a background classification never overwrites
+   * other preferences changed in the meantime.
+   */
+  async updateCustomSignals(
+    id: string,
+    signals: CustomSignal[],
+  ): Promise<void> {
+    await this.repository.update(id, {
+      customSignalsEncrypted: this.userMapper.encryptCustomSignals(signals),
+    });
   }
 
   /**

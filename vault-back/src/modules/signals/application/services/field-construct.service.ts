@@ -6,11 +6,9 @@ import type { CustomField } from '../../../health/domain/entities/custom-field.e
 import { FieldType } from '../../../health/domain/enums/field-type.enum.js';
 import {
   FIELD_CONSTRUCT_HASH_PURPOSE,
-  FIELD_CONSTRUCT_QUESTION_KEY,
-  buildFieldConstructQuestion,
   describeFieldForClassification,
-  parseConstructAnswer,
 } from '../../domain/field-construct.js';
+import { classifyConstruct } from './construct-classification.js';
 import { JevClient } from '../../infrastructure/clients/jev.client.js';
 
 export const FIELD_CONSTRUCT_CONCURRENCY = 4;
@@ -70,12 +68,9 @@ export class FieldConstructService {
 
   private async classifyOne(field: CustomField): Promise<boolean> {
     try {
-      const response = await this.jevClient.analyze(
+      const construct = await classifyConstruct(
+        this.jevClient,
         describeFieldForClassification(field),
-        { [FIELD_CONSTRUCT_QUESTION_KEY]: buildFieldConstructQuestion() },
-      );
-      const construct = parseConstructAnswer(
-        response.answers[FIELD_CONSTRUCT_QUESTION_KEY],
       );
       await this.customFieldRepository.saveConstruct(
         field.id,

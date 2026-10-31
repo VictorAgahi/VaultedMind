@@ -1,3 +1,8 @@
+import {
+  isSelfSubject,
+  ofSubject,
+  type TrackedSubject,
+} from '../../signals/domain/tracked-subject.js';
 import { NO_LOG_PREVIOUS_DAY_KEY } from './pattern-engine.js';
 import type {
   BeforeDifficultDaysItem,
@@ -121,6 +126,13 @@ export function summarizeFinding(
   return `${lead} ${targetLabel} est en moyenne ${direction} de ${amount} (${sample})${comparison}.`;
 }
 
+/** "tes journées difficiles" for the user, the subject's name for someone else. */
+function difficultDaysPhrase(subject?: TrackedSubject): string {
+  return !subject || isSelfSubject(subject)
+    ? 'tes journées difficiles'
+    : `les journées difficiles ${ofSubject(subject)}`;
+}
+
 export function isMoreFrequentBefore(item: BeforeDifficultDaysItem): boolean {
   return item.frequencyBefore > item.frequencyOther;
 }
@@ -129,11 +141,12 @@ export function isMoreFrequentBefore(item: BeforeDifficultDaysItem): boolean {
 export function summarizeBeforeDifficultItem(
   item: BeforeDifficultDaysItem,
   target?: Pick<TargetReport, 'binary' | 'direction' | 'label'>,
+  subject?: TrackedSubject,
 ): string {
   const counts = `${item.countBefore} fois sur ${item.daysBefore}`;
   const days = target?.binary
     ? `les jours où « ${target.label} » est ${target.direction === 'LOWER_IS_BETTER' ? 'présent' : 'absent'}`
-    : 'tes journées difficiles';
+    : difficultDaysPhrase(subject);
   if (isMoreFrequentBefore(item)) {
     return `« ${item.label} » revient plus souvent dans les 3 jours qui précèdent ${days} (${counts}).`;
   }
@@ -148,6 +161,12 @@ export function summarizeChangePoint(
   return `Depuis le ${formatFrenchDate(changePoint.date)}, la moyenne de « ${changePoint.label} » est passée de ${formatFrenchNumber(changePoint.meanBefore)}${suffix} à ${formatFrenchNumber(changePoint.meanAfter)}${suffix}.`;
 }
 
-export function summarizeScoreTextGap(gap: ScoreTextGap): string {
+export function summarizeScoreTextGap(
+  gap: ScoreTextGap,
+  subject?: TrackedSubject,
+): string {
+  if (subject && !isSelfSubject(subject)) {
+    return `Le ${formatFrenchDate(gap.date)}, le score saisi et la tonalité de la note semblent raconter des choses différentes. Qu'est-ce qui se passait ?`;
+  }
   return `Le ${formatFrenchDate(gap.date)}, ton score et le ton de ta note semblent raconter des choses différentes. Qu'est-ce qui se passait ?`;
 }

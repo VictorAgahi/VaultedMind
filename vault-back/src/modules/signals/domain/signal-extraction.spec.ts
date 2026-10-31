@@ -1,3 +1,4 @@
+import { signalContext } from './signal-context.js';
 import {
   buildJevQuestions,
   buildSignalsSourceInput,
@@ -5,15 +6,15 @@ import {
 } from './signal-extraction.js';
 import type { JevResponse } from './jev-types.js';
 import type { Person } from './person.js';
-import { QUESTION_BANK_VERSION } from './question-bank.js';
+import { QUESTION_BANK_VERSIONS } from './question-bank.js';
 
 const people: Person[] = [{ id: 'p1', alias: 'Compagne', variants: ['Marie'] }];
 
 describe('buildJevQuestions', () => {
   it('should build the static bank plus two questions per person', () => {
     // Act
-    const without = buildJevQuestions([]);
-    const withPeople = buildJevQuestions(people);
+    const without = buildJevQuestions(signalContext());
+    const withPeople = buildJevQuestions(signalContext({ people }));
 
     // Assert
     expect(Object.keys(withPeople).length).toBe(
@@ -27,7 +28,9 @@ describe('buildJevQuestions', () => {
 
   it('should give score questions between 2 and 10 ordered criteria', () => {
     // Act
-    const questions = Object.values(buildJevQuestions(people));
+    const questions = Object.values(
+      buildJevQuestions(signalContext({ people })),
+    );
 
     // Assert
     for (const question of questions) {
@@ -40,7 +43,9 @@ describe('buildJevQuestions', () => {
 
   it('should never contain real names, only aliases', () => {
     // Act
-    const serialized = JSON.stringify(buildJevQuestions(people));
+    const serialized = JSON.stringify(
+      buildJevQuestions(signalContext({ people })),
+    );
 
     // Assert
     expect(serialized).not.toContain('Marie');
@@ -61,7 +66,7 @@ describe('mapResponseToPayload', () => {
     // Act
     const payload = mapResponseToPayload(
       response,
-      people,
+      signalContext({ people }),
       'Je fais jamais rien',
     );
 
@@ -88,7 +93,7 @@ describe('mapResponseToPayload', () => {
     };
 
     // Act
-    const payload = mapResponseToPayload(response, [], 'texte');
+    const payload = mapResponseToPayload(response, signalContext(), 'texte');
 
     // Assert
     expect(payload.answers).toEqual({});
@@ -98,12 +103,15 @@ describe('mapResponseToPayload', () => {
 describe('buildSignalsSourceInput', () => {
   it('should change with notes, bank version and people', () => {
     // Act
-    const base = buildSignalsSourceInput('note', people);
-    const otherNote = buildSignalsSourceInput('note 2', people);
-    const otherPeople = buildSignalsSourceInput('note', []);
+    const base = buildSignalsSourceInput('note', signalContext({ people }));
+    const otherNote = buildSignalsSourceInput(
+      'note 2',
+      signalContext({ people }),
+    );
+    const otherPeople = buildSignalsSourceInput('note', signalContext());
 
     // Assert
-    expect(base).toContain(QUESTION_BANK_VERSION);
+    expect(base).toContain(QUESTION_BANK_VERSIONS.SELF);
     expect(otherNote).not.toBe(base);
     expect(otherPeople).not.toBe(base);
   });

@@ -1,3 +1,4 @@
+import { signalContext } from '../../signals/domain/signal-context.js';
 import { FieldType } from '../../health/domain/enums/field-type.enum.js';
 import { buildDailyMatrix, valueColumnKey } from './daily-matrix.js';
 import {
@@ -70,12 +71,9 @@ describe('value columns of the daily matrix', () => {
     ];
 
     // Act
-    const matrix = buildDailyMatrix(
-      logs,
-      fields,
-      [],
-      [{ fieldId: 'u', value: 'agressif' }],
-    );
+    const matrix = buildDailyMatrix(logs, fields, signalContext(), [
+      { fieldId: 'u', value: 'agressif' },
+    ]);
 
     // Assert
     const target = matrix.columns.find(
@@ -95,17 +93,12 @@ describe('value columns of the daily matrix', () => {
     const logs = [day('2026-03-01', 'agressif'), day('2026-03-02', 'calme')];
 
     // Act
-    const matrix = buildDailyMatrix(
-      logs,
-      fields,
-      [],
-      [
-        { fieldId: 'u', value: 'agressif' },
-        { fieldId: 'u', value: 'calme' },
-        { fieldId: 'u', value: 'calme' },
-        { fieldId: 'missing', value: 'x' },
-      ],
-    );
+    const matrix = buildDailyMatrix(logs, fields, signalContext(), [
+      { fieldId: 'u', value: 'agressif' },
+      { fieldId: 'u', value: 'calme' },
+      { fieldId: 'u', value: 'calme' },
+      { fieldId: 'missing', value: 'x' },
+    ]);
 
     // Assert
     const keys = matrix.columns.map((c) => c.key);
@@ -133,7 +126,7 @@ describe('value columns of the daily matrix', () => {
           constructOverride: 'anxiety',
         },
       ],
-      [],
+      signalContext(),
     );
 
     // Assert

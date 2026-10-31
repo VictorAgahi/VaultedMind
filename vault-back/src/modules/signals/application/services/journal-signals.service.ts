@@ -2,14 +2,18 @@ import { Injectable, Logger } from '@nestjs/common';
 import { UserRepository } from '../../../../database/repositories/user.repository.js';
 import { NoteSignalsRepository } from '../../../../database/repositories/note-signals.repository.js';
 import { JevClient } from '../../infrastructure/clients/jev.client.js';
-import { pseudonymize } from '../../domain/pseudonymize.js';
 import {
   buildJevQuestions,
   mapResponseToPayload,
 } from '../../domain/signal-extraction.js';
+import { pseudonymize } from '../../domain/pseudonymize.js';
 import { nextFailureCount } from '../../domain/signal-staleness.js';
 import type { SignalCandidate } from '../../domain/signal-candidate.js';
-import type { Person } from '../../domain/person.js';
+import {
+  signalContextOf,
+  type SignalContext,
+} from '../../domain/signal-context.js';
+import { subjectPseudonym } from '../../domain/subject-pseudonym.js';
 
 export const SIGNALS_BATCH_SIZE = 20;
 
@@ -57,15 +61,15 @@ export class JournalSignalsService {
     let remaining = batchSize;
     for (const user of eligibleUsers) {
       if (remaining <= 0) break;
-      const people = user.preferences.people;
+      const context = signalContextOf(user.preferences);
       const candidates =
         await this.noteSignalsRepository.findLogsNeedingSignals(
           user.id,
-          people,
+          context,
           remaining,
         );
       for (const candidate of candidates) {
-        const succeeded = await this.extractOne(candidate, people);
+        const succeeded = await this.extractOne(candidate, context);
         if (succeeded) summary.extracted++;
         else summary.failed++;
         remaining--;
@@ -76,14 +80,17 @@ export class JournalSignalsService {
 
   private async extractOne(
     candidate: SignalCandidate,
-    people: Person[],
+    context: SignalContext,
   ): Promise<boolean> {
     try {
       const response = await this.jevClient.analyze(
-        pseudonymize(candidate.notes, people),
-        buildJevQuestions(people),
+        pseudonymize(candidate.notes, [
+          ...context.people,
+          ...subjectPseudonym(context.subject),
+        ]),
+        buildJevQuestions(context),
       );
-      const payload = mapResponseToPayload(response, people, candidate.notes);
+      const payload = mapResponseToPayload(response, context, candidate.notes);
       await this.noteSignalsRepository.saveExtraction(candidate, payload);
       return true;
     } catch (error) {

@@ -269,4 +269,45 @@ describe('PromptService', () => {
       expect(prompt).not.toContain('RÈGLES POUR LES CHIFFRES CALCULÉS');
     });
   });
+
+  describe('tracked subject', () => {
+    const animalParams = {
+      ...baseParams,
+      subject: { kind: 'ANIMAL' as const, name: 'Mochi', species: 'chat' },
+    };
+
+    it('should state the tracked animal in every agent prompt', () => {
+      // Act
+      const prompts = [
+        service.generateAnalysisBriefPrompt(
+          InsightType.DAILY_SUMMARY,
+          animalParams,
+        ),
+        service.generateCorrelationPrompt(animalParams),
+        service.generateContextInterpretationPrompt(animalParams),
+        service.generatePredictionPrompt(animalParams, baseEvidence),
+        service.generateQualityGatePrompt(animalParams, baseEvidence),
+        service.generateInsightNarrativePrompt(
+          InsightType.DAILY_SUMMARY,
+          animalParams,
+          null,
+          baseEvidence,
+        ),
+      ];
+
+      // Assert
+      for (const prompt of prompts) {
+        expect(prompt).toContain('SUJET DU SUIVI : UN ANIMAL');
+        expect(prompt).toContain('Mochi (le chat)');
+      }
+    });
+
+    it('should add nothing for the user own journal', () => {
+      // Act
+      const prompt = service.generateCorrelationPrompt(baseParams);
+
+      // Assert
+      expect(prompt).not.toContain('SUJET DU SUIVI');
+    });
+  });
 });

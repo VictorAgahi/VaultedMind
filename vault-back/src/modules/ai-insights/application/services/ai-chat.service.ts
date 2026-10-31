@@ -6,6 +6,7 @@ import {
   canUseEngineBrief,
   renderSolidFindingsForChat,
 } from '../../../patterns/domain/pattern-brief.js';
+import { subjectBlock } from '../../domain/services/subject-prompt.js';
 import { ENGINE_FIGURES_RULES } from './prompt.service.js';
 import { UserRepository } from '../../../../database/repositories/user.repository.js';
 import {
@@ -140,10 +141,11 @@ export class AIChatService {
       const userContext = user.aiContext
         ? `\n[CONTEXTE PERSONNALISÉ À RESPECTER : ${user.aiContext}]\n`
         : '';
+      const subjectStatement = subjectBlock(user.preferences.trackedSubject);
 
       const systemPrompt = `Tu es l'assistant IA de VaultedMind, une application de suivi du bien-être mental. 
 Ton rôle est d'aider l'utilisateur à comprendre ses données, à identifier des modèles et à lui donner des conseils bienveillants.
-${userContext}
+${userContext}${subjectStatement}
 ${context}
 ${engineBlock}
 CONSIGNES :

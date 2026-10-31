@@ -1,18 +1,22 @@
 import type { JevQuestions, JevResponse } from './jev-types.js';
-import { computeLinguisticMarkers } from './linguistic-markers.js';
-import type { Person } from './person.js';
 import {
-  QUESTION_BANK_VERSION,
+  computeLinguisticMarkers,
+  type LinguisticMarkers,
+} from './linguistic-markers.js';
+import {
   buildQuestionBank,
+  questionBankVersion,
   type BankQuestion,
 } from './question-bank.js';
+import type { SignalContext } from './signal-context.js';
 import type { SignalPayload } from './signal-payload.js';
+import { isSelfSubject } from './tracked-subject.js';
 
 export const SIGNALS_HASH_PURPOSE = 'note-signals-source';
 
-export function buildJevQuestions(people: Person[]): JevQuestions {
+export function buildJevQuestions(context: SignalContext): JevQuestions {
   const questions: JevQuestions = {};
-  for (const question of buildQuestionBank(people)) {
+  for (const question of buildQuestionBank(context)) {
     questions[question.key] =
       question.type === 'noul'
         ? { type: 'noul', instructions: question.instructions }
@@ -23,6 +27,17 @@ export function buildJevQuestions(people: Person[]): JevQuestions {
           };
   }
   return questions;
+}
+
+/** Only the note length is kept for another subject: the ratios would describe the observer. */
+function markersFor(
+  context: SignalContext,
+  rawNotes: string,
+): LinguisticMarkers {
+  const markers = computeLinguisticMarkers(rawNotes);
+  return isSelfSubject(context.subject)
+    ? markers
+    : { ...markers, absolutistRatio: 0, firstPersonRatio: 0 };
 }
 
 function isProbability(value: number): boolean {
@@ -60,32 +75,45 @@ function mapAnswer(
  */
 export function mapResponseToPayload(
   response: JevResponse,
-  people: Person[],
+  context: SignalContext,
   rawNotes: string,
 ): SignalPayload {
   const answers: SignalPayload['answers'] = {};
-  for (const question of buildQuestionBank(people)) {
+  for (const question of buildQuestionBank(context)) {
     const mapped = mapAnswer(question, response);
     if (mapped) answers[question.key] = mapped;
   }
   return {
     model: response.model,
     answers,
-    markers: computeLinguisticMarkers(rawNotes),
+    // First-person and absolutist wording only says something about the author's own state
+    markers: markersFor(context, rawNotes),
   };
 }
 
 /**
- * The text a signals row is bound to: raw notes, question bank version and people configuration.
- * Any change makes the stored signals stale.
+ * The text a signals row is bound to: raw notes, question bank version, people configuration,
+ * and for another subject or custom signals what shapes the questions. Any change makes the
+ * stored signals stale. For a default context the text is the one of the first bank version.
  */
 export function buildSignalsSourceInput(
   rawNotes: string,
-  people: Person[],
+  context: SignalContext,
 ): string {
+  const { subject, people, customSignals } = context;
   return JSON.stringify({
     notes: rawNotes,
-    bank: QUESTION_BANK_VERSION,
+    bank: questionBankVersion(subject.kind),
     people: people.map(({ id, alias, variants }) => ({ id, alias, variants })),
+    ...(!isSelfSubject(subject) && {
+      subject: { name: subject.name ?? null, species: subject.species ?? null },
+    }),
+    ...(customSignals.length > 0 && {
+      custom: customSignals.map(({ id, label, question }) => ({
+        id,
+        label,
+        question,
+      })),
+    }),
   });
 }

@@ -64,6 +64,7 @@ const SAME_DAY_CATEGORIES: ColumnCategory[] = [
   'event',
   'theme',
   'person',
+  'custom',
 ];
 
 export interface PatternEngineOptions {

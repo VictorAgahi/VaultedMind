@@ -1,3 +1,8 @@
+import {
+  isSelfSubject,
+  ofSubject,
+  type TrackedSubject,
+} from '../../signals/domain/tracked-subject.js';
 import type {
   PatternFinding,
   PatternReport,
@@ -74,6 +79,7 @@ const GOAL_LABELS: Record<TargetReport['direction'], string> = {
 function renderTarget(
   target: TargetReport,
   mainFindings: PatternFinding[],
+  subject?: TrackedSubject,
 ): string[] {
   const goal = GOAL_LABELS[target.direction] ?? GOAL_LABELS.NEUTRAL;
   const lines = [`Objectif suivi : « ${target.label} » (${goal})`];
@@ -93,7 +99,7 @@ function renderTarget(
     lines.push(
       ...items.map(
         (item) =>
-          `- ${summarizeBeforeDifficultItem(item)} [q=${formatFrenchNumber(item.q)}]`,
+          `- ${summarizeBeforeDifficultItem(item, undefined, subject)} [q=${formatFrenchNumber(item.q)}]`,
       ),
     );
   }
@@ -109,10 +115,17 @@ function renderTarget(
   return lines;
 }
 
+function stateChangesHeading(subject?: TrackedSubject): string {
+  return !subject || isSelfSubject(subject)
+    ? 'Changements des signaux de ton état :'
+    : `Changements des signaux observés ${ofSubject(subject)} :`;
+}
+
 /** Deterministic text standing in for the correlation agent; every figure comes from the engine. */
 export function renderPatternBrief(
   report: PatternReport,
   overrides: PatternObviousOverrides = {},
+  subject?: TrackedSubject,
 ): string {
   const lines = [
     `RÉSULTATS CALCULÉS (moteur statistique ${report.engineVersion}, calculés le ${formatFrenchDate(report.computedAt.slice(0, 10))}, ${report.daysLogged} jours saisis sur ${report.daysCovered}).`,
@@ -125,10 +138,10 @@ export function renderPatternBrief(
         (finding) => `« ${finding.label} » et « ${target.label} »`,
       ),
     );
-    lines.push('', ...renderTarget(target, split.main));
+    lines.push('', ...renderTarget(target, split.main, subject));
   }
   if (report.stateChangePoints.length > 0) {
-    lines.push('', 'Changements des signaux de ton état :');
+    lines.push('', stateChangesHeading(subject));
     lines.push(
       ...report.stateChangePoints.map(
         (changePoint) => `- ${summarizeChangePoint(changePoint)}`,

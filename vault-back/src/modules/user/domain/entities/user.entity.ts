@@ -1,4 +1,9 @@
 import type { Person } from '../../../signals/domain/person.js';
+import type { CustomSignal } from '../../../signals/domain/custom-signal.js';
+import {
+  DEFAULT_TRACKED_SUBJECT,
+  type TrackedSubject,
+} from '../../../signals/domain/tracked-subject.js';
 import type { InsightTarget } from '../../../patterns/domain/insight-target.js';
 
 /**
@@ -18,6 +23,10 @@ export interface UserPreferences {
   insightsV2Enabled: boolean;
   /** People from the user's life, replaced by their alias before notes leave the server. */
   people: Person[];
+  /** Who the journal is about: the user, an animal or another person. */
+  trackedSubject: TrackedSubject;
+  /** Up to 10 yes/no questions written by the user, asked on every note. */
+  customSignals: CustomSignal[];
   /** Up to 6 targets (a field, or a value of a text field) the user wants to understand, with the good direction of each. */
   insightTargets: InsightTarget[];
   /** Finding key to the user's own verdict on whether a link is obvious; beats the AI score. */
@@ -41,6 +50,8 @@ export const DEFAULT_USER_PREFERENCES: UserPreferences = {
   aiIncludeNotes: true,
   insightsV2Enabled: false,
   people: [],
+  trackedSubject: DEFAULT_TRACKED_SUBJECT,
+  customSignals: [],
   insightTargets: [],
   patternObviousOverrides: {},
 };

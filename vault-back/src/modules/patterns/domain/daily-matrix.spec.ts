@@ -1,3 +1,4 @@
+import { signalContext } from '../../signals/domain/signal-context.js';
 import { FieldType } from '../../health/domain/enums/field-type.enum.js';
 import type { SignalView } from '../../signals/domain/signal-view.js';
 import {
@@ -58,7 +59,7 @@ describe('buildDailyMatrix', () => {
     const logs = [day('2026-03-03', { n: '4' }), day('2026-03-01', { n: '2' })];
 
     // Act
-    const matrix = buildDailyMatrix(logs, fields, []);
+    const matrix = buildDailyMatrix(logs, fields, signalContext());
 
     // Assert
     expect(matrix.dates).toEqual(['2026-03-01', '2026-03-02', '2026-03-03']);
@@ -82,7 +83,7 @@ describe('buildDailyMatrix', () => {
     ];
 
     // Act
-    const matrix = buildDailyMatrix(logs, fields, []);
+    const matrix = buildDailyMatrix(logs, fields, signalContext());
 
     // Assert
     const byKey = new Map(matrix.columns.map((c) => [c.key, c]));
@@ -149,7 +150,7 @@ describe('buildDailyMatrix', () => {
     ];
 
     // Act
-    const matrix = buildDailyMatrix(logs, [], people);
+    const matrix = buildDailyMatrix(logs, [], signalContext({ people }));
 
     // Assert
     const byKey = new Map(matrix.columns.map((c) => [c.key, c]));

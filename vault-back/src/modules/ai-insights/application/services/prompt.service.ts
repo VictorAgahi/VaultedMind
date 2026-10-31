@@ -1,5 +1,7 @@
 import { SAFETY_GUIDELINES } from '../../domain/services/safety-guidelines.js';
 import { Injectable } from '@nestjs/common';
+import { subjectBlock } from '../../domain/services/subject-prompt.js';
+import type { TrackedSubject } from '../../../signals/domain/tracked-subject.js';
 import { InsightType } from '../../domain/enums/insight-type.enum.js';
 
 interface DailyEntry {
@@ -32,6 +34,8 @@ interface SanitizedData {
 interface PromptParams {
   logs: SanitizedData;
   userContext?: string;
+  /** Who the journal is about; omitted for the user's own journal. */
+  subject?: TrackedSubject;
 }
 
 interface FieldSummaryLine {
@@ -95,7 +99,7 @@ Règles non négociables:
 
 Période: ${sanitizedData.dateRange}
 Nombre d'entrées: ${sanitizedData.totalLogs}
-${contextBlock}
+${subjectBlock(params.subject)}${contextBlock}
 
 Journaux quotidiens et notes de l'utilisateur :
 ${dailyLogsText}
@@ -131,7 +135,7 @@ TON UNIQUE MISSION : Identifier et quantifier les corrélations entre TOUTES les
 
 Période: ${sanitizedData.dateRange}
 Nombre d'entrées: ${sanitizedData.totalLogs}
-${contextBlock}
+${subjectBlock(params.subject)}${contextBlock}
 
 Journaux quotidiens avec notes :
 ${dailyLogsText}
@@ -184,7 +188,7 @@ TON UNIQUE MISSION : Extraire un maximum d'intelligence des notes quotidiennes d
 
 Période: ${sanitizedData.dateRange}
 Nombre d'entrées: ${sanitizedData.totalLogs}
-${contextBlock}
+${subjectBlock(params.subject)}${contextBlock}
 
 Journaux quotidiens avec notes :
 ${dailyLogsText}
@@ -247,7 +251,7 @@ TON UNIQUE MISSION : Identifier ce qui mérite d'être observé dans les jours q
 
 Période analysée: ${sanitizedData.dateRange}
 Nombre d'entrées: ${sanitizedData.totalLogs}
-${contextBlock}
+${subjectBlock(params.subject)}${contextBlock}
 
 [DOSSIER DE L'AGENT 1 — ANALYSE STATISTIQUE]
 ${evidence.analysisBrief || 'Non disponible'}
@@ -298,7 +302,7 @@ TON UNIQUE MISSION : Relire, vérifier et noter la qualité de tout ce qui a ét
 
 Période analysée: ${sanitizedData.dateRange}
 Nombre d'entrées: ${sanitizedData.totalLogs}
-
+${subjectBlock(params.subject)}
 [DOSSIER AGENT 1 — ANALYSE STATISTIQUE]
 ${evidence.analysisBrief || 'Non disponible'}
 
@@ -429,7 +433,7 @@ N'ajoute RIEN d'autre après cette balise.
 Type d'analyse: ${title}
 Période: ${sanitizedData.dateRange}
 Nombre d'entrées: ${sanitizedData.totalLogs}
-${contextBlock}
+${subjectBlock(params.subject)}${contextBlock}
 ${evidenceBlocks}
 ${this.engineRulesBlock(evidence)}
 Journaux quotidiens et notes de l'utilisateur :

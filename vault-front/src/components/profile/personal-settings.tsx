@@ -4,9 +4,11 @@ import React from "react";
 import { Box, Button, FormControlLabel, Switch, TextField, Typography } from "@mui/material";
 import { apiService } from "@/services/api.service";
 import { useAuth } from "@/context/auth-context";
-import type { InsightTarget, Person } from "@/types";
+import type { CustomSignal, InsightTarget, Person, TrackedSubject } from "@/types";
 import { PeopleEditor } from "./people-editor";
 import { InsightTargetsEditor } from "./insight-targets-editor";
+import { TrackedSubjectEditor } from "./tracked-subject-editor";
+import { CustomSignalsEditor } from "./custom-signals-editor";
 
 export const PersonalSettings: React.FC = () => {
   const { user, refreshUser } = useAuth();
@@ -14,7 +16,7 @@ export const PersonalSettings: React.FC = () => {
   const [saving, setSaving] = React.useState(false);
   const [status, setStatus] = React.useState<string | null>(null);
 
-  const patch = async (update: Record<string, string | boolean | null | Person[] | InsightTarget[]>, done: string) => {
+  const patch = async (update: Record<string, string | boolean | null | Person[] | InsightTarget[] | TrackedSubject | CustomSignal[]>, done: string) => {
     setSaving(true);
     setStatus(null);
     try {
@@ -78,6 +80,14 @@ export const PersonalSettings: React.FC = () => {
             </Typography>
           )}
           {user.preferences?.insightsV2Enabled && (
+            <TrackedSubjectEditor
+              key={JSON.stringify(user.preferences?.trackedSubject ?? { kind: "SELF" })}
+              initial={user.preferences?.trackedSubject ?? { kind: "SELF" }}
+              saving={saving}
+              onSave={(trackedSubject) => patch({ trackedSubject }, "Choix enregistré.")}
+            />
+          )}
+          {user.preferences?.insightsV2Enabled && (
             <InsightTargetsEditor
               key={JSON.stringify(user.preferences?.insightTargets ?? [])}
               initial={user.preferences?.insightTargets ?? []}
@@ -91,6 +101,14 @@ export const PersonalSettings: React.FC = () => {
               initial={user.preferences?.people ?? []}
               saving={saving}
               onSave={(people) => patch({ people }, "Entourage enregistré.")}
+            />
+          )}
+          {user.preferences?.insightsV2Enabled && (
+            <CustomSignalsEditor
+              key={JSON.stringify(user.preferences?.customSignals ?? [])}
+              initial={user.preferences?.customSignals ?? []}
+              saving={saving}
+              onSave={(customSignals) => patch({ customSignals }, "Signaux enregistrés.")}
             />
           )}
         </Box>

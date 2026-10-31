@@ -49,6 +49,12 @@ export class UserModel extends BaseModel {
   @Column({ name: 'people_encrypted', type: 'text', nullable: true })
   peopleEncrypted?: string | null;
 
+  @Column({ name: 'tracked_subject_encrypted', type: 'text', nullable: true })
+  trackedSubjectEncrypted?: string | null;
+
+  @Column({ name: 'custom_signals_encrypted', type: 'text', nullable: true })
+  customSignalsEncrypted?: string | null;
+
   @Column({ name: 'insight_targets', type: 'json', nullable: true })
   insightTargets?: InsightTarget[] | null;
 

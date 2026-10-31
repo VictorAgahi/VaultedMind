@@ -1,3 +1,4 @@
+import { signalContext } from './signal-context.js';
 import { mergeCorrections, validateCorrections } from './signal-corrections.js';
 import type { Person } from './person.js';
 
@@ -8,7 +9,7 @@ describe('validateCorrections', () => {
     // Act
     const problems = validateCorrections(
       { alcohol: 1, rumination: 4, person_p1_tone: 2, conflict: null },
-      people,
+      signalContext({ people }),
     );
 
     // Assert
@@ -19,7 +20,7 @@ describe('validateCorrections', () => {
     // Act
     const problems = validateCorrections(
       { nope: 1, person_zz_present: 1 },
-      people,
+      signalContext({ people }),
     );
 
     // Assert
@@ -35,7 +36,7 @@ describe('validateCorrections', () => {
         fatigue: -1,
         conflict: 'x' as unknown as number,
       },
-      [],
+      signalContext(),
     );
 
     // Assert

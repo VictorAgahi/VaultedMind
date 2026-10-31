@@ -4,7 +4,8 @@ import {
   type ConstructFieldSource,
 } from '../../signals/domain/constructs.js';
 import type { LinguisticMarkers } from '../../signals/domain/linguistic-markers.js';
-import type { Person } from '../../signals/domain/person.js';
+import type { SignalContext } from '../../signals/domain/signal-context.js';
+import { isSelfSubject } from '../../signals/domain/tracked-subject.js';
 import {
   buildQuestionBank,
   personPresentKey,
@@ -167,16 +168,16 @@ function signalValue(
 
 function buildSignalColumns(
   days: (MatrixDayInput | undefined)[],
-  people: Person[],
+  context: SignalContext,
 ): MatrixColumn[] {
   const viewsByDay = days.map(
     (day) => new Map(day?.signals?.views.map((view) => [view.key, view])),
   );
   const toneOwner = new Map(
-    people.map((person) => [personToneKey(person.id), person]),
+    context.people.map((person) => [personToneKey(person.id), person]),
   );
 
-  return buildQuestionBank(people).map((question): MatrixColumn => {
+  return buildQuestionBank(context).map((question): MatrixColumn => {
     const tonePerson = toneOwner.get(question.key);
     const values = viewsByDay.map((views): number | null => {
       if (tonePerson) {
@@ -188,7 +189,7 @@ function buildSignalColumns(
     const isPersonTone = tonePerson !== undefined;
     return {
       key: question.key,
-      label: isPersonTone ? `${question.label} (ton)` : question.label,
+      label: isPersonTone ? `${question.label} (tonalité)` : question.label,
       category: question.category,
       construct: question.construct,
       kind: question.type === 'noul' ? 'binary' : 'continuous',
@@ -204,6 +205,7 @@ function buildSignalColumns(
 
 function buildMarkerColumns(
   days: (MatrixDayInput | undefined)[],
+  context: SignalContext,
 ): MatrixColumn[] {
   const marker = (
     key: string,
@@ -219,8 +221,15 @@ function buildMarkerColumns(
       day?.signals ? read(day.signals.markers) : null,
     ),
   });
+  const length = marker(
+    'word_count',
+    'Longueur de la note',
+    (m) => m.wordCount,
+  );
+  // Absolutist and first-person wording describe the author, not an observed subject
+  if (!isSelfSubject(context.subject)) return [length];
   return [
-    marker('word_count', 'Longueur de la note', (m) => m.wordCount),
+    length,
     marker('absolutist_ratio', 'Mots absolus', (m) => m.absolutistRatio),
     marker(
       'first_person_ratio',
@@ -239,7 +248,7 @@ function buildMarkerColumns(
 export function buildDailyMatrix(
   logs: MatrixDayInput[],
   fields: MatrixField[],
-  people: Person[],
+  context: SignalContext,
   valueTargets: MatrixValueTarget[] = [],
 ): DailyMatrix {
   if (logs.length === 0) return { dates: [], logged: [], columns: [] };
@@ -261,8 +270,8 @@ export function buildDailyMatrix(
       .filter(isUsableField)
       .map((field) => buildFieldColumn(field, days)),
     ...buildValueColumns(days, fields, valueTargets),
-    ...buildSignalColumns(days, people),
-    ...buildMarkerColumns(days),
+    ...buildSignalColumns(days, context),
+    ...buildMarkerColumns(days, context),
   ].filter((column) => column.values.some((value) => value !== null));
 
   return {

@@ -3,6 +3,7 @@ import { AuthModule } from '../../auth/infrastructure/auth.module.js';
 import { JevClient } from './clients/jev.client.js';
 import { JournalSignalsService } from '../application/services/journal-signals.service.js';
 import { FieldConstructService } from '../application/services/field-construct.service.js';
+import { CustomSignalConstructService } from '../application/services/custom-signal-construct.service.js';
 import { SignalsReadService } from '../application/services/signals-read.service.js';
 import { JournalSignalsCronService } from './cron/journal-signals-cron.service.js';
 import { SignalsController } from './controllers/signals.controller.js';
@@ -15,8 +16,14 @@ import { SignalsController } from './controllers/signals.controller.js';
     JournalSignalsCronService,
     SignalsReadService,
     FieldConstructService,
+    CustomSignalConstructService,
   ],
   controllers: [SignalsController],
-  exports: [SignalsReadService, FieldConstructService, JevClient],
+  exports: [
+    SignalsReadService,
+    FieldConstructService,
+    CustomSignalConstructService,
+    JevClient,
+  ],
 })
 export class SignalsModule {}

@@ -5,11 +5,20 @@ import type { UserRepository } from '../../../../database/repositories/user.repo
 import type { NoteSignalsRepository } from '../../../../database/repositories/note-signals.repository.js';
 import type { JevClient } from '../../infrastructure/clients/jev.client.js';
 import type { SignalCandidate } from '../../domain/signal-candidate.js';
+import type { SignalPayload } from '../../domain/signal-payload.js';
+import type { SignalContext } from '../../domain/signal-context.js';
 import type { Person } from '../../domain/person.js';
+import type { TrackedSubject } from '../../domain/tracked-subject.js';
+import type { CustomSignal } from '../../domain/custom-signal.js';
 
 const people: Person[] = [{ id: 'p1', alias: 'Compagne', variants: ['Marie'] }];
 
-const buildUser = (id: string, enabled = true): User =>
+const buildUser = (
+  id: string,
+  enabled = true,
+  subject: TrackedSubject = { kind: 'SELF' },
+  customSignals: CustomSignal[] = [],
+): User =>
   new User(
     id,
     `${id}@t.com`,
@@ -27,6 +36,10 @@ const buildUser = (id: string, enabled = true): User =>
       aiIncludeNotes: true,
       insightsV2Enabled: enabled,
       people,
+      trackedSubject: subject,
+      customSignals,
+      insightTargets: [],
+      patternObviousOverrides: {},
     },
     { aiConsentAt: new Date() },
   );
@@ -36,6 +49,7 @@ const candidate = (id: string, failureCount?: number): SignalCandidate => ({
   userId: 'u1',
   notes: 'Dispute avec Marie',
   sourceHash: 'h-new',
+  bankVersion: 'v1',
   row:
     failureCount === undefined
       ? null
@@ -43,18 +57,26 @@ const candidate = (id: string, failureCount?: number): SignalCandidate => ({
 });
 
 function setup(
-  options: { configured?: boolean; candidates?: SignalCandidate[] } = {},
+  options: {
+    configured?: boolean;
+    candidates?: SignalCandidate[];
+    user?: User;
+  } = {},
 ) {
   const users = {
     findWithInsightsV2Enabled: jest
       .fn<() => Promise<User[]>>()
-      .mockResolvedValue([buildUser('u1')]),
+      .mockResolvedValue([options.user ?? buildUser('u1')]),
   };
   const signals = {
     findLogsNeedingSignals: jest
-      .fn<(u: string, p: Person[], l: number) => Promise<SignalCandidate[]>>()
+      .fn<
+        (u: string, c: SignalContext, l: number) => Promise<SignalCandidate[]>
+      >()
       .mockResolvedValue(options.candidates ?? []),
-    saveExtraction: jest.fn<() => Promise<void>>().mockResolvedValue(undefined),
+    saveExtraction: jest
+      .fn<(c: SignalCandidate, p: SignalPayload) => Promise<void>>()
+      .mockResolvedValue(undefined),
     saveFailure: jest
       .fn<(c: SignalCandidate, n: number) => Promise<void>>()
       .mockResolvedValue(undefined),
@@ -137,8 +159,85 @@ describe('JournalSignalsService', () => {
     // Assert
     expect(signals.findLogsNeedingSignals).toHaveBeenCalledWith(
       'u1',
-      people,
+      expect.objectContaining({ people }),
       2,
     );
+  });
+
+  it('should ask the animal bank and pseudonymize nothing of a pet name', async () => {
+    // Arrange
+    const user = buildUser('u1', true, {
+      kind: 'ANIMAL',
+      name: 'Mochi',
+      species: 'chat',
+    });
+    const { service, jev, signals } = setup({
+      user,
+      candidates: [
+        {
+          ...candidate('l1'),
+          notes: 'Mochi a griffé le canapé',
+          bankVersion: 'animal-v1',
+        },
+      ],
+    });
+
+    // Act
+    await service.extractPendingSignals();
+
+    // Assert
+    const questions = jev.analyze.mock.calls[0][1] as Record<
+      string,
+      { instructions: string }
+    >;
+    expect(jev.analyze.mock.calls[0][0]).toBe('Mochi a griffé le canapé');
+    expect(Object.keys(questions)).toContain('aggression');
+    expect(Object.keys(questions)).not.toContain('rumination');
+    expect(questions.aggression.instructions).toContain('Mochi (le chat)');
+    const stored = signals.saveExtraction.mock.calls[0][1];
+    expect(stored.markers.firstPersonRatio).toBe(0);
+    expect(stored.markers.wordCount).toBe(5);
+  });
+
+  it('should never send the name of another tracked person', async () => {
+    // Arrange
+    const user = buildUser('u1', true, { kind: 'OTHER_PERSON', name: 'Paul' });
+    const { service, jev } = setup({
+      user,
+      candidates: [{ ...candidate('l1'), notes: 'Paul est fatigué' }],
+    });
+
+    // Act
+    await service.extractPendingSignals();
+
+    // Assert
+    expect(jev.analyze.mock.calls[0][0]).toBe(
+      '[la personne suivie] est fatigué',
+    );
+    expect(JSON.stringify(jev.analyze.mock.calls[0][1])).not.toContain('Paul');
+  });
+
+  it('should ask one question per custom signal', async () => {
+    // Arrange
+    const user = buildUser('u1', true, { kind: 'SELF' }, [
+      {
+        id: 'c1',
+        label: 'Litière',
+        question: 'Le chat a-t-il uriné hors de sa litière ?',
+        kind: 'yes_no',
+      },
+    ]);
+    const { service, jev } = setup({ user, candidates: [candidate('l1')] });
+
+    // Act
+    await service.extractPendingSignals();
+
+    // Assert
+    expect(jev.analyze.mock.calls[0][1]).toMatchObject({
+      custom_c1: {
+        type: 'noul',
+        instructions: 'Le chat a-t-il uriné hors de sa litière ?',
+      },
+    });
   });
 });

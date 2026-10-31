@@ -1,3 +1,4 @@
+import { signalContext } from './signal-context.js';
 import { buildSignalViews } from './signal-view.js';
 import type { SignalPayload } from './signal-payload.js';
 import type { Person } from './person.js';
@@ -23,7 +24,7 @@ describe('buildSignalViews', () => {
     });
 
     // Act
-    const views = buildSignalViews(payload, {}, []);
+    const views = buildSignalViews(payload, {}, signalContext());
 
     // Assert
     expect(find(views, 'physical_activity')?.displayed).toBe(true);
@@ -40,7 +41,7 @@ describe('buildSignalViews', () => {
     });
 
     // Act
-    const views = buildSignalViews(payload, {}, []);
+    const views = buildSignalViews(payload, {}, signalContext());
 
     // Assert
     expect(find(views, 'work_studies')?.displayed).toBe(true);
@@ -58,7 +59,7 @@ describe('buildSignalViews', () => {
     });
 
     // Act
-    const views = buildSignalViews(payload, {}, []);
+    const views = buildSignalViews(payload, {}, signalContext());
 
     // Assert
     expect(find(views, 'sense_of_control')?.displayed).toBe(true);
@@ -78,7 +79,7 @@ describe('buildSignalViews', () => {
     const views = buildSignalViews(
       payload,
       { alcohol: 1, conflict: 0, rumination: 1 },
-      [],
+      signalContext(),
     );
 
     // Assert
@@ -112,9 +113,17 @@ describe('buildSignalViews', () => {
     });
 
     // Act
-    const reliableViews = buildSignalViews(reliable, {}, people);
-    const unreliableViews = buildSignalViews(unreliable, {}, people);
-    const absentViews = buildSignalViews(absent, {}, people);
+    const reliableViews = buildSignalViews(
+      reliable,
+      {},
+      signalContext({ people }),
+    );
+    const unreliableViews = buildSignalViews(
+      unreliable,
+      {},
+      signalContext({ people }),
+    );
+    const absentViews = buildSignalViews(absent, {}, signalContext({ people }));
 
     // Assert
     expect(find(reliableViews, 'person_p1_present')).toMatchObject({
@@ -129,9 +138,59 @@ describe('buildSignalViews', () => {
 
   it('should skip questions without an answer', () => {
     // Act
-    const views = buildSignalViews(payloadOf({}), {}, []);
+    const views = buildSignalViews(payloadOf({}), {}, signalContext());
 
     // Assert
     expect(views).toEqual([]);
+  });
+});
+
+describe('buildSignalViews for custom signals', () => {
+  const customSignals = [
+    {
+      id: 'c1',
+      label: 'Litière',
+      question: 'Le chat a-t-il uriné hors de sa litière ?',
+      kind: 'yes_no' as const,
+    },
+  ];
+
+  it('should display a custom chip from 0.7 and let the user dismiss it', () => {
+    // Arrange
+    const payload = payloadOf({ custom_c1: { value: 0.8 } });
+    const context = signalContext({ customSignals });
+
+    // Act
+    const shown = buildSignalViews(payload, {}, context);
+    const dismissed = buildSignalViews(payload, { custom_c1: 0 }, context);
+
+    // Assert
+    expect(find(shown, 'custom_c1')).toMatchObject({
+      label: 'Litière',
+      category: 'custom',
+      displayed: true,
+      dismissValue: 0,
+    });
+    expect(find(dismissed, 'custom_c1')?.displayed).toBe(false);
+  });
+
+  it('should show the animal states with their own level labels', () => {
+    // Arrange
+    const payload = payloadOf({
+      stress_level: { value: 3.6, confidence: 0.8 },
+    });
+
+    // Act
+    const views = buildSignalViews(
+      payload,
+      {},
+      signalContext({ subject: { kind: 'ANIMAL', name: 'Mochi' } }),
+    );
+
+    // Assert
+    expect(find(views, 'stress_level')).toMatchObject({
+      displayed: true,
+      levelLabel: 'Très forte',
+    });
   });
 });

@@ -9,6 +9,7 @@ import {
   canUseEngineBrief,
   renderPatternBrief,
 } from '../../../patterns/domain/pattern-brief.js';
+import type { TrackedSubject } from '../../../signals/domain/tracked-subject.js';
 import { UserRepository } from '../../../../database/repositories/user.repository.js';
 import {
   AIChatUsageRepository,
@@ -121,6 +122,7 @@ export class AIInsightService {
       const promptParams = {
         logs: sanitizedData,
         userContext: user.aiContext || undefined,
+        subject: user.preferences.trackedSubject,
       };
 
       const startTime = Date.now();
@@ -135,6 +137,7 @@ export class AIInsightService {
         userId,
         user.preferences.insightsV2Enabled,
         user.preferences.patternObviousOverrides,
+        user.preferences.trackedSubject,
       );
 
       const [analysisBrief, correlationBrief, contextBrief] = await Promise.all(
@@ -311,11 +314,12 @@ export class AIInsightService {
     userId: string,
     insightsV2Enabled: boolean,
     obviousOverrides: PatternObviousOverrides,
+    subject: TrackedSubject,
   ): Promise<string | null> {
     const stored = await this.patternReportRepository.findByUserId(userId);
     const report = stored?.report ?? null;
     return canUseEngineBrief(report, insightsV2Enabled, new Date())
-      ? renderPatternBrief(report, obviousOverrides)
+      ? renderPatternBrief(report, obviousOverrides, subject)
       : null;
   }
 

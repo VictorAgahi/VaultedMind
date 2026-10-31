@@ -15,7 +15,7 @@ import {
   validateCorrections,
   type CorrectionsInput,
 } from '../../domain/signal-corrections.js';
-import type { Person } from '../../domain/person.js';
+import { signalContextOf } from '../../domain/signal-context.js';
 import type { LinguisticMarkers } from '../../domain/linguistic-markers.js';
 
 export interface FreshSignals {
@@ -58,7 +58,7 @@ export class SignalsReadService {
     const user = await this.userRepository.findUserById(userId);
     if (!user.preferences.insightsV2Enabled) return result;
 
-    const people = user.preferences.people;
+    const context = signalContextOf(user.preferences);
     const rows = await this.noteSignalsRepository.findByDailyLogIds(
       logs.filter((log) => log.notes?.trim()).map((log) => log.id),
     );
@@ -69,7 +69,7 @@ export class SignalsReadService {
       if (!row || !log.notes?.trim()) continue;
       if (
         row.sourceHash !==
-        this.noteSignalsRepository.computeSourceHash(log.notes, people)
+        this.noteSignalsRepository.computeSourceHash(log.notes, context)
       ) {
         continue;
       }
@@ -79,7 +79,7 @@ export class SignalsReadService {
         views: buildSignalViews(
           payload,
           this.noteSignalsRepository.decodeCorrections(row),
-          people,
+          context,
         ),
         markers: payload.markers,
       });
@@ -94,9 +94,9 @@ export class SignalsReadService {
   ): Promise<SignalView[]> {
     const log = await this.loadOwnedLog(userId, dailyLogId);
     const user = await this.userRepository.findUserById(userId);
-    const people: Person[] = user.preferences.people;
+    const context = signalContextOf(user.preferences);
 
-    const problems = validateCorrections(incoming, people);
+    const problems = validateCorrections(incoming, context);
     if (problems.length > 0) throw new BadRequestException(problems);
 
     const row = await this.noteSignalsRepository.findByDailyLogId(dailyLogId);
@@ -106,7 +106,7 @@ export class SignalsReadService {
       !payload ||
       !log.notes ||
       row.sourceHash !==
-        this.noteSignalsRepository.computeSourceHash(log.notes, people)
+        this.noteSignalsRepository.computeSourceHash(log.notes, context)
     ) {
       throw new ConflictException('No up-to-date signals for this daily log');
     }
@@ -116,7 +116,7 @@ export class SignalsReadService {
       incoming,
     );
     await this.noteSignalsRepository.saveCorrections(row.id, corrections);
-    return buildSignalViews(payload, corrections, people);
+    return buildSignalViews(payload, corrections, context);
   }
 
   private async loadOwnedLog(userId: string, id: string): Promise<DailyLog> {

@@ -1,3 +1,4 @@
+import { signalContext } from './signal-context.js';
 import { AppleWatchMetric } from '../../health/domain/enums/apple-watch-metric.enum.js';
 import {
   CONSTRUCTS,
@@ -20,7 +21,7 @@ describe('constructs', () => {
     const people = [{ id: 'abc', alias: 'Personne A', variants: ['A'] }];
 
     // Act
-    const person = buildQuestionBank(people).filter(
+    const person = buildQuestionBank(signalContext({ people })).filter(
       (question) => question.category === 'person',
     );
 

@@ -2,6 +2,13 @@ import { Injectable } from '@nestjs/common';
 import { User } from '../../modules/user/domain/entities/user.entity.js';
 import { UserModel } from '../models/user.model.js';
 import type { Person } from '../../modules/signals/domain/person.js';
+import type { CustomSignal } from '../../modules/signals/domain/custom-signal.js';
+import {
+  DEFAULT_TRACKED_SUBJECT,
+  isSelfSubject,
+  normalizeTrackedSubject,
+  type TrackedSubject,
+} from '../../modules/signals/domain/tracked-subject.js';
 import { EncryptionService } from '../../common/security/encryption.service.js';
 
 @Injectable()
@@ -34,6 +41,10 @@ export class UserMapper {
         aiIncludeNotes: model.aiIncludeNotes ?? true,
         insightsV2Enabled: model.insightsV2Enabled ?? false,
         people: this.decryptPeople(model.peopleEncrypted),
+        trackedSubject: this.decryptTrackedSubject(
+          model.trackedSubjectEncrypted,
+        ),
+        customSignals: this.decryptCustomSignals(model.customSignalsEncrypted),
         insightTargets: model.insightTargets ?? [],
         patternObviousOverrides: model.patternObviousOverrides ?? {},
         lastReminderOn: model.lastReminderOn ?? undefined,
@@ -52,6 +63,37 @@ export class UserMapper {
     } catch {
       return [];
     }
+  }
+
+  private decryptTrackedSubject(encrypted?: string | null): TrackedSubject {
+    if (!encrypted) return DEFAULT_TRACKED_SUBJECT;
+    try {
+      return normalizeTrackedSubject(
+        JSON.parse(
+          this.encryptionService.decrypt(encrypted),
+        ) as Partial<TrackedSubject>,
+      );
+    } catch {
+      return DEFAULT_TRACKED_SUBJECT;
+    }
+  }
+
+  private decryptCustomSignals(encrypted?: string | null): CustomSignal[] {
+    if (!encrypted) return [];
+    try {
+      return JSON.parse(
+        this.encryptionService.decrypt(encrypted),
+      ) as CustomSignal[];
+    } catch {
+      return [];
+    }
+  }
+
+  /** Encrypted custom signals column value, null when there are none. */
+  public encryptCustomSignals(signals: CustomSignal[]): string | null {
+    return signals.length > 0
+      ? this.encryptionService.encrypt(JSON.stringify(signals))
+      : null;
   }
 
   public toPersistence(entity: User): UserModel {
@@ -81,6 +123,14 @@ export class UserMapper {
       people.length > 0
         ? this.encryptionService.encrypt(JSON.stringify(people))
         : null;
+    const trackedSubject = entity.preferences.trackedSubject;
+    model.trackedSubjectEncrypted =
+      trackedSubject && !isSelfSubject(trackedSubject)
+        ? this.encryptionService.encrypt(JSON.stringify(trackedSubject))
+        : null;
+    model.customSignalsEncrypted = this.encryptCustomSignals(
+      entity.preferences.customSignals ?? [],
+    );
     model.insightTargets = insightTargets.length > 0 ? insightTargets : null;
     const obviousOverrides = entity.preferences.patternObviousOverrides ?? {};
     model.patternObviousOverrides =

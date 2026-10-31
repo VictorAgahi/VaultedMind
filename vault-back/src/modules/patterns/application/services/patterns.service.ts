@@ -10,6 +10,8 @@ import { DailyLogRepository } from '../../../../database/repositories/daily-log.
 import { CustomFieldRepository } from '../../../../database/repositories/custom-field.repository.js';
 import { PatternReportRepository } from '../../../../database/repositories/pattern-report.repository.js';
 import { FieldConstructService } from '../../../signals/application/services/field-construct.service.js';
+import { signalContextOf } from '../../../signals/domain/signal-context.js';
+import { CustomSignalConstructService } from '../../../signals/application/services/custom-signal-construct.service.js';
 import { SignalsReadService } from '../../../signals/application/services/signals-read.service.js';
 import {
   buildDailyMatrix,
@@ -51,6 +53,7 @@ export class PatternsService {
     private readonly patternReportRepository: PatternReportRepository,
     private readonly signalsReadService: SignalsReadService,
     private readonly fieldConstructService: FieldConstructService,
+    private readonly customSignalConstructService: CustomSignalConstructService,
     private readonly obviousnessService: ObviousnessService,
     private readonly engineRunner: PatternEngineRunner,
   ) {}
@@ -83,6 +86,7 @@ export class PatternsService {
       report,
       stillValid,
       user.preferences.patternObviousOverrides ?? {},
+      user.preferences.trackedSubject,
     );
   }
 
@@ -182,7 +186,11 @@ export class PatternsService {
     }
     this.computing.add(userId);
     try {
-      const user = await this.userRepository.findUserById(userId);
+      const loadedUser = await this.userRepository.findUserById(userId);
+      // Custom signal texts go to Jev only for users who allowed the advanced analysis
+      const user = loadedUser.canCleanNotes()
+        ? await this.customSignalConstructService.classifyFor(loadedUser)
+        : loadedUser;
       const [logs, loadedFields] = await Promise.all([
         this.dailyLogRepository.findByUserId(userId),
         this.customFieldRepository.findByUserId(userId),
@@ -210,7 +218,7 @@ export class PatternsService {
       const matrix = buildDailyMatrix(
         days,
         fields,
-        user.preferences.people,
+        signalContextOf(user.preferences),
         targets.filter(isValueTarget),
       );
       const computed = await this.engineRunner.run({

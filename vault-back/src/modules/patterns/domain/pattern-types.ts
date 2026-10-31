@@ -10,6 +10,7 @@ export type ColumnCategory =
   | 'theme'
   | 'state'
   | 'person'
+  | 'custom'
   | 'language'
   | 'logging';
 

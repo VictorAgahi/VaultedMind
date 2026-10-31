@@ -6,6 +6,8 @@ export interface SignalCandidate {
   userId: string;
   notes: string;
   sourceHash: string;
+  /** Version of the question bank the note is analysed with. */
+  bankVersion: string;
   /** Existing row state, null when the note was never analysed. */
   row: {
     sourceHash: string;

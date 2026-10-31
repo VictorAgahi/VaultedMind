@@ -5,7 +5,7 @@ import { AbstractBaseRepository } from './base.repository.js';
 import { NoteSignalsModel } from '../models/note-signals.model.js';
 import { DailyLogModel } from '../models/daily-log.model.js';
 import { EncryptionService } from '../../common/security/encryption.service.js';
-import type { Person } from '../../modules/signals/domain/person.js';
+import type { SignalContext } from '../../modules/signals/domain/signal-context.js';
 import type {
   SignalCorrections,
   SignalPayload,
@@ -15,8 +15,8 @@ import {
   SIGNALS_HASH_PURPOSE,
   buildSignalsSourceInput,
 } from '../../modules/signals/domain/signal-extraction.js';
+import { questionBankVersion } from '../../modules/signals/domain/question-bank.js';
 import { decideExtraction } from '../../modules/signals/domain/signal-staleness.js';
-import { QUESTION_BANK_VERSION } from '../../modules/signals/domain/question-bank.js';
 
 export interface StoredSignals {
   payload: SignalPayload;
@@ -35,9 +35,9 @@ export class NoteSignalsRepository extends AbstractBaseRepository<NoteSignalsMod
     super(noteSignalsRepository);
   }
 
-  computeSourceHash(rawNotes: string, people: Person[]): string {
+  computeSourceHash(rawNotes: string, context: SignalContext): string {
     return this.encryptionService.createKeyedHash(
-      buildSignalsSourceInput(rawNotes, people),
+      buildSignalsSourceInput(rawNotes, context),
       SIGNALS_HASH_PURPOSE,
     );
   }
@@ -48,7 +48,7 @@ export class NoteSignalsRepository extends AbstractBaseRepository<NoteSignalsMod
    */
   async findLogsNeedingSignals(
     userId: string,
-    people: Person[],
+    context: SignalContext,
     limit: number,
   ): Promise<SignalCandidate[]> {
     const logs = await this.repository.manager
@@ -70,7 +70,7 @@ export class NoteSignalsRepository extends AbstractBaseRepository<NoteSignalsMod
       if (candidates.length >= limit) break;
       const notes = this.decryptText(log.notes);
       if (!notes?.trim()) continue;
-      const sourceHash = this.computeSourceHash(notes, people);
+      const sourceHash = this.computeSourceHash(notes, context);
       const row = rowByLog.get(log.id) ?? null;
       const decision = decideExtraction(
         row && {
@@ -86,6 +86,7 @@ export class NoteSignalsRepository extends AbstractBaseRepository<NoteSignalsMod
         userId: log.userId,
         notes,
         sourceHash,
+        bankVersion: questionBankVersion(context.subject.kind),
         row: row && {
           sourceHash: row.sourceHash,
           failureCount: row.failureCount,
@@ -169,7 +170,7 @@ export class NoteSignalsRepository extends AbstractBaseRepository<NoteSignalsMod
       where: { dailyLogId: candidate.dailyLogId },
     });
     const common = {
-      bankVersion: QUESTION_BANK_VERSION,
+      bankVersion: candidate.bankVersion,
       sourceHash: candidate.sourceHash,
       ...values,
     };

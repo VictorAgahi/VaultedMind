@@ -19,6 +19,12 @@ import {
   DEFAULT_USER_PREFERENCES,
 } from '../../domain/entities/user.entity.js';
 import type { Person } from '../../../signals/domain/person.js';
+import {
+  findCustomSignalProblems,
+  mergeCustomSignals,
+  toCustomSignalInput,
+} from '../../../signals/domain/custom-signal.js';
+import { normalizeTrackedSubject } from '../../../signals/domain/tracked-subject.js';
 import { findTargetProblems } from '../../../patterns/domain/insight-target.js';
 import { AIConsentRequiredException } from '../../../ai-insights/domain/exceptions/ai-consent-required.exception.js';
 import { AIInsightRepository } from '../../../../database/repositories/ai-insight.repository.js';
@@ -92,7 +98,18 @@ export class UserService {
     if (updates.insightTargets) {
       await this.assertValidTargets(userId, updates.insightTargets);
     }
-    const { firstName, quickCheckinFieldId, people, ...rest } = updates;
+    const {
+      firstName,
+      quickCheckinFieldId,
+      people,
+      trackedSubject,
+      customSignals,
+      ...rest
+    } = updates;
+    if (customSignals) {
+      const problems = findCustomSignalProblems(customSignals);
+      if (problems.length > 0) throw new BadRequestException(problems);
+    }
     // The validated DTO carries absent fields as undefined: they must not erase stored values
     const provided = Object.fromEntries(
       Object.entries(rest).filter(([, value]) => value !== undefined),
@@ -104,6 +121,15 @@ export class UserService {
         firstName: firstName?.trim() || undefined,
       }),
       ...(people !== undefined && { people: this.normalizePeople(people) }),
+      ...(trackedSubject !== undefined && {
+        trackedSubject: normalizeTrackedSubject(trackedSubject),
+      }),
+      ...(customSignals !== undefined && {
+        customSignals: mergeCustomSignals(
+          customSignals,
+          user.preferences.customSignals,
+        ),
+      }),
       ...(quickCheckinFieldId !== undefined && {
         quickCheckinFieldId: quickCheckinFieldId ?? undefined,
       }),
@@ -169,6 +195,8 @@ export class UserService {
         aiIncludeNotes: user.preferences.aiIncludeNotes,
         insightsV2Enabled: user.preferences.insightsV2Enabled,
         people: user.preferences.people,
+        trackedSubject: user.preferences.trackedSubject,
+        customSignals: user.preferences.customSignals.map(toCustomSignalInput),
         insightTargets: user.preferences.insightTargets,
       },
       consents: {

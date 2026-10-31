@@ -16,6 +16,17 @@ import {
   ValidationOptions,
 } from 'class-validator';
 import {
+  CUSTOM_SIGNAL_ID_PATTERN,
+  CUSTOM_SIGNAL_KINDS,
+  CUSTOM_SIGNAL_LIMITS,
+  type CustomSignalKind,
+} from '../../../signals/domain/custom-signal.js';
+import {
+  TRACKED_SUBJECT_KINDS,
+  TRACKED_SUBJECT_LIMITS,
+  type TrackedSubjectKind,
+} from '../../../signals/domain/tracked-subject.js';
+import {
   PERSON_ID_PATTERN,
   PERSON_LIMITS,
 } from '../../../signals/domain/person.js';
@@ -61,6 +72,45 @@ export class PersonDto {
   @IsString({ each: true })
   @Length(1, PERSON_LIMITS.variantMaxLength, { each: true })
   variants!: string[];
+}
+
+export class TrackedSubjectDto {
+  @IsIn(TRACKED_SUBJECT_KINDS)
+  kind!: TrackedSubjectKind;
+
+  @IsOptional()
+  @IsString()
+  @Length(1, TRACKED_SUBJECT_LIMITS.nameMaxLength)
+  name?: string;
+
+  @IsOptional()
+  @IsString()
+  @Length(1, TRACKED_SUBJECT_LIMITS.speciesMaxLength)
+  species?: string;
+}
+
+export class CustomSignalDto {
+  @Matches(CUSTOM_SIGNAL_ID_PATTERN, {
+    message: 'Identifiant de signal invalide',
+  })
+  id!: string;
+
+  @IsString()
+  @Length(
+    CUSTOM_SIGNAL_LIMITS.labelMinLength,
+    CUSTOM_SIGNAL_LIMITS.labelMaxLength,
+  )
+  label!: string;
+
+  @IsString()
+  @Length(
+    CUSTOM_SIGNAL_LIMITS.questionMinLength,
+    CUSTOM_SIGNAL_LIMITS.questionMaxLength,
+  )
+  question!: string;
+
+  @IsIn(CUSTOM_SIGNAL_KINDS)
+  kind!: CustomSignalKind;
 }
 
 export class InsightTargetDto {
@@ -116,6 +166,18 @@ export class UpdatePreferencesDto {
   @ValidateNested({ each: true })
   @Type(() => PersonDto)
   people?: PersonDto[];
+
+  @IsOptional()
+  @ValidateNested()
+  @Type(() => TrackedSubjectDto)
+  trackedSubject?: TrackedSubjectDto;
+
+  @IsOptional()
+  @IsArray()
+  @ArrayMaxSize(CUSTOM_SIGNAL_LIMITS.maxSignals)
+  @ValidateNested({ each: true })
+  @Type(() => CustomSignalDto)
+  customSignals?: CustomSignalDto[];
 
   @IsOptional()
   @IsArray()

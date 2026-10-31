@@ -35,6 +35,12 @@ export const CONSTRUCTS = [
   'mindfulness',
   'language',
   'logging',
+  'aggression',
+  'elimination',
+  'play',
+  'environment_change',
+  'solitude',
+  'vet',
   'other',
 ] as const;
 
