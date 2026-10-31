@@ -34,6 +34,38 @@ describe('computeSleepNight', () => {
     expect(summary?.bedtimeHour).toBeCloseTo(23, 5);
   });
 
+  it('should count the French iOS labels "Lent" and "Réveillé" seen on a real phone', () => {
+    // Arrange: a French iPhone names core sleep "Lent" and awake time "Réveillé"
+    const samples = [
+      sample('Lent', '2026-01-14T23:00:00+01:00', '2026-01-15T03:00:00+01:00'),
+      sample(
+        'Profond',
+        '2026-01-15T03:00:00+01:00',
+        '2026-01-15T04:30:00+01:00',
+      ),
+      sample(
+        'Réveillé',
+        '2026-01-15T04:30:00+01:00',
+        '2026-01-15T04:45:00+01:00',
+      ),
+      sample(
+        'Paradoxal',
+        '2026-01-15T04:45:00+01:00',
+        '2026-01-15T06:15:00+01:00',
+      ),
+      sample('Lent', '2026-01-15T06:15:00+01:00', '2026-01-15T08:00:00+01:00'),
+    ];
+
+    // Act
+    const result = computeSleepNight(samples, '2026-01-15', paris);
+
+    // Assert: 4 h + 1.5 h + 1.5 h + 1.75 h asleep, the 15 min awake excluded
+    expect(result.unknownLabels).toEqual([]);
+    expect(result.summary?.asleepHours).toBeCloseTo(8.75, 5);
+    expect(result.stages.core).toBeCloseTo(5.75, 5);
+    expect(result.stages.awake).toBeCloseTo(0.25, 5);
+  });
+
   it('should return the bedtime as a time of day after midnight', () => {
     // Arrange
     const samples = [

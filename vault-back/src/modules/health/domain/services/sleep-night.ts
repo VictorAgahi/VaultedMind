@@ -56,9 +56,18 @@ const ASLEEP_LABELS = new Set([
   'leger',
   'essentiel',
   'central',
+  // French iOS names core sleep "Lent" (seen on a real phone)
+  'lent',
+  'sommeillent',
 ]);
 const IN_BED_LABELS = new Set(['inbed', 'aulit']);
-const AWAKE_LABELS = new Set(['awake', 'eveille', 'eveillee']);
+const AWAKE_LABELS = new Set([
+  'awake',
+  'eveille',
+  'eveillee',
+  'reveille',
+  'reveillee',
+]);
 
 const STAGE_LABELS: Record<SleepStage, Set<string>> = {
   deep: new Set(['deep', 'asleepdeep', 'profond', 'sommeilprofond']),
@@ -72,6 +81,8 @@ const STAGE_LABELS: Record<SleepStage, Set<string>> = {
     'sommeilessentiel',
     'central',
     'sommeilcentral',
+    'lent',
+    'sommeillent',
   ]),
   awake: AWAKE_LABELS,
 };
