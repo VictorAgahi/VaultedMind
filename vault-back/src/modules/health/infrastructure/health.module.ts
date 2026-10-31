@@ -1,5 +1,6 @@
 import { Module } from '@nestjs/common';
 import { CustomFieldService } from '../application/services/custom-field.service.js';
+import { AutofillFieldsService } from '../application/services/autofill-fields.service.js';
 import { DailyLogService } from '../application/services/daily-log.service.js';
 import { FieldValueService } from '../application/services/field-value.service.js';
 import { BulkImportService } from '../application/services/bulk-import.service.js';
@@ -22,6 +23,7 @@ import { AuthModule } from '../../auth/infrastructure/auth.module.js';
   providers: [
     CustomFieldService,
     DailyLogService,
+    AutofillFieldsService,
     FieldValueService,
     BulkImportService,
     HealthSyncService,

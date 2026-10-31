@@ -38,6 +38,7 @@ import {
 } from "@/types";
 import { parseHourlyValue, formatHourlyValue } from "@/utils/time-converter";
 import { LogEntryDialog, AgentSource } from "./log-entry-dialog";
+import type { AutofillFieldInfo } from "./use-voice-entry";
 import type { AutofillProposal } from "./use-voice-entry";
 import { LogTable } from "./log-table";
 import { localDateStr } from "@/utils/local-date";
@@ -58,6 +59,8 @@ interface State {
   error: string | null;
   notice: string | null;
   dialogError: string | null;
+  /** Champs que le récit du jour peut remplir automatiquement ; null tant que la liste n'est pas chargée. */
+  autofillFields: AutofillFieldInfo[] | null;
   dialog: {
     open: boolean;
     isEditing: boolean;
@@ -83,6 +86,8 @@ interface State {
 type Action =
   | { type: "SET_DATA"; fields: CustomField[]; logs: DailyLog[] }
   | { type: "SET_LOADING"; loading: boolean }
+  | { type: "SET_AUTOFILL_FIELDS"; fields: AutofillFieldInfo[] }
+  | { type: "UPSERT_LOG"; log: DailyLog }
   | { type: "SET_ERROR"; error: string | null }
   | { type: "SET_NOTICE"; notice: string | null }
   | { type: "SET_DIALOG_ERROR"; error: string | null }
@@ -103,6 +108,11 @@ const reducer = (state: State, action: Action): State => {
   switch (action.type) {
     case "SET_DATA": return { ...state, fields: action.fields, logs: action.logs, loading: false, error: null };
     case "SET_LOADING": return { ...state, loading: action.loading };
+    case "SET_AUTOFILL_FIELDS": return { ...state, autofillFields: action.fields };
+    case "UPSERT_LOG": {
+      const exists = state.logs.some(l => l.id === action.log.id);
+      return { ...state, logs: exists ? state.logs.map(l => l.id === action.log.id ? action.log : l) : [...state.logs, action.log] };
+    }
     case "SET_ERROR": return { ...state, error: action.error, loading: false };
     case "SET_NOTICE": return { ...state, notice: action.notice };
     case "SET_DIALOG_ERROR": return { ...state, dialogError: action.error };
@@ -506,6 +516,7 @@ const useDailyLogs = (): UseDailyLogsReturn => {
     error: null,
     notice: null,
     dialogError: null,
+    autofillFields: null,
     dialog: { open: false, isEditing: false, logId: null, submitting: false },
     formData: { date: localDateStr(), notes: "", fieldValues: {}, subFieldValues: {}, agentSources: {}, defaultedFieldIds: [] },
     filters: { selectedFields: [], sortOrder: "desc" }
@@ -529,6 +540,11 @@ const useDailyLogs = (): UseDailyLogsReturn => {
       const sortedLogs = logsData.sort((a, b) => new Date(a.logDate).getTime() - new Date(b.logDate).getTime());
       dispatch({ type: "SET_DATA", fields: fieldsData, logs: sortedLogs });
       saveOfflineSnapshot(fieldsData, sortedLogs);
+      // Information d'aide seulement : si elle manque, la saisie fonctionne sans.
+      apiService
+        .get<{ fields: AutofillFieldInfo[] }>("/health/daily-logs/autofill-fields", { signal })
+        .then(({ fields: eligible }) => dispatch({ type: "SET_AUTOFILL_FIELDS", fields: eligible }))
+        .catch(() => undefined);
     } catch (err: unknown) {
       if ((err as { name?: string })?.name === "AbortError") return;
       // Hors ligne : on affiche la dernière copie connue pour pouvoir noter sa journée quand même.
@@ -1147,7 +1163,9 @@ export const DailyLogsManager: React.FC = () => {
     }
   }, [state.loading, mounted, router, pendingTick, handleHealthReturn]);
 
-  const { loading, error, notice, dialogError, dialog, formData } = state;
+  const { loading, error, notice, dialogError, autofillFields, dialog, formData } = state;
+  // Note du jour telle que le serveur la détient : sert à savoir si le formulaire contient du texte pas encore enregistré.
+  const savedNotes = state.logs.find(l => new Date(l.logDate).toISOString().split("T")[0] === formData.date)?.notes ?? "";
 
   return !mounted ? (
     <Paper sx={{ p: 2, borderRadius: 4, display: "flex", justifyContent: "center", alignItems: "center", minHeight: 320 }}>
@@ -1269,6 +1287,9 @@ export const DailyLogsManager: React.FC = () => {
         agentSources={formData.agentSources}
         onClearAgentValue={handleClearAgentValue}
         onApplyProposals={handleApplyProposals}
+        savedNotes={savedNotes}
+        onNotesSaved={(log) => dispatch({ type: "UPSERT_LOG", log })}
+        autofillFields={autofillFields}
         voiceReady={voiceReady}
         startStep={startStep}
         onStepChange={handleStepChange}

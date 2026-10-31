@@ -1,18 +1,25 @@
 "use client";
 
 import React from "react";
-import { Alert, Box, Button, LinearProgress, Typography } from "@mui/material";
+import NextLink from "next/link";
+import { Alert, Box, Button, Chip, LinearProgress, Link as MuiLink, Typography } from "@mui/material";
 import MicIcon from "@mui/icons-material/Mic";
 import StopRoundedIcon from "@mui/icons-material/StopRounded";
 import AutoAwesomeOutlinedIcon from "@mui/icons-material/AutoAwesomeOutlined";
 import { useAuth } from "@/context/auth-context";
 import { AiConsentDialog } from "@/components/ai-insights/ai-consent-dialog";
-import { AutofillProposal, useVoiceEntry } from "./use-voice-entry";
+import type { DailyLog } from "@/types";
+import { AutofillFieldInfo, AutofillProposal, useVoiceEntry } from "./use-voice-entry";
 
 interface VoiceEntryPanelProps {
   logDate: string;
   notes: string;
   setNotes: (notes: string) => void;
+  /** Note du jour enregistrée sur le serveur, pour savoir si le formulaire contient du texte pas encore enregistré. */
+  savedNotes: string;
+  onNotesSaved: (log: DailyLog) => void;
+  /** Champs que le récit peut remplir ; null tant que la liste n'est pas chargée. */
+  autofillFields: AutofillFieldInfo[] | null;
   onProposals: (proposals: AutofillProposal[]) => number;
   /** Ouverture depuis le rappel du soir : le bouton est mis en avant, l'enregistrement attend le toucher. */
   voiceReady?: boolean;
@@ -23,13 +30,15 @@ function formatElapsed(seconds: number): string {
   return `${minutes}:${String(seconds % 60).padStart(2, "0")}`;
 }
 
-export const VoiceEntryPanel: React.FC<VoiceEntryPanelProps> = ({ logDate, notes, setNotes, onProposals, voiceReady }) => {
+export const VoiceEntryPanel: React.FC<VoiceEntryPanelProps> = ({ logDate, notes, setNotes, savedNotes, onNotesSaved, autofillFields, onProposals, voiceReady }) => {
   const { user, refreshUser } = useAuth();
   const [consentOpen, setConsentOpen] = React.useState(false);
-  const { status, elapsed, error, info, start, stop, fillFromNote, dismissError } = useVoiceEntry({
+  const { status, elapsed, error, info, saveNotice, start, stop, fillFromNote, dismissError } = useVoiceEntry({
     logDate,
     notes,
     setNotes,
+    savedNotes,
+    onNotesSaved,
     onProposals,
   });
   const recordButtonRef = React.useRef<HTMLButtonElement>(null);
@@ -94,6 +103,26 @@ export const VoiceEntryPanel: React.FC<VoiceEntryPanelProps> = ({ logDate, notes
           Parlez normalement, dix minutes au plus. Seuls les faits que vous énoncez seront proposés, jamais votre humeur.
         </Typography>
       )}
+      {!recording && !busy && autofillFields !== null && (
+        autofillFields.length > 0 ? (
+          <Box sx={{ display: "flex", alignItems: "center", flexWrap: "wrap", gap: 0.75 }}>
+            <Typography variant="caption" color="text.secondary">
+              Rempli automatiquement si tu en parles :
+            </Typography>
+            {autofillFields.map((field) => (
+              <Chip key={field.id} label={field.name} size="small" variant="outlined" />
+            ))}
+          </Box>
+        ) : (
+          <Typography variant="caption" color="text.secondary">
+            Aucun champ n&apos;est rempli automatiquement. Tu peux l&apos;activer dans{" "}
+            <MuiLink component={NextLink} href="/fields" underline="always">
+              les réglages d&apos;un champ
+            </MuiLink>{" "}
+            (« Remplir depuis ce que je raconte »).
+          </Typography>
+        )
+      )}
       {!recording && !busy && voiceReady && !error && !info && (
         <Typography variant="caption" color="text.secondary">
           Touchez le bouton pour commencer à parler. L&apos;audio est transcrit puis supprimé, il n&apos;est pas conservé.
@@ -110,6 +139,11 @@ export const VoiceEntryPanel: React.FC<VoiceEntryPanelProps> = ({ logDate, notes
         >
           Remplir depuis ma note
         </Button>
+      )}
+      {saveNotice && (
+        <Alert severity={saveNotice.saved ? "success" : "warning"} icon={false} sx={{ py: 0.5 }}>
+          {saveNotice.message}
+        </Alert>
       )}
       {info && !error && <Alert severity="success" icon={false} sx={{ py: 0.5 }}>{info}</Alert>}
       {error && (

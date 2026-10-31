@@ -19,7 +19,10 @@ import {
   CreateDailyLogDto,
   UpdateDailyLogDto,
   DailyLogResponseDto,
+  AppendNotesDto,
 } from '../../application/dtos/daily-log.dto.js';
+import { AutofillFieldsService } from '../../application/services/autofill-fields.service.js';
+import { AutofillFieldsResponseDto } from '../../application/dtos/autofill-fields.dto.js';
 import { AuthUser } from '../../../auth/domain/interfaces/auth-user.interface.js';
 import { DailyLog } from '../../domain/entities/daily-log.entity.js';
 import { v4 as uuidv4 } from 'uuid';
@@ -31,6 +34,7 @@ export class DailyLogController {
   constructor(
     private readonly dailyLogService: DailyLogService,
     private readonly signalsReadService: SignalsReadService,
+    private readonly autofillFieldsService: AutofillFieldsService,
   ) {}
 
   @Post()
@@ -65,6 +69,29 @@ export class DailyLogController {
       clearedFieldIds: dto.clearedFieldIds ?? [],
     });
     return this.respondWith(req.user.id, saved);
+  }
+
+  @Post('notes/append')
+  async appendNotes(
+    @Body() dto: AppendNotesDto,
+    @Req() req: { user: AuthUser },
+  ): Promise<DailyLogResponseDto> {
+    const saved = await this.dailyLogService.appendNotes(
+      req.user.id,
+      dto.logDate.slice(0, 10),
+      dto.text,
+    );
+    return this.respondWith(req.user.id, saved);
+  }
+
+  /** Declared before ':id' so the literal path is not read as a log id. */
+  @Get('autofill-fields')
+  async autofillFields(
+    @Req() req: { user: AuthUser },
+  ): Promise<AutofillFieldsResponseDto> {
+    return {
+      fields: await this.autofillFieldsService.listEligible(req.user.id),
+    };
   }
 
   @Get()

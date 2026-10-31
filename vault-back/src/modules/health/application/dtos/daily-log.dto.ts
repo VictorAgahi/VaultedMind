@@ -9,6 +9,7 @@ import {
   ValidateNested,
   IsObject,
   IsIn,
+  Matches,
 } from 'class-validator';
 import { Type } from 'class-transformer';
 import { FIELD_VALUE_SOURCES } from '../../domain/entities/field-value.entity.js';
@@ -33,6 +34,19 @@ export class UpdateDailyLogDto {
   @IsString()
   @MaxLength(10000)
   notes?: string;
+}
+
+export const APPEND_NOTES_TEXT_MAX_LENGTH = 20000;
+
+/** Text added at the end of a day's raw notes (a dictation, for instance). */
+export class AppendNotesDto {
+  @IsDateString()
+  logDate!: string;
+
+  @IsString()
+  @Matches(/\S/, { message: 'text must not be blank' })
+  @MaxLength(APPEND_NOTES_TEXT_MAX_LENGTH)
+  text!: string;
 }
 
 export class DailyEntryValueDto {

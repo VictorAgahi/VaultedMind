@@ -43,6 +43,23 @@ export interface AutofillContext {
   insightTargetFieldIds: ReadonlySet<string>;
 }
 
+/** The part of a user's preferences the eligibility rule depends on. */
+export interface AutofillPreferences {
+  trackedSubject: { kind: TrackedSubjectKind };
+  insightTargets: ReadonlyArray<{ fieldId: string }>;
+}
+
+export function buildAutofillContext(
+  preferences: AutofillPreferences,
+): AutofillContext {
+  return {
+    subjectKind: preferences.trackedSubject.kind,
+    insightTargetFieldIds: new Set(
+      preferences.insightTargets.map((target) => target.fieldId),
+    ),
+  };
+}
+
 function isFactualConstruct(
   construct: Construct,
   subjectKind: TrackedSubjectKind,

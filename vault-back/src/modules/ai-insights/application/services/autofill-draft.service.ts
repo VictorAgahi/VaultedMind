@@ -4,7 +4,10 @@ import { CustomFieldRepository } from '../../../../database/repositories/custom-
 import { AIChatUsageRepository } from '../../../../database/repositories/ai-chat-usage.repository.js';
 import { FieldType } from '../../../health/domain/enums/field-type.enum.js';
 import { pseudonymize } from '../../../signals/domain/pseudonymize.js';
-import { isAutofillEligible } from '../../../health/domain/services/autofill-eligibility.js';
+import {
+  buildAutofillContext,
+  isAutofillEligible,
+} from '../../../health/domain/services/autofill-eligibility.js';
 import {
   buildAutofillSchema,
   type AutofillSchemaField,
@@ -51,12 +54,7 @@ export class AutofillDraftService {
     assertNotesConsent(user);
 
     const subject = user.preferences.trackedSubject;
-    const context = {
-      subjectKind: subject.kind,
-      insightTargetFieldIds: new Set(
-        user.preferences.insightTargets.map((target) => target.fieldId),
-      ),
-    };
+    const context = buildAutofillContext(user.preferences);
     const activeFields = (
       await this.customFieldRepository.findByUserId(userId)
     ).filter((field) => field.isActive);

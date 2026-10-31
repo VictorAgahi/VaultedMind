@@ -2,7 +2,7 @@
 
 import React from "react";
 import { apiService } from "@/services/api.service";
-import type { ApiError } from "@/types";
+import type { ApiError, DailyLog } from "@/types";
 
 export interface AutofillProposal {
   fieldId: string;
@@ -33,6 +33,18 @@ export interface VoiceError {
 
 export const MAX_RECORDING_SECONDS = 10 * 60;
 export const NOTES_MAX_LENGTH = 10000;
+const APPEND_MAX_LENGTH = 20000;
+
+/** Champ que le récit du jour peut remplir automatiquement. */
+export interface AutofillFieldInfo {
+  id: string;
+  name: string;
+}
+
+export interface SaveNotice {
+  saved: boolean;
+  message: string;
+}
 
 // Safari enregistre en audio/mp4, Chrome et Firefox en audio/webm.
 const MIME_CANDIDATES = ["audio/mp4", "audio/webm;codecs=opus", "audio/webm"];
@@ -76,24 +88,29 @@ interface UseVoiceEntryOptions {
   logDate: string;
   notes: string;
   setNotes: (notes: string) => void;
+  /** Note du jour telle qu'elle est enregistrée sur le serveur ("" si le jour n'a pas de note). */
+  savedNotes: string;
+  /** Appelé avec le journal renvoyé par le serveur quand la dictée a été ajoutée aux notes du jour. */
+  onNotesSaved: (log: DailyLog) => void;
   /** Reçoit les propositions du serveur et renvoie combien de champs ont été pré-remplis. */
   onProposals: (proposals: AutofillProposal[]) => number;
 }
 
-export function useVoiceEntry({ logDate, notes, setNotes, onProposals }: UseVoiceEntryOptions) {
+export function useVoiceEntry({ logDate, notes, setNotes, savedNotes, onNotesSaved, onProposals }: UseVoiceEntryOptions) {
   const [status, setStatus] = React.useState<VoiceStatus>("idle");
   const [elapsed, setElapsed] = React.useState(0);
   const [error, setError] = React.useState<VoiceError | null>(null);
   const [info, setInfo] = React.useState<string | null>(null);
+  const [saveNotice, setSaveNotice] = React.useState<SaveNotice | null>(null);
 
   const recorderRef = React.useRef<MediaRecorder | null>(null);
   const streamRef = React.useRef<MediaStream | null>(null);
   const chunksRef = React.useRef<Blob[]>([]);
   const discardRef = React.useRef(false);
   // Dernière version des props, lue par les rappels asynchrones (fin d'enregistrement, réponses réseau).
-  const latest = React.useRef({ logDate, notes, setNotes, onProposals });
+  const latest = React.useRef({ logDate, notes, setNotes, savedNotes, onNotesSaved, onProposals });
   React.useEffect(() => {
-    latest.current = { logDate, notes, setNotes, onProposals };
+    latest.current = { logDate, notes, setNotes, savedNotes, onNotesSaved, onProposals };
   });
 
   const releaseStream = React.useCallback(() => {
@@ -148,6 +165,7 @@ export function useVoiceEntry({ logDate, notes, setNotes, onProposals }: UseVoic
     if (!text || status !== "idle") return;
     setError(null);
     setInfo(null);
+    setSaveNotice(null);
     void requestDraft(text);
   }, [requestDraft, status]);
 
@@ -164,8 +182,39 @@ export function useVoiceEntry({ logDate, notes, setNotes, onProposals }: UseVoic
           setStatus("idle");
           return;
         }
-        const existing = latest.current.notes.trim();
-        const combined = existing ? `${existing}\n\n${transcript}` : transcript;
+        // La dictée est enregistrée dans les notes du jour dès qu'elle est transcrite, sans attendre « Enregistrer ».
+        // Cas courant : la note du formulaire est celle du serveur, on adopte la note renvoyée (jamais ajoutée en double).
+        // Cas d'un texte tapé et pas encore enregistré : seule la dictée est envoyée au serveur, et le formulaire garde
+        // ce texte suivi de la dictée ; « Enregistrer » écrase les notes du jour avec cette version complète.
+        const before = latest.current;
+        const untouched = before.notes.trim() === before.savedNotes.trim();
+        let combined: string;
+        try {
+          const saved = await apiService.post<DailyLog, { logDate: string; text: string }>(
+            "/health/daily-logs/notes/append",
+            { logDate: before.logDate, text: transcript.slice(0, APPEND_MAX_LENGTH) },
+          );
+          latest.current.onNotesSaved(saved);
+          const current = latest.current.notes.trim();
+          const editedMeanwhile = current !== before.notes.trim();
+          if (untouched && !editedMeanwhile && saved.notes) {
+            combined = saved.notes;
+            setSaveNotice({ saved: true, message: "Ta dictée est enregistrée dans les notes du jour." });
+          } else {
+            combined = current ? `${current}\n\n${transcript}` : transcript;
+            setSaveNotice({
+              saved: true,
+              message: "Ta dictée est enregistrée dans les notes du jour. Le reste de la note le sera avec « Enregistrer ».",
+            });
+          }
+        } catch {
+          const current = latest.current.notes.trim();
+          combined = current ? `${current}\n\n${transcript}` : transcript;
+          setSaveNotice({
+            saved: false,
+            message: "Ta dictée n'est pas encore enregistrée : elle est dans la note, touche « Enregistrer » pour la conserver.",
+          });
+        }
         const fullNotes = combined.slice(0, NOTES_MAX_LENGTH);
         latest.current.setNotes(fullNotes);
         if (combined.length > NOTES_MAX_LENGTH) {
@@ -184,6 +233,7 @@ export function useVoiceEntry({ logDate, notes, setNotes, onProposals }: UseVoic
     if (status !== "idle") return;
     setError(null);
     setInfo(null);
+    setSaveNotice(null);
     const mimeType = pickMimeType();
     if (!mimeType || !navigator.mediaDevices?.getUserMedia) {
       setError({
@@ -232,5 +282,5 @@ export function useVoiceEntry({ logDate, notes, setNotes, onProposals }: UseVoic
 
   const dismissError = React.useCallback(() => setError(null), []);
 
-  return { status, elapsed, error, info, start, stop, fillFromNote, dismissError };
+  return { status, elapsed, error, info, saveNotice, start, stop, fillFromNote, dismissError };
 }

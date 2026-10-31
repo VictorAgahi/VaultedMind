@@ -3,7 +3,7 @@ import { jest } from '@jest/globals';
 import { plainToInstance } from 'class-transformer';
 import { validateSync } from 'class-validator';
 import { DailyLogService } from './daily-log.service.js';
-import { SaveDailyEntryDto } from '../dtos/daily-log.dto.js';
+import { AppendNotesDto, SaveDailyEntryDto } from '../dtos/daily-log.dto.js';
 import { DailyLog } from '../../domain/entities/daily-log.entity.js';
 import type { DailyEntry } from '../../domain/entities/daily-entry.js';
 import type { DailyLogRepository } from '../../../../database/repositories/daily-log.repository.js';
@@ -72,5 +72,67 @@ describe('DailyLogService.saveEntry', () => {
     // Assert
     expect(result).toBe(saved);
     expect(saveEntry).toHaveBeenCalledWith(entry);
+  });
+});
+
+describe('AppendNotesDto', () => {
+  const errorsFor = (plain: object): number =>
+    validateSync(plainToInstance(AppendNotesDto, plain), {
+      whitelist: true,
+      forbidNonWhitelisted: true,
+    }).length;
+
+  it('should accept a date and a text of 1 to 20000 characters', () => {
+    expect(errorsFor({ logDate: '2026-10-31', text: 'a' })).toBe(0);
+    expect(errorsFor({ logDate: '2026-10-31', text: 'a'.repeat(20000) })).toBe(
+      0,
+    );
+  });
+
+  it.each([
+    {},
+    { logDate: '2026-10-31' },
+    { text: 'bonjour' },
+    { logDate: 'demain', text: 'bonjour' },
+    { logDate: '2026-10-31', text: '' },
+    { logDate: '2026-10-31', text: '   ' },
+    { logDate: '2026-10-31', text: 'a'.repeat(20001) },
+    { logDate: '2026-10-31', text: 12 },
+  ])('should reject %p', (plain) => {
+    expect(errorsFor(plain)).toBeGreaterThan(0);
+  });
+});
+
+describe('DailyLogService.appendNotes', () => {
+  it('should hand the trimmed text to the repository for the user and date', async () => {
+    // Arrange
+    const saved = new DailyLog(
+      'log-1',
+      'user-1',
+      new Date(),
+      new Date(),
+      new Date(),
+      'Avant\n\nAprès',
+    );
+    const appendNotes = jest
+      .fn<
+        (userId: string, logDate: string, text: string) => Promise<DailyLog>
+      >()
+      .mockResolvedValue(saved);
+    const service = new DailyLogService(
+      { appendNotes } as unknown as DailyLogRepository,
+      {} as unknown as CustomFieldRepository,
+    );
+
+    // Act
+    const result = await service.appendNotes(
+      'user-1',
+      '2026-10-31',
+      '  Après \n',
+    );
+
+    // Assert
+    expect(result).toBe(saved);
+    expect(appendNotes).toHaveBeenCalledWith('user-1', '2026-10-31', 'Après');
   });
 });

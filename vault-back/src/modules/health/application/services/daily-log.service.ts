@@ -47,6 +47,16 @@ export class DailyLogService {
     return this.dailyLogRepository.saveDomain(log);
   }
 
+  /** Adds text to the raw notes of a day, creating the log when the day has none yet. */
+  async appendNotes(
+    userId: string,
+    logDate: string,
+    text: string,
+  ): Promise<DailyLog> {
+    this.logger.log(`Appending notes for user: ${userId}`);
+    return this.dailyLogRepository.appendNotes(userId, logDate, text.trim());
+  }
+
   async findByUserId(userId: string): Promise<DailyLog[]> {
     return this.dailyLogRepository.findByUserId(userId);
   }

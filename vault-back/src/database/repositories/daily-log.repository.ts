@@ -144,6 +144,57 @@ export class DailyLogRepository extends AbstractBaseRepository<DailyLogModel> {
     return DailyLogMapper.toDomain(saved);
   }
 
+  /**
+   * Appends text to the raw notes of the day (blank line between), in one transaction with a row
+   * lock so two appends never overwrite each other. Creates the log when the day has none.
+   * The note stays encrypted at rest; the clean rewrite and signals go stale by hash.
+   */
+  async appendNotes(
+    userId: string,
+    logDate: string,
+    text: string,
+  ): Promise<DailyLog> {
+    const logId = await this.repository.manager.transaction(
+      async (manager): Promise<string> => {
+        const logs = manager.getRepository(DailyLogModel);
+        const existing = await logs
+          .createQueryBuilder('log')
+          .setLock('pessimistic_write')
+          .where('log.userId = :userId', { userId })
+          .andWhere('log.logDate = :logDate', { logDate })
+          .getOne();
+
+        if (!existing) {
+          const created = await logs.save(
+            logs.create({
+              userId,
+              logDate: new Date(logDate),
+              notes: this.encryptionService.encrypt(text),
+            }),
+          );
+          return created.id;
+        }
+
+        const current = this.decryptNotes(existing.notes)?.trim();
+        const merged = current ? `${current}\n\n${text}` : text;
+        await logs.update(existing.id, {
+          notes: this.encryptionService.encrypt(merged),
+        });
+        return existing.id;
+      },
+    );
+
+    const saved = await this.repository.findOne({
+      where: { id: logId },
+      relations: ['fieldValues'],
+    });
+    if (!saved) {
+      throw new Error(`Daily log ${logId} disappeared after append`);
+    }
+    this.decryptModel(saved);
+    return DailyLogMapper.toDomain(saved);
+  }
+
   async saveDomain(entity: DailyLog): Promise<DailyLog> {
     const model = DailyLogMapper.toPersistence(entity);
     if (model.notes) {

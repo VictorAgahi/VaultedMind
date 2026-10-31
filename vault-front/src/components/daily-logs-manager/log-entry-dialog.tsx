@@ -23,17 +23,19 @@ import {
   InputAdornment,
   IconButton,
   Chip,
+  Tooltip,
   ButtonBase,
   LinearProgress,
 } from "@mui/material";
 import SearchIcon from "@mui/icons-material/Search";
 import CloseIcon from "@mui/icons-material/Close";
+import MicNoneOutlinedIcon from "@mui/icons-material/MicNoneOutlined";
 import SubdirectoryArrowRightIcon from "@mui/icons-material/SubdirectoryArrowRight";
-import { CustomField, FieldType } from "@/types";
+import { CustomField, DailyLog, FieldType } from "@/types";
 import { VoiceEntryPanel } from "./voice-entry-panel";
 import { HealthSyncButton } from "./health-sync-button";
 import { localDateStr } from "@/utils/local-date";
-import type { AutofillProposal } from "./use-voice-entry";
+import type { AutofillFieldInfo, AutofillProposal } from "./use-voice-entry";
 
 interface StringFieldGridModalProps {
   open: boolean;
@@ -167,6 +169,12 @@ interface LogEntryDialogProps {
   agentSources: Record<string, AgentSource>;
   onClearAgentValue: (fieldId: string) => void;
   onApplyProposals: (proposals: AutofillProposal[]) => number;
+  /** Note du jour enregistrée sur le serveur ("" si le jour n'a pas de note). */
+  savedNotes: string;
+  /** La dictée vient d'être ajoutée aux notes du jour : le journal renvoyé met la liste à jour. */
+  onNotesSaved: (log: DailyLog) => void;
+  /** Champs que le récit peut remplir automatiquement ; null tant que la liste n'est pas chargée. */
+  autofillFields: AutofillFieldInfo[] | null;
   /** Ouverture depuis le rappel du soir : prêt à enregistrer. */
   voiceReady?: boolean;
   /** Étape à afficher à l'ouverture (reprise d'une saisie après la synchronisation Santé). */
@@ -213,6 +221,9 @@ export const LogEntryDialog: React.FC<LogEntryDialogProps> = ({
   agentSources,
   onClearAgentValue,
   onApplyProposals,
+  savedNotes,
+  onNotesSaved,
+  autofillFields,
   voiceReady,
   startStep = 0,
   onStepChange,
@@ -245,6 +256,8 @@ export const LogEntryDialog: React.FC<LogEntryDialogProps> = ({
     });
     return groups;
   }, [activeFields]);
+
+  const autofillFieldIds = React.useMemo(() => new Set((autofillFields ?? []).map(f => f.id)), [autofillFields]);
 
   const categories = Object.keys(groupedFields);
   // Les champs d'abord (rapides), les notes en dernier (facultatives).
@@ -548,6 +561,22 @@ export const LogEntryDialog: React.FC<LogEntryDialogProps> = ({
     );
   };
 
+  // Discret : indique qu'un champ peut être rempli depuis le récit du jour.
+  const renderAutofillHint = (field: CustomField) => {
+    if (!autofillFieldIds.has(field.id) || agentSources[field.id]) return null;
+    return (
+      <Box sx={{ mt: -1, mb: 1.5, display: "flex", justifyContent: "flex-end" }}>
+        <Tooltip title="Peut être rempli depuis ce que tu racontes" enterTouchDelay={0}>
+          <MicNoneOutlinedIcon
+            tabIndex={0}
+            aria-label="Peut être rempli depuis ce que tu racontes"
+            sx={{ fontSize: 16, color: "text.disabled" }}
+          />
+        </Tooltip>
+      </Box>
+    );
+  };
+
   return (
     <Dialog 
       open={open} 
@@ -593,6 +622,9 @@ export const LogEntryDialog: React.FC<LogEntryDialogProps> = ({
               logDate={logDate}
               notes={notes}
               setNotes={setNotes}
+              savedNotes={savedNotes}
+              onNotesSaved={onNotesSaved}
+              autofillFields={autofillFields}
               onProposals={onApplyProposals}
               voiceReady={voiceReady}
             />
@@ -650,6 +682,7 @@ export const LogEntryDialog: React.FC<LogEntryDialogProps> = ({
                       <Box key={field.id}>
                         {renderFieldInput(field)}
                         {renderAgentNote(field)}
+                        {renderAutofillHint(field)}
                       </Box>
                     ))}
                   </Box>
