@@ -1,19 +1,15 @@
 import { BadRequestException, Injectable, Logger } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { IsNull, Not, Repository } from 'typeorm';
 import { CustomFieldModel } from '../../../../database/models/custom-field.model.js';
 import { UserRepository } from '../../../../database/repositories/user.repository.js';
+import { HealthDailyMetricRepository } from '../../../../database/repositories/health-daily-metric.repository.js';
 import { AppleWatchMetric } from '../../domain/enums/apple-watch-metric.enum.js';
-import { FieldType } from '../../domain/enums/field-type.enum.js';
 import {
-  APPLE_HEALTH_CATEGORY,
   HEALTH_METRIC_CATALOG,
   roundHealthValue,
 } from '../../domain/services/health-metric-catalog.js';
-import {
-  findFieldsMatchingMetric,
-  LinkableField,
-} from '../../domain/services/health-field-matching.js';
+import { convertHealthValue } from '../../domain/services/health-metric-units.js';
 import {
   computeSleepNight,
   SleepStage,
@@ -28,8 +24,7 @@ import {
 } from '../dtos/health-batch.dto.js';
 import { resolveSyncDate } from '../../domain/services/sync-date.js';
 import { HealthSyncService } from './health-sync.service.js';
-
-const HOURLY_OPTION = 'isHourly';
+import { HealthLinkingAssistantService } from './health-linking-assistant.service.js';
 
 const STAGE_METRICS: Record<SleepStage, AppleWatchMetric> = {
   deep: AppleWatchMetric.SLEEP_DEEP,
@@ -38,41 +33,11 @@ const STAGE_METRICS: Record<SleepStage, AppleWatchMetric> = {
   awake: AppleWatchMetric.SLEEP_AWAKE,
 };
 
-interface FieldResolution {
-  field: CustomFieldModel;
-  outcome: 'existing' | 'linked' | 'created';
-  ambiguous: boolean;
-}
-
-interface LinkCandidate extends LinkableField {
-  model: CustomFieldModel;
-}
-
-/** The user's unmapped number fields, loaded once per sync and only if needed. */
-class LinkableFieldPool {
-  private candidates: LinkCandidate[] | null = null;
-
-  constructor(private readonly load: () => Promise<CustomFieldModel[]>) {}
-
-  async list(): Promise<LinkCandidate[]> {
-    this.candidates ??= (await this.load())
-      .filter((field) => !field.appleWatchMetric)
-      .map((model) => ({
-        id: model.id,
-        name: model.name,
-        isHourly: (model.optionsOrder ?? []).includes(HOURLY_OPTION),
-        model,
-      }));
-    return this.candidates;
-  }
-
-  take(id: string): void {
-    this.candidates = (this.candidates ?? []).filter(
-      (candidate) => candidate.id !== id,
-    );
-  }
-}
-
+/**
+ * Receives a day of Apple Health data: every value is kept in the raw store, the fields
+ * linked to a metric receive their value, and the linking assistant handles the metrics
+ * that have no field yet. No field is ever created without the user.
+ */
 @Injectable()
 export class HealthBatchSyncService {
   private readonly logger = new Logger(HealthBatchSyncService.name);
@@ -82,6 +47,8 @@ export class HealthBatchSyncService {
     private readonly customFieldRepository: Repository<CustomFieldModel>,
     private readonly userRepository: UserRepository,
     private readonly healthSyncService: HealthSyncService,
+    private readonly dailyMetricRepository: HealthDailyMetricRepository,
+    private readonly linkingAssistant: HealthLinkingAssistantService,
   ) {}
 
   async sync(userId: string, dto: HealthBatchDto): Promise<HealthBatchResult> {
@@ -114,38 +81,67 @@ export class HealthBatchSyncService {
       linkedFields: [],
       ambiguousMetrics: [],
       ignoredSleepLabels,
+      autoLinked: [],
+      pendingCount: 0,
     };
-    if (readings.size === 0) return result;
 
-    const dailyLog = await this.healthSyncService.findOrCreateDailyLog(
-      userId,
-      new Date(`${date}T00:00:00Z`),
-    );
-    const pool = new LinkableFieldPool(() =>
-      this.customFieldRepository.find({
-        where: { userId, isActive: true, fieldType: FieldType.NUMBER },
-      }),
-    );
-    for (const [metric, rawValue] of readings) {
-      const { field, outcome, ambiguous } = await this.resolveField(
-        userId,
+    const rounded = new Map(
+      [...readings].map(([metric, value]) => [
         metric,
-        pool,
+        roundHealthValue(value, HEALTH_METRIC_CATALOG[metric].decimals),
+      ]),
+    );
+    await this.dailyMetricRepository.upsertDay(userId, date, rounded);
+
+    const linkedFields = rounded.size
+      ? await this.customFieldRepository.find({
+          where: { userId, appleWatchMetric: Not(IsNull()) },
+        })
+      : [];
+    const fieldByMetric = new Map(
+      linkedFields.map((field) => [field.appleWatchMetric, field]),
+    );
+    const dailyLog =
+      fieldByMetric.size > 0
+        ? await this.healthSyncService.findOrCreateDailyLog(
+            userId,
+            new Date(`${date}T00:00:00Z`),
+          )
+        : null;
+    for (const [metric, nativeValue] of rounded) {
+      const field = fieldByMetric.get(metric);
+      if (!field || !dailyLog) continue;
+      const value = convertHealthValue(
+        metric,
+        nativeValue,
+        field.appleWatchUnit,
       );
-      const value = roundHealthValue(
-        rawValue,
-        HEALTH_METRIC_CATALOG[metric].decimals,
-      );
-      await this.healthSyncService.storeEncryptedValue(
+      await this.healthSyncService.storeHealthValue(
         dailyLog.id,
         field.id,
         String(value),
+        false,
       );
       result.stored.push({ metric, value });
-      if (outcome === 'created') result.createdFields.push(metric);
-      if (outcome === 'linked') result.linkedFields.push(metric);
-      if (ambiguous) result.ambiguousMetrics.push(metric);
     }
+
+    // The assistant fills the fields it links from the raw store, today included
+    const run = await this.linkingAssistant.run(userId);
+    for (const linked of run.autoLinked) {
+      result.autoLinked.push({
+        metric: linked.metric,
+        fieldName: linked.fieldName,
+      });
+      result.linkedFields.push(linked.metric);
+      const nativeValue = rounded.get(linked.metric);
+      if (nativeValue !== undefined) {
+        result.stored.push({
+          metric: linked.metric,
+          value: convertHealthValue(linked.metric, nativeValue, linked.unit),
+        });
+      }
+    }
+    result.pendingCount = run.pendingCount;
     return result;
   }
 
@@ -201,58 +197,5 @@ export class HealthBatchSyncService {
       if (hours !== undefined) readings.set(STAGE_METRICS[stage], hours);
     }
     return night.unknownLabels;
-  }
-
-  private async resolveField(
-    userId: string,
-    metric: AppleWatchMetric,
-    pool: LinkableFieldPool,
-  ): Promise<FieldResolution> {
-    const existing = await this.customFieldRepository.findOne({
-      where: { userId, appleWatchMetric: metric },
-    });
-    if (existing) {
-      return { field: existing, outcome: 'existing', ambiguous: false };
-    }
-
-    const matches = findFieldsMatchingMetric(metric, await pool.list());
-    if (matches.length === 1) {
-      const model = matches[0].model;
-      model.appleWatchMetric = metric;
-      const linked = await this.customFieldRepository.save(model);
-      pool.take(linked.id);
-      return { field: linked, outcome: 'linked', ambiguous: false };
-    }
-    if (matches.length > 1) {
-      this.logger.warn(
-        `${matches.length} existing fields match ${metric}: a new field is created`,
-      );
-    }
-    return {
-      field: await this.createField(userId, metric),
-      outcome: 'created',
-      ambiguous: matches.length > 1,
-    };
-  }
-
-  private async createField(
-    userId: string,
-    metric: AppleWatchMetric,
-  ): Promise<CustomFieldModel> {
-    const definition = HEALTH_METRIC_CATALOG[metric];
-    const sameName = await this.customFieldRepository.findOne({
-      where: { userId, name: definition.name },
-    });
-    const field = this.customFieldRepository.create({
-      userId,
-      name: sameName ? `${definition.name} (Santé)` : definition.name,
-      fieldType: FieldType.NUMBER,
-      category: APPLE_HEALTH_CATEGORY,
-      min: definition.min,
-      max: definition.max,
-      optionsOrder: definition.isClockTime ? [HOURLY_OPTION] : undefined,
-      appleWatchMetric: metric,
-    });
-    return this.customFieldRepository.save(field);
   }
 }

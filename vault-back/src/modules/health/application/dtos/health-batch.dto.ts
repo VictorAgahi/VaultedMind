@@ -88,11 +88,16 @@ export class HealthBatchDto {
 
 export interface HealthBatchResult {
   success: true;
+  /** Values written to the user's fields, in each field's unit. */
   stored: Array<{ metric: AppleWatchMetric; value: number }>;
+  /** Always empty: fields are no longer created by the sync (kept for older clients). */
   createdFields: AppleWatchMetric[];
-  /** Metrics now stored in a field the user already had, matched by its name. */
+  /** Metrics the linking assistant linked to an existing field during this sync. */
   linkedFields: AppleWatchMetric[];
-  /** Metrics for which several existing fields matched: nothing was guessed. */
+  /** Always empty: an ambiguous match becomes a proposal (kept for older clients). */
   ambiguousMetrics: AppleWatchMetric[];
   ignoredSleepLabels: string[];
+  autoLinked: Array<{ metric: AppleWatchMetric; fieldName: string }>;
+  /** Proposals waiting for the user. */
+  pendingCount: number;
 }

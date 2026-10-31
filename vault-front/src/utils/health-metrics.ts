@@ -1,4 +1,4 @@
-import { AppleWatchMetric, CustomField, FieldType } from "@/types";
+import { AppleWatchMetric, CustomField, FieldType, HealthFieldUnit } from "@/types";
 
 export interface HealthMetricInfo {
   metric: AppleWatchMetric;
@@ -42,12 +42,35 @@ export const HEALTH_METRICS: HealthMetricInfo[] = [
 export const healthMetricInfo = (metric: AppleWatchMetric): HealthMetricInfo | undefined =>
   HEALTH_METRICS.find(info => info.metric === metric);
 
+/** Durées que le champ peut recevoir en heures ou en minutes. */
+const DURATION_METRICS: AppleWatchMetric[] = [
+  AppleWatchMetric.SLEEP,
+  AppleWatchMetric.SLEEP_DEEP,
+  AppleWatchMetric.SLEEP_REM,
+  AppleWatchMetric.SLEEP_CORE,
+  AppleWatchMetric.SLEEP_AWAKE,
+  AppleWatchMetric.EXERCISE_MINUTES,
+];
+
+export const isDurationMetric = (metric: AppleWatchMetric): boolean => DURATION_METRICS.includes(metric);
+
+export const FIELD_UNIT_LABELS: Record<HealthFieldUnit, string> = { hours: "heures", minutes: "minutes" };
+
+const FIELD_UNIT_SHORT: Record<HealthFieldUnit, string> = { hours: "h", minutes: "min" };
+
+/** Unité dans laquelle un champ lié reçoit sa donnée : celle choisie pour une durée, sinon celle de la donnée. */
+export const fieldUnitHint = (field: CustomField, metric: AppleWatchMetric): string => {
+  if (isDurationMetric(metric) && field.appleWatchUnit) return FIELD_UNIT_LABELS[field.appleWatchUnit];
+  return healthMetricInfo(metric)?.unitHint ?? "";
+};
+
 /** "7,2 h", "4 210", ou la valeur telle quelle si elle n'est pas numérique (heure de coucher). */
-export const formatHealthValue = (metric: AppleWatchMetric, raw: string): string => {
+export const formatHealthValue = (metric: AppleWatchMetric, raw: string, fieldUnit?: HealthFieldUnit): string => {
   const info = healthMetricInfo(metric);
+  const unit = fieldUnit && isDurationMetric(metric) ? FIELD_UNIT_SHORT[fieldUnit] : info?.unit;
   const number = Number(raw.replace(",", "."));
   const text = Number.isFinite(number) && raw.trim() !== "" && !raw.includes(":")
     ? number.toLocaleString("fr-FR", { maximumFractionDigits: 2 })
     : raw;
-  return info?.unit ? `${text} ${info.unit}` : text;
+  return unit ? `${text} ${unit}` : text;
 };

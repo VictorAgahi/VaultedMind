@@ -1,15 +1,15 @@
 import { jest } from '@jest/globals';
 import { CustomFieldModel } from '../../../../database/models/custom-field.model.js';
 import { AppleWatchMetric } from '../../domain/enums/apple-watch-metric.enum.js';
-import { FieldType } from '../../domain/enums/field-type.enum.js';
 import { HealthBatchDto } from '../dtos/health-batch.dto.js';
 import { HealthBatchSyncService } from './health-batch-sync.service.js';
+import type { LinkingRunResult } from './health-linking-assistant.service.js';
+
+type Readings = Map<AppleWatchMetric, number>;
 
 describe('HealthBatchSyncService', () => {
   let fields: {
-    findOne: jest.Mock<(options: object) => Promise<CustomFieldModel | null>>;
     find: jest.Mock<(options: object) => Promise<CustomFieldModel[]>>;
-    create: jest.Mock<(data: Partial<CustomFieldModel>) => CustomFieldModel>;
     save: jest.Mock<(field: CustomFieldModel) => Promise<CustomFieldModel>>;
   };
   let users: {
@@ -19,29 +19,31 @@ describe('HealthBatchSyncService', () => {
     findOrCreateDailyLog: jest.Mock<
       (userId: string, date: Date) => Promise<{ id: string }>
     >;
-    storeEncryptedValue: jest.Mock<
-      (logId: string, fieldId: string, value: string) => Promise<void>
+    storeHealthValue: jest.Mock<
+      (
+        logId: string,
+        fieldId: string,
+        value: string,
+        keepManual: boolean,
+      ) => Promise<boolean>
     >;
+  };
+  let dailyMetrics: {
+    upsertDay: jest.Mock<
+      (userId: string, date: string, values: Readings) => Promise<void>
+    >;
+  };
+  let assistant: {
+    run: jest.Mock<(userId: string) => Promise<LinkingRunResult>>;
   };
   let service: HealthBatchSyncService;
 
   beforeEach(() => {
     fields = {
-      findOne: jest
-        .fn<(options: object) => Promise<CustomFieldModel | null>>()
-        .mockResolvedValue(null),
       find: jest
         .fn<(options: object) => Promise<CustomFieldModel[]>>()
         .mockResolvedValue([]),
-      create: jest.fn(
-        (data: Partial<CustomFieldModel>) => data as CustomFieldModel,
-      ),
-      save: jest.fn((field: CustomFieldModel) =>
-        Promise.resolve({
-          ...field,
-          id: field.id ?? `field-${field.appleWatchMetric}`,
-        }),
-      ),
+      save: jest.fn<(field: CustomFieldModel) => Promise<CustomFieldModel>>(),
     };
     users = {
       findById: jest
@@ -52,14 +54,33 @@ describe('HealthBatchSyncService', () => {
       findOrCreateDailyLog: jest
         .fn<(userId: string, date: Date) => Promise<{ id: string }>>()
         .mockResolvedValue({ id: 'log-1' }),
-      storeEncryptedValue: jest
-        .fn<(logId: string, fieldId: string, value: string) => Promise<void>>()
+      storeHealthValue: jest
+        .fn<
+          (
+            logId: string,
+            fieldId: string,
+            value: string,
+            keepManual: boolean,
+          ) => Promise<boolean>
+        >()
+        .mockResolvedValue(true),
+    };
+    dailyMetrics = {
+      upsertDay: jest
+        .fn<(userId: string, date: string, values: Readings) => Promise<void>>()
         .mockResolvedValue(undefined),
+    };
+    assistant = {
+      run: jest
+        .fn<(userId: string) => Promise<LinkingRunResult>>()
+        .mockResolvedValue({ autoLinked: [], pendingCount: 0 }),
     };
     service = new HealthBatchSyncService(
       fields as never,
       users as never,
       sync as never,
+      dailyMetrics as never,
+      assistant as never,
     );
   });
 
@@ -67,7 +88,19 @@ describe('HealthBatchSyncService', () => {
     return { date: '2026-10-31', ...payload };
   }
 
-  it('should create the missing field and store the rounded value through the encrypted path', async () => {
+  function linked(
+    id: string,
+    metric: AppleWatchMetric,
+    appleWatchUnit: 'hours' | 'minutes' | null = null,
+  ): CustomFieldModel {
+    return { id, appleWatchMetric: metric, appleWatchUnit } as CustomFieldModel;
+  }
+
+  function storedReadings(): Readings {
+    return dailyMetrics.upsertDay.mock.calls[0][2];
+  }
+
+  it('should keep every reading in the raw store and create no field', async () => {
     // Arrange
     const payload = dto({
       quantities: [{ metric: AppleWatchMetric.STEPS, value: 8042.46 }],
@@ -77,33 +110,23 @@ describe('HealthBatchSyncService', () => {
     const result = await service.sync('user-1', payload);
 
     // Assert
-    expect(fields.save).toHaveBeenCalledWith(
-      expect.objectContaining({
-        userId: 'user-1',
-        name: 'Pas',
-        category: 'Apple Santé',
-        fieldType: FieldType.NUMBER,
-        appleWatchMetric: AppleWatchMetric.STEPS,
-      }),
-    );
-    expect(sync.findOrCreateDailyLog).toHaveBeenCalledWith(
+    expect(dailyMetrics.upsertDay).toHaveBeenCalledWith(
       'user-1',
-      new Date('2026-10-31T00:00:00Z'),
+      '2026-10-31',
+      new Map([[AppleWatchMetric.STEPS, 8042.5]]),
     );
-    expect(sync.storeEncryptedValue).toHaveBeenCalledWith(
-      'log-1',
-      'field-STEPS',
-      '8042.5',
-    );
-    expect(result.stored).toEqual([
-      { metric: AppleWatchMetric.STEPS, value: 8042.5 },
-    ]);
-    expect(result.createdFields).toEqual([AppleWatchMetric.STEPS]);
+    expect(fields.save).not.toHaveBeenCalled();
+    expect(sync.storeHealthValue).not.toHaveBeenCalled();
+    expect(sync.findOrCreateDailyLog).not.toHaveBeenCalled();
+    expect(result.stored).toEqual([]);
+    expect(result.createdFields).toEqual([]);
   });
 
-  it('should reuse an existing mapped field without creating one', async () => {
+  it('should write a linked field with the health source, overwriting the synced day', async () => {
     // Arrange
-    fields.findOne.mockResolvedValue({ id: 'existing' } as CustomFieldModel);
+    fields.find.mockResolvedValue([
+      linked('steps-field', AppleWatchMetric.STEPS),
+    ]);
 
     // Act
     const result = await service.sync(
@@ -112,18 +135,29 @@ describe('HealthBatchSyncService', () => {
     );
 
     // Assert
-    expect(fields.save).not.toHaveBeenCalled();
-    expect(sync.storeEncryptedValue).toHaveBeenCalledWith(
-      'log-1',
-      'existing',
-      '10',
+    expect(sync.findOrCreateDailyLog).toHaveBeenCalledWith(
+      'user-1',
+      new Date('2026-10-31T00:00:00Z'),
     );
-    expect(result.createdFields).toEqual([]);
+    expect(sync.storeHealthValue).toHaveBeenCalledWith(
+      'log-1',
+      'steps-field',
+      '10',
+      false,
+    );
+    expect(result.stored).toEqual([
+      { metric: AppleWatchMetric.STEPS, value: 10 },
+    ]);
   });
 
-  it('should create the bedtime field as an hourly number', async () => {
+  it('should convert a duration to the unit of the linked field', async () => {
     // Arrange
+    fields.find.mockResolvedValue([
+      linked('sleep-minutes', AppleWatchMetric.SLEEP, 'minutes'),
+      linked('sport-hours', AppleWatchMetric.EXERCISE_MINUTES, 'hours'),
+    ]);
     const payload = dto({
+      quantities: [{ metric: AppleWatchMetric.EXERCISE_MINUTES, value: 45 }],
       sleepSamples: [
         {
           value: 'Core',
@@ -137,31 +171,94 @@ describe('HealthBatchSyncService', () => {
     const result = await service.sync('user-1', payload);
 
     // Assert
-    expect(fields.save).toHaveBeenCalledWith(
-      expect.objectContaining({
-        appleWatchMetric: AppleWatchMetric.BEDTIME,
-        optionsOrder: ['isHourly'],
-      }),
+    expect(sync.storeHealthValue).toHaveBeenCalledWith(
+      'log-1',
+      'sleep-minutes',
+      '420',
+      false,
+    );
+    expect(sync.storeHealthValue).toHaveBeenCalledWith(
+      'log-1',
+      'sport-hours',
+      '0.75',
+      false,
     );
     expect(result.stored).toEqual(
       expect.arrayContaining([
-        { metric: AppleWatchMetric.SLEEP, value: 7 },
-        { metric: AppleWatchMetric.BEDTIME, value: 23.5 },
+        { metric: AppleWatchMetric.SLEEP, value: 420 },
+        { metric: AppleWatchMetric.EXERCISE_MINUTES, value: 0.75 },
       ]),
     );
   });
 
-  it('should be idempotent: the same payload stores the same values', async () => {
+  it('should report the links made by the assistant and the pending proposals', async () => {
     // Arrange
-    const payload = dto({
-      quantities: [{ metric: AppleWatchMetric.STEPS, value: 100 }],
-      sleepSamples: [
+    assistant.run.mockResolvedValue({
+      autoLinked: [
         {
-          value: 'Asleep',
-          start: '2026-10-31T00:00:00+01:00',
-          end: '2026-10-31T06:00:00+01:00',
+          metric: AppleWatchMetric.STEPS,
+          fieldId: 'f',
+          fieldName: 'Nombre de pas',
+          unit: null,
+          filledDays: 3,
         },
       ],
+      pendingCount: 2,
+    });
+
+    // Act
+    const result = await service.sync(
+      'user-1',
+      dto({ quantities: [{ metric: AppleWatchMetric.STEPS, value: 4210 }] }),
+    );
+
+    // Assert
+    expect(assistant.run).toHaveBeenCalledWith('user-1');
+    expect(result.autoLinked).toEqual([
+      { metric: AppleWatchMetric.STEPS, fieldName: 'Nombre de pas' },
+    ]);
+    expect(result.linkedFields).toEqual([AppleWatchMetric.STEPS]);
+    expect(result.stored).toEqual([
+      { metric: AppleWatchMetric.STEPS, value: 4210 },
+    ]);
+    expect(result.pendingCount).toBe(2);
+  });
+
+  it('should compute the night: total, bedtime and stages', async () => {
+    // Arrange
+    const payload = dto({
+      sleepSamples: [
+        {
+          value: 'Deep',
+          start: '2026-10-31T01:00:00+01:00',
+          end: '2026-10-31T02:06:00+01:00',
+        },
+        {
+          value: 'Core',
+          start: '2026-10-31T02:06:00+01:00',
+          end: '2026-10-31T07:00:00+01:00',
+        },
+      ],
+    });
+
+    // Act
+    await service.sync('user-1', payload);
+
+    // Assert
+    const readings = storedReadings();
+    expect(readings.get(AppleWatchMetric.SLEEP)).toBe(6);
+    expect(readings.get(AppleWatchMetric.BEDTIME)).toBe(1);
+    expect(readings.get(AppleWatchMetric.SLEEP_DEEP)).toBe(1.1);
+    expect(readings.has(AppleWatchMetric.SLEEP_REM)).toBe(false);
+  });
+
+  it('should be idempotent: the same payload stores the same values', async () => {
+    // Arrange
+    fields.find.mockResolvedValue([
+      linked('steps-field', AppleWatchMetric.STEPS),
+    ]);
+    const payload = dto({
+      quantities: [{ metric: AppleWatchMetric.STEPS, value: 100 }],
     });
 
     // Act
@@ -170,6 +267,9 @@ describe('HealthBatchSyncService', () => {
 
     // Assert
     expect(second.stored).toEqual(first.stored);
+    expect(dailyMetrics.upsertDay.mock.calls[1]).toEqual(
+      dailyMetrics.upsertDay.mock.calls[0],
+    );
   });
 
   it('should report ignored sleep labels and store nothing when no night is found', async () => {
@@ -190,25 +290,8 @@ describe('HealthBatchSyncService', () => {
     // Assert
     expect(result.ignoredSleepLabels).toEqual(['Mystery']);
     expect(result.stored).toEqual([]);
+    expect(storedReadings().size).toBe(0);
     expect(sync.findOrCreateDailyLog).not.toHaveBeenCalled();
-  });
-
-  it('should not clash with an unrelated field of the same name', async () => {
-    // Arrange
-    fields.findOne
-      .mockResolvedValueOnce(null)
-      .mockResolvedValueOnce({ id: 'other' } as CustomFieldModel);
-
-    // Act
-    await service.sync(
-      'user-1',
-      dto({ quantities: [{ metric: AppleWatchMetric.STEPS, value: 1 }] }),
-    );
-
-    // Assert
-    expect(fields.save).toHaveBeenCalledWith(
-      expect.objectContaining({ name: 'Pas (Santé)' }),
-    );
   });
 
   it('should read the sleep sent as text lines, with or without a UTC offset', async () => {
@@ -222,15 +305,12 @@ describe('HealthBatchSyncService', () => {
     });
 
     // Act
-    const result = await service.sync('user-1', payload);
+    await service.sync('user-1', payload);
 
     // Assert (October 31 2026 is CET again after the change: UTC+1)
-    expect(result.stored).toEqual(
-      expect.arrayContaining([
-        { metric: AppleWatchMetric.SLEEP, value: 7 },
-        { metric: AppleWatchMetric.BEDTIME, value: 23.5 },
-      ]),
-    );
+    const readings = storedReadings();
+    expect(readings.get(AppleWatchMetric.SLEEP)).toBe(7);
+    expect(readings.get(AppleWatchMetric.BEDTIME)).toBe(23.5);
   });
 
   it('should skip empty readings and zero averages but keep a zero sum', async () => {
@@ -245,12 +325,10 @@ describe('HealthBatchSyncService', () => {
     });
 
     // Act
-    const result = await service.sync('user-1', payload);
+    await service.sync('user-1', payload);
 
     // Assert
-    expect(result.stored).toEqual([
-      { metric: AppleWatchMetric.STEPS, value: 0 },
-    ]);
+    expect(storedReadings()).toEqual(new Map([[AppleWatchMetric.STEPS, 0]]));
   });
 
   it('should refuse more sleep samples than the maximum', async () => {
@@ -263,139 +341,6 @@ describe('HealthBatchSyncService', () => {
 
     // Assert
     await expect(attempt).rejects.toThrow('At most 500 sleep samples');
-  });
-
-  describe('linking existing fields', () => {
-    const night = [
-      {
-        value: 'Deep',
-        start: '2026-10-31T01:00:00+01:00',
-        end: '2026-10-31T02:06:00+01:00',
-      },
-      {
-        value: 'Core',
-        start: '2026-10-31T02:06:00+01:00',
-        end: '2026-10-31T07:00:00+01:00',
-      },
-    ];
-
-    function existing(
-      id: string,
-      name: string,
-      optionsOrder?: string[],
-    ): CustomFieldModel {
-      return {
-        id,
-        name,
-        optionsOrder,
-        fieldType: FieldType.NUMBER,
-        isActive: true,
-      } as CustomFieldModel;
-    }
-
-    it('should link the single matching field and fill it from the sleep stages', async () => {
-      // Arrange
-      fields.find.mockResolvedValue([
-        existing('deep-field', 'Temps de sommeil profond'),
-      ]);
-
-      // Act
-      const result = await service.sync('user-1', dto({ sleepSamples: night }));
-
-      // Assert
-      expect(fields.save).toHaveBeenCalledWith(
-        expect.objectContaining({
-          id: 'deep-field',
-          appleWatchMetric: AppleWatchMetric.SLEEP_DEEP,
-        }),
-      );
-      expect(sync.storeEncryptedValue).toHaveBeenCalledWith(
-        'log-1',
-        'deep-field',
-        '1.1',
-      );
-      expect(result.linkedFields).toEqual([AppleWatchMetric.SLEEP_DEEP]);
-      expect(result.createdFields).not.toContain(AppleWatchMetric.SLEEP_DEEP);
-      expect(fields.save).not.toHaveBeenCalledWith(
-        expect.objectContaining({ name: 'Sommeil profond' }),
-      );
-    });
-
-    it('should create the Apple Santé field and report it when several fields match', async () => {
-      // Arrange
-      fields.find.mockResolvedValue([
-        existing('a', 'Sommeil profond'),
-        existing('b', 'Temps de sommeil profond'),
-      ]);
-
-      // Act
-      const result = await service.sync('user-1', dto({ sleepSamples: night }));
-
-      // Assert
-      expect(result.ambiguousMetrics).toEqual([AppleWatchMetric.SLEEP_DEEP]);
-      expect(result.createdFields).toContain(AppleWatchMetric.SLEEP_DEEP);
-      expect(result.linkedFields).toEqual([]);
-      expect(fields.save).toHaveBeenCalledWith(
-        expect.objectContaining({
-          name: 'Sommeil profond',
-          category: 'Apple Santé',
-        }),
-      );
-    });
-
-    it('should not link a clock-time field to a duration metric', async () => {
-      // Arrange
-      fields.find.mockResolvedValue([
-        existing('clock', 'Sommeil', ['isHourly']),
-      ]);
-
-      // Act
-      const result = await service.sync('user-1', dto({ sleepSamples: night }));
-
-      // Assert
-      expect(result.linkedFields).toEqual([]);
-      expect(result.createdFields).toContain(AppleWatchMetric.SLEEP);
-    });
-
-    it('should ignore fields already mapped to another metric', async () => {
-      // Arrange
-      fields.find.mockResolvedValue([
-        {
-          ...existing('mapped', 'Pas'),
-          appleWatchMetric: AppleWatchMetric.ACTIVE_CALORIES,
-        },
-      ]);
-
-      // Act
-      const result = await service.sync(
-        'user-1',
-        dto({ quantities: [{ metric: AppleWatchMetric.STEPS, value: 5 }] }),
-      );
-
-      // Assert
-      expect(result.linkedFields).toEqual([]);
-      expect(result.createdFields).toEqual([AppleWatchMetric.STEPS]);
-    });
-
-    it('should store no stage when the night has none', async () => {
-      // Arrange
-      const payload = dto({
-        sleepSamples: [
-          {
-            value: 'Asleep',
-            start: '2026-10-31T00:00:00+01:00',
-            end: '2026-10-31T06:00:00+01:00',
-          },
-        ],
-      });
-
-      // Act
-      const result = await service.sync('user-1', payload);
-
-      // Assert
-      expect(result.stored.map((entry) => entry.metric).sort()).toEqual(
-        [AppleWatchMetric.SLEEP, AppleWatchMetric.BEDTIME].sort(),
-      );
-    });
+    expect(dailyMetrics.upsertDay).not.toHaveBeenCalled();
   });
 });

@@ -12,7 +12,9 @@ import { DailyLogRepository } from './repositories/daily-log.repository.js';
 import { FieldValueRepository } from './repositories/field-value.repository.js';
 import { AIInsightRepository } from './repositories/ai-insight.repository.js';
 import { HealthSyncTokenModel } from './models/health-sync-token.model.js';
+import { HealthDailyMetricModel } from './models/health-daily-metric.model.js';
 import { HealthSyncTokenRepository } from './repositories/health-sync-token.repository.js';
+import { HealthDailyMetricRepository } from './repositories/health-daily-metric.repository.js';
 import { ApiKeyRepository } from './repositories/api-key.repository.js';
 import { AIChatUsageModel } from './models/ai-chat-usage.model.js';
 import { AIChatUsageRepository } from './repositories/ai-chat-usage.repository.js';
@@ -35,6 +37,7 @@ const models = [
   AIInsightModel,
   ApiKeyModel,
   HealthSyncTokenModel,
+  HealthDailyMetricModel,
   AIChatUsageModel,
   NoteSignalsModel,
   PatternReportModel,
@@ -48,6 +51,7 @@ const repositories = [
   AIInsightRepository,
   ApiKeyRepository,
   HealthSyncTokenRepository,
+  HealthDailyMetricRepository,
   AIChatUsageRepository,
   NoteSignalsRepository,
   PatternReportRepository,

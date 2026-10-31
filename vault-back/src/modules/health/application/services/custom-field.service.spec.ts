@@ -74,7 +74,61 @@ describe('CustomFieldService Apple Health mapping', () => {
       AppleWatchMetric.SLEEP,
       'field-2',
     );
-    expect(repository.updateDomain).toHaveBeenCalledWith('field-2', updates);
+    expect(repository.updateDomain).toHaveBeenCalledWith('field-2', {
+      ...updates,
+      appleWatchUnit: 'hours',
+    });
+  });
+
+  it('should infer minutes for a duration field whose name says so', async () => {
+    // Arrange
+    repository.findDomainById.mockResolvedValue(
+      new CustomField(
+        'field-3',
+        'user-1',
+        'Sommeil (min)',
+        FieldType.NUMBER,
+        true,
+        new Date(),
+        new Date(),
+      ),
+    );
+
+    // Act
+    await service.updateField('field-3', 'user-1', {
+      appleWatchMetric: AppleWatchMetric.SLEEP,
+    });
+
+    // Assert
+    expect(repository.updateDomain).toHaveBeenCalledWith('field-3', {
+      appleWatchMetric: AppleWatchMetric.SLEEP,
+      appleWatchUnit: 'minutes',
+    });
+  });
+
+  it('should keep no unit for a metric that is not a duration', async () => {
+    // Arrange / Act
+    await service.updateField('field-2', 'user-1', {
+      appleWatchMetric: AppleWatchMetric.STEPS,
+    });
+
+    // Assert
+    expect(repository.updateDomain).toHaveBeenCalledWith('field-2', {
+      appleWatchMetric: AppleWatchMetric.STEPS,
+      appleWatchUnit: null,
+    });
+  });
+
+  it('should refuse a unit on a metric that is not a duration', async () => {
+    // Arrange / Act
+    const attempt = service.updateField('field-2', 'user-1', {
+      appleWatchMetric: AppleWatchMetric.STEPS,
+      appleWatchUnit: 'minutes',
+    });
+
+    // Assert
+    await expect(attempt).rejects.toBeInstanceOf(BadRequestException);
+    expect(repository.updateDomain).not.toHaveBeenCalled();
   });
 
   it('should not touch other fields when the metric is removed', async () => {
@@ -85,6 +139,7 @@ describe('CustomFieldService Apple Health mapping', () => {
     expect(repository.clearAppleWatchMetric).not.toHaveBeenCalled();
     expect(repository.updateDomain).toHaveBeenCalledWith('field-2', {
       appleWatchMetric: null,
+      appleWatchUnit: null,
     });
   });
 

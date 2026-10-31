@@ -35,6 +35,7 @@ import {
   CustomField,
   DailyLog,
   FieldType,
+  HealthProposals,
 } from "@/types";
 import { parseHourlyValue, formatHourlyValue } from "@/utils/time-converter";
 import { LogEntryDialog, AgentSource } from "./log-entry-dialog";
@@ -43,6 +44,7 @@ import type { AutofillProposal } from "./use-voice-entry";
 import { LogTable } from "./log-table";
 import { localDateStr } from "@/utils/local-date";
 import { formatHealthValue, HEALTH_METRICS } from "@/utils/health-metrics";
+import { HealthProposalsDialog } from "@/components/health-proposals/health-proposals-panel";
 import {
   clearHealthSyncPending,
   HealthSyncDraft,
@@ -951,6 +953,8 @@ export const DailyLogsManager: React.FC = () => {
   const [healthSyncDone, setHealthSyncDone] = React.useState(false);
   const healthSyncHandledRef = React.useRef(false);
   const [healthSyncMessage, setHealthSyncMessage] = React.useState("Données Santé récupérées");
+  const [healthPendingCount, setHealthPendingCount] = React.useState(0);
+  const [proposalsOpen, setProposalsOpen] = React.useState(false);
   const [startStep, setStartStep] = React.useState(0);
   const stepRef = React.useRef(0);
   const stateRef = React.useRef(state);
@@ -996,7 +1000,7 @@ export const DailyLogsManager: React.FC = () => {
     const arrived = HEALTH_METRICS.flatMap(info => {
       const field = fields.find(f => f.appleWatchMetric === info.metric);
       const raw = field ? values[field.id] : undefined;
-      return field && raw !== undefined ? [`${field.name} ${formatHealthValue(info.metric, raw)}`] : [];
+      return field && raw !== undefined ? [`${field.name} ${formatHealthValue(info.metric, raw, field.appleWatchUnit)}`] : [];
     });
     if (arrived.length > 0) return `Données Santé récupérées : ${arrived.join(", ")}`;
     return Object.keys(values).length > 0 ? "Données Santé récupérées" : "Aucune nouvelle donnée Santé reçue pour l'instant.";
@@ -1047,7 +1051,22 @@ export const DailyLogsManager: React.FC = () => {
       if (draft && !stateRef.current.dialog.open) setStartStep(draft.step);
       dispatch({ type: "HEALTH_SYNC_RESULT", fields: result.fields, logs: result.logs, date, logId: result.logId, healthValues: result.values, draft });
       const changed = !marker || signature(result.values) !== signature(marker.baseline);
-      setHealthSyncMessage(describeHealthSync(result.fields, result.values, changed));
+      // Liens faits par l'assistant pendant cette synchronisation, et propositions en attente ; facultatif.
+      const proposals = await apiService.get<HealthProposals>("/integrations/health/proposals").catch(() => null);
+      if (!aliveRef.current) return;
+      const since = (marker?.startedAt ?? Date.now()) - 60_000;
+      const autoLinked = marker
+        ? (proposals?.autoLinked ?? []).filter(link => new Date(link.decidedAt).getTime() >= since)
+        : [];
+      const linkedText = autoLinked.length > 0
+        ? ` Relié automatiquement : ${autoLinked.map(link => `${link.label} → ${link.fieldName}`).join(", ")}.`
+        : "";
+      const pendingCount = proposals?.proposals.length ?? 0;
+      const pendingText = pendingCount > 0
+        ? ` ${pendingCount} nouvelle${pendingCount > 1 ? "s" : ""} donnée${pendingCount > 1 ? "s" : ""} à relier.`
+        : "";
+      setHealthPendingCount(pendingCount);
+      setHealthSyncMessage(`${describeHealthSync(result.fields, result.values, changed || autoLinked.length > 0)}${linkedText}${pendingText}`);
       setHealthSyncDone(true);
     } catch {
       if (aliveRef.current) {
@@ -1240,15 +1259,31 @@ export const DailyLogsManager: React.FC = () => {
       {error && <Alert severity="error" sx={{ mb: 2 }} onClose={() => dispatch({ type: "SET_ERROR", error: null })}>{error}</Alert>}
       <Snackbar
         open={healthSyncDone}
-        autoHideDuration={4000}
+        autoHideDuration={healthPendingCount > 0 ? 12000 : 6000}
         onClose={() => setHealthSyncDone(false)}
         anchorOrigin={{ vertical: "bottom", horizontal: "center" }}
         sx={{ bottom: { xs: "calc(88px + env(safe-area-inset-bottom, 0px))", sm: 24 } }}
       >
-        <Alert severity="success" variant="filled" onClose={() => setHealthSyncDone(false)} sx={{ width: "100%" }}>
+        <Alert
+          severity="success"
+          variant="filled"
+          onClose={() => setHealthSyncDone(false)}
+          sx={{ width: "100%", alignItems: "center" }}
+          action={healthPendingCount > 0 ? (
+            <Button
+              color="inherit"
+              size="small"
+              onClick={() => { setHealthSyncDone(false); setProposalsOpen(true); }}
+              sx={{ whiteSpace: "nowrap" }}
+            >
+              Voir les propositions
+            </Button>
+          ) : undefined}
+        >
           {healthSyncMessage}
         </Alert>
       </Snackbar>
+      <HealthProposalsDialog open={proposalsOpen} onClose={() => setProposalsOpen(false)} />
       {notice && <Alert severity="info" sx={{ mb: 2 }} onClose={() => dispatch({ type: "SET_NOTICE", notice: null })}>{notice}</Alert>}
 
       {managerTab === "calendar" && (

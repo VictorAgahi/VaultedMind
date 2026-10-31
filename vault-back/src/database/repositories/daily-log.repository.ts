@@ -110,7 +110,7 @@ export class DailyLogRepository extends AbstractBaseRepository<DailyLogModel> {
             await values.update(current.id, {
               value: encryptedValue,
               subValues: item.subValues ?? null,
-              source: item.source ?? null,
+              source: item.source ?? this.keptHealthSource(current, item.value),
             });
           } else {
             await values.save(
@@ -250,6 +250,24 @@ export class DailyLogRepository extends AbstractBaseRepository<DailyLogModel> {
       notesClean: this.encryptionService.encrypt(cleanNotes),
       notesCleanSource: this.hashNotes(rawNotes),
     });
+  }
+
+  /**
+   * A synced health value saved again unchanged with the rest of the day stays a synced
+   * value, so that a later backfill may still refresh it; an edited value becomes manual.
+   */
+  private keptHealthSource(
+    current: FieldValueModel,
+    incomingValue: string,
+  ): 'health' | null {
+    if (current.source !== 'health') return null;
+    try {
+      return this.encryptionService.decrypt(current.value) === incomingValue
+        ? 'health'
+        : null;
+    } catch {
+      return null;
+    }
   }
 
   private hashNotes(notes: string): string {

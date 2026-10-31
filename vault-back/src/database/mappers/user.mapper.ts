@@ -10,6 +10,10 @@ import {
   type TrackedSubject,
 } from '../../modules/signals/domain/tracked-subject.js';
 import { EncryptionService } from '../../common/security/encryption.service.js';
+import {
+  EMPTY_LINKING_STATE,
+  type HealthLinkingState,
+} from '../../modules/health/domain/services/health-linking-decisions.js';
 
 @Injectable()
 export class UserMapper {
@@ -94,6 +98,27 @@ export class UserMapper {
     return signals.length > 0
       ? this.encryptionService.encrypt(JSON.stringify(signals))
       : null;
+  }
+
+  public decryptHealthLinkingState(
+    encrypted?: string | null,
+  ): HealthLinkingState {
+    if (!encrypted) return EMPTY_LINKING_STATE;
+    try {
+      const state = JSON.parse(
+        this.encryptionService.decrypt(encrypted),
+      ) as Partial<HealthLinkingState>;
+      return {
+        decisions: state.decisions ?? {},
+        skipped: state.skipped ?? [],
+      };
+    } catch {
+      return EMPTY_LINKING_STATE;
+    }
+  }
+
+  public encryptHealthLinkingState(state: HealthLinkingState): string {
+    return this.encryptionService.encrypt(JSON.stringify(state));
   }
 
   public toPersistence(entity: User): UserModel {

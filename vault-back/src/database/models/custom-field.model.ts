@@ -10,6 +10,7 @@ import { FieldValueModel } from './field-value.model.js';
 import { FieldType } from '../../modules/health/domain/enums/field-type.enum.js';
 import { AppleWatchMetric } from '../../modules/health/domain/enums/apple-watch-metric.enum.js';
 import type { SubFieldDefinition } from '../../modules/health/domain/entities/custom-field.entity.js';
+import type { HealthFieldUnit } from '../../modules/health/domain/services/health-metric-units.js';
 
 @Entity('custom_fields')
 export class CustomFieldModel extends BaseModel {
@@ -52,6 +53,15 @@ export class CustomFieldModel extends BaseModel {
     nullable: true,
   })
   appleWatchMetric?: AppleWatchMetric | null;
+
+  /** Unit the field stores a duration metric in; null keeps the metric's own unit. */
+  @Column({
+    name: 'apple_watch_unit',
+    type: 'varchar',
+    length: 8,
+    nullable: true,
+  })
+  appleWatchUnit?: HealthFieldUnit | null;
 
   @Column({ name: 'goal_target', type: 'double precision', nullable: true })
   goalTarget?: number | null;

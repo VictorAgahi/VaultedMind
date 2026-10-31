@@ -55,6 +55,15 @@ export class UserModel extends BaseModel {
   @Column({ name: 'custom_signals_encrypted', type: 'text', nullable: true })
   customSignalsEncrypted?: string | null;
 
+  /** Assistant decisions per Apple Health metric (HealthLinkingState), encrypted JSON. */
+  @Column({
+    name: 'health_metric_decisions_encrypted',
+    type: 'text',
+    nullable: true,
+    select: false,
+  })
+  healthMetricDecisionsEncrypted?: string | null;
+
   @Column({ name: 'insight_targets', type: 'json', nullable: true })
   insightTargets?: InsightTarget[] | null;
 

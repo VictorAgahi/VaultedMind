@@ -6,6 +6,7 @@ import { UserModel } from '../models/user.model.js';
 import { User } from '../../modules/user/domain/entities/user.entity.js';
 import type { CustomSignal } from '../../modules/signals/domain/custom-signal.js';
 import { UserMapper } from '../mappers/user.mapper.js';
+import type { HealthLinkingState } from '../../modules/health/domain/services/health-linking-decisions.js';
 
 @Injectable()
 export class UserRepository extends AbstractBaseRepository<UserModel> {
@@ -80,6 +81,27 @@ export class UserRepository extends AbstractBaseRepository<UserModel> {
   ): Promise<void> {
     await this.repository.update(id, {
       customSignalsEncrypted: this.userMapper.encryptCustomSignals(signals),
+    });
+  }
+
+  /** What the Apple Health linking assistant decided for each metric. */
+  async findHealthLinkingState(id: string): Promise<HealthLinkingState> {
+    const model = await this.repository.findOne({
+      where: { id },
+      select: { id: true, healthMetricDecisionsEncrypted: true },
+    });
+    return this.userMapper.decryptHealthLinkingState(
+      model?.healthMetricDecisionsEncrypted,
+    );
+  }
+
+  async saveHealthLinkingState(
+    id: string,
+    state: HealthLinkingState,
+  ): Promise<void> {
+    await this.repository.update(id, {
+      healthMetricDecisionsEncrypted:
+        this.userMapper.encryptHealthLinkingState(state),
     });
   }
 

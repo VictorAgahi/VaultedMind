@@ -25,6 +25,7 @@ import { HEALTH_SHORTCUT_NAME } from "@/components/daily-logs-manager/health-syn
 import { apiService } from "@/services/api.service";
 import { ApiKey, CreateApiKeyDto } from "@/types";
 import { HealthFieldMapping } from "./health-field-mapping";
+import { HealthProposalsPanel } from "@/components/health-proposals/health-proposals-panel";
 
 const API_BASE_URL = "https://api-vault-mind.cyrus-ag.com";
 const BATCH_URL = `${API_BASE_URL}/integrations/health/batch`;
@@ -36,6 +37,9 @@ export const IntegrationsClient = () => {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [newKeyName, setNewKeyName] = useState("");
   const [newSecretKey, setNewSecretKey] = useState<string | null>(null);
+  // Les propositions et la correspondance des champs se rechargent l'une l'autre après un changement.
+  const [proposalsKey, setProposalsKey] = useState(0);
+  const [mappingKey, setMappingKey] = useState(0);
 
   const fetchApiKeys = async () => {
     try {
@@ -132,7 +136,7 @@ export const IntegrationsClient = () => {
           2. Chaque soir : Récupérer mes données Santé
         </Typography>
         <Typography variant="body2" sx={{ mb: 1 }}>
-          Ouvrez la saisie du jour et touchez « Récupérer mes données Santé ». VaultedMind prépare un lien à usage unique valable 5 minutes, ouvre le raccourci, qui lit les données du jour dans Santé et les envoie. Revenez ensuite dans VaultedMind avec le bouton en haut à gauche de l&apos;écran : la saisie se met à jour toute seule. Chaque donnée va dans le champ choisi plus bas ; à défaut, dans votre champ au nom correspondant, ou dans un champ créé automatiquement (catégorie « Apple Santé »).
+          Ouvrez la saisie du jour et touchez « Récupérer mes données Santé ». VaultedMind prépare un lien à usage unique valable 5 minutes, ouvre le raccourci, qui lit les données du jour dans Santé et les envoie. Revenez ensuite dans VaultedMind avec le bouton en haut à gauche de l&apos;écran : la saisie se met à jour toute seule. Chaque donnée va dans le champ choisi plus bas. Une donnée sans champ est conservée sans rien ajouter à votre journal : VaultedMind la relie à votre champ au nom correspondant, ou vous propose un champ, que vous acceptez ou non.
         </Typography>
         <Typography variant="body2" color="text.secondary" sx={{ mb: 4 }}>
           Le sommeil est calculé à partir de la nuit qui se termine aujourd&apos;hui (de 18 h la veille à 18 h), en comptant une seule fois les périodes qui se chevauchent.
@@ -157,7 +161,17 @@ export const IntegrationsClient = () => {
         </Box>
       </Paper>
 
-      <HealthFieldMapping />
+      <Paper id="propositions" sx={{ p: { xs: 2, sm: 4 }, borderRadius: 4, mb: 4, scrollMarginTop: 16 }}>
+        <Typography variant="h6" sx={{ fontWeight: 700, mb: 1 }}>
+          Propositions pour vos données Santé
+        </Typography>
+        <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+          Après chaque synchronisation, VaultedMind cherche le champ de votre journal qui correspond à chaque nouvelle donnée. Rien n&apos;est créé sans votre accord ; une donnée reliée remplit aussi les jours passés encore vides, jamais une valeur que vous avez saisie.
+        </Typography>
+        <HealthProposalsPanel key={proposalsKey} onChanged={() => setMappingKey(k => k + 1)} />
+      </Paper>
+
+      <HealthFieldMapping key={mappingKey} onChanged={() => setProposalsKey(k => k + 1)} />
 
       <Paper sx={{ p: 4, borderRadius: 4, mb: 4 }}>
         <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", mb: 3 }}>

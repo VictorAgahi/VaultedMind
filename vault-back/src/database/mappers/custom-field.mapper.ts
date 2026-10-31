@@ -24,6 +24,7 @@ export class CustomFieldMapper {
       model.constructNameHash ?? undefined,
       model.constructOverride ?? undefined,
       model.autofillMode,
+      model.appleWatchUnit ?? undefined,
     );
   }
 
@@ -49,6 +50,7 @@ export class CustomFieldMapper {
     model.constructNameHash = entity.constructNameHash ?? null;
     model.constructOverride = entity.constructOverride ?? null;
     model.autofillMode = entity.autofillMode;
+    model.appleWatchUnit = entity.appleWatchUnit ?? null;
     return model;
   }
 }

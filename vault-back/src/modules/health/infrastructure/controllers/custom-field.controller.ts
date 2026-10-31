@@ -111,6 +111,7 @@ export class CustomFieldController {
       min: entity.min,
       max: entity.max,
       appleWatchMetric: entity.appleWatchMetric,
+      appleWatchUnit: entity.appleWatchUnit,
       subFields: entity.subFields,
       goalTarget: entity.goalTarget,
       goalDirection: entity.goalDirection,

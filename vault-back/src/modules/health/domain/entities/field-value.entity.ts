@@ -1,5 +1,9 @@
-/** Where a saved value came from: 'agent' for an accepted autofill proposal, null for a manual entry. */
-export type FieldValueSource = 'agent';
+/**
+ * Where a saved value came from: 'agent' for an accepted autofill proposal, 'health' for a
+ * value written by the Apple Health sync, null for a manual entry.
+ */
+export type FieldValueSource = 'agent' | 'health';
+/** Sources the app may send with a saved entry: 'health' is only written by the server. */
 export const FIELD_VALUE_SOURCES: FieldValueSource[] = ['agent'];
 
 export class FieldValue {

@@ -9,6 +9,7 @@ import { NotificationSubscriptionModel } from './models/notification-subscriptio
 import { AIInsightModel } from './models/ai-insight.model.js';
 import { ApiKeyModel } from './models/api-key.model.js';
 import { HealthSyncTokenModel } from './models/health-sync-token.model.js';
+import { HealthDailyMetricModel } from './models/health-daily-metric.model.js';
 import { AIChatUsageModel } from './models/ai-chat-usage.model.js';
 import { NoteSignalsModel } from './models/note-signals.model.js';
 import { PatternReportModel } from './models/pattern-report.model.js';
@@ -32,6 +33,7 @@ export const dataSourceOptions: DataSourceOptions = {
     AIInsightModel,
     ApiKeyModel,
     HealthSyncTokenModel,
+    HealthDailyMetricModel,
     AIChatUsageModel,
     NoteSignalsModel,
     PatternReportModel,

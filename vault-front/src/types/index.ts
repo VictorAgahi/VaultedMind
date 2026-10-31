@@ -176,6 +176,8 @@ export interface CustomField {
   min?: number;
   max?: number;
   appleWatchMetric?: AppleWatchMetric;
+  /** Unité dans laquelle le champ reçoit une durée Santé ; absente : l'unité propre à la donnée. */
+  appleWatchUnit?: HealthFieldUnit;
   /** Objectif hebdomadaire : nombre de jours (oui/non) ou moyenne (nombre). */
   goalTarget?: number;
   goalDirection?: "AT_LEAST" | "AT_MOST";
@@ -189,6 +191,47 @@ export interface CustomField {
 }
 
 export type AutofillMode = "AUTO" | "ON" | "OFF";
+
+/** Unité d'une durée Santé dans un champ (sommeil, phases, exercice). */
+export type HealthFieldUnit = "hours" | "minutes";
+
+export interface HealthProposal {
+  metric: AppleWatchMetric;
+  label: string;
+  unitLabel: string;
+  exampleValue: number | null;
+  exampleDate: string | null;
+  status: "PENDING_LINK" | "PENDING_NEW";
+  relevance: "high" | "low";
+  fieldId: string | null;
+  fieldName: string | null;
+  unit: HealthFieldUnit | null;
+  suggestedName: string | null;
+  confidence: number | null;
+  reason: string | null;
+}
+
+export interface HealthProposals {
+  proposals: HealthProposal[];
+  ignored: { metric: AppleWatchMetric; label: string }[];
+  autoLinked: { metric: AppleWatchMetric; label: string; fieldId: string; fieldName: string; decidedAt: string }[];
+  legacyFields: { id: string; name: string; metric: AppleWatchMetric }[];
+}
+
+export interface AcceptHealthProposalDto {
+  fieldId?: string;
+  unit?: HealthFieldUnit;
+  create?: { name: string; category?: string };
+}
+
+export interface HealthProposalAcceptResult {
+  metric: AppleWatchMetric;
+  fieldId: string;
+  fieldName: string;
+  unit: HealthFieldUnit | null;
+  created: boolean;
+  filledDays: number;
+}
 
 export interface CreateCustomFieldDto {
   name: string;
@@ -217,6 +260,8 @@ export interface UpdateCustomFieldDto {
   max?: number;
   /** null retire le lien avec Apple Santé. */
   appleWatchMetric?: AppleWatchMetric | null;
+  /** Absente avec une donnée : déduite du champ par le serveur. */
+  appleWatchUnit?: HealthFieldUnit | null;
   goalTarget?: number | null;
   goalDirection?: "AT_LEAST" | "AT_MOST" | null;
   constructOverride?: string | null;
@@ -229,8 +274,8 @@ export interface FieldValue {
   customFieldId: string;
   value: string;
   subValues?: Record<string, string>;
-  /** « agent » quand la valeur vient d'une proposition acceptée, null quand elle est saisie à la main. */
-  source?: "agent" | null;
+  /** « agent » : proposition acceptée ; « health » : écrite par la synchronisation Santé ; null : saisie à la main. */
+  source?: "agent" | "health" | null;
   createdAt: string;
 }
 

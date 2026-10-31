@@ -18,6 +18,10 @@ import type {
   AutofillMode,
 } from '../../domain/entities/custom-field.entity.js';
 import { AUTOFILL_MODES } from '../../domain/entities/custom-field.entity.js';
+import {
+  HEALTH_FIELD_UNITS,
+  type HealthFieldUnit,
+} from '../../domain/services/health-metric-units.js';
 
 import { CONSTRUCTS } from '../../../signals/domain/constructs.js';
 
@@ -123,6 +127,11 @@ export class UpdateCustomFieldDto {
   @IsEnum(AppleWatchMetric)
   appleWatchMetric?: AppleWatchMetric | null;
 
+  /** Omitted with a metric, the unit is inferred from the field. */
+  @IsOptional()
+  @IsIn(HEALTH_FIELD_UNITS)
+  appleWatchUnit?: HealthFieldUnit | null;
+
   @IsOptional()
   @IsNumber()
   @Min(0)
@@ -153,6 +162,7 @@ export class CustomFieldResponseDto {
   min?: number;
   max?: number;
   appleWatchMetric?: AppleWatchMetric;
+  appleWatchUnit?: HealthFieldUnit;
   goalTarget?: number;
   goalDirection?: GoalDirection;
   construct?: string;

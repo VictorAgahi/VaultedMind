@@ -1,5 +1,6 @@
 import { FieldType } from '../enums/field-type.enum.js';
 import { AppleWatchMetric } from '../enums/apple-watch-metric.enum.js';
+import type { HealthFieldUnit } from '../services/health-metric-units.js';
 export { FieldType, AppleWatchMetric };
 
 export interface SubFieldDefinition {
@@ -29,9 +30,10 @@ export interface CustomFieldConstructOverrideUpdate {
   constructOverride?: string | null;
 }
 
-/** The Apple Health metric accepts null on update to unlink the field. */
+/** The Apple Health metric and its unit accept null on update to unlink the field. */
 export interface CustomFieldAppleWatchMetricUpdate {
   appleWatchMetric?: AppleWatchMetric | null;
+  appleWatchUnit?: HealthFieldUnit | null;
 }
 
 /** Whether the daily-story autofill may propose a value for the field. */
@@ -68,5 +70,7 @@ export class CustomField {
     /** Construct chosen by the user, which beats the automatic one. */
     public readonly constructOverride?: string,
     public readonly autofillMode: AutofillMode = 'AUTO',
+    /** Unit the field stores its duration metric in; undefined keeps the metric's own unit. */
+    public readonly appleWatchUnit?: HealthFieldUnit,
   ) {}
 }

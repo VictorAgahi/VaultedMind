@@ -11,6 +11,7 @@ import { AppleWatchMetric } from '../../domain/enums/apple-watch-metric.enum.js'
 import { CustomFieldModel } from '../../../../database/models/custom-field.model.js';
 import { DailyLogModel } from '../../../../database/models/daily-log.model.js';
 import { FieldValueModel } from '../../../../database/models/field-value.model.js';
+import { canFillFromHealth } from '../../domain/services/health-backfill.js';
 
 @Injectable()
 export class HealthSyncService implements OnApplicationBootstrap {
@@ -153,5 +154,30 @@ export class HealthSyncService implements OnApplicationBootstrap {
     fieldValue.value = this.encryptionService.encrypt(value);
 
     await this.fieldValueRepository.save(fieldValue);
+  }
+
+  /**
+   * Writes a value received from Apple Health, marked with the 'health' source. With
+   * `keepManual`, a day where the user entered the value keeps it (see canFillFromHealth).
+   * Returns whether the value was written.
+   */
+  async storeHealthValue(
+    dailyLogId: string,
+    customFieldId: string,
+    value: string,
+    keepManual: boolean,
+  ): Promise<boolean> {
+    const existing = await this.fieldValueRepository.findOne({
+      where: { dailyLogId, customFieldId },
+    });
+    if (keepManual && !canFillFromHealth(existing)) return false;
+
+    const fieldValue = existing ?? new FieldValueModel();
+    fieldValue.dailyLogId = dailyLogId;
+    fieldValue.customFieldId = customFieldId;
+    fieldValue.value = this.encryptionService.encrypt(value);
+    fieldValue.source = 'health';
+    await this.fieldValueRepository.save(fieldValue);
+    return true;
   }
 }

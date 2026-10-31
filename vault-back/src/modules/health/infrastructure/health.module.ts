@@ -15,6 +15,12 @@ import { HealthBatchSyncService } from '../application/services/health-batch-syn
 import { HealthSyncTokenService } from '../application/services/health-sync-token.service.js';
 import { HealthBatchController } from './controllers/health-batch.controller.js';
 import { SyncTokenOrApiKeyGuard } from './guards/sync-token-or-api-key.guard.js';
+import { HealthProposalsController } from './controllers/health-proposals.controller.js';
+import { HealthFieldLinkerService } from '../application/services/health-field-linker.service.js';
+import { HealthLinkingSuggesterService } from '../application/services/health-linking-suggester.service.js';
+import { HealthLinkingAssistantService } from '../application/services/health-linking-assistant.service.js';
+import { HealthProposalsService } from '../application/services/health-proposals.service.js';
+import { LLMService } from '../../ai-insights/application/services/llm.service.js';
 import { SignalsModule } from '../../signals/infrastructure/signals.module.js';
 import { AuthModule } from '../../auth/infrastructure/auth.module.js';
 
@@ -29,6 +35,11 @@ import { AuthModule } from '../../auth/infrastructure/auth.module.js';
     HealthSyncService,
     HealthSyncTokenService,
     HealthBatchSyncService,
+    HealthFieldLinkerService,
+    HealthLinkingSuggesterService,
+    HealthLinkingAssistantService,
+    HealthProposalsService,
+    LLMService,
     SyncTokenOrApiKeyGuard,
   ],
   controllers: [
@@ -39,6 +50,7 @@ import { AuthModule } from '../../auth/infrastructure/auth.module.js';
     BulkImportController,
     HealthSyncController,
     HealthBatchController,
+    HealthProposalsController,
   ],
   exports: [
     CustomFieldService,

@@ -72,7 +72,7 @@ export class CustomFieldRepository extends AbstractBaseRepository<CustomFieldMod
   ): Promise<void> {
     await this.repository.update(
       { userId, appleWatchMetric: metric, id: Not(exceptFieldId) },
-      { appleWatchMetric: null },
+      { appleWatchMetric: null, appleWatchUnit: null },
     );
   }
 
