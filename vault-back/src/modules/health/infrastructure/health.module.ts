@@ -10,6 +10,10 @@ import { BulkImportController } from './controllers/bulk-import.controller.js';
 import { HealthCheckController } from './controllers/health-check.controller.js';
 import { HealthSyncService } from '../application/services/health-sync.service.js';
 import { HealthSyncController } from './controllers/health-sync.controller.js';
+import { HealthBatchSyncService } from '../application/services/health-batch-sync.service.js';
+import { HealthSyncTokenService } from '../application/services/health-sync-token.service.js';
+import { HealthBatchController } from './controllers/health-batch.controller.js';
+import { SyncTokenOrApiKeyGuard } from './guards/sync-token-or-api-key.guard.js';
 import { SignalsModule } from '../../signals/infrastructure/signals.module.js';
 import { AuthModule } from '../../auth/infrastructure/auth.module.js';
 
@@ -21,6 +25,9 @@ import { AuthModule } from '../../auth/infrastructure/auth.module.js';
     FieldValueService,
     BulkImportService,
     HealthSyncService,
+    HealthSyncTokenService,
+    HealthBatchSyncService,
+    SyncTokenOrApiKeyGuard,
   ],
   controllers: [
     HealthCheckController,
@@ -29,6 +36,7 @@ import { AuthModule } from '../../auth/infrastructure/auth.module.js';
     FieldValueController,
     BulkImportController,
     HealthSyncController,
+    HealthBatchController,
   ],
   exports: [
     CustomFieldService,

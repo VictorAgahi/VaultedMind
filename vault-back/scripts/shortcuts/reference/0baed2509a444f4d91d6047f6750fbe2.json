@@ -1,0 +1,1523 @@
+{
+ "source": "https://www.icloud.com/shortcuts/0baed2509a444f4d91d6047f6750fbe2 (aeshef/obsidian-agent)",
+ "actions": [
+  {
+   "id": "is.workflow.actions.filter.health.quantity",
+   "params": {
+    "WFHKSampleFilteringGroupBy": "Day",
+    "WFHKSampleFilteringFillMissing": false,
+    "CustomOutputName": "Шаги",
+    "UUID": "63C97366-F171-492E-A4DA-7D98D1F1FA97",
+    "WFContentItemFilter": {
+     "Value": {
+      "WFActionParameterFilterPrefix": 1,
+      "WFActionParameterFilterTemplates": [
+       {
+        "Bounded": true,
+        "Operator": 4,
+        "Values": {
+         "Enumeration": {
+          "Value": "Steps",
+          "WFSerializationType": "WFStringSubstitutableState"
+         }
+        },
+        "Removable": false,
+        "Property": "Type"
+       },
+       {
+        "Bounded": true,
+        "Operator": 1002,
+        "Values": {
+         "Unit": 16,
+         "Number": "7"
+        },
+        "Removable": false,
+        "Property": "Start Date"
+       },
+       {
+        "Operator": 4,
+        "Values": {
+         "Unit": 4
+        },
+        "Removable": true,
+        "Property": "Value"
+       }
+      ],
+      "WFContentPredicateBoundedDate": false
+     },
+     "WFSerializationType": "WFContentPredicateTableTemplate"
+    }
+   }
+  },
+  {
+   "id": "is.workflow.actions.filter.health.quantity",
+   "params": {
+    "WFHKSampleFilteringGroupBy": "Day",
+    "WFContentItemLimitEnabled": false,
+    "WFHKSampleFilteringFillMissing": true,
+    "CustomOutputName": "Вода",
+    "UUID": "6BA2CFE9-56F9-446C-9D5A-4677D11CA7B0",
+    "WFContentItemFilter": {
+     "Value": {
+      "WFActionParameterFilterPrefix": 1,
+      "WFActionParameterFilterTemplates": [
+       {
+        "Property": "Type",
+        "Operator": 4,
+        "Values": {
+         "Enumeration": {
+          "Value": "Water",
+          "WFSerializationType": "WFStringSubstitutableState"
+         }
+        },
+        "Removable": false,
+        "Bounded": true
+       },
+       {
+        "Bounded": true,
+        "Operator": 1002,
+        "Values": {
+         "Unit": 16,
+         "Number": "7"
+        },
+        "Removable": false,
+        "Property": "Start Date"
+       }
+      ],
+      "WFContentPredicateBoundedDate": false
+     },
+     "WFSerializationType": "WFContentPredicateTableTemplate"
+    }
+   }
+  },
+  {
+   "id": "is.workflow.actions.filter.health.quantity",
+   "params": {
+    "WFContentItemFilter": {
+     "Value": {
+      "WFActionParameterFilterPrefix": 1,
+      "WFContentPredicateBoundedDate": false,
+      "WFActionParameterFilterTemplates": [
+       {
+        "Property": "Type",
+        "Operator": 4,
+        "Values": {
+         "Enumeration": {
+          "Value": "Weight",
+          "WFSerializationType": "WFStringSubstitutableState"
+         }
+        },
+        "Removable": false,
+        "Bounded": true
+       },
+       {
+        "Bounded": true,
+        "Operator": 1002,
+        "Values": {
+         "Unit": 16,
+         "Number": "7"
+        },
+        "Removable": false,
+        "Property": "Start Date"
+       },
+       {
+        "Operator": 4,
+        "Values": {
+         "Unit": 4
+        },
+        "Removable": true,
+        "Property": "Value"
+       }
+      ]
+     },
+     "WFSerializationType": "WFContentPredicateTableTemplate"
+    },
+    "CustomOutputName": "Вес",
+    "UUID": "9D7BC0CD-1F0C-4A50-A0E7-C0C199F9637A"
+   }
+  },
+  {
+   "id": "is.workflow.actions.filter.health.quantity",
+   "params": {
+    "WFHKSampleFilteringGroupBy": "Day",
+    "WFContentItemSortProperty": "Random",
+    "UUID": "2A8A64C3-A2F6-4FFA-8F1D-6076853CD652",
+    "WFHKSampleFilteringFillMissing": false,
+    "WFContentItemFilter": {
+     "Value": {
+      "WFActionParameterFilterPrefix": 1,
+      "WFContentPredicateBoundedDate": false,
+      "WFActionParameterFilterTemplates": [
+       {
+        "Bounded": true,
+        "Operator": 4,
+        "Values": {
+         "Enumeration": {
+          "Value": "Lean Body Mass",
+          "WFSerializationType": "WFStringSubstitutableState"
+         }
+        },
+        "Removable": false,
+        "Property": "Type"
+       },
+       {
+        "Property": "Start Date",
+        "Operator": 1002,
+        "Values": {
+         "Unit": 16,
+         "Number": "7"
+        },
+        "Removable": false,
+        "Bounded": true
+       },
+       {
+        "Operator": 4,
+        "Values": {
+         "Unit": 4
+        },
+        "Removable": true,
+        "Property": "Value"
+       }
+      ]
+     },
+     "WFSerializationType": "WFContentPredicateTableTemplate"
+    }
+   }
+  },
+  {
+   "id": "is.workflow.actions.filter.health.quantity",
+   "params": {
+    "WFHKSampleFilteringGroupBy": "Day",
+    "WFHKSampleFilteringFillMissing": false,
+    "UUID": "DE3BE595-A727-4CF0-A859-325C29E1CF53",
+    "WFContentItemFilter": {
+     "Value": {
+      "WFActionParameterFilterPrefix": 1,
+      "WFContentPredicateBoundedDate": false,
+      "WFActionParameterFilterTemplates": [
+       {
+        "Property": "Type",
+        "Operator": 4,
+        "Values": {
+         "Enumeration": {
+          "Value": "Protein",
+          "WFSerializationType": "WFStringSubstitutableState"
+         }
+        },
+        "Removable": false,
+        "Bounded": true
+       },
+       {
+        "Property": "Start Date",
+        "Operator": 1002,
+        "Values": {
+         "Unit": 16,
+         "Number": "7"
+        },
+        "Removable": false,
+        "Bounded": true
+       }
+      ]
+     },
+     "WFSerializationType": "WFContentPredicateTableTemplate"
+    }
+   }
+  },
+  {
+   "id": "is.workflow.actions.filter.health.quantity",
+   "params": {
+    "WFHKSampleFilteringGroupBy": "Day",
+    "WFHKSampleFilteringFillMissing": false,
+    "UUID": "31268A1C-D48A-4FA5-86BB-A725FACB9563",
+    "WFContentItemFilter": {
+     "Value": {
+      "WFActionParameterFilterPrefix": 1,
+      "WFActionParameterFilterTemplates": [
+       {
+        "Bounded": true,
+        "Operator": 4,
+        "Values": {
+         "Enumeration": {
+          "Value": "Dietary Calories",
+          "WFSerializationType": "WFStringSubstitutableState"
+         }
+        },
+        "Removable": false,
+        "Property": "Type"
+       },
+       {
+        "Bounded": true,
+        "Operator": 1002,
+        "Values": {
+         "Unit": 16,
+         "Number": "7"
+        },
+        "Removable": false,
+        "Property": "Start Date"
+       }
+      ],
+      "WFContentPredicateBoundedDate": false
+     },
+     "WFSerializationType": "WFContentPredicateTableTemplate"
+    }
+   }
+  },
+  {
+   "id": "is.workflow.actions.filter.health.quantity",
+   "params": {
+    "WFHKSampleFilteringGroupBy": "Day",
+    "WFHKSampleFilteringFillMissing": false,
+    "UUID": "2BDD7CD0-0E0A-48A4-9B8E-4599BBF60E4F",
+    "WFContentItemFilter": {
+     "Value": {
+      "WFActionParameterFilterPrefix": 1,
+      "WFActionParameterFilterTemplates": [
+       {
+        "Property": "Type",
+        "Operator": 4,
+        "Values": {
+         "Enumeration": {
+          "Value": "Total Fat",
+          "WFSerializationType": "WFStringSubstitutableState"
+         }
+        },
+        "Removable": false,
+        "Bounded": true
+       },
+       {
+        "Property": "Start Date",
+        "Operator": 1002,
+        "Values": {
+         "Unit": 16,
+         "Number": "7"
+        },
+        "Removable": false,
+        "Bounded": true
+       }
+      ],
+      "WFContentPredicateBoundedDate": false
+     },
+     "WFSerializationType": "WFContentPredicateTableTemplate"
+    }
+   }
+  },
+  {
+   "id": "is.workflow.actions.filter.health.quantity",
+   "params": {
+    "WFHKSampleFilteringGroupBy": "Day",
+    "WFHKSampleFilteringFillMissing": false,
+    "UUID": "89BC172C-07CA-4FC1-B073-C3A27CB2615E",
+    "WFContentItemFilter": {
+     "Value": {
+      "WFActionParameterFilterPrefix": 1,
+      "WFContentPredicateBoundedDate": false,
+      "WFActionParameterFilterTemplates": [
+       {
+        "Property": "Type",
+        "Operator": 4,
+        "Values": {
+         "Enumeration": {
+          "Value": "Carbohydrates",
+          "WFSerializationType": "WFStringSubstitutableState"
+         }
+        },
+        "Removable": false,
+        "Bounded": true
+       },
+       {
+        "Property": "Start Date",
+        "Operator": 1002,
+        "Values": {
+         "Unit": 16,
+         "Number": "7"
+        },
+        "Removable": false,
+        "Bounded": true
+       },
+       {
+        "Operator": 4,
+        "Values": {
+         "Unit": 4
+        },
+        "Removable": true,
+        "Property": "Value"
+       }
+      ]
+     },
+     "WFSerializationType": "WFContentPredicateTableTemplate"
+    }
+   }
+  },
+  {
+   "id": "is.workflow.actions.filter.health.quantity",
+   "params": {
+    "WFHKSampleFilteringGroupBy": "Day",
+    "WFHKSampleFilteringFillMissing": false,
+    "UUID": "88FAF0E7-819E-4061-B058-498C783C6B98",
+    "WFContentItemFilter": {
+     "Value": {
+      "WFActionParameterFilterPrefix": 1,
+      "WFContentPredicateBoundedDate": false,
+      "WFActionParameterFilterTemplates": [
+       {
+        "Bounded": true,
+        "Operator": 4,
+        "Values": {
+         "Enumeration": {
+          "Value": "Body Mass Index",
+          "WFSerializationType": "WFStringSubstitutableState"
+         }
+        },
+        "Removable": false,
+        "Property": "Type"
+       },
+       {
+        "Bounded": true,
+        "Operator": 1002,
+        "Values": {
+         "Unit": 16,
+         "Number": "7"
+        },
+        "Removable": false,
+        "Property": "Start Date"
+       }
+      ]
+     },
+     "WFSerializationType": "WFContentPredicateTableTemplate"
+    }
+   }
+  },
+  {
+   "id": "is.workflow.actions.filter.health.quantity",
+   "params": {
+    "WFHKSampleFilteringGroupBy": "Day",
+    "WFHKSampleFilteringFillMissing": false,
+    "UUID": "40CDCB5C-F170-4916-B51F-71466BAEB95F",
+    "WFContentItemFilter": {
+     "Value": {
+      "WFActionParameterFilterPrefix": 1,
+      "WFContentPredicateBoundedDate": false,
+      "WFActionParameterFilterTemplates": [
+       {
+        "Bounded": true,
+        "Operator": 4,
+        "Values": {
+         "Enumeration": {
+          "Value": "Body Fat Percentage",
+          "WFSerializationType": "WFStringSubstitutableState"
+         }
+        },
+        "Removable": false,
+        "Property": "Type"
+       },
+       {
+        "Bounded": true,
+        "Operator": 1002,
+        "Values": {
+         "Unit": 16,
+         "Number": "7"
+        },
+        "Removable": false,
+        "Property": "Start Date"
+       }
+      ]
+     },
+     "WFSerializationType": "WFContentPredicateTableTemplate"
+    }
+   }
+  },
+  {
+   "id": "is.workflow.actions.filter.health.quantity",
+   "params": {
+    "WFHKSampleFilteringGroupBy": "Day",
+    "WFHKSampleFilteringFillMissing": false,
+    "UUID": "FC082151-C87A-446D-A456-7FCDF4795DEB",
+    "CustomOutputName": "Вариабельность",
+    "WFContentItemFilter": {
+     "Value": {
+      "WFActionParameterFilterPrefix": 1,
+      "WFActionParameterFilterTemplates": [
+       {
+        "Property": "Type",
+        "Operator": 4,
+        "Values": {
+         "Enumeration": {
+          "Value": "Sugar",
+          "WFSerializationType": "WFStringSubstitutableState"
+         }
+        },
+        "Removable": false,
+        "Bounded": true
+       },
+       {
+        "Property": "Start Date",
+        "Operator": 1002,
+        "Values": {
+         "Unit": 16,
+         "Number": "7"
+        },
+        "Removable": false,
+        "Bounded": true
+       }
+      ],
+      "WFContentPredicateBoundedDate": false
+     },
+     "WFSerializationType": "WFContentPredicateTableTemplate"
+    }
+   }
+  },
+  {
+   "id": "is.workflow.actions.filter.health.quantity",
+   "params": {
+    "WFHKSampleFilteringGroupBy": "Day",
+    "WFContentItemLimitEnabled": false,
+    "WFHKSampleFilteringFillMissing": false,
+    "UUID": "10C96C7A-BE53-4020-A98E-26DE738B0816",
+    "WFContentItemFilter": {
+     "Value": {
+      "WFActionParameterFilterPrefix": 1,
+      "WFContentPredicateBoundedDate": false,
+      "WFActionParameterFilterTemplates": [
+       {
+        "Property": "Type",
+        "Operator": 4,
+        "Values": {
+         "Enumeration": {
+          "Value": "Walking Asymmetry",
+          "WFSerializationType": "WFStringSubstitutableState"
+         }
+        },
+        "Removable": false,
+        "Bounded": true
+       },
+       {
+        "Bounded": true,
+        "Operator": 1002,
+        "Values": {
+         "Unit": 16,
+         "Number": "7"
+        },
+        "Removable": false,
+        "Property": "Start Date"
+       },
+       {
+        "Operator": 4,
+        "Values": {
+         "Unit": 4
+        },
+        "Removable": true,
+        "Property": "Value"
+       }
+      ]
+     },
+     "WFSerializationType": "WFContentPredicateTableTemplate"
+    }
+   }
+  },
+  {
+   "id": "is.workflow.actions.filter.health.quantity",
+   "params": {
+    "WFHKSampleFilteringGroupBy": "Day",
+    "WFContentItemLimitEnabled": false,
+    "WFHKSampleFilteringFillMissing": false,
+    "UUID": "36E03529-2BB7-448D-920B-897514443535",
+    "WFContentItemFilter": {
+     "Value": {
+      "WFActionParameterFilterPrefix": 1,
+      "WFActionParameterFilterTemplates": [
+       {
+        "Bounded": true,
+        "Operator": 4,
+        "Values": {
+         "Enumeration": {
+          "Value": "Heart Rate Variability",
+          "WFSerializationType": "WFStringSubstitutableState"
+         }
+        },
+        "Removable": false,
+        "Property": "Type"
+       },
+       {
+        "Bounded": true,
+        "Operator": 1002,
+        "Values": {
+         "Unit": 16,
+         "Number": "7"
+        },
+        "Removable": false,
+        "Property": "Start Date"
+       }
+      ],
+      "WFContentPredicateBoundedDate": false
+     },
+     "WFSerializationType": "WFContentPredicateTableTemplate"
+    }
+   }
+  },
+  {
+   "id": "is.workflow.actions.filter.health.quantity",
+   "params": {
+    "WFHKSampleFilteringGroupBy": "Day",
+    "WFHKSampleFilteringFillMissing": false,
+    "UUID": "5EE4127F-7234-48C3-91DD-42D34EE41AAD",
+    "WFContentItemFilter": {
+     "Value": {
+      "WFActionParameterFilterPrefix": 1,
+      "WFContentPredicateBoundedDate": false,
+      "WFActionParameterFilterTemplates": [
+       {
+        "Bounded": true,
+        "Operator": 4,
+        "Values": {
+         "Enumeration": {
+          "Value": "Double Support Time",
+          "WFSerializationType": "WFStringSubstitutableState"
+         }
+        },
+        "Removable": false,
+        "Property": "Type"
+       },
+       {
+        "Bounded": true,
+        "Operator": 1002,
+        "Values": {
+         "Unit": 16,
+         "Number": "7"
+        },
+        "Removable": false,
+        "Property": "Start Date"
+       },
+       {
+        "Operator": 4,
+        "Values": {
+         "Unit": 4
+        },
+        "Removable": true,
+        "Property": "Value"
+       }
+      ]
+     },
+     "WFSerializationType": "WFContentPredicateTableTemplate"
+    }
+   }
+  },
+  {
+   "id": "is.workflow.actions.filter.health.quantity",
+   "params": {
+    "WFHKSampleFilteringGroupBy": "Day",
+    "WFHKSampleFilteringFillMissing": false,
+    "UUID": "94878353-445A-4912-94B5-6A2D69EE5AFA",
+    "WFContentItemFilter": {
+     "Value": {
+      "WFActionParameterFilterPrefix": 1,
+      "WFContentPredicateBoundedDate": false,
+      "WFActionParameterFilterTemplates": [
+       {
+        "Property": "Type",
+        "Operator": 4,
+        "Values": {
+         "Enumeration": {
+          "Value": "Walking + Running Distance",
+          "WFSerializationType": "WFStringSubstitutableState"
+         }
+        },
+        "Removable": false,
+        "Bounded": true
+       },
+       {
+        "Property": "Start Date",
+        "Operator": 1002,
+        "Values": {
+         "Unit": 16,
+         "Number": "7"
+        },
+        "Removable": false,
+        "Bounded": true
+       }
+      ]
+     },
+     "WFSerializationType": "WFContentPredicateTableTemplate"
+    }
+   }
+  },
+  {
+   "id": "is.workflow.actions.filter.health.quantity",
+   "params": {
+    "WFHKSampleFilteringGroupBy": "Day",
+    "WFHKSampleFilteringFillMissing": false,
+    "UUID": "13D85E4A-3055-4EEA-98BA-27BE1F3579D8",
+    "WFContentItemFilter": {
+     "Value": {
+      "WFActionParameterFilterPrefix": 1,
+      "WFContentPredicateBoundedDate": false,
+      "WFActionParameterFilterTemplates": [
+       {
+        "Property": "Type",
+        "Operator": 4,
+        "Values": {
+         "Enumeration": {
+          "Value": "Step Length",
+          "WFSerializationType": "WFStringSubstitutableState"
+         }
+        },
+        "Removable": false,
+        "Bounded": true
+       },
+       {
+        "Property": "Start Date",
+        "Operator": 1002,
+        "Values": {
+         "Unit": 16,
+         "Number": "7"
+        },
+        "Removable": false,
+        "Bounded": true
+       }
+      ]
+     },
+     "WFSerializationType": "WFContentPredicateTableTemplate"
+    }
+   }
+  },
+  {
+   "id": "is.workflow.actions.filter.health.quantity",
+   "params": {
+    "WFHKSampleFilteringGroupBy": "Day",
+    "WFHKSampleFilteringFillMissing": false,
+    "UUID": "38D22831-9F00-47E1-80B7-C60AAE4A2CF3",
+    "WFContentItemFilter": {
+     "Value": {
+      "WFActionParameterFilterPrefix": 1,
+      "WFContentPredicateBoundedDate": false,
+      "WFActionParameterFilterTemplates": [
+       {
+        "Property": "Type",
+        "Operator": 4,
+        "Values": {
+         "Enumeration": {
+          "Value": "Oxygen Saturation",
+          "WFSerializationType": "WFStringSubstitutableState"
+         }
+        },
+        "Removable": false,
+        "Bounded": true
+       },
+       {
+        "Bounded": true,
+        "Operator": 1002,
+        "Values": {
+         "Unit": 16,
+         "Number": "7"
+        },
+        "Removable": false,
+        "Property": "Start Date"
+       }
+      ]
+     },
+     "WFSerializationType": "WFContentPredicateTableTemplate"
+    }
+   }
+  },
+  {
+   "id": "is.workflow.actions.filter.health.quantity",
+   "params": {
+    "WFHKSampleFilteringGroupBy": "Day",
+    "WFHKSampleFilteringFillMissing": false,
+    "UUID": "108D411F-ECD7-4F69-AF73-84A56ECA6409",
+    "WFContentItemFilter": {
+     "Value": {
+      "WFActionParameterFilterPrefix": 1,
+      "WFContentPredicateBoundedDate": false,
+      "WFActionParameterFilterTemplates": [
+       {
+        "Bounded": true,
+        "Operator": 4,
+        "Values": {
+         "Enumeration": {
+          "Value": "Stand Time",
+          "WFSerializationType": "WFStringSubstitutableState"
+         }
+        },
+        "Removable": false,
+        "Property": "Type"
+       },
+       {
+        "Bounded": true,
+        "Operator": 1002,
+        "Values": {
+         "Unit": 16,
+         "Number": "7"
+        },
+        "Removable": false,
+        "Property": "Start Date"
+       }
+      ]
+     },
+     "WFSerializationType": "WFContentPredicateTableTemplate"
+    }
+   }
+  },
+  {
+   "id": "is.workflow.actions.filter.health.quantity",
+   "params": {
+    "WFHKSampleFilteringGroupBy": "Day",
+    "WFHKSampleFilteringFillMissing": false,
+    "UUID": "5CBAB492-C380-4078-9813-5B662E1B1E0D",
+    "WFContentItemFilter": {
+     "Value": {
+      "WFActionParameterFilterPrefix": 1,
+      "WFActionParameterFilterTemplates": [
+       {
+        "Property": "Type",
+        "Operator": 4,
+        "Values": {
+         "Enumeration": {
+          "Value": "Exercise Time",
+          "WFSerializationType": "WFStringSubstitutableState"
+         }
+        },
+        "Removable": false,
+        "Bounded": true
+       },
+       {
+        "Bounded": true,
+        "Operator": 1002,
+        "Values": {
+         "Unit": 16,
+         "Number": "7"
+        },
+        "Removable": false,
+        "Property": "Start Date"
+       }
+      ],
+      "WFContentPredicateBoundedDate": false
+     },
+     "WFSerializationType": "WFContentPredicateTableTemplate"
+    }
+   }
+  },
+  {
+   "id": "is.workflow.actions.filter.health.quantity",
+   "params": {
+    "WFHKSampleFilteringGroupBy": "Day",
+    "WFHKSampleFilteringFillMissing": false,
+    "UUID": "BB24719E-2761-47E5-A56A-479FAF7AC4ED",
+    "WFContentItemFilter": {
+     "Value": {
+      "WFActionParameterFilterPrefix": 1,
+      "WFContentPredicateBoundedDate": false,
+      "WFActionParameterFilterTemplates": [
+       {
+        "Bounded": true,
+        "Operator": 4,
+        "Values": {
+         "Enumeration": {
+          "Value": "Handwashing",
+          "WFSerializationType": "WFStringSubstitutableState"
+         }
+        },
+        "Removable": false,
+        "Property": "Type"
+       },
+       {
+        "Property": "Start Date",
+        "Operator": 1002,
+        "Values": {
+         "Unit": 16,
+         "Number": "7"
+        },
+        "Removable": false,
+        "Bounded": true
+       }
+      ]
+     },
+     "WFSerializationType": "WFContentPredicateTableTemplate"
+    }
+   }
+  },
+  {
+   "id": "is.workflow.actions.filter.health.quantity",
+   "params": {
+    "WFHKSampleFilteringGroupBy": "Day",
+    "WFHKSampleFilteringFillMissing": false,
+    "UUID": "5E51BE1E-8AC3-44DE-A790-796C42D2099F",
+    "WFContentItemFilter": {
+     "Value": {
+      "WFActionParameterFilterPrefix": 1,
+      "WFContentPredicateBoundedDate": false,
+      "WFActionParameterFilterTemplates": [
+       {
+        "Bounded": true,
+        "Operator": 4,
+        "Values": {
+         "Enumeration": {
+          "Value": "Flights Climbed",
+          "WFSerializationType": "WFStringSubstitutableState"
+         }
+        },
+        "Removable": false,
+        "Property": "Type"
+       },
+       {
+        "Property": "Start Date",
+        "Operator": 1002,
+        "Values": {
+         "Unit": 16,
+         "Number": "7"
+        },
+        "Removable": false,
+        "Bounded": true
+       }
+      ]
+     },
+     "WFSerializationType": "WFContentPredicateTableTemplate"
+    }
+   }
+  },
+  {
+   "id": "is.workflow.actions.filter.health.quantity",
+   "params": {
+    "WFHKSampleFilteringGroupBy": "Day",
+    "WFHKSampleFilteringFillMissing": false,
+    "UUID": "829E6FB3-A9C9-46C5-BA4A-62E0424C5FB8",
+    "WFContentItemFilter": {
+     "Value": {
+      "WFActionParameterFilterPrefix": 1,
+      "WFContentPredicateBoundedDate": false,
+      "WFActionParameterFilterTemplates": [
+       {
+        "Bounded": true,
+        "Operator": 4,
+        "Values": {
+         "Enumeration": {
+          "Value": "Heart Rate",
+          "WFSerializationType": "WFStringSubstitutableState"
+         }
+        },
+        "Removable": false,
+        "Property": "Type"
+       },
+       {
+        "Property": "Start Date",
+        "Operator": 1002,
+        "Values": {
+         "Unit": 16,
+         "Number": "7"
+        },
+        "Removable": false,
+        "Bounded": true
+       }
+      ]
+     },
+     "WFSerializationType": "WFContentPredicateTableTemplate"
+    }
+   }
+  },
+  {
+   "id": "is.workflow.actions.filter.health.quantity",
+   "params": {
+    "WFHKSampleFilteringGroupBy": "Day",
+    "WFHKSampleFilteringFillMissing": false,
+    "UUID": "D0863D16-9088-48E6-840F-B34C7C21FCDE",
+    "WFContentItemFilter": {
+     "Value": {
+      "WFActionParameterFilterPrefix": 1,
+      "WFContentPredicateBoundedDate": false,
+      "WFActionParameterFilterTemplates": [
+       {
+        "Property": "Type",
+        "Operator": 4,
+        "Values": {
+         "Enumeration": {
+          "Value": "Resting Heart Rate",
+          "WFSerializationType": "WFStringSubstitutableState"
+         }
+        },
+        "Removable": false,
+        "Bounded": true
+       },
+       {
+        "Bounded": true,
+        "Operator": 1002,
+        "Values": {
+         "Unit": 16,
+         "Number": "7"
+        },
+        "Removable": false,
+        "Property": "Start Date"
+       }
+      ]
+     },
+     "WFSerializationType": "WFContentPredicateTableTemplate"
+    }
+   }
+  },
+  {
+   "id": "is.workflow.actions.filter.health.quantity",
+   "params": {
+    "WFHKSampleFilteringGroupBy": "Day",
+    "WFHKSampleFilteringFillMissing": false,
+    "UUID": "A07CD22E-146D-4942-9C31-6DA0909EA841",
+    "WFContentItemFilter": {
+     "Value": {
+      "WFActionParameterFilterPrefix": 1,
+      "WFContentPredicateBoundedDate": false,
+      "WFActionParameterFilterTemplates": [
+       {
+        "Property": "Type",
+        "Operator": 4,
+        "Values": {
+         "Enumeration": {
+          "Value": "Walking Speed",
+          "WFSerializationType": "WFStringSubstitutableState"
+         }
+        },
+        "Removable": false,
+        "Bounded": true
+       },
+       {
+        "Bounded": true,
+        "Operator": 1002,
+        "Values": {
+         "Unit": 16,
+         "Number": "7"
+        },
+        "Removable": false,
+        "Property": "Start Date"
+       }
+      ]
+     },
+     "WFSerializationType": "WFContentPredicateTableTemplate"
+    }
+   }
+  },
+  {
+   "id": "is.workflow.actions.filter.health.quantity",
+   "params": {
+    "WFHKSampleFilteringGroupBy": "Day",
+    "WFHKSampleFilteringFillMissing": false,
+    "UUID": "61D58ADC-2C75-4C86-86B7-AE8FDB533CD2",
+    "WFContentItemFilter": {
+     "Value": {
+      "WFActionParameterFilterPrefix": 1,
+      "WFContentPredicateBoundedDate": false,
+      "WFActionParameterFilterTemplates": [
+       {
+        "Bounded": true,
+        "Operator": 4,
+        "Values": {
+         "Enumeration": {
+          "Value": "Sleep",
+          "WFSerializationType": "WFStringSubstitutableState"
+         }
+        },
+        "Removable": false,
+        "Property": "Type"
+       },
+       {
+        "Bounded": true,
+        "Operator": 1002,
+        "Values": {
+         "Unit": 16,
+         "Number": "7"
+        },
+        "Removable": false,
+        "Property": "Start Date"
+       }
+      ]
+     },
+     "WFSerializationType": "WFContentPredicateTableTemplate"
+    }
+   }
+  },
+  {
+   "id": "is.workflow.actions.filter.health.quantity",
+   "params": {
+    "WFHKSampleFilteringGroupBy": "Day",
+    "WFHKSampleFilteringFillMissing": false,
+    "UUID": "01570E8A-E5F0-4BF1-9072-EA5EDA567C32",
+    "WFContentItemFilter": {
+     "Value": {
+      "WFActionParameterFilterPrefix": 1,
+      "WFActionParameterFilterTemplates": [
+       {
+        "Bounded": true,
+        "Operator": 4,
+        "Values": {
+         "Enumeration": {
+          "Value": "Walking Steadiness",
+          "WFSerializationType": "WFStringSubstitutableState"
+         }
+        },
+        "Removable": false,
+        "Property": "Type"
+       },
+       {
+        "Property": "Start Date",
+        "Operator": 1002,
+        "Values": {
+         "Unit": 16,
+         "Number": "7"
+        },
+        "Removable": false,
+        "Bounded": true
+       }
+      ],
+      "WFContentPredicateBoundedDate": false
+     },
+     "WFSerializationType": "WFContentPredicateTableTemplate"
+    }
+   }
+  },
+  {
+   "id": "is.workflow.actions.filter.health.quantity",
+   "params": {
+    "WFHKSampleFilteringGroupBy": "Day",
+    "WFHKSampleFilteringFillMissing": false,
+    "UUID": "243E761D-B34D-4EA8-82CB-D8875A86DC16",
+    "WFContentItemFilter": {
+     "Value": {
+      "WFActionParameterFilterPrefix": 1,
+      "WFActionParameterFilterTemplates": [
+       {
+        "Property": "Type",
+        "Operator": 4,
+        "Values": {
+         "Enumeration": {
+          "Value": "Respiratory Rate",
+          "WFSerializationType": "WFStringSubstitutableState"
+         }
+        },
+        "Removable": false,
+        "Bounded": true
+       },
+       {
+        "Property": "Start Date",
+        "Operator": 1002,
+        "Values": {
+         "Unit": 16,
+         "Number": "7"
+        },
+        "Removable": false,
+        "Bounded": true
+       }
+      ],
+      "WFContentPredicateBoundedDate": false
+     },
+     "WFSerializationType": "WFContentPredicateTableTemplate"
+    }
+   }
+  },
+  {
+   "id": "is.workflow.actions.filter.health.quantity",
+   "params": {
+    "WFHKSampleFilteringGroupBy": "Day",
+    "WFHKSampleFilteringFillMissing": false,
+    "UUID": "F8B422F0-B03F-4BE2-B8E5-7F0DFE5EDB31",
+    "WFContentItemFilter": {
+     "Value": {
+      "WFActionParameterFilterPrefix": 1,
+      "WFActionParameterFilterTemplates": [
+       {
+        "Property": "Type",
+        "Operator": 4,
+        "Values": {
+         "Enumeration": {
+          "Value": "Active Calories",
+          "WFSerializationType": "WFStringSubstitutableState"
+         }
+        },
+        "Removable": false,
+        "Bounded": true
+       },
+       {
+        "Bounded": true,
+        "Operator": 1002,
+        "Values": {
+         "Unit": 16,
+         "Number": "7"
+        },
+        "Removable": false,
+        "Property": "Start Date"
+       }
+      ],
+      "WFContentPredicateBoundedDate": false
+     },
+     "WFSerializationType": "WFContentPredicateTableTemplate"
+    }
+   }
+  },
+  {
+   "id": "is.workflow.actions.filter.health.quantity",
+   "params": {
+    "WFHKSampleFilteringGroupBy": "Day",
+    "WFHKSampleFilteringFillMissing": false,
+    "UUID": "126B3C2A-7032-4DD6-8346-56375DFCEB99",
+    "WFContentItemFilter": {
+     "Value": {
+      "WFActionParameterFilterPrefix": 1,
+      "WFActionParameterFilterTemplates": [
+       {
+        "Property": "Type",
+        "Operator": 4,
+        "Values": {
+         "Enumeration": {
+          "Value": "Resting Calories",
+          "WFSerializationType": "WFStringSubstitutableState"
+         }
+        },
+        "Removable": false,
+        "Bounded": true
+       },
+       {
+        "Property": "Start Date",
+        "Operator": 1002,
+        "Values": {
+         "Unit": 16,
+         "Number": "7"
+        },
+        "Removable": false,
+        "Bounded": true
+       }
+      ],
+      "WFContentPredicateBoundedDate": false
+     },
+     "WFSerializationType": "WFContentPredicateTableTemplate"
+    }
+   }
+  },
+  {
+   "id": "is.workflow.actions.filter.health.quantity",
+   "params": {
+    "WFHKSampleFilteringGroupBy": "Day",
+    "WFHKSampleFilteringFillMissing": false,
+    "UUID": "B2A56A63-BEAB-4B49-AC67-5B504480B574",
+    "WFContentItemFilter": {
+     "Value": {
+      "WFActionParameterFilterPrefix": 1,
+      "WFContentPredicateBoundedDate": false,
+      "WFActionParameterFilterTemplates": [
+       {
+        "Property": "Type",
+        "Operator": 4,
+        "Values": {
+         "Enumeration": {
+          "Value": "Stair Speed: Up",
+          "WFSerializationType": "WFStringSubstitutableState"
+         }
+        },
+        "Removable": false,
+        "Bounded": true
+       },
+       {
+        "Property": "Start Date",
+        "Operator": 1002,
+        "Values": {
+         "Unit": 16,
+         "Number": "7"
+        },
+        "Removable": false,
+        "Bounded": true
+       }
+      ]
+     },
+     "WFSerializationType": "WFContentPredicateTableTemplate"
+    }
+   }
+  },
+  {
+   "id": "is.workflow.actions.filter.health.quantity",
+   "params": {
+    "WFHKSampleFilteringGroupBy": "Day",
+    "WFHKSampleFilteringFillMissing": false,
+    "UUID": "0B9B67BC-BD96-4AB8-8C2F-3CD360331622",
+    "WFContentItemFilter": {
+     "Value": {
+      "WFActionParameterFilterPrefix": 1,
+      "WFContentPredicateBoundedDate": false,
+      "WFActionParameterFilterTemplates": [
+       {
+        "Property": "Type",
+        "Operator": 4,
+        "Values": {
+         "Enumeration": {
+          "Value": "Stair Speed: Down",
+          "WFSerializationType": "WFStringSubstitutableState"
+         }
+        },
+        "Removable": false,
+        "Bounded": true
+       },
+       {
+        "Property": "Start Date",
+        "Operator": 1002,
+        "Values": {
+         "Unit": 16,
+         "Number": "7"
+        },
+        "Removable": false,
+        "Bounded": true
+       }
+      ]
+     },
+     "WFSerializationType": "WFContentPredicateTableTemplate"
+    }
+   }
+  },
+  {
+   "id": "is.workflow.actions.filter.health.quantity",
+   "params": {
+    "WFHKSampleFilteringGroupBy": "Day",
+    "WFHKSampleFilteringFillMissing": false,
+    "UUID": "DE6A7A78-FBD3-4722-9BE1-ADB477B96488",
+    "WFContentItemFilter": {
+     "Value": {
+      "WFActionParameterFilterPrefix": 1,
+      "WFActionParameterFilterTemplates": [
+       {
+        "Property": "Type",
+        "Operator": 4,
+        "Values": {
+         "Enumeration": {
+          "Value": "Sleep Wrist Temperature",
+          "WFSerializationType": "WFStringSubstitutableState"
+         }
+        },
+        "Removable": false,
+        "Bounded": true
+       },
+       {
+        "Property": "Start Date",
+        "Operator": 1002,
+        "Values": {
+         "Unit": 16,
+         "Number": "7"
+        },
+        "Removable": false,
+        "Bounded": true
+       }
+      ],
+      "WFContentPredicateBoundedDate": false
+     },
+     "WFSerializationType": "WFContentPredicateTableTemplate"
+    }
+   }
+  },
+  {
+   "id": "is.workflow.actions.filter.health.quantity",
+   "params": {
+    "WFContentItemSortProperty": "Start Date",
+    "WFContentItemSortOrder": "Oldest First",
+    "UUID": "EDDD8752-51F4-4B0D-A314-65E178C73B03",
+    "WFContentItemFilter": {
+     "Value": {
+      "WFActionParameterFilterPrefix": 1,
+      "WFContentPredicateBoundedDate": false,
+      "WFActionParameterFilterTemplates": [
+       {
+        "Property": "Type",
+        "Operator": 4,
+        "Values": {
+         "Enumeration": {
+          "Value": "Sleep",
+          "WFSerializationType": "WFStringSubstitutableState"
+         }
+        },
+        "Removable": false,
+        "Bounded": true
+       },
+       {
+        "Property": "Start Date",
+        "Operator": 1003,
+        "Values": {
+         "AnotherDate": {
+          "Value": {
+           "Type": "ActionOutput",
+           "OutputName": "Tomorrow",
+           "OutputUUID": "4173FC13-8717-4951-9CC8-68D5D638CF4B",
+           "Aggrandizements": [
+            {
+             "WFDateFormatStyle": "Medium",
+             "Type": "WFDateFormatVariableAggrandizement",
+             "WFTimeFormatStyle": "None",
+             "WFISO8601IncludeTime": false
+            }
+           ]
+          },
+          "WFSerializationType": "WFTextTokenAttachment"
+         },
+         "Unit": 16,
+         "Date": {
+          "Value": {
+           "Type": "ActionOutput",
+           "OutputName": "Yesterday",
+           "OutputUUID": "D520B9F6-4096-48AD-82C1-75A762C01592",
+           "Aggrandizements": [
+            {
+             "WFDateFormatStyle": "Medium",
+             "Type": "WFDateFormatVariableAggrandizement",
+             "WFTimeFormatStyle": "None",
+             "WFISO8601IncludeTime": false
+            }
+           ]
+          },
+          "WFSerializationType": "WFTextTokenAttachment"
+         },
+         "Number": "1"
+        },
+        "Removable": false,
+        "Bounded": true
+       }
+      ]
+     },
+     "WFSerializationType": "WFContentPredicateTableTemplate"
+    }
+   }
+  },
+  {
+   "id": "is.workflow.actions.statistics",
+   "params": {
+    "Input": {
+     "Value": {
+      "OutputUUID": "BB46C115-FB4A-4B70-83B8-4FECDED56E52",
+      "Type": "ActionOutput",
+      "OutputName": "Dictionary Value"
+     },
+     "WFSerializationType": "WFTextTokenAttachment"
+    },
+    "UUID": "6710398E-58E2-41EC-A272-397BDDEA6083",
+    "WFStatisticsOperation": "Sum"
+   }
+  },
+  {
+   "id": "is.workflow.actions.math",
+   "params": {
+    "WFInput": {
+     "Value": {
+      "OutputUUID": "6710398E-58E2-41EC-A272-397BDDEA6083",
+      "Type": "ActionOutput",
+      "OutputName": "Sum"
+     },
+     "WFSerializationType": "WFTextTokenAttachment"
+    },
+    "WFMathOperation": "÷",
+    "CustomOutputName": "Raw hours",
+    "UUID": "8BBB51D0-16BE-4C74-9B5E-CEC7EB01E6EC",
+    "WFMathOperand": "3600"
+   }
+  },
+  {
+   "id": "is.workflow.actions.math",
+   "params": {
+    "WFInput": {
+     "Value": {
+      "OutputUUID": "8BBB51D0-16BE-4C74-9B5E-CEC7EB01E6EC",
+      "Type": "ActionOutput",
+      "OutputName": "Raw hours"
+     },
+     "WFSerializationType": "WFTextTokenAttachment"
+    },
+    "WFMathOperation": "-",
+    "CustomOutputName": "Decimal hours",
+    "UUID": "689F1FC9-0A0E-4767-A8B8-96284BDC303F",
+    "WFMathOperand": {
+     "Value": {
+      "OutputUUID": "47F4323A-1581-440D-92D3-F3FA7548AF52",
+      "Type": "ActionOutput",
+      "OutputName": "Rounded Hours"
+     },
+     "WFSerializationType": "WFTextTokenAttachment"
+    }
+   }
+  },
+  {
+   "id": "is.workflow.actions.math",
+   "params": {
+    "WFInput": {
+     "Value": {
+      "OutputUUID": "689F1FC9-0A0E-4767-A8B8-96284BDC303F",
+      "Type": "ActionOutput",
+      "OutputName": "Decimal hours"
+     },
+     "WFSerializationType": "WFTextTokenAttachment"
+    },
+    "WFMathOperation": "×",
+    "CustomOutputName": "Raw minutes",
+    "UUID": "4F0EC465-0EF7-4B21-9D6C-928D0A14222A",
+    "WFMathOperand": "60"
+   }
+  },
+  {
+   "id": "is.workflow.actions.statistics",
+   "params": {
+    "Input": {
+     "Value": {
+      "VariableName": "Asleep",
+      "Type": "Variable"
+     },
+     "WFSerializationType": "WFTextTokenAttachment"
+    },
+    "WFStatisticsOperation": "Sum",
+    "UUID": "16293A33-9B17-402D-8189-A3062AB131AF"
+   }
+  },
+  {
+   "id": "is.workflow.actions.math",
+   "params": {
+    "WFInput": {
+     "Value": {
+      "OutputUUID": "16293A33-9B17-402D-8189-A3062AB131AF",
+      "Type": "ActionOutput",
+      "OutputName": "Sum"
+     },
+     "WFSerializationType": "WFTextTokenAttachment"
+    },
+    "WFMathOperation": "÷",
+    "CustomOutputName": "Raw hour",
+    "UUID": "EDB7E17B-6D8E-4AEA-83E1-A9FA187A5F54",
+    "WFMathOperand": "3600"
+   }
+  },
+  {
+   "id": "is.workflow.actions.math",
+   "params": {
+    "WFInput": {
+     "Value": {
+      "OutputUUID": "EDB7E17B-6D8E-4AEA-83E1-A9FA187A5F54",
+      "Type": "ActionOutput",
+      "OutputName": "Raw hour"
+     },
+     "WFSerializationType": "WFTextTokenAttachment"
+    },
+    "WFMathOperation": "-",
+    "CustomOutputName": "Decimal hour",
+    "UUID": "BCFE769E-0B76-48E6-93B9-8EA7EB753697",
+    "WFMathOperand": {
+     "Value": {
+      "OutputUUID": "0ECF8E16-0353-472C-9247-E42FA9C62141",
+      "Type": "ActionOutput",
+      "OutputName": "Rounded Hour"
+     },
+     "WFSerializationType": "WFTextTokenAttachment"
+    }
+   }
+  },
+  {
+   "id": "is.workflow.actions.math",
+   "params": {
+    "WFInput": {
+     "Value": {
+      "OutputUUID": "BCFE769E-0B76-48E6-93B9-8EA7EB753697",
+      "Type": "ActionOutput",
+      "OutputName": "Decimal hour"
+     },
+     "WFSerializationType": "WFTextTokenAttachment"
+    },
+    "WFMathOperation": "×",
+    "CustomOutputName": "Raw min",
+    "UUID": "C86FBACC-A54A-4368-A04D-7B51C4BF9903",
+    "WFMathOperand": "60"
+   }
+  }
+ ]
+}

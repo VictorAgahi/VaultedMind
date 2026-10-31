@@ -92,37 +92,7 @@ export class HealthSyncService implements OnApplicationBootstrap {
       throw new BadRequestException('Invalid date format');
     }
 
-    // Normalize to start of day for DailyLog
-    const normalizedDate = new Date(
-      Date.UTC(
-        logDate.getUTCFullYear(),
-        logDate.getUTCMonth(),
-        logDate.getUTCDate(),
-      ),
-    );
-
-    // 2. Find or create the DailyLog for this date
-    let dailyLog = await this.dailyLogRepository.findOne({
-      where: { userId, logDate: normalizedDate },
-    });
-
-    if (!dailyLog) {
-      dailyLog = new DailyLogModel();
-      dailyLog.userId = userId;
-      dailyLog.logDate = normalizedDate;
-      dailyLog = await this.dailyLogRepository.save(dailyLog);
-    }
-
-    // 3. Upsert the FieldValue
-    let fieldValue = await this.fieldValueRepository.findOne({
-      where: { dailyLogId: dailyLog.id, customFieldId: customField.id },
-    });
-
-    if (!fieldValue) {
-      fieldValue = new FieldValueModel();
-      fieldValue.dailyLogId = dailyLog.id;
-      fieldValue.customFieldId = customField.id;
-    }
+    const dailyLog = await this.findOrCreateDailyLog(userId, logDate);
 
     // Convert value to string and clean it up (Apple Shortcuts can send French commas and many decimals)
     let finalValue = String(value);
@@ -137,7 +107,50 @@ export class HealthSyncService implements OnApplicationBootstrap {
       finalValue = String(Math.round(numericValue * 10) / 10);
     }
 
-    fieldValue.value = this.encryptionService.encrypt(finalValue);
+    await this.storeEncryptedValue(dailyLog.id, customField.id, finalValue);
+  }
+
+  /** The daily log of a calendar day (the time of day of `logDate` is ignored). */
+  async findOrCreateDailyLog(
+    userId: string,
+    logDate: Date,
+  ): Promise<DailyLogModel> {
+    const normalizedDate = new Date(
+      Date.UTC(
+        logDate.getUTCFullYear(),
+        logDate.getUTCMonth(),
+        logDate.getUTCDate(),
+      ),
+    );
+
+    const existing = await this.dailyLogRepository.findOne({
+      where: { userId, logDate: normalizedDate },
+    });
+    if (existing) return existing;
+
+    const dailyLog = new DailyLogModel();
+    dailyLog.userId = userId;
+    dailyLog.logDate = normalizedDate;
+    return this.dailyLogRepository.save(dailyLog);
+  }
+
+  /** Upserts the value of a field for a daily log; values are always encrypted at rest. */
+  async storeEncryptedValue(
+    dailyLogId: string,
+    customFieldId: string,
+    value: string,
+  ): Promise<void> {
+    let fieldValue = await this.fieldValueRepository.findOne({
+      where: { dailyLogId, customFieldId },
+    });
+
+    if (!fieldValue) {
+      fieldValue = new FieldValueModel();
+      fieldValue.dailyLogId = dailyLogId;
+      fieldValue.customFieldId = customFieldId;
+    }
+
+    fieldValue.value = this.encryptionService.encrypt(value);
 
     await this.fieldValueRepository.save(fieldValue);
   }

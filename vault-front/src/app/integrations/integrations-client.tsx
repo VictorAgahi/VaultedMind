@@ -21,8 +21,12 @@ import {
 import DeleteIcon from "@mui/icons-material/Delete";
 import ContentCopyIcon from "@mui/icons-material/ContentCopy";
 import FileDownloadIcon from "@mui/icons-material/FileDownload";
+import { HEALTH_SHORTCUT_NAME } from "@/components/daily-logs-manager/health-sync-button";
 import { apiService } from "@/services/api.service";
 import { ApiKey, CreateApiKeyDto } from "@/types";
+
+const API_BASE_URL = "https://api-vault-mind.cyrus-ag.com";
+const BATCH_URL = `${API_BASE_URL}/integrations/health/batch`;
 
 export const IntegrationsClient = () => {
   const [apiKeys, setApiKeys] = useState<ApiKey[]>([]);
@@ -95,25 +99,61 @@ export const IntegrationsClient = () => {
 
       {error && <Alert severity="error" sx={{ mb: 3 }} onClose={() => setError(null)}>{error}</Alert>}
 
-      {/* Raccourci de test : lit les pas et le sommeil sur l'iPhone et les affiche, sans rien envoyer */}
+      {/* Synchronisation Apple Santé en un geste */}
       <Paper sx={{ p: 4, borderRadius: 4, mb: 4 }}>
-        <Typography variant="h6" sx={{ fontWeight: 700, mb: 1 }}>
-          Tester le raccourci Apple Santé (bêta)
-        </Typography>
-        <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-          Ce raccourci lit vos pas du jour et votre sommeil des dernières 24 heures, puis les affiche à l&apos;écran. Il n&apos;envoie rien à VaultedMind : il sert à vérifier qu&apos;il fonctionne sur votre iPhone avant la synchronisation automatique.
+        <Typography variant="h6" sx={{ fontWeight: 700, mb: 2 }}>
+          Apple Santé : synchronisation en un geste
         </Typography>
         <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
-          Ouvrez cette page dans Safari sur votre iPhone, téléchargez le fichier, ouvrez-le puis touchez « Ajouter le raccourci ». Au premier lancement, autorisez l&apos;accès aux pas et au sommeil.
+          Sommeil, pas, calories actives, fréquence cardiaque au repos, variabilité cardiaque, minutes d&apos;exercice, fréquence respiratoire et eau arrivent dans votre journée, chiffrés, depuis votre iPhone (et votre Apple Watch si vous en avez une). Aucune clé à copier.
+        </Typography>
+
+        <Typography variant="subtitle1" sx={{ fontWeight: 700, mb: 1 }}>
+          1. Installer le raccourci
+        </Typography>
+        <Typography variant="body2" sx={{ mb: 2 }}>
+          Sur votre iPhone, ouvrez cette page dans Safari et touchez le bouton ci-dessous. Ouvrez le fichier téléchargé, puis touchez « Ajouter le raccourci ». Gardez le nom « {HEALTH_SHORTCUT_NAME} » : l&apos;application s&apos;en sert pour le lancer.
+        </Typography>
+        <Typography variant="body2" sx={{ mb: 2 }}>
+          Au premier lancement, Santé demande les autorisations : touchez « Tout autoriser ».
         </Typography>
         <Button
-          variant="outlined"
+          variant="contained"
           startIcon={<FileDownloadIcon />}
-          href="/shortcuts/vaultedmind-test-sante.shortcut"
-          download="VaultedMind Test Sante.shortcut"
+          href="/shortcuts/vaultedmind-sync.shortcut"
+          download={`${HEALTH_SHORTCUT_NAME}.shortcut`}
+          sx={{ borderRadius: 3, px: 3, mb: 4 }}
         >
-          Télécharger le raccourci de test
+          Installer le raccourci
         </Button>
+
+        <Typography variant="subtitle1" sx={{ fontWeight: 700, mb: 1 }}>
+          2. Chaque soir : Récupérer mes données Santé
+        </Typography>
+        <Typography variant="body2" sx={{ mb: 1 }}>
+          Ouvrez la saisie du jour et touchez « Récupérer mes données Santé ». VaultedMind prépare un lien à usage unique valable 5 minutes, ouvre le raccourci, qui lit les données du jour dans Santé et les envoie, puis vous ramène dans l&apos;application. Les champs manquants (catégorie « Apple Santé ») sont créés automatiquement.
+        </Typography>
+        <Typography variant="body2" color="text.secondary" sx={{ mb: 4 }}>
+          Le sommeil est calculé à partir de la nuit qui se termine aujourd&apos;hui (de 18 h la veille à 18 h), en comptant une seule fois les périodes qui se chevauchent.
+        </Typography>
+
+        <Typography variant="subtitle1" sx={{ fontWeight: 700, mb: 1 }}>
+          3. Facultatif : automatisation avec une clé d&apos;API
+        </Typography>
+        <Typography variant="body2" sx={{ mb: 2 }}>
+          Une automatisation du raccourci (par exemple chaque soir à une heure fixe) ne peut pas passer par l&apos;application : elle utilise une clé d&apos;API permanente, générée plus bas. Envoyez un POST vers <code>{BATCH_URL}</code> avec l&apos;en-tête <code>X-API-Key</code> et un corps JSON :
+        </Typography>
+        <Box sx={{ bgcolor: "action.hover", p: 2, borderRadius: 2, overflowX: "auto" }}>
+          <pre style={{ margin: 0 }}>
+{`{
+  "date": "2026-10-31",
+  "quantities": [
+    { "metric": "STEPS", "value": 8042 }
+  ],
+  "sleepLines": "Core|2026-10-30T23:30:00+01:00|2026-10-31T03:00:00+01:00"
+}`}
+          </pre>
+        </Box>
       </Paper>
 
       <Paper sx={{ p: 4, borderRadius: 4, mb: 4 }}>
@@ -127,7 +167,7 @@ export const IntegrationsClient = () => {
         </Box>
 
         <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
-          Utilisez ces clés pour configurer le raccourci Apple Santé (Apple Shortcuts) afin de synchroniser vos données automatiquement.
+          Réservées aux automatisations. Le raccourci de l&apos;étape 1 n&apos;en a pas besoin.
         </Typography>
 
         {loading ? (
@@ -160,52 +200,31 @@ export const IntegrationsClient = () => {
         )}
       </Paper>
 
-      {/* Instructions Apple Health */}
+      {/* Diagnostic : raccourcis de vérification qui n'envoient rien */}
       <Paper sx={{ p: 4, borderRadius: 4 }}>
-        <Typography variant="h6" sx={{ fontWeight: 700, mb: 2 }}>
-          Comment configurer Apple Santé
+        <Typography variant="h6" sx={{ fontWeight: 700, mb: 1 }}>
+          Diagnostic
         </Typography>
-        <Typography variant="body1" sx={{ mb: 2 }}>
-          1. Générez une clé d&apos;API ci-dessus.
+        <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
+          À utiliser si la synchronisation ne ramène pas les bonnes valeurs. Aucun de ces raccourcis n&apos;envoie quoi que ce soit à VaultedMind. Même installation que ci-dessus : Safari, ouvrir le fichier, « Ajouter le raccourci ».
         </Typography>
-        <Typography variant="body1" sx={{ mb: 2 }}>
-          2. Assurez-vous d&apos;avoir associé vos champs personnalisés aux métriques Apple Watch (dans &quot;Champs&quot;).
-        </Typography>
-        <Typography variant="body1" sx={{ mb: 2 }}>
-          3. Créez un Raccourci (Shortcuts) sur votre iPhone qui récupère les données de Santé.
-        </Typography>
-        <Typography variant="body1" sx={{ mb: 2 }}>
-          4. Dans le raccourci, ajoutez une action &quot;Obtenir le contenu de l&apos;URL&quot; pour faire un POST vers 
-          <code>{` https://api.vaultedmind.com/api/integrations/health/sync `}</code> avec l&apos;en-tête <code>Authorization: Bearer VOTRE_CLE_API</code> et le JSON :
-        </Typography>
-        <Box sx={{ bgcolor: "action.hover", p: 2, borderRadius: 2, mb: 2, overflowX: "auto" }}>
-          <pre>
-{`{
-  "metric": "SLEEP",
-  "value": 7.5,
-  "date": "2026-08-03"
-}`}
-          </pre>
-        </Box>
-        <Typography variant="body1" sx={{ mb: 2 }}>
-          5. Collez cette clé dans le raccourci lorsque l&apos;application vous le demande.
-        </Typography>
-        <Box sx={{ mt: 4, textAlign: "center" }}>
+        <Box sx={{ display: "flex", flexDirection: { xs: "column", sm: "row" }, gap: 2 }}>
           <Button
-            variant="contained"
-            color="primary"
-            size="large"
+            variant="outlined"
             startIcon={<FileDownloadIcon />}
-            href="https://www.icloud.com/shortcuts/37818e9183e04705b10d9477cf3f3fe5"
-            target="_blank"
-            rel="noopener noreferrer"
-            sx={{ borderRadius: 3, px: 4, py: 1.5, fontWeight: 700 }}
+            href="/shortcuts/vaultedmind-sync-debug.shortcut"
+            download={`${HEALTH_SHORTCUT_NAME} Debug.shortcut`}
           >
-            Télécharger le raccourci Apple Santé
+            Raccourci de contrôle (affiche les données à envoyer)
           </Button>
-          <Typography variant="caption" sx={{ display: "block", mt: 1, color: "text.secondary" }}>
-            Nécessite l&apos;application Raccourcis (Shortcuts) sur iPhone.
-          </Typography>
+          <Button
+            variant="outlined"
+            startIcon={<FileDownloadIcon />}
+            href="/shortcuts/vaultedmind-test-sante.shortcut"
+            download="VaultedMind Test Sante.shortcut"
+          >
+            Raccourci de test (pas et sommeil bruts)
+          </Button>
         </Box>
       </Paper>
 

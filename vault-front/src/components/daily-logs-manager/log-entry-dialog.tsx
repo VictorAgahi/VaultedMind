@@ -31,6 +31,8 @@ import CloseIcon from "@mui/icons-material/Close";
 import SubdirectoryArrowRightIcon from "@mui/icons-material/SubdirectoryArrowRight";
 import { CustomField, FieldType } from "@/types";
 import { VoiceEntryPanel } from "./voice-entry-panel";
+import { HealthSyncButton } from "./health-sync-button";
+import { localDateStr } from "@/utils/local-date";
 import type { AutofillProposal } from "./use-voice-entry";
 
 interface StringFieldGridModalProps {
@@ -577,6 +579,8 @@ export const LogEntryDialog: React.FC<LogEntryDialogProps> = ({
               voiceReady={voiceReady}
             />
           )}
+
+          {open && logDate === localDateStr() && <HealthSyncButton />}
           
           <Stepper activeStep={activeStep} alternativeLabel sx={{ mb: 4, display: { xs: 'none', sm: 'flex' } }}>
             {steps.map((label) => (

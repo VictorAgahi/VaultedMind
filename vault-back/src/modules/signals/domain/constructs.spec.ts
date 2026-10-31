@@ -41,6 +41,11 @@ describe('constructs', () => {
     [AppleWatchMetric.RESTING_HEART_RATE, 'physical_health'],
     [AppleWatchMetric.MINDFULNESS_MINUTES, 'mindfulness'],
     [AppleWatchMetric.WATER_CONSUMPTION, 'other'],
+    [AppleWatchMetric.HEART_RATE_VARIABILITY, 'physical_health'],
+    [AppleWatchMetric.EXERCISE_MINUTES, 'physical_activity'],
+    [AppleWatchMetric.DAYLIGHT_MINUTES, 'outdoors'],
+    [AppleWatchMetric.RESPIRATORY_RATE, 'physical_health'],
+    [AppleWatchMetric.BEDTIME, 'sleep'],
   ])('should map the Apple Watch metric %s to %s', (metric, expected) => {
     // Act
     const construct = effectiveConstruct({

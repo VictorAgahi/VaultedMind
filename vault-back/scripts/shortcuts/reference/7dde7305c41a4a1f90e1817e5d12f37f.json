@@ -1,0 +1,79 @@
+{
+ "source": "https://www.icloud.com/shortcuts/7dde7305c41a4a1f90e1817e5d12f37f (steveredden/health-to-sfs)",
+ "actions": [
+  {
+   "id": "is.workflow.actions.filter.health.quantity",
+   "params": {
+    "WFHKSampleFilteringFillMissing": false,
+    "UUID": "B2947842-723B-45DA-AA01-C7851916E6B2",
+    "WFHKSampleFilteringUnit": {
+     "Value": {
+      "OutputUUID": "D4C9901F-B17E-4623-8DCD-FD74C26E185C",
+      "Type": "ActionOutput",
+      "OutputName": "unitSystem"
+     },
+     "WFSerializationType": "WFTextTokenAttachment"
+    },
+    "WFContentItemFilter": {
+     "Value": {
+      "WFActionParameterFilterPrefix": 1,
+      "WFContentPredicateBoundedDate": false,
+      "WFActionParameterFilterTemplates": [
+       {
+        "Bounded": true,
+        "Operator": 4,
+        "Values": {
+         "Enumeration": {
+          "Value": "Weight",
+          "WFSerializationType": "WFStringSubstitutableState"
+         }
+        },
+        "Removable": false,
+        "Property": "Type"
+       },
+       {
+        "Property": "Start Date",
+        "Operator": 1001,
+        "Values": {
+         "Unit": 16,
+         "Number": "10"
+        },
+        "Removable": false,
+        "Bounded": true
+       }
+      ]
+     },
+     "WFSerializationType": "WFContentPredicateTableTemplate"
+    }
+   }
+  },
+  {
+   "id": "is.workflow.actions.properties.health.quantity",
+   "params": {
+    "WFInput": {
+     "Value": {
+      "VariableName": "Repeat Item",
+      "Type": "Variable"
+     },
+     "WFSerializationType": "WFTextTokenAttachment"
+    },
+    "UUID": "93ED72D5-AF5C-4A13-A28E-B7D22A2B6E2E",
+    "WFContentItemPropertyName": "Value"
+   }
+  },
+  {
+   "id": "is.workflow.actions.properties.health.quantity",
+   "params": {
+    "WFInput": {
+     "Value": {
+      "VariableName": "Repeat Item",
+      "Type": "Variable"
+     },
+     "WFSerializationType": "WFTextTokenAttachment"
+    },
+    "UUID": "22CE8701-FA45-426C-AD62-8C4BC78EB6BA",
+    "WFContentItemPropertyName": "Start Date"
+   }
+  }
+ ]
+}

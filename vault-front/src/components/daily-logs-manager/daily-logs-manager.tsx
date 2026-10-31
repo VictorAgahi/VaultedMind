@@ -18,6 +18,7 @@ import {
   Tab,
   IconButton,
   ButtonBase,
+  Snackbar,
 } from "@mui/material";
 import AddIcon from "@mui/icons-material/Add";
 import { useRouter } from "next/navigation";
@@ -900,6 +901,9 @@ export const DailyLogsManager: React.FC = () => {
   const router = useRouter();
   const { user } = useAuth();
   const [quickSaving, setQuickSaving] = React.useState(false);
+  // Retour du raccourci Apple Santé (?healthSync=1) : les valeurs sont déjà enregistrées, on recharge et on confirme.
+  const [healthSyncDone, setHealthSyncDone] = React.useState(false);
+  const healthSyncHandledRef = React.useRef(false);
   // Le rappel du soir ouvre la saisie du jour prête à enregistrer (?new=1&voice=1) ; le toucher reste nécessaire sur iOS.
   const [voiceReady, setVoiceReady] = React.useState(false);
   const closeDialog = () => {
@@ -994,6 +998,12 @@ export const DailyLogsManager: React.FC = () => {
       openTodayRef.current();
       router.replace("/dashboard", { scroll: false });
     }
+    if (new URLSearchParams(window.location.search).get("healthSync") === "1" && !healthSyncHandledRef.current) {
+      healthSyncHandledRef.current = true;
+      window.dispatchEvent(new CustomEvent("vaultedmind:fields-updated"));
+      setHealthSyncDone(true);
+      router.replace("/dashboard", { scroll: false });
+    }
     const dateParam = new URLSearchParams(window.location.search).get("date");
     if (dateParam && /^\d{4}-\d{2}-\d{2}$/.test(dateParam)) {
       openDayRef.current(dateParam);
@@ -1053,6 +1063,17 @@ export const DailyLogsManager: React.FC = () => {
       </Box>
 
       {error && <Alert severity="error" sx={{ mb: 2 }} onClose={() => dispatch({ type: "SET_ERROR", error: null })}>{error}</Alert>}
+      <Snackbar
+        open={healthSyncDone}
+        autoHideDuration={4000}
+        onClose={() => setHealthSyncDone(false)}
+        anchorOrigin={{ vertical: "bottom", horizontal: "center" }}
+        sx={{ bottom: { xs: "calc(88px + env(safe-area-inset-bottom, 0px))", sm: 24 } }}
+      >
+        <Alert severity="success" variant="filled" onClose={() => setHealthSyncDone(false)} sx={{ width: "100%" }}>
+          Données Santé récupérées
+        </Alert>
+      </Snackbar>
       {notice && <Alert severity="info" sx={{ mb: 2 }} onClose={() => dispatch({ type: "SET_NOTICE", notice: null })}>{notice}</Alert>}
 
       {managerTab === "calendar" && (

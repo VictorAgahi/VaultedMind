@@ -1,0 +1,174 @@
+{
+ "source": "https://www.icloud.com/shortcuts/b542799bc07940afb3ad1f09fb1219d5 (IXIN0530/pocketHeso)",
+ "actions": [
+  {
+   "id": "is.workflow.actions.math",
+   "params": {
+    "WFInput": {
+     "Value": {
+      "VariableName": "Repeat Index",
+      "Type": "Variable"
+     },
+     "WFSerializationType": "WFTextTokenAttachment"
+    },
+    "WFMathOperation": "-",
+    "UUID": "70EE0E05-77AC-4003-B1FE-DC13BCFDCA16",
+    "WFMathOperand": "1"
+   }
+  },
+  {
+   "id": "is.workflow.actions.filter.health.quantity",
+   "params": {
+    "WFContentItemFilter": {
+     "Value": {
+      "WFActionParameterFilterPrefix": 1,
+      "WFContentPredicateBoundedDate": false,
+      "WFActionParameterFilterTemplates": [
+       {
+        "Property": "Type",
+        "Operator": 4,
+        "Values": {
+         "Enumeration": {
+          "Value": "Steps",
+          "WFSerializationType": "WFStringSubstitutableState"
+         }
+        },
+        "Removable": false,
+        "Bounded": true
+       },
+       {
+        "Bounded": true,
+        "Operator": 1003,
+        "Values": {
+         "AnotherDate": {
+          "Value": {
+           "VariableName": "終了",
+           "Type": "Variable"
+          },
+          "WFSerializationType": "WFTextTokenAttachment"
+         },
+         "Unit": 16,
+         "Date": {
+          "Value": {
+           "VariableName": "開始",
+           "Type": "Variable"
+          },
+          "WFSerializationType": "WFTextTokenAttachment"
+         },
+         "Number": {
+          "Value": {
+           "VariableName": "開始",
+           "Type": "Variable"
+          },
+          "WFSerializationType": "WFTextTokenAttachment"
+         }
+        },
+        "Removable": false,
+        "Property": "Start Date"
+       }
+      ]
+     },
+     "WFSerializationType": "WFContentPredicateTableTemplate"
+    },
+    "UUID": "A5CFCD1A-AA2E-42A3-95E9-40DD627702E8"
+   }
+  },
+  {
+   "id": "is.workflow.actions.statistics",
+   "params": {
+    "Input": {
+     "Value": {
+      "OutputUUID": "A5CFCD1A-AA2E-42A3-95E9-40DD627702E8",
+      "Type": "ActionOutput",
+      "OutputName": "ヘルスケアサンプル"
+     },
+     "WFSerializationType": "WFTextTokenAttachment"
+    },
+    "UUID": "6939BF2E-2183-4110-9D2F-BE1907787B15",
+    "WFStatisticsOperation": "Sum"
+   }
+  },
+  {
+   "id": "is.workflow.actions.filter.health.quantity",
+   "params": {
+    "WFContentItemFilter": {
+     "Value": {
+      "WFActionParameterFilterPrefix": 1,
+      "WFActionParameterFilterTemplates": [
+       {
+        "Property": "Type",
+        "Operator": 4,
+        "Values": {
+         "Enumeration": {
+          "Value": "Walking + Running Distance",
+          "WFSerializationType": "WFStringSubstitutableState"
+         }
+        },
+        "Removable": false,
+        "Bounded": true
+       },
+       {
+        "Bounded": true,
+        "Operator": 1003,
+        "Values": {
+         "AnotherDate": {
+          "Value": {
+           "VariableName": "終了",
+           "Type": "Variable"
+          },
+          "WFSerializationType": "WFTextTokenAttachment"
+         },
+         "Unit": 16,
+         "Date": {
+          "Value": {
+           "VariableName": "開始",
+           "Type": "Variable"
+          },
+          "WFSerializationType": "WFTextTokenAttachment"
+         },
+         "Number": "7"
+        },
+        "Removable": false,
+        "Property": "Start Date"
+       }
+      ],
+      "WFContentPredicateBoundedDate": false
+     },
+     "WFSerializationType": "WFContentPredicateTableTemplate"
+    },
+    "UUID": "38B17D83-CB4C-4643-A8F9-C8079B0A5E73"
+   }
+  },
+  {
+   "id": "is.workflow.actions.statistics",
+   "params": {
+    "Input": {
+     "Value": {
+      "OutputUUID": "38B17D83-CB4C-4643-A8F9-C8079B0A5E73",
+      "Type": "ActionOutput",
+      "OutputName": "ヘルスケアサンプル"
+     },
+     "WFSerializationType": "WFTextTokenAttachment"
+    },
+    "UUID": "111FA3F2-50F8-4F1B-BCE4-6391BB7E5AC1",
+    "WFStatisticsOperation": "Sum"
+   }
+  },
+  {
+   "id": "is.workflow.actions.math",
+   "params": {
+    "WFInput": {
+     "Value": {
+      "OutputUUID": "111FA3F2-50F8-4F1B-BCE4-6391BB7E5AC1",
+      "Type": "ActionOutput",
+      "OutputName": "合計"
+     },
+     "WFSerializationType": "WFTextTokenAttachment"
+    },
+    "WFMathOperation": "×",
+    "UUID": "8CE89A28-5E50-4521-B1AA-A4668215360F",
+    "WFMathOperand": "1000"
+   }
+  }
+ ]
+}

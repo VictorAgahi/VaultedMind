@@ -1,0 +1,75 @@
+{
+ "source": "https://www.icloud.com/shortcuts/22bb56e73c354d9aa76a3678548dfe3a (heartbridge README)",
+ "actions": [
+  {
+   "id": "is.workflow.actions.filter.health.quantity",
+   "params": {
+    "WFContentItemSortProperty": "Start Date",
+    "WFHKSampleFilteringUnit": "count",
+    "WFHKSampleFilteringFillMissing": false,
+    "WFContentItemSortOrder": "Oldest First",
+    "WFContentItemLimitNumber": 6.0,
+    "UUID": "E1355316-4ED6-4996-AE5D-1B9B87F5AAFA",
+    "WFContentItemLimitEnabled": false,
+    "WFContentItemFilter": {
+     "Value": {
+      "WFActionParameterFilterPrefix": 1,
+      "WFActionParameterFilterTemplates": [
+       {
+        "Bounded": true,
+        "Operator": 4,
+        "Values": {
+         "Enumeration": {
+          "Value": "Heart Rate",
+          "WFSerializationType": "WFStringSubstitutableState"
+         }
+        },
+        "Removable": false,
+        "Property": "Type"
+       },
+       {
+        "Bounded": true,
+        "Operator": 1003,
+        "Values": {
+         "AnotherDate": {
+          "Value": {
+           "Type": "Ask"
+          },
+          "WFSerializationType": "WFTextTokenAttachment"
+         },
+         "Unit": 16,
+         "Date": {
+          "Value": {
+           "Type": "Ask"
+          },
+          "WFSerializationType": "WFTextTokenAttachment"
+         },
+         "Number": "1"
+        },
+        "Removable": false,
+        "Property": "Start Date"
+       }
+      ],
+      "WFContentPredicateBoundedDate": false
+     },
+     "WFSerializationType": "WFContentPredicateTableTemplate"
+    }
+   }
+  },
+  {
+   "id": "is.workflow.actions.properties.health.quantity",
+   "params": {
+    "WFInput": {
+     "Value": {
+      "OutputUUID": "E1355316-4ED6-4996-AE5D-1B9B87F5AAFA",
+      "Type": "ActionOutput",
+      "OutputName": "Health Samples"
+     },
+     "WFSerializationType": "WFTextTokenAttachment"
+    },
+    "UUID": "49D9084B-2370-4AEA-AFCE-B9EF7B017052",
+    "WFContentItemPropertyName": "Start Date"
+   }
+  }
+ ]
+}
