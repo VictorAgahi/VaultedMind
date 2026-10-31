@@ -41,6 +41,14 @@ import { LogEntryDialog, AgentSource } from "./log-entry-dialog";
 import type { AutofillProposal } from "./use-voice-entry";
 import { LogTable } from "./log-table";
 import { localDateStr } from "@/utils/local-date";
+import {
+  clearHealthSyncPending,
+  HealthSyncDraft,
+  HealthSyncMarker,
+  readHealthSyncDraft,
+  readHealthSyncMarker,
+  saveHealthSyncPending,
+} from "@/utils/health-sync-pending";
 import { DailyEntryPayload, flushOutbox, isNetworkFailure, OUTBOX_FLUSHED_EVENT, queueEntry, readOfflineSnapshot, saveOfflineSnapshot } from "@/utils/entry-outbox";
 
 interface State {
@@ -80,6 +88,7 @@ type Action =
   | { type: "SET_DIALOG_ERROR"; error: string | null }
   | { type: "OPEN_DIALOG"; isEditing: boolean; logId?: string | null; formData?: State["formData"] }
   | { type: "CLOSE_DIALOG" }
+  | { type: "HEALTH_SYNC_RESULT"; fields: CustomField[]; logs: DailyLog[]; date: string; logId: string | null; healthValues: Record<string, string>; draft: HealthSyncDraft | null }
   | { type: "SET_SUBMITTING"; submitting: boolean }
   | { type: "UPDATE_FORM"; data: Partial<State["formData"]> }
   | { type: "SET_FIELD_VALUE"; fieldId: string; value: string }
@@ -104,6 +113,26 @@ const reducer = (state: State, action: Action): State => {
       formData: action.formData || { date: localDateStr(), notes: "", fieldValues: {}, subFieldValues: {}, agentSources: {}, defaultedFieldIds: [] }
     };
     case "CLOSE_DIALOG": return { ...state, dialog: { ...state.dialog, open: false } };
+    case "HEALTH_SYNC_RESULT": {
+      const base = { ...state, fields: action.fields, logs: action.logs, loading: false, error: null };
+      // Une saisie reprise (brouillon) rouvre la fenêtre ; une fenêtre restée ouverte est simplement complétée.
+      const source = state.dialog.open ? state.formData : action.draft;
+      if (!source || source.date !== action.date) return base;
+      const healthIds = Object.keys(action.healthValues);
+      return {
+        ...base,
+        dialog: { ...state.dialog, open: true, isEditing: action.logId !== null || (!state.dialog.open && !!action.draft?.isEditing), logId: action.logId ?? (state.dialog.open ? state.dialog.logId : action.draft?.logId ?? null) },
+        formData: {
+          date: source.date,
+          notes: source.notes,
+          // Seuls les champs Santé reçoivent les valeurs synchronisées : le reste de la saisie n'est pas touché.
+          fieldValues: { ...source.fieldValues, ...action.healthValues },
+          subFieldValues: source.subFieldValues,
+          agentSources: Object.fromEntries(Object.entries(source.agentSources).filter(([id]) => !healthIds.includes(id))),
+          defaultedFieldIds: source.defaultedFieldIds.filter(id => !healthIds.includes(id)),
+        },
+      };
+    }
     case "SET_SUBMITTING": return { ...state, dialog: { ...state.dialog, submitting: action.submitting } };
     case "UPDATE_FORM": return { ...state, formData: { ...state.formData, ...action.data } };
     case "SET_FIELD_VALUE": {
@@ -904,12 +933,120 @@ export const DailyLogsManager: React.FC = () => {
   // Retour du raccourci Apple Santé (?healthSync=1) : les valeurs sont déjà enregistrées, on recharge et on confirme.
   const [healthSyncDone, setHealthSyncDone] = React.useState(false);
   const healthSyncHandledRef = React.useRef(false);
+  const [healthSyncMessage, setHealthSyncMessage] = React.useState("Données Santé récupérées");
+  const [startStep, setStartStep] = React.useState(0);
+  const stepRef = React.useRef(0);
+  const stateRef = React.useRef(state);
+  const healthSyncRunningRef = React.useRef(false);
+  const aliveRef = React.useRef(true);
+  useEffect(() => {
+    aliveRef.current = true;
+    return () => { aliveRef.current = false; };
+  }, []);
+  useEffect(() => {
+    stateRef.current = state;
+  });
+  const lastHealthReturnRef = React.useRef(0);
+  useEffect(() => {
+    // La reprise d'une étape ne vaut que pour une ouverture : fermée, la fenêtre repart de la première étape.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    if (!state.dialog.open && startStep !== 0) setStartStep(0);
+  }, [state.dialog.open, startStep]);
+  const handleStepChange = useCallback((step: number) => { stepRef.current = step; }, []);
   // Le rappel du soir ouvre la saisie du jour prête à enregistrer (?new=1&voice=1) ; le toucher reste nécessaire sur iOS.
   const [voiceReady, setVoiceReady] = React.useState(false);
   const closeDialog = () => {
     setVoiceReady(false);
     handleClose();
   };
+
+  // Valeurs des champs Apple Santé d'une journée (champs liés à une métrique ou de la catégorie « Apple Santé »).
+  const healthValuesOf = (fields: CustomField[], logs: DailyLog[], date: string): { logId: string | null; values: Record<string, string> } => {
+    const log = logs.find(l => new Date(l.logDate).toISOString().split("T")[0] === date);
+    const values: Record<string, string> = {};
+    log?.fieldValues?.forEach(fv => {
+      const field = fields.find(f => f.id === fv.customFieldId);
+      if (!field || !(field.appleWatchMetric || field.category?.trim() === "Apple Santé")) return;
+      const isHourly = field.fieldType === FieldType.NUMBER && (field.optionsOrder || []).includes("isHourly");
+      values[field.id] = isHourly ? formatHourlyValue(fv.value) : fv.value;
+    });
+    return { logId: log?.id ?? null, values };
+  };
+
+  // Avant de quitter pour le raccourci : on garde la saisie en cours et on note qu'une synchronisation est attendue.
+  const handleBeforeHealthSync = () => {
+    const { dialog: dlg, formData: fd, fields: allFields, logs: allLogs } = stateRef.current;
+    const marker: HealthSyncMarker = {
+      date: fd.date,
+      startedAt: Date.now(),
+      baseline: healthValuesOf(allFields, allLogs, fd.date).values,
+    };
+    const draft: HealthSyncDraft | null = dlg.open
+      ? { ...fd, step: stepRef.current, isEditing: dlg.isEditing, logId: dlg.logId, savedAt: Date.now() }
+      : null;
+    saveHealthSyncPending(marker, draft);
+  };
+
+  // Retour du raccourci : recharge champs et journaux, attend les valeurs si besoin, puis met l'écran à jour.
+  const handleHealthReturn = useCallback(async () => {
+    // Un même retour peut être annoncé par plusieurs événements (URL, visibilité, focus) : un seul est traité.
+    if (healthSyncRunningRef.current || Date.now() - lastHealthReturnRef.current < 5000) return;
+    const marker = readHealthSyncMarker();
+    healthSyncRunningRef.current = true;
+    // Le marqueur est consommé tout de suite : un même retour n'est jamais traité deux fois.
+    clearHealthSyncPending();
+    const date = marker?.date ?? localDateStr();
+    const draft = marker ? readHealthSyncDraft(marker.date) : null;
+    const signature = (values: Record<string, string>) => JSON.stringify(Object.entries(values).sort(([a], [b]) => a.localeCompare(b)));
+    try {
+      let result: { fields: CustomField[]; logs: DailyLog[]; values: Record<string, string>; logId: string | null } | null = null;
+      for (let attempt = 0; attempt < 9; attempt++) {
+        if (attempt > 0) await new Promise(resolve => setTimeout(resolve, 1500));
+        if (!aliveRef.current) return;
+        const [fields, rawLogs] = await Promise.all([
+          apiService.get<CustomField[]>("/health/custom-fields"),
+          apiService.get<DailyLog[]>("/health/daily-logs"),
+        ]);
+        const logs = rawLogs.sort((a, b) => new Date(a.logDate).getTime() - new Date(b.logDate).getTime());
+        const { logId, values } = healthValuesOf(fields, logs, date);
+        result = { fields, logs, values, logId };
+        // Sans marqueur (rechargement par l'URL seule), on ne sait pas ce qui a changé : on prend l'état actuel.
+        if (!marker || signature(values) !== signature(marker.baseline)) break;
+      }
+      if (!result || !aliveRef.current) return;
+      saveOfflineSnapshot(result.fields, result.logs);
+      if (draft && !stateRef.current.dialog.open) setStartStep(draft.step);
+      dispatch({ type: "HEALTH_SYNC_RESULT", fields: result.fields, logs: result.logs, date, logId: result.logId, healthValues: result.values, draft });
+      setHealthSyncMessage(Object.keys(result.values).length > 0 ? "Données Santé récupérées" : "Aucune nouvelle donnée Santé reçue");
+      setHealthSyncDone(true);
+    } catch {
+      if (aliveRef.current) {
+        setHealthSyncMessage("Aucune nouvelle donnée Santé reçue");
+        setHealthSyncDone(true);
+      }
+    } finally {
+      healthSyncRunningRef.current = false;
+      lastHealthReturnRef.current = Date.now();
+    }
+  }, [dispatch]);
+
+  // L'application déjà ouverte redevient visible après le raccourci : même traitement qu'un retour par l'URL.
+  useEffect(() => {
+    const onReturn = () => {
+      if (document.visibilityState !== "visible") return;
+      const marker = readHealthSyncMarker();
+      // Moins de 1,5 s après le départ : ce n'est pas encore un retour.
+      if (marker && Date.now() - marker.startedAt > 1500) void handleHealthReturn();
+    };
+    document.addEventListener("visibilitychange", onReturn);
+    window.addEventListener("focus", onReturn);
+    window.addEventListener("pageshow", onReturn);
+    return () => {
+      document.removeEventListener("visibilitychange", onReturn);
+      window.removeEventListener("focus", onReturn);
+      window.removeEventListener("pageshow", onReturn);
+    };
+  }, [handleHealthReturn]);
 
   // Champ du check-in express : celui choisi à l'onboarding, sinon un champ « Humeur » sur une échelle.
   const quickField = React.useMemo(() => {
@@ -1000,8 +1137,7 @@ export const DailyLogsManager: React.FC = () => {
     }
     if (new URLSearchParams(window.location.search).get("healthSync") === "1" && !healthSyncHandledRef.current) {
       healthSyncHandledRef.current = true;
-      window.dispatchEvent(new CustomEvent("vaultedmind:fields-updated"));
-      setHealthSyncDone(true);
+      void handleHealthReturn();
       router.replace("/dashboard", { scroll: false });
     }
     const dateParam = new URLSearchParams(window.location.search).get("date");
@@ -1009,7 +1145,7 @@ export const DailyLogsManager: React.FC = () => {
       openDayRef.current(dateParam);
       router.replace("/dashboard", { scroll: false });
     }
-  }, [state.loading, mounted, router, pendingTick]);
+  }, [state.loading, mounted, router, pendingTick, handleHealthReturn]);
 
   const { loading, error, notice, dialogError, dialog, formData } = state;
 
@@ -1071,7 +1207,7 @@ export const DailyLogsManager: React.FC = () => {
         sx={{ bottom: { xs: "calc(88px + env(safe-area-inset-bottom, 0px))", sm: 24 } }}
       >
         <Alert severity="success" variant="filled" onClose={() => setHealthSyncDone(false)} sx={{ width: "100%" }}>
-          Données Santé récupérées
+          {healthSyncMessage}
         </Alert>
       </Snackbar>
       {notice && <Alert severity="info" sx={{ mb: 2 }} onClose={() => dispatch({ type: "SET_NOTICE", notice: null })}>{notice}</Alert>}
@@ -1134,6 +1270,9 @@ export const DailyLogsManager: React.FC = () => {
         onClearAgentValue={handleClearAgentValue}
         onApplyProposals={handleApplyProposals}
         voiceReady={voiceReady}
+        startStep={startStep}
+        onStepChange={handleStepChange}
+        onBeforeHealthSync={handleBeforeHealthSync}
       />
     </Paper>
     </Box>

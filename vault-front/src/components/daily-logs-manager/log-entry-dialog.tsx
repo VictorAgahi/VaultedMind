@@ -169,6 +169,11 @@ interface LogEntryDialogProps {
   onApplyProposals: (proposals: AutofillProposal[]) => number;
   /** Ouverture depuis le rappel du soir : prêt à enregistrer. */
   voiceReady?: boolean;
+  /** Étape à afficher à l'ouverture (reprise d'une saisie après la synchronisation Santé). */
+  startStep?: number;
+  onStepChange?: (step: number) => void;
+  /** Appelé avant de lancer le raccourci Apple Santé. */
+  onBeforeHealthSync?: () => void;
 }
 
 export interface AgentSource {
@@ -209,6 +214,9 @@ export const LogEntryDialog: React.FC<LogEntryDialogProps> = ({
   onClearAgentValue,
   onApplyProposals,
   voiceReady,
+  startStep = 0,
+  onStepChange,
+  onBeforeHealthSync,
 }) => {
   const [todayPrompt] = React.useState(() => WRITING_PROMPTS[Math.floor(Date.now() / 86_400_000) % WRITING_PROMPTS.length]);
   const theme = useTheme();
@@ -220,9 +228,13 @@ export const LogEntryDialog: React.FC<LogEntryDialogProps> = ({
   React.useEffect(() => {
     if (open) {
       // eslint-disable-next-line react-hooks/set-state-in-effect
-      setActiveStep(0);
+      setActiveStep(startStep);
     }
-  }, [open]);
+  }, [open, startStep]);
+
+  React.useEffect(() => {
+    onStepChange?.(activeStep);
+  }, [activeStep, onStepChange]);
 
   const groupedFields = React.useMemo(() => {
     const groups: Record<string, CustomField[]> = {};
@@ -238,6 +250,12 @@ export const LogEntryDialog: React.FC<LogEntryDialogProps> = ({
   // Les champs d'abord (rapides), les notes en dernier (facultatives).
   const steps = [...categories, "Notes et date"];
   const notesStepIndex = steps.length - 1;
+
+  React.useEffect(() => {
+    // Une reprise peut tomber sur une étape qui n'existe plus : on reste dans les bornes.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    if (activeStep > notesStepIndex) setActiveStep(notesStepIndex);
+  }, [activeStep, notesStepIndex]);
 
   const handleNext = () => setActiveStep((prev) => prev + 1);
   const handleBack = () => setActiveStep((prev) => prev - 1);
@@ -570,7 +588,7 @@ export const LogEntryDialog: React.FC<LogEntryDialogProps> = ({
         <DialogContent sx={{ pt: "8px !important" }}>
           {error && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>}
 
-          {open && (
+          {open && activeStep === 0 && (
             <VoiceEntryPanel
               logDate={logDate}
               notes={notes}
@@ -580,7 +598,7 @@ export const LogEntryDialog: React.FC<LogEntryDialogProps> = ({
             />
           )}
 
-          {open && logDate === localDateStr() && <HealthSyncButton />}
+          {open && activeStep === 0 && logDate === localDateStr() && <HealthSyncButton onBeforeLaunch={onBeforeHealthSync} />}
           
           <Stepper activeStep={activeStep} alternativeLabel sx={{ mb: 4, display: { xs: 'none', sm: 'flex' } }}>
             {steps.map((label) => (

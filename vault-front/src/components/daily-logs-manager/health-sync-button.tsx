@@ -25,7 +25,12 @@ function detectIos(): boolean {
   return /iPhone|iPad|iPod/.test(userAgent) || (platform === "MacIntel" && maxTouchPoints > 1);
 }
 
-export const HealthSyncButton: React.FC = () => {
+interface HealthSyncButtonProps {
+  /** Appelé juste avant de quitter l'application : sert à garder la saisie en cours. */
+  onBeforeLaunch?: () => void;
+}
+
+export const HealthSyncButton: React.FC<HealthSyncButtonProps> = ({ onBeforeLaunch }) => {
   const isIos = React.useSyncExternalStore(subscribeNever, detectIos, () => false);
   const [busy, setBusy] = React.useState(false);
   const [error, setError] = React.useState<string | null>(null);
@@ -37,6 +42,7 @@ export const HealthSyncButton: React.FC = () => {
     setError(null);
     try {
       const { token } = await apiService.post<SyncTokenResponse, Record<string, never>>("/integrations/health/sync-token", {});
+      onBeforeLaunch?.();
       window.location.href = buildShortcutUrl(token);
     } catch (err) {
       setError((err as AppError).message || "Impossible de préparer la synchronisation Santé.");
