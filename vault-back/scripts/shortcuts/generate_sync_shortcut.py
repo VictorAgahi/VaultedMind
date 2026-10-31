@@ -26,7 +26,6 @@ QUANTITIES = [
     ("STEPS", "Steps", "Sum", True),
     ("ACTIVE_CALORIES", "Active Calories", "Sum", True),
     ("EXERCISE_MINUTES", "Exercise Time", "Sum", True),
-    ("WATER_CONSUMPTION", "Water", "Sum", True),
     ("RESTING_HEART_RATE", "Resting Heart Rate", "Average", False),
     ("HEART_RATE_VARIABILITY", "Heart Rate Variability", "Average", False),
     ("RESPIRATORY_RATE", "Respiratory Rate", "Average", False),
@@ -173,6 +172,9 @@ class Builder:
             "WFInput": {"Type": "Variable", "Variable": attachment(subject_ref)},
             "WFCondition": 101,
         })
+        # The message may embed variables (e.g. the server response) as a token string
+        if isinstance(message, list):
+            message = token_string(message)
         self.add("alert", {"WFAlertActionTitle": title, "WFAlertActionMessage": message,
                            "WFAlertActionCancelButtonShown": False})
         self.add("exit", {})
@@ -282,7 +284,8 @@ def build_sync():
     })
     builder.alert_and_stop_if_empty(
         output_ref(stored, "Dictionary Value"), "VaultedMind",
-        "La synchronisation a échoué. Retournez dans VaultedMind et réessayez (le lien expire après 5 minutes).")
+        ["La synchronisation a échoué. Retournez dans VaultedMind et réessayez (le lien expire après 5 minutes).\n\nRéponse du serveur : ",
+         output_ref(response, "Contents of URL")])
     builder.add("openurl", {"WFInput": RETURN_URL, "Show-WFInput": True})
     return builder.actions
 

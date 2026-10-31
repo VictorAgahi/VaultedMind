@@ -53,7 +53,6 @@ Health types sent (label as Apple names it in the reference files):
 | `STEPS` | Steps | Sum, grouped by day |
 | `ACTIVE_CALORIES` | Active Calories | Sum, grouped by day |
 | `EXERCISE_MINUTES` | Exercise Time | Sum, grouped by day |
-| `WATER_CONSUMPTION` | Water | Sum, grouped by day |
 | `RESTING_HEART_RATE` | Resting Heart Rate | Average of the day's samples |
 | `HEART_RATE_VARIABILITY` | Heart Rate Variability | Average of the day's samples |
 | `RESPIRATORY_RATE` | Respiratory Rate | Average of the day's samples |

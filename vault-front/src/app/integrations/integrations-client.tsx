@@ -105,7 +105,7 @@ export const IntegrationsClient = () => {
           Apple Santé : synchronisation en un geste
         </Typography>
         <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
-          Sommeil, pas, calories actives, fréquence cardiaque au repos, variabilité cardiaque, minutes d&apos;exercice, fréquence respiratoire et eau arrivent dans votre journée, chiffrés, depuis votre iPhone (et votre Apple Watch si vous en avez une). Aucune clé à copier.
+          Sommeil, pas, calories actives, fréquence cardiaque au repos, variabilité cardiaque, minutes d&apos;exercice et fréquence respiratoire arrivent dans votre journée, chiffrés, depuis votre iPhone (et votre Apple Watch si vous en avez une). Aucune clé à copier.
         </Typography>
 
         <Typography variant="subtitle1" sx={{ fontWeight: 700, mb: 1 }}>
