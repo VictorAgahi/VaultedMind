@@ -95,6 +95,27 @@ export const IntegrationsClient = () => {
 
       {error && <Alert severity="error" sx={{ mb: 3 }} onClose={() => setError(null)}>{error}</Alert>}
 
+      {/* Raccourci de test : lit les pas et le sommeil sur l'iPhone et les affiche, sans rien envoyer */}
+      <Paper sx={{ p: 4, borderRadius: 4, mb: 4 }}>
+        <Typography variant="h6" sx={{ fontWeight: 700, mb: 1 }}>
+          Tester le raccourci Apple Santé (bêta)
+        </Typography>
+        <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+          Ce raccourci lit vos pas du jour et votre sommeil des dernières 24 heures, puis les affiche à l&apos;écran. Il n&apos;envoie rien à VaultedMind : il sert à vérifier qu&apos;il fonctionne sur votre iPhone avant la synchronisation automatique.
+        </Typography>
+        <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
+          Ouvrez cette page dans Safari sur votre iPhone, téléchargez le fichier, ouvrez-le puis touchez « Ajouter le raccourci ». Au premier lancement, autorisez l&apos;accès aux pas et au sommeil.
+        </Typography>
+        <Button
+          variant="outlined"
+          startIcon={<FileDownloadIcon />}
+          href="/shortcuts/vaultedmind-test-sante.shortcut"
+          download="VaultedMind Test Sante.shortcut"
+        >
+          Télécharger le raccourci de test
+        </Button>
+      </Paper>
+
       <Paper sx={{ p: 4, borderRadius: 4, mb: 4 }}>
         <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", mb: 3 }}>
           <Typography variant="h6" sx={{ fontWeight: 700 }}>
