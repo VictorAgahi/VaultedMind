@@ -357,6 +357,9 @@ export interface PatternEffect {
   difference: number;
 }
 
+/** D'où vient le prédicteur d'un lien. */
+export type PatternSource = "field" | "health" | "notes" | "language" | "logging";
+
 export interface PatternFinding {
   key: string;
   label: string;
@@ -379,6 +382,10 @@ export interface PatternFinding {
   /** Lien connu de tous. Absent des anciens rapports : traité comme non évident. */
   obvious?: boolean;
   obviousSource?: PatternObviousSource | null;
+  /** Origine du prédicteur. Absent des anciens rapports : déduit de la catégorie. */
+  source?: PatternSource;
+  /** Levier sur lequel agir (true) ou simple compagnon qui varie en même temps (false). Absent des anciens rapports : levier. */
+  actionable?: boolean;
 }
 
 export interface PatternBeforeItem {

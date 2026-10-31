@@ -63,7 +63,7 @@ describe('renderPatternBrief', () => {
     expect(brief).toContain('force: piste');
     expect(brief).toContain('décalage: le lendemain');
     expect(brief).toContain('n=41 jours');
-    expect(brief).toContain('plus haut de 1,3');
+    expect(brief).toContain('plus haute de 1,3');
     expect(brief).toContain('Avant les journées difficiles');
     expect(brief).toContain('Depuis le 1er mars 2026');
   });
@@ -111,5 +111,61 @@ describe('renderSolidFindingsForChat', () => {
       ],
     });
     expect(renderSolidFindingsForChat(report)).toBeNull();
+  });
+});
+
+describe('renderPatternBrief levers and companions', () => {
+  it('should present only actionable findings as levers and the rest as companions', () => {
+    // Arrange
+    const report = buildReport({
+      targets: [
+        buildTarget({
+          findings: [
+            buildFinding({
+              key: 'physical_activity',
+              label: 'Sport',
+              category: 'event',
+            }),
+            buildFinding({
+              key: 'low_mood',
+              label: 'Humeur basse',
+              category: 'state',
+            }),
+          ],
+        }),
+      ],
+    });
+
+    // Act
+    const brief = renderPatternBrief(report);
+    const [levers, companions] = brief.split('Ce qui va avec');
+
+    // Assert
+    expect(levers).toContain('« Sport »');
+    expect(levers).not.toContain('Humeur basse');
+    expect(companions).toContain('Humeur basse');
+  });
+
+  it('should leave the companions out of the chat context', () => {
+    // Arrange
+    const report = buildReport({
+      targets: [
+        buildTarget({
+          findings: [
+            buildFinding({
+              key: 'low_mood',
+              label: 'Humeur basse',
+              category: 'state',
+            }),
+          ],
+        }),
+      ],
+    });
+
+    // Act
+    const lines = renderSolidFindingsForChat(report);
+
+    // Assert
+    expect(lines).toBeNull();
   });
 });

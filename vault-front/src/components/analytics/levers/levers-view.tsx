@@ -8,6 +8,7 @@ import { useAuth } from "@/context/auth-context";
 import { isSelfSubject, leversWording } from "@/utils/tracked-subject";
 import type { ApiError, PatternReport, PatternResponse } from "@/types";
 import { LeversReport } from "./levers-report";
+import { LeversFilterChips, LeversHelp, readFilterPreference, writeFilterPreference, type LeversFilter } from "./levers-help";
 import { formatDay } from "./levers-parts";
 
 const RECOMPUTE_COOLDOWN_MS = 15 * 60 * 1000;
@@ -41,6 +42,7 @@ export const LeversView: React.FC = () => {
   const [loadError, setLoadError] = React.useState<string | null>(null);
   const [recomputing, setRecomputing] = React.useState(false);
   const [notice, setNotice] = React.useState<string | null>(null);
+  const [filter, setFilter] = React.useState<LeversFilter>(readFilterPreference);
 
   React.useEffect(() => {
     const controller = new AbortController();
@@ -98,6 +100,7 @@ export const LeversView: React.FC = () => {
             Calculé le {formatDay(response.computedAt.slice(0, 10))} · {response.daysLogged} jour{response.daysLogged > 1 ? "s" : ""} notés
           </Typography>
         )}
+        <LeversHelp />
         {recomputeButton}
         {notice && <Typography variant="body2" role="status">{notice}</Typography>}
       </Paper>
@@ -130,7 +133,18 @@ export const LeversView: React.FC = () => {
         </Paper>
       )}
 
-      {response.status === "ok" && <LeversReport report={response} />}
+      {response.status === "ok" && (
+        <>
+          <LeversFilterChips
+            value={filter}
+            onChange={(value) => {
+              setFilter(value);
+              writeFilterPreference(value);
+            }}
+          />
+          <LeversReport report={response} filter={filter} />
+        </>
+      )}
     </Box>
   );
 };

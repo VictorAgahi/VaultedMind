@@ -145,11 +145,16 @@ describe('sentences for value targets', () => {
 
   it('should tell the difference in frequency with the label of the target', () => {
     // Act
-    const sentence = summarizeFinding(finding(), 'Humeur : agressif');
+    const sentence = summarizeFinding(
+      finding(),
+      'Humeur : agressif',
+      undefined,
+      { kind: 'ANIMAL', name: 'Mochi', species: 'chat' },
+    );
 
     // Assert
     expect(sentence).toBe(
-      '« Humeur : agressif » est plus fréquent le lendemain des jours où « Tension » est présent (32 % des jours contre 12 %).',
+      '« Humeur : agressif » est plus fréquent le lendemain des jours où « Tension » apparaît dans la note (32 % des jours contre 12 %).',
     );
     expectCalm(sentence);
     expect(sentence).not.toMatch(/\b(tu|ton|ta|tes)\b/);
@@ -162,7 +167,7 @@ describe('sentences for value targets', () => {
         'Humeur : agressif',
       ),
     ).toBe(
-      '« Humeur : agressif » est plus rare les jours où « Tension » est présent (5 % des jours contre 30 %).',
+      '« Humeur : agressif » est plus rare les jours où « Tension » apparaît dans ta note (5 % des jours contre 30 %).',
     );
     expect(
       summarizeFinding(
@@ -171,7 +176,9 @@ describe('sentences for value targets', () => {
         }),
         'Humeur : agressif',
       ),
-    ).toContain('le lendemain des jours où « Tension » est plus élevé');
+    ).toContain(
+      'le lendemain des jours où la valeur de « Tension » lue dans ta note est parmi les plus hautes (le tiers le plus haut)',
+    );
   });
 
   it('should say nothing changes when the gap rounds to zero points', () => {

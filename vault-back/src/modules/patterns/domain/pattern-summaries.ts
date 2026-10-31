@@ -4,6 +4,12 @@ import {
   type TrackedSubject,
 } from '../../signals/domain/tracked-subject.js';
 import { NO_LOG_PREVIOUS_DAY_KEY } from './pattern-engine.js';
+import {
+  isNotesCategory,
+  readableLabel,
+  themeTopic,
+  type TargetUnit,
+} from './pattern-sources.js';
 import type {
   BeforeDifficultDaysItem,
   ChangePointFinding,
@@ -39,47 +45,116 @@ export function formatFrenchDate(isoDate: string): string {
   return `${dayLabel} ${MONTH_NAMES[month - 1]} ${year}`;
 }
 
-function withUnit(value: number, unit: string | undefined): string {
-  const text = formatFrenchNumber(Math.abs(value));
-  return unit ? `${text} ${unit}` : text;
+const HOURS_UNIT = 'h';
+const MAX_HOURS_WITH_MINUTES = 1;
+
+/** "40 min" for 0,7 h: the nearest 5 minutes once past 10, exact below. */
+function approximateMinutes(hours: number): string {
+  const minutes = Math.round(Math.abs(hours) * 60);
+  const rounded = minutes >= 10 ? Math.round(minutes / 5) * 5 : minutes;
+  return `environ ${rounded} min`;
+}
+
+function normalizeUnit(unit: string | TargetUnit | undefined): TargetUnit {
+  if (unit === undefined) return { label: '' };
+  return typeof unit === 'string' ? { label: unit } : unit;
+}
+
+function pointsLabel(value: number): string {
+  return Math.abs(value) >= 2 ? 'points' : 'point';
+}
+
+function withUnit(value: number, unit: TargetUnit): string {
+  const scaled = Math.abs(value) * (unit.factor ?? 1);
+  const text = unit.factor
+    ? String(Math.round(scaled))
+    : formatFrenchNumber(scaled);
+  const label = unit.label || pointsLabel(scaled);
+  const amount = `${text} ${label}`;
+  const showMinutes =
+    unit.label === HOURS_UNIT &&
+    !unit.factor &&
+    Math.abs(value) < MAX_HOURS_WITH_MINUTES &&
+    Math.round(Math.abs(value) * 60) > 0;
+  return showMinutes ? `${amount}, soit ${approximateMinutes(value)}` : amount;
 }
 
 function daysLabel(count: number): string {
   return count > 1 ? `${count} jours` : `${count} jour`;
 }
 
-function predictorPhrase(finding: PatternFinding): string {
-  const isContinuous = finding.effect?.kind === 'continuous';
+/**
+ * What the sentence needs to know beyond the finding: the unit of the target and whether a
+ * night metric (describing the night before its day) is on one side of the link.
+ */
+export interface FindingContext {
+  targetUnit?: string | TargetUnit;
+  predictorIsNight?: boolean;
+  targetIsNight?: boolean;
+}
+
+/** What makes the predictor "present" on a day, worded after where it was read. */
+function presenceClause(
+  finding: PatternFinding,
+  label: string,
+  subject?: TrackedSubject,
+): string {
+  const self = !subject || isSelfSubject(subject);
+  const note = self ? 'ta note' : 'la note';
+  const continuous = finding.effect?.kind === 'continuous';
+  const level = continuous ? ' (le tiers le plus haut)' : '';
+  if (finding.category === 'theme') {
+    const topic = themeTopic(finding.key, label, self);
+    return continuous
+      ? `où ${note} parle beaucoup ${topic}${level}`
+      : `où ${note} parle ${topic}`;
+  }
+  if (continuous) {
+    const where = isNotesCategory(finding.category) ? ` lue dans ${note}` : '';
+    return `où la valeur de « ${label} »${where} est parmi les plus hautes${level}`;
+  }
+  if (isNotesCategory(finding.category)) {
+    return `où « ${label} » apparaît dans ${note}`;
+  }
+  return `où « ${label} » est présent`;
+}
+
+/** Where the predictor stands in time, to be read after "est plus fréquent". */
+function conditionPhrase(
+  finding: PatternFinding,
+  subject?: TrackedSubject,
+  context: FindingContext = {},
+): string {
   if (finding.key === NO_LOG_PREVIOUS_DAY_KEY) {
-    return 'Après un jour sans saisie,';
+    return 'après un jour sans saisie';
   }
-  if (isContinuous) {
-    return finding.lag === 1
-      ? `Le lendemain des jours où « ${finding.label} » est plus élevé,`
-      : `Quand « ${finding.label} » est plus élevé,`;
+  const label = readableLabel(finding.key, finding.label, subject);
+  const clause = presenceClause(finding, label, subject);
+  const nextDay = finding.lag === 1;
+  if (context.predictorIsNight) {
+    return nextDay
+      ? `le lendemain des jours qui suivent les nuits ${clause}`
+      : `après les nuits ${clause}`;
   }
-  return finding.lag === 1
-    ? `Le lendemain des jours où « ${finding.label} » est présent,`
-    : `Les jours où « ${finding.label} » est présent,`;
+  if (context.targetIsNight) {
+    return nextDay
+      ? `la nuit qui suit les jours ${clause}`
+      : `la nuit qui précède les jours ${clause}`;
+  }
+  return nextDay ? `le lendemain des jours ${clause}` : `les jours ${clause}`;
+}
+
+function predictorPhrase(
+  finding: PatternFinding,
+  subject?: TrackedSubject,
+  context?: FindingContext,
+): string {
+  const condition = conditionPhrase(finding, subject, context);
+  return `${condition.charAt(0).toUpperCase()}${condition.slice(1)},`;
 }
 
 function percentLabel(frequency: number): string {
   return `${Math.round(frequency * 100)} %`;
-}
-
-/** Where the predictor stands in time, to be read after "est plus fréquent". */
-function conditionPhrase(finding: PatternFinding): string {
-  const isContinuous = finding.effect?.kind === 'continuous';
-  if (finding.key === NO_LOG_PREVIOUS_DAY_KEY)
-    return 'après un jour sans saisie';
-  if (isContinuous) {
-    return finding.lag === 1
-      ? `le lendemain des jours où « ${finding.label} » est plus élevé`
-      : `quand « ${finding.label} » est plus élevé`;
-  }
-  return finding.lag === 1
-    ? `le lendemain des jours où « ${finding.label} » est présent`
-    : `les jours où « ${finding.label} » est présent`;
 }
 
 /**
@@ -90,8 +165,10 @@ function summarizeBinaryTargetFinding(
   finding: PatternFinding,
   effect: NonNullable<PatternFinding['effect']>,
   targetLabel: string,
+  subject?: TrackedSubject,
+  context?: FindingContext,
 ): string {
-  const condition = conditionPhrase(finding);
+  const condition = conditionPhrase(finding, subject, context);
   const shares = `${percentLabel(effect.meanWhenHigh)} des jours contre ${percentLabel(effect.meanWhenLow)}`;
   if (Math.round(effect.difference * 100) === 0) {
     return `« ${targetLabel} » reste à peu près aussi fréquent ${condition} (${shares}).`;
@@ -100,30 +177,70 @@ function summarizeBinaryTargetFinding(
   return `« ${targetLabel} » est ${comparison} ${condition} (${shares}).`;
 }
 
-/** One calm French sentence describing a finding; never advice, blame or diagnosis. */
+/** Direction of a difference, in forms that agree whatever the gender of the label. */
+function directionWord(difference: number, unit: TargetUnit): string {
+  if (unit.clock)
+    return difference > 0 ? 'décalée plus tard' : 'décalée plus tôt';
+  return difference > 0 ? 'plus haute' : 'plus basse';
+}
+
+/** How many days the comparison rests on; a group size is never told alone. */
+function sampleLabel(
+  finding: PatternFinding,
+  effect: NonNullable<PatternFinding['effect']>,
+): string {
+  const total = `comparé sur ${daysLabel(finding.n)}`;
+  if (effect.kind === 'continuous') {
+    return `${total} ; tiers haut : ${daysLabel(effect.countHigh)}, tiers bas : ${daysLabel(effect.countLow)}`;
+  }
+  return `${total}, dont ${effect.countHigh} avec et ${effect.countLow} sans`;
+}
+
+/**
+ * One calm French sentence describing a finding; never advice, blame or diagnosis.
+ * The context orders a night metric first, since it describes the night before its day.
+ */
 export function summarizeFinding(
   finding: PatternFinding,
   targetLabel: string,
-  unit?: string,
+  unit?: string | TargetUnit,
+  subject?: TrackedSubject,
+  context: FindingContext = {},
 ): string {
-  const lead = predictorPhrase(finding);
+  const lead = predictorPhrase(finding, subject, context);
   const effect = finding.effect;
   if (effect?.targetBinary) {
-    return summarizeBinaryTargetFinding(finding, effect, targetLabel);
+    return summarizeBinaryTargetFinding(
+      finding,
+      effect,
+      targetLabel,
+      subject,
+      context,
+    );
   }
+  const value = `la valeur de « ${targetLabel} »`;
   if (!effect) {
-    const tendency = finding.rho >= 0 ? 'plus haut' : 'plus bas';
-    return `${lead} ${targetLabel} a tendance à être ${tendency}.`;
+    const tendency = finding.rho >= 0 ? 'plus haute' : 'plus basse';
+    return `${lead} ${value} a tendance à être ${tendency}.`;
   }
-  const amount = withUnit(effect.difference, unit);
-  const sample = `sur ${daysLabel(effect.countHigh)}`;
-  if (formatFrenchNumber(effect.difference) === '0,0') {
-    return `${lead} ${targetLabel} reste en moyenne presque identique (${sample}).`;
+  const measure = normalizeUnit(unit ?? context.targetUnit);
+  const amount = withUnit(effect.difference, measure);
+  const sample = sampleLabel(finding, effect);
+  const scaled = effect.difference * (measure.factor ?? 1);
+  const isZero = measure.factor
+    ? Math.round(Math.abs(scaled)) === 0
+    : formatFrenchNumber(effect.difference) === '0,0';
+  if (isZero) {
+    return `${lead} ${value} reste en moyenne presque identique (${sample}).`;
   }
-  const direction = effect.difference > 0 ? 'plus haut' : 'plus bas';
+  const direction = directionWord(effect.difference, measure);
   const comparison =
-    effect.kind === 'continuous' ? ' que quand il est plus bas' : '';
-  return `${lead} ${targetLabel} est en moyenne ${direction} de ${amount} (${sample})${comparison}.`;
+    effect.kind === 'continuous'
+      ? context.predictorIsNight || context.targetIsNight
+        ? ' que lorsque cette valeur est parmi les plus basses'
+        : ' que les jours où cette valeur est parmi les plus basses'
+      : '';
+  return `${lead} ${value} est en moyenne ${direction} de ${amount} (${sample})${comparison}.`;
 }
 
 /** "tes journées difficiles" for the user, the subject's name for someone else. */
@@ -143,14 +260,11 @@ export function summarizeBeforeDifficultItem(
   target?: Pick<TargetReport, 'binary' | 'direction' | 'label'>,
   subject?: TrackedSubject,
 ): string {
-  const counts = `${item.countBefore} fois sur ${item.daysBefore}`;
   const days = target?.binary
     ? `les jours où « ${target.label} » est ${target.direction === 'LOWER_IS_BETTER' ? 'présent' : 'absent'}`
     : difficultDaysPhrase(subject);
-  if (isMoreFrequentBefore(item)) {
-    return `« ${item.label} » revient plus souvent dans les 3 jours qui précèdent ${days} (${counts}).`;
-  }
-  return `« ${item.label} » est plus rare dans les 3 jours qui précèdent ${days} (${counts}).`;
+  const baseline = percentLabel(item.frequencyOther);
+  return `« ${item.label} » est présent ${item.countBefore} fois sur ${daysLabel(item.daysBefore)} dans les 3 jours avant ${days}, contre ${baseline} des autres jours.`;
 }
 
 export function summarizeChangePoint(

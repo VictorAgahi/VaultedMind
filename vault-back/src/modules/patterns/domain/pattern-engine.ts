@@ -46,7 +46,7 @@ import {
 import { hashSeed } from './prng.js';
 import { findScoreTextGaps } from './score-text-gaps.js';
 import { encodeSeries, type EncodedSeries } from './series.js';
-import { benjaminiHochberg } from './stats.js';
+import { benjaminiHochberg, standardDeviation } from './stats.js';
 
 export const REQUIRED_LOGGED_DAYS = 30;
 export const DEFAULT_PERMUTATIONS = 2000;
@@ -391,6 +391,13 @@ function findChangePoints(
     .filter((finding): finding is ChangePointFinding => finding !== null);
 }
 
+function spreadOf(values: Float64Array): { targetSd?: number } {
+  const deviation = standardDeviation(
+    values.filter((value) => !Number.isNaN(value)),
+  );
+  return Number.isFinite(deviation) ? { targetSd: deviation } : {};
+}
+
 function resolveTargets(
   matrix: DailyMatrix,
   targets: InsightTarget[],
@@ -454,6 +461,7 @@ export function computePatternReport(
       direction: target.direction,
       ...(target.binary && { value: target.value, binary: true }),
       testsRun: tests.filter((test) => test.targetIndex === index).length,
+      ...spreadOf(target.series.values),
       findings: findings[index],
       beforeDifficultDays: beforeDifficult[index],
       // A mean shift of a yes/no series is not told in the units of a scale: left out

@@ -9,6 +9,12 @@ import type {
   TargetReport,
 } from './pattern-types.js';
 import {
+  findingContext,
+  isActionableFinding,
+  isNegligibleFinding,
+  type LinkedFieldMeasures,
+} from './finding-measures.js';
+import {
   splitByObviousness,
   type PatternObviousOverrides,
 } from './pattern-obviousness.js';
@@ -59,6 +65,8 @@ function directionLabel(finding: PatternFinding, target: TargetReport): string {
 function renderFindingLine(
   finding: PatternFinding,
   target: TargetReport,
+  subject: TrackedSubject | undefined,
+  measures: LinkedFieldMeasures,
 ): string {
   const details = [
     `force: ${finding.strength}`,
@@ -67,7 +75,7 @@ function renderFindingLine(
     `rho=${formatFrenchNumber(finding.rho)}`,
     directionLabel(finding, target),
   ].join(', ');
-  return `- ${summarizeFinding(finding, target.label)} [${details}]`;
+  return `- ${summarizeFinding(finding, target.label, undefined, subject, findingContext(finding, target, measures))} [${details}]`;
 }
 
 const GOAL_LABELS: Record<TargetReport['direction'], string> = {
@@ -79,17 +87,34 @@ const GOAL_LABELS: Record<TargetReport['direction'], string> = {
 function renderTarget(
   target: TargetReport,
   mainFindings: PatternFinding[],
-  subject?: TrackedSubject,
+  subject: TrackedSubject | undefined,
+  measures: LinkedFieldMeasures,
 ): string[] {
   const goal = GOAL_LABELS[target.direction] ?? GOAL_LABELS.NEUTRAL;
   const lines = [`Objectif suivi : « ${target.label} » (${goal})`];
 
-  lines.push('Liens observés :');
-  lines.push(
-    ...(mainFindings.length > 0
-      ? mainFindings.map((finding) => renderFindingLine(finding, target))
-      : ['- Aucun lien assez net.']),
+  const meaningful = mainFindings.filter(
+    (finding) => !isNegligibleFinding(finding, target),
   );
+  const levers = meaningful.filter((finding) =>
+    isActionableFinding(finding, target, measures),
+  );
+  const companions = meaningful.filter(
+    (finding) => !isActionableFinding(finding, target, measures),
+  );
+  const line = (finding: PatternFinding): string =>
+    renderFindingLine(finding, target, subject, measures);
+
+  lines.push('Leviers possibles (liens observés sur lesquels agir) :');
+  lines.push(
+    ...(levers.length > 0 ? levers.map(line) : ['- Aucun lien assez net.']),
+  );
+  if (companions.length > 0) {
+    lines.push(
+      'Ce qui va avec (varie en même temps, ce ne sont pas des leviers) :',
+    );
+    lines.push(...companions.map(line));
+  }
 
   const items = target.beforeDifficultDays?.items ?? [];
   if (items.length > 0) {
@@ -126,6 +151,7 @@ export function renderPatternBrief(
   report: PatternReport,
   overrides: PatternObviousOverrides = {},
   subject?: TrackedSubject,
+  measures: LinkedFieldMeasures = new Map(),
 ): string {
   const lines = [
     `RÉSULTATS CALCULÉS (moteur statistique ${report.engineVersion}, calculés le ${formatFrenchDate(report.computedAt.slice(0, 10))}, ${report.daysLogged} jours saisis sur ${report.daysCovered}).`,
@@ -138,7 +164,7 @@ export function renderPatternBrief(
         (finding) => `« ${finding.label} » et « ${target.label} »`,
       ),
     );
-    lines.push('', ...renderTarget(target, split.main, subject));
+    lines.push('', ...renderTarget(target, split.main, subject, measures));
   }
   if (report.stateChangePoints.length > 0) {
     lines.push('', stateChangesHeading(subject));
@@ -162,14 +188,21 @@ export function renderSolidFindingsForChat(
   report: PatternReport,
   limit: number = CHAT_MAX_FINDING_LINES,
   overrides: PatternObviousOverrides = {},
+  subject?: TrackedSubject,
+  measures: LinkedFieldMeasures = new Map(),
 ): string | null {
   const lines = report.targets
     .flatMap((target) =>
       splitByObviousness(target, overrides)
-        .main.filter((finding) => finding.strength === 'solide')
+        .main.filter(
+          (finding) =>
+            finding.strength === 'solide' &&
+            isActionableFinding(finding, target, measures) &&
+            !isNegligibleFinding(finding, target),
+        )
         .map(
           (finding) =>
-            `- ${summarizeFinding(finding, target.label)} [solide, n=${finding.n} jours, ${lagLabel(finding)}]`,
+            `- ${summarizeFinding(finding, target.label, undefined, subject, findingContext(finding, target, measures))} [solide, n=${finding.n} jours, ${lagLabel(finding)}]`,
         ),
     )
     .slice(0, limit);

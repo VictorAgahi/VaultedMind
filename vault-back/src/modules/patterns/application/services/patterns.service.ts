@@ -29,6 +29,7 @@ import {
 } from '../../domain/pattern-obviousness.js';
 import { PatternEngineRunner } from '../../infrastructure/workers/pattern-engine.runner.js';
 import { ObviousnessService } from './obviousness.service.js';
+import { linkedFieldMeasures } from '../../domain/pattern-sources.js';
 import {
   buildPatternReportView,
   type PatternReportView,
@@ -82,11 +83,13 @@ export class PatternsService {
         )
         .map((target) => targetIdentity(target.fieldId, target.value)),
     );
+    const measures = linkedFieldMeasures(fields);
     return buildPatternReportView(
       report,
       stillValid,
       user.preferences.patternObviousOverrides ?? {},
       user.preferences.trackedSubject,
+      measures,
     );
   }
 

@@ -3,7 +3,7 @@
 import React from "react";
 import Link from "next/link";
 import { Box, Button, Chip, Link as MuiLink, Paper, Tooltip, Typography } from "@mui/material";
-import type { PatternStrength } from "@/types";
+import type { PatternFinding, PatternSource, PatternStrength } from "@/types";
 
 export const MAX_VISIBLE_CARDS = 5;
 
@@ -22,6 +22,46 @@ export const StrengthChip: React.FC<{ strength: PatternStrength }> = ({ strength
       color={strength === "solide" ? "primary" : "default"}
       aria-label={`${strength === "solide" ? "Solide" : "Piste"} : ${STRENGTH_EXPLANATION[strength]}`}
     />
+  </Tooltip>
+);
+
+const SOURCE_LABELS: Record<PatternSource, string> = {
+  field: "Ton champ",
+  health: "Apple Santé",
+  notes: "Lu dans tes notes",
+  language: "Ta façon d'écrire",
+  logging: "Saisie",
+};
+
+const SOURCE_EXPLANATIONS: Record<PatternSource, string> = {
+  field: "Un champ que tu remplis toi-même.",
+  health: "Une mesure venue d'Apple Santé.",
+  notes: "Repéré automatiquement par l'IA dans ce que tu racontes (corrigeable sous chaque note).",
+  language: "Calculé sur le texte de tes notes, sans IA.",
+  logging: "Lié au fait d'avoir noté ou non ta journée.",
+};
+
+const NOTES_CATEGORIES = ["event", "theme", "state", "person", "custom"];
+
+// Les anciens rapports n'ont pas encore la source : on la déduit de la catégorie.
+export const sourceOfFinding = (finding: PatternFinding): PatternSource => {
+  if (finding.source) return finding.source;
+  if (finding.category === "body") return "health";
+  if (finding.category === "language" || finding.category === "logging") return finding.category;
+  return NOTES_CATEGORIES.includes(finding.category) ? "notes" : "field";
+};
+
+export const SourceChip: React.FC<{ source: PatternSource }> = ({ source }) => (
+  <Tooltip title={SOURCE_EXPLANATIONS[source]} enterTouchDelay={0} leaveTouchDelay={4000}>
+    <Typography
+      variant="caption"
+      color="text.secondary"
+      tabIndex={0}
+      aria-label={`${SOURCE_LABELS[source]} : ${SOURCE_EXPLANATIONS[source]}`}
+      sx={{ justifySelf: "start", cursor: "help", textDecoration: "underline dotted", textUnderlineOffset: 3 }}
+    >
+      {SOURCE_LABELS[source]}
+    </Typography>
   </Tooltip>
 );
 

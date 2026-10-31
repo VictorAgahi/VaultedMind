@@ -55,6 +55,21 @@ describe('computePatternReport', () => {
       expect(finding?.exampleDates.length).toBeGreaterThan(0);
     });
 
+    it('should store the standard deviation of the target', () => {
+      // Arrange
+      const matrix = buildNoiseMatrix({
+        seed: 5,
+        eventPredictors: 2,
+        continuousPredictors: 2,
+      });
+
+      // Act
+      const report = run(matrix, 200);
+
+      // Assert
+      expect(report.targets[0].targetSd).toBeGreaterThan(0);
+    });
+
     it('should find a same-day effect as solide at lag 0', () => {
       // Arrange
       const matrix = buildNoiseMatrix({

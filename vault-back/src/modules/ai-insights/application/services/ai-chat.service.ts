@@ -1,4 +1,5 @@
 import { Injectable, Logger, HttpException, HttpStatus } from '@nestjs/common';
+import { linkedFieldMeasures } from '../../../patterns/domain/pattern-sources.js';
 import { DailyLogRepository } from '../../../../database/repositories/daily-log.repository.js';
 import { CustomFieldRepository } from '../../../../database/repositories/custom-field.repository.js';
 import { PatternReportRepository } from '../../../../database/repositories/pattern-report.repository.js';
@@ -132,6 +133,8 @@ export class AIChatService {
             report,
             undefined,
             user.preferences.patternObviousOverrides,
+            user.preferences.trackedSubject,
+            linkedFieldMeasures(fields),
           )
         : null;
       const engineBlock = solidFindings

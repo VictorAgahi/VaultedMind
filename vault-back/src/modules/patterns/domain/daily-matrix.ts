@@ -13,6 +13,12 @@ import {
   type BankQuestion,
 } from '../../signals/domain/question-bank.js';
 import type { SignalView } from '../../signals/domain/signal-view.js';
+import {
+  ABSOLUTIST_RATIO_KEY,
+  FIRST_PERSON_RATIO_KEY,
+  languageMarkerLabel,
+  WORD_COUNT_KEY,
+} from './pattern-sources.js';
 import type { DailyMatrix, MatrixColumn } from './pattern-types.js';
 
 /** A score read with less confidence than this is treated as unknown. */
@@ -58,6 +64,13 @@ export const FIELD_COLUMN_PREFIX = 'field:';
 
 export function fieldColumnKey(fieldId: string): string {
   return `${FIELD_COLUMN_PREFIX}${fieldId}`;
+}
+
+/** Id of the custom field behind a predictor key ("field:<id>"), null for any other column. */
+export function fieldIdOfKey(key: string): string | null {
+  return key.startsWith(FIELD_COLUMN_PREFIX)
+    ? key.slice(FIELD_COLUMN_PREFIX.length)
+    : null;
 }
 
 const DAY_MS = 86_400_000;
@@ -222,18 +235,22 @@ function buildMarkerColumns(
     ),
   });
   const length = marker(
-    'word_count',
-    'Longueur de la note',
+    WORD_COUNT_KEY,
+    languageMarkerLabel(WORD_COUNT_KEY, context.subject) ?? '',
     (m) => m.wordCount,
   );
   // Absolutist and first-person wording describe the author, not an observed subject
   if (!isSelfSubject(context.subject)) return [length];
   return [
     length,
-    marker('absolutist_ratio', 'Mots absolus', (m) => m.absolutistRatio),
     marker(
-      'first_person_ratio',
-      'Mots à la première personne',
+      ABSOLUTIST_RATIO_KEY,
+      languageMarkerLabel(ABSOLUTIST_RATIO_KEY) ?? '',
+      (m) => m.absolutistRatio,
+    ),
+    marker(
+      FIRST_PERSON_RATIO_KEY,
+      languageMarkerLabel(FIRST_PERSON_RATIO_KEY) ?? '',
       (m) => m.firstPersonRatio,
     ),
   ];

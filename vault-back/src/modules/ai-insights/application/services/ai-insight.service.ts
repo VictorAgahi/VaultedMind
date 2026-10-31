@@ -1,4 +1,5 @@
 import { Injectable, Logger, HttpException, HttpStatus } from '@nestjs/common';
+import { linkedFieldMeasures } from '../../../patterns/domain/pattern-sources.js';
 import { v4 as uuidv4 } from 'uuid';
 import { AIInsightRepository } from '../../../../database/repositories/ai-insight.repository.js';
 import { DailyLogRepository } from '../../../../database/repositories/daily-log.repository.js';
@@ -319,7 +320,14 @@ export class AIInsightService {
     const stored = await this.patternReportRepository.findByUserId(userId);
     const report = stored?.report ?? null;
     return canUseEngineBrief(report, insightsV2Enabled, new Date())
-      ? renderPatternBrief(report, obviousOverrides, subject)
+      ? renderPatternBrief(
+          report,
+          obviousOverrides,
+          subject,
+          linkedFieldMeasures(
+            await this.customFieldRepository.findByUserId(userId),
+          ),
+        )
       : null;
   }
 

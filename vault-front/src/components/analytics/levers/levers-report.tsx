@@ -6,8 +6,9 @@ import { Box, Button, FormControlLabel, Link as MuiLink, Paper, Switch, Typograp
 import { apiService } from "@/services/api.service";
 import { useAuth } from "@/context/auth-context";
 import { leversWording } from "@/utils/tracked-subject";
-import type { PatternChangePoint, PatternFinding, PatternReport, PatternTargetReport } from "@/types";
-import { DayLinks, InsightCard, SectionTitle, ShowMoreList, StrengthChip } from "./levers-parts";
+import type { PatternChangePoint, PatternFinding, PatternReport, PatternSource, PatternTargetReport } from "@/types";
+import { DayLinks, InsightCard, SectionTitle, ShowMoreList, SourceChip, sourceOfFinding, StrengthChip } from "./levers-parts";
+import type { LeversFilter } from "./levers-help";
 
 const GAPS_STORAGE_KEY = "vaultedmind:levers-show-gaps";
 
@@ -43,6 +44,7 @@ const FindingCard: React.FC<FindingCardProps> = ({ finding, tone, obvious, onVer
       <Typography variant="body2">{finding.summary}</Typography>
       <StrengthChip strength={finding.strength} />
     </Box>
+    <SourceChip source={sourceOfFinding(finding)} />
     <DayLinks dates={finding.exampleDates} />
     {finding.findingKey && (
       <Button
@@ -116,6 +118,45 @@ const ExpectedLinks: React.FC<{ id: string; findings: PatternFinding[]; onVerdic
   );
 };
 
+// Les compagnons (états, thèmes, façon d'écrire...) varient en même temps mais ne sont pas des leviers.
+const CompanionLinks: React.FC<{ id: string; findings: PatternFinding[]; onVerdict: ObviousVerdict; isObvious: (finding: PatternFinding) => boolean }> = ({
+  id,
+  findings,
+  onVerdict,
+  isObvious,
+}) => {
+  const [open, setOpen] = React.useState(false);
+  if (findings.length === 0) return null;
+  const panelId = `${id}-panel`;
+  return (
+    <Box component="section" aria-labelledby={id} sx={{ display: "grid", gap: 1 }}>
+      <Button
+        id={id}
+        color="inherit"
+        aria-expanded={open}
+        aria-controls={panelId}
+        onClick={() => setOpen((current) => !current)}
+        sx={{ justifySelf: "start", textTransform: "none" }}
+      >
+        Ce qui va avec ({findings.length})
+      </Button>
+      {open && (
+        <Box id={panelId} sx={{ display: "grid", gap: 1 }}>
+          <Typography variant="body2" color="text.secondary">
+            Des choses qui varient en même temps, sans être des leviers.
+          </Typography>
+          <ShowMoreList
+            items={findings}
+            render={(finding) => (
+              <FindingCard key={`${finding.key}-${finding.lag}-${finding.rho > 0 ? "p" : "n"}`} finding={finding} tone="neutral" obvious={isObvious(finding)} onVerdict={onVerdict} />
+            )}
+          />
+        </Box>
+      )}
+    </Box>
+  );
+};
+
 const BeforeDifficultDays: React.FC<{ target: PatternTargetReport; idSuffix: string }> = ({ target, idSuffix }) => {
   const items = target.beforeDifficultDays?.items ?? [];
   if (items.length === 0) return null;
@@ -169,7 +210,9 @@ const TargetSection: React.FC<TargetSectionProps> = ({ target, index, isObvious,
   const wording = leversWording(user?.preferences?.trackedSubject);
   const headingId = `target-${index}`;
   const findings = target.findings ?? [];
-  const main = findings.filter((finding) => !isObvious(finding));
+  const visible = findings.filter((finding) => !isObvious(finding));
+  const main = visible.filter((finding) => finding.actionable !== false);
+  const companions = visible.filter((finding) => finding.actionable === false);
   const expected = findings.filter(isObvious);
   const neutral = target.direction === "NEUTRAL";
   const helping = main.filter((finding) => finding.favourable === true);
@@ -192,7 +235,7 @@ const TargetSection: React.FC<TargetSectionProps> = ({ target, index, isObvious,
         </Typography>
       ) : (
         <>
-          {main.length === 0 && (
+          {main.length === 0 && companions.length === 0 && (
             <Typography variant="body2" color="text.secondary">
               {expected.length > 0
                 ? "Seuls des liens attendus ont été repérés pour l'instant."
@@ -211,6 +254,7 @@ const TargetSection: React.FC<TargetSectionProps> = ({ target, index, isObvious,
               <FindingGroup id={`other-${index}`} title="Autres liens observés" subtitle="Le sens de ces liens ne peut pas être tranché." findings={undetermined} tone="neutral" obvious={false} onVerdict={onVerdict} />
             </>
           )}
+          <CompanionLinks id={`companions-${index}`} findings={companions} onVerdict={onVerdict} isObvious={isObvious} />
           <BeforeDifficultDays target={target} idSuffix={String(index)} />
           <ExpectedLinks id={`expected-${index}`} findings={expected} onVerdict={onVerdict} />
         </>
@@ -272,7 +316,24 @@ const ScoreTextGaps: React.FC<{ targets: PatternTargetReport[] }> = ({ targets }
   );
 };
 
-export const LeversReport: React.FC<{ report: PatternReport }> = ({ report }) => {
+const FILTER_SOURCES: Record<LeversFilter, PatternSource[] | null> = {
+  all: null,
+  field: ["field"],
+  health: ["health"],
+  notes: ["notes"],
+};
+
+// Le langage et la saisie n'apparaissent que sous « Tout ».
+const applyFilter = (targets: PatternTargetReport[], filter: LeversFilter): PatternTargetReport[] => {
+  const sources = FILTER_SOURCES[filter];
+  if (!sources) return targets;
+  return targets.map((target) => ({
+    ...target,
+    findings: (target.findings ?? []).filter((finding) => sources.includes(sourceOfFinding(finding))),
+  }));
+};
+
+export const LeversReport: React.FC<{ report: PatternReport; filter?: LeversFilter }> = ({ report, filter = "all" }) => {
   // Avis de la personne en attente de confirmation du serveur, par clé de lien (mise à jour optimiste).
   const [overrides, setOverrides] = React.useState<Record<string, boolean>>({});
   const [notice, setNotice] = React.useState<string | null>(null);
@@ -304,7 +365,7 @@ export const LeversReport: React.FC<{ report: PatternReport }> = ({ report }) =>
   return (
     <Box sx={{ display: "grid", gap: 1.5 }}>
       {notice && <Typography variant="body2" role="status">{notice}</Typography>}
-      {report.targets.map((target, index) => (
+      {applyFilter(report.targets, filter).map((target, index) => (
         <TargetSection key={`${target.key}-${target.value ?? ""}`} target={target} index={index} isObvious={isObvious} onVerdict={sendVerdict} />
       ))}
       <ChangePoints items={changePoints} />

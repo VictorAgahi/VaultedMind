@@ -15,6 +15,18 @@ import type {
   TargetReport,
 } from './pattern-types.js';
 import {
+  findingContext,
+  isActionableFinding,
+  isNegligibleFinding,
+  type LinkedFieldMeasures,
+} from './finding-measures.js';
+import {
+  readableLabel,
+  sourceOfCategory,
+  unitOfLinkedField,
+  type PatternSource,
+} from './pattern-sources.js';
+import {
   isMoreFrequentBefore,
   summarizeBeforeDifficultItem,
   summarizeChangePoint,
@@ -32,6 +44,10 @@ export type PatternFindingView = PatternFinding &
     findingKey: string;
     obvious: boolean;
     obviousSource: ObviousSource | null;
+    /** Where the predictor comes from, derived from its category at read time. */
+    source: PatternSource;
+    /** A lever the person can act on, as opposed to a companion that varies along. */
+    actionable: boolean;
   };
 export type BeforeDifficultDaysItemView = BeforeDifficultDaysItem &
   Summarized & { moreFrequentBefore: boolean };
@@ -61,23 +77,51 @@ export interface PatternReportView extends Omit<
   stateChangePoints: ChangePointView[];
 }
 
-function viewChangePoint(changePoint: ChangePointFinding): ChangePointView {
-  return { ...changePoint, summary: summarizeChangePoint(changePoint) };
+function viewChangePoint(
+  changePoint: ChangePointFinding,
+  subject?: TrackedSubject,
+  unit?: string,
+): ChangePointView {
+  const relabelled = {
+    ...changePoint,
+    label: readableLabel(changePoint.key, changePoint.label, subject),
+  };
+  return { ...relabelled, summary: summarizeChangePoint(relabelled, unit) };
+}
+
+/** A change point is told in the unit of its target, unless the unit needs a conversion. */
+function changePointUnit(
+  target: TargetReport,
+  measures: LinkedFieldMeasures,
+): string | undefined {
+  const unit = unitOfLinkedField(measures.get(target.fieldId));
+  return unit && !unit.factor ? unit.label : undefined;
 }
 
 function viewFinding(
   finding: PatternFinding,
   target: TargetReport,
   overrides: PatternObviousOverrides,
+  subject: TrackedSubject | undefined,
+  measures: LinkedFieldMeasures,
 ): PatternFindingView {
   const findingKey = buildFindingKey(target.key, finding);
   const verdict = resolveObviousness(finding, findingKey, overrides);
   return {
     ...finding,
-    summary: summarizeFinding(finding, target.label),
+    label: readableLabel(finding.key, finding.label, subject),
+    summary: summarizeFinding(
+      finding,
+      target.label,
+      undefined,
+      subject,
+      findingContext(finding, target, measures),
+    ),
     findingKey,
     obvious: verdict.obvious,
     obviousSource: verdict.source,
+    source: sourceOfCategory(finding.category),
+    actionable: isActionableFinding(finding, target, measures),
   };
 }
 
@@ -85,25 +129,36 @@ function viewTarget(
   target: TargetReport,
   activeTargets: ReadonlySet<string>,
   overrides: PatternObviousOverrides,
-  subject?: TrackedSubject,
+  subject: TrackedSubject | undefined,
+  measures: LinkedFieldMeasures,
 ): TargetReportView {
   return {
     ...target,
     targetStillValid: activeTargets.has(
       targetIdentity(target.fieldId, target.value),
     ),
-    findings: (target.findings ?? []).map((finding) =>
-      viewFinding(finding, target, overrides),
-    ),
+    findings: (target.findings ?? [])
+      .filter((finding) => !isNegligibleFinding(finding, target))
+      .map((finding) =>
+        viewFinding(finding, target, overrides, subject, measures),
+      ),
     beforeDifficultDays: target.beforeDifficultDays && {
       difficultDayCount: target.beforeDifficultDays.difficultDayCount,
-      items: target.beforeDifficultDays.items.map((item) => ({
-        ...item,
-        moreFrequentBefore: isMoreFrequentBefore(item),
-        summary: summarizeBeforeDifficultItem(item, target, subject),
-      })),
+      items: target.beforeDifficultDays.items.map((original) => {
+        const item = {
+          ...original,
+          label: readableLabel(original.key, original.label, subject),
+        };
+        return {
+          ...item,
+          moreFrequentBefore: isMoreFrequentBefore(item),
+          summary: summarizeBeforeDifficultItem(item, target, subject),
+        };
+      }),
     },
-    changePoints: (target.changePoints ?? []).map(viewChangePoint),
+    changePoints: (target.changePoints ?? []).map((changePoint) =>
+      viewChangePoint(changePoint, subject, changePointUnit(target, measures)),
+    ),
     scoreTextGaps: (target.scoreTextGaps ?? []).map((gap) => ({
       ...gap,
       summary: summarizeScoreTextGap(gap, subject),
@@ -117,12 +172,15 @@ export function buildPatternReportView(
   activeTargets: ReadonlySet<string>,
   overrides: PatternObviousOverrides = {},
   subject?: TrackedSubject,
+  measures: LinkedFieldMeasures = new Map(),
 ): PatternReportView {
   return {
     ...report,
     targets: (report.targets ?? []).map((target) =>
-      viewTarget(target, activeTargets, overrides, subject),
+      viewTarget(target, activeTargets, overrides, subject, measures),
     ),
-    stateChangePoints: (report.stateChangePoints ?? []).map(viewChangePoint),
+    stateChangePoints: (report.stateChangePoints ?? []).map((changePoint) =>
+      viewChangePoint(changePoint, subject),
+    ),
   };
 }

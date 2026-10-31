@@ -1,7 +1,7 @@
 import type { ConstructKey } from '../../signals/domain/constructs.js';
 import type { TargetDirection } from './insight-target.js';
 
-export const PATTERN_ENGINE_VERSION = 'patterns-v2';
+export const PATTERN_ENGINE_VERSION = 'patterns-v3';
 
 export type ColumnCategory =
   | 'field'
@@ -139,6 +139,8 @@ export interface TargetReport {
   /** True for a value target (1 when the field equals the value, else 0). */
   binary?: boolean;
   testsRun: number;
+  /** Standard deviation of the target over the period; absent in reports computed before v3. */
+  targetSd?: number;
   findings: PatternFinding[];
   beforeDifficultDays: BeforeDifficultDays | null;
   changePoints: ChangePointFinding[];
