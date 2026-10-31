@@ -13,8 +13,14 @@ export interface SleepNightSummary {
   source: 'asleep' | 'in_bed';
 }
 
+export type SleepStage = 'deep' | 'rem' | 'core' | 'awake';
+
+/** Hours per stage over the night window; a stage without any sample is absent, not 0. */
+export type SleepStageHours = Partial<Record<SleepStage, number>>;
+
 export interface SleepNightResult {
   summary: SleepNightSummary | null;
+  stages: SleepStageHours;
   unknownLabels: string[];
   unknownSampleCount: number;
 }
@@ -47,9 +53,28 @@ const ASLEEP_LABELS = new Set([
   'sommeilprofond',
   'paradoxal',
   'profond',
+  'leger',
+  'essentiel',
+  'central',
 ]);
 const IN_BED_LABELS = new Set(['inbed', 'aulit']);
 const AWAKE_LABELS = new Set(['awake', 'eveille', 'eveillee']);
+
+const STAGE_LABELS: Record<SleepStage, Set<string>> = {
+  deep: new Set(['deep', 'asleepdeep', 'profond', 'sommeilprofond']),
+  rem: new Set(['rem', 'asleeprem', 'paradoxal', 'sommeilparadoxal']),
+  core: new Set([
+    'core',
+    'asleepcore',
+    'leger',
+    'sommeilleger',
+    'essentiel',
+    'sommeilessentiel',
+    'central',
+    'sommeilcentral',
+  ]),
+  awake: AWAKE_LABELS,
+};
 
 function compactLabel(label: string): string {
   return label
@@ -65,6 +90,14 @@ export function classifySleepLabel(label: string): SleepCategory {
   if (IN_BED_LABELS.has(compact)) return 'in_bed';
   if (AWAKE_LABELS.has(compact)) return 'awake';
   return 'unknown';
+}
+
+export function classifySleepStage(label: string): SleepStage | null {
+  const compact = compactLabel(label);
+  for (const stage of Object.keys(STAGE_LABELS) as SleepStage[]) {
+    if (STAGE_LABELS[stage].has(compact)) return stage;
+  }
+  return null;
 }
 
 interface ZonedParts {
@@ -197,6 +230,12 @@ export function computeSleepNight(
   const window = nightWindow(date, timeZone);
   const asleep: Interval[] = [];
   const inBed: Interval[] = [];
+  const stageIntervals: Record<SleepStage, Interval[]> = {
+    deep: [],
+    rem: [],
+    core: [],
+    awake: [],
+  };
   const unknownLabels = new Set<string>();
   let unknownSampleCount = 0;
 
@@ -213,6 +252,16 @@ export function computeSleepNight(
     if (!interval) continue;
     if (category === 'asleep') asleep.push(interval);
     if (category === 'in_bed') inBed.push(interval);
+    const stage = classifySleepStage(sample.value);
+    if (stage) stageIntervals[stage].push(interval);
+  }
+
+  const stages: SleepStageHours = {};
+  for (const stage of Object.keys(stageIntervals) as SleepStage[]) {
+    const merged = mergeIntervals(stageIntervals[stage]);
+    if (merged.length === 0) continue;
+    const totalMs = merged.reduce((sum, i) => sum + (i.end - i.start), 0);
+    stages[stage] = totalMs / MS_PER_HOUR;
   }
 
   const summary =
@@ -221,6 +270,7 @@ export function computeSleepNight(
 
   return {
     summary,
+    stages,
     unknownLabels: [...unknownLabels],
     unknownSampleCount,
   };

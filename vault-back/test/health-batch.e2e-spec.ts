@@ -8,6 +8,8 @@ interface StoredResult {
   success: boolean;
   stored: Array<{ metric: string; value: number }>;
   createdFields: string[];
+  linkedFields: string[];
+  ambiguousMetrics: string[];
   ignoredSleepLabels: string[];
 }
 
@@ -164,7 +166,15 @@ describe('Apple Health batch sync (e2e)', () => {
       ]),
     );
     expect(result.createdFields.sort()).toEqual(
-      ['BEDTIME', 'HEART_RATE_VARIABILITY', 'SLEEP', 'STEPS'].sort(),
+      [
+        'BEDTIME',
+        'HEART_RATE_VARIABILITY',
+        'SLEEP',
+        'SLEEP_CORE',
+        'SLEEP_DEEP',
+        'SLEEP_REM',
+        'STEPS',
+      ].sort(),
     );
     expect(result.ignoredSleepLabels).toEqual(['Bizarre']);
 
@@ -367,5 +377,199 @@ describe('Apple Health batch sync (e2e)', () => {
     // Assert
     const fields = await fieldsByMetric();
     expect(await valueOf(fields.get('STEPS')!.id)).toBeDefined();
+  });
+});
+
+describe('Apple Health field linking and mapping (e2e)', () => {
+  let client: TestClient;
+
+  beforeAll(async (): Promise<void> => {
+    client = await TestClient.create();
+    client.setAuthCookie(await registerAndLogin(client));
+  });
+
+  afterAll(async (): Promise<void> => {
+    await client.close();
+  });
+
+  async function createNumberField(
+    name: string,
+    extra: object = {},
+  ): Promise<FieldView> {
+    const res = await client
+      .post('/health/custom-fields', { name, fieldType: 'NUMBER', ...extra })
+      .expect(201);
+    return res.body as FieldView;
+  }
+
+  async function allFields(): Promise<FieldView[]> {
+    const res = await client.get('/health/custom-fields').expect(200);
+    return res.body as FieldView[];
+  }
+
+  async function sync(body: object): Promise<StoredResult> {
+    const issued = await client
+      .post('/integrations/health/sync-token')
+      .expect(201);
+    const token = (issued.body as { token: string }).token;
+    const res = await request(client.getHttpServer())
+      .post('/integrations/health/batch')
+      .set('X-Sync-Token', token)
+      .send(body)
+      .expect(201);
+    return res.body as StoredResult;
+  }
+
+  async function valueOf(fieldId: string): Promise<string | undefined> {
+    const res = await client.get('/health/daily-logs').expect(200);
+    return (res.body as LogView[])
+      .flatMap((log) => log.fieldValues ?? [])
+      .find((value) => value.customFieldId === fieldId)?.value;
+  }
+
+  it('should link an existing deep sleep field and fill it from the sleep stages', async (): Promise<void> => {
+    // Arrange
+    const deepField = await createNumberField('Temps de sommeil profond');
+
+    // Act
+    const result = await sync({ date: '2026-01-15', sleepSamples: NIGHT });
+
+    // Assert
+    expect(result.linkedFields).toEqual(['SLEEP_DEEP']);
+    expect(result.createdFields).not.toContain('SLEEP_DEEP');
+    expect(result.stored).toEqual(
+      expect.arrayContaining([
+        { metric: 'SLEEP_DEEP', value: 2 },
+        { metric: 'SLEEP_REM', value: 1.5 },
+        { metric: 'SLEEP_CORE', value: 4.5 },
+      ]),
+    );
+    expect(result.stored.map((entry) => entry.metric)).not.toContain(
+      'SLEEP_AWAKE',
+    );
+    const fields = await allFields();
+    expect(fields.find((f) => f.id === deepField.id)?.appleWatchMetric).toBe(
+      'SLEEP_DEEP',
+    );
+    expect(
+      fields.filter((f) => f.appleWatchMetric === 'SLEEP_DEEP'),
+    ).toHaveLength(1);
+    expect(fields.filter((f) => f.name.startsWith('Sommeil profond'))).toEqual(
+      [],
+    );
+    expect(await valueOf(deepField.id)).toBe('2');
+  });
+
+  it('should keep filling the linked field on the next sync without linking again', async (): Promise<void> => {
+    // Arrange / Act
+    const result = await sync({ date: '2026-01-15', sleepSamples: NIGHT });
+
+    // Assert
+    expect(result.linkedFields).toEqual([]);
+    expect(result.createdFields).toEqual([]);
+  });
+
+  it('should fall back to an Apple Santé field when several fields match', async (): Promise<void> => {
+    // Arrange
+    await createNumberField('Pas');
+    await createNumberField('Nombre de pas');
+
+    // Act
+    const result = await sync({
+      date: '2026-01-15',
+      quantities: [{ metric: 'STEPS', value: 4210 }],
+    });
+
+    // Assert
+    expect(result.ambiguousMetrics).toEqual(['STEPS']);
+    expect(result.createdFields).toEqual(['STEPS']);
+    const fields = await allFields();
+    expect(fields.filter((f) => f.appleWatchMetric === 'STEPS')).toHaveLength(
+      1,
+    );
+    expect(fields.find((f) => f.appleWatchMetric === 'STEPS')?.category).toBe(
+      'Apple Santé',
+    );
+  });
+
+  it('should not link a clock-time field to a duration metric', async (): Promise<void> => {
+    // Arrange
+    await createNumberField('Fréquence respiratoire', {
+      optionsOrder: ['isHourly'],
+    });
+
+    // Act
+    const result = await sync({
+      date: '2026-01-15',
+      quantities: [{ metric: 'RESPIRATORY_RATE', value: 14.2 }],
+    });
+
+    // Assert
+    expect(result.createdFields).toEqual(['RESPIRATORY_RATE']);
+    expect(result.linkedFields).toEqual([]);
+  });
+
+  it('should move a metric to another field and keep one field per metric', async (): Promise<void> => {
+    // Arrange
+    const first = await createNumberField('Mes eaux A');
+    const second = await createNumberField('Mes eaux B');
+
+    // Act
+    await client
+      .patch(`/health/custom-fields/${first.id}`, {
+        appleWatchMetric: 'WATER_CONSUMPTION',
+      })
+      .expect(200);
+    await client
+      .patch(`/health/custom-fields/${second.id}`, {
+        appleWatchMetric: 'WATER_CONSUMPTION',
+      })
+      .expect(200);
+
+    // Assert
+    const fields = await allFields();
+    expect(
+      fields.find((f) => f.id === first.id)?.appleWatchMetric ?? null,
+    ).toBeNull();
+    expect(fields.find((f) => f.id === second.id)?.appleWatchMetric).toBe(
+      'WATER_CONSUMPTION',
+    );
+    expect(
+      fields.filter((f) => f.appleWatchMetric === 'WATER_CONSUMPTION'),
+    ).toHaveLength(1);
+  });
+
+  it('should unset a metric with null and accept the new stage metrics', async (): Promise<void> => {
+    // Arrange
+    const field = await createNumberField('Mon paradoxal');
+    await client
+      .patch(`/health/custom-fields/${field.id}`, {
+        appleWatchMetric: 'SLEEP_AWAKE',
+      })
+      .expect(200);
+
+    // Act
+    const res = await client
+      .patch(`/health/custom-fields/${field.id}`, { appleWatchMetric: null })
+      .expect(200);
+
+    // Assert
+    expect((res.body as FieldView).appleWatchMetric ?? null).toBeNull();
+  });
+
+  it('should reject an unknown metric and a metric on a non-number field', async (): Promise<void> => {
+    // Arrange
+    const text = await client
+      .post('/health/custom-fields', { name: 'Journal', fieldType: 'STRING' })
+      .expect(201);
+    const textId = (text.body as FieldView).id;
+
+    // Act / Assert
+    await client
+      .patch(`/health/custom-fields/${textId}`, { appleWatchMetric: 'NOPE' })
+      .expect(400);
+    await client
+      .patch(`/health/custom-fields/${textId}`, { appleWatchMetric: 'STEPS' })
+      .expect(400);
   });
 });

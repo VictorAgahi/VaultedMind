@@ -26,6 +26,7 @@ import ArrowDownwardIcon from "@mui/icons-material/ArrowDownward";
 import SubdirectoryArrowRightIcon from "@mui/icons-material/SubdirectoryArrowRight";
 import AddCircleOutlineIcon from "@mui/icons-material/AddCircleOutlineOutlined";
 import { FieldType, AppleWatchMetric, SubFieldDefinition, AutofillMode } from "@/types";
+import { HEALTH_METRICS } from "@/utils/health-metrics";
 import { CONSTRUCT_OPTIONS } from "./constructs";
 
 interface OptionItem {
@@ -309,26 +310,25 @@ export const FieldDialog: React.FC<FieldDialogProps> = ({
               </Select>
             </FormControl>
 
-            <FormControl fullWidth>
-              <InputLabel id="apple-watch-label" shrink>Associer à une métrique Apple Watch (optionnel)</InputLabel>
-              <Select
-                labelId="apple-watch-label"
-                id="apple-watch-select"
-                value={formData.appleWatchMetric || ""}
-                label="Associer à une métrique Apple Watch (optionnel)"
-                onChange={(e) => setFormData((prev) => ({ ...prev, appleWatchMetric: e.target.value as AppleWatchMetric | "" }))}
-                displayEmpty
-                notched
-              >
-                <MenuItem value=""><em>Aucune métrique</em></MenuItem>
-                <MenuItem value={AppleWatchMetric.SLEEP}>Sommeil</MenuItem>
-                <MenuItem value={AppleWatchMetric.STEPS}>Pas</MenuItem>
-                <MenuItem value={AppleWatchMetric.ACTIVE_CALORIES}>Calories actives</MenuItem>
-                <MenuItem value={AppleWatchMetric.RESTING_HEART_RATE}>Rythme cardiaque au repos</MenuItem>
-                <MenuItem value={AppleWatchMetric.WATER_CONSUMPTION}>Consommation d&apos;eau</MenuItem>
-                <MenuItem value={AppleWatchMetric.MINDFULNESS_MINUTES}>Minutes de pleine conscience</MenuItem>
-              </Select>
-            </FormControl>
+            {formData.fieldType === FieldType.NUMBER && (
+              <FormControl fullWidth>
+                <InputLabel id="apple-watch-label" shrink>Associer à une donnée Apple Santé (optionnel)</InputLabel>
+                <Select
+                  labelId="apple-watch-label"
+                  id="apple-watch-select"
+                  value={formData.appleWatchMetric || ""}
+                  label="Associer à une donnée Apple Santé (optionnel)"
+                  onChange={(e) => setFormData((prev) => ({ ...prev, appleWatchMetric: e.target.value as AppleWatchMetric | "" }))}
+                  displayEmpty
+                  notched
+                >
+                  <MenuItem value=""><em>Aucune donnée</em></MenuItem>
+                  {HEALTH_METRICS.map(info => (
+                    <MenuItem key={info.metric} value={info.metric}>{info.label} ({info.unitHint})</MenuItem>
+                  ))}
+                </Select>
+              </FormControl>
+            )}
 
             {formData.fieldType === FieldType.NUMBER && (
               <>

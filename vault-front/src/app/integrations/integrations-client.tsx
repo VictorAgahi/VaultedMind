@@ -24,6 +24,7 @@ import FileDownloadIcon from "@mui/icons-material/FileDownload";
 import { HEALTH_SHORTCUT_NAME } from "@/components/daily-logs-manager/health-sync-button";
 import { apiService } from "@/services/api.service";
 import { ApiKey, CreateApiKeyDto } from "@/types";
+import { HealthFieldMapping } from "./health-field-mapping";
 
 const API_BASE_URL = "https://api-vault-mind.cyrus-ag.com";
 const BATCH_URL = `${API_BASE_URL}/integrations/health/batch`;
@@ -105,7 +106,7 @@ export const IntegrationsClient = () => {
           Apple Santé : synchronisation en un geste
         </Typography>
         <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
-          Sommeil, pas, calories actives, fréquence cardiaque au repos, variabilité cardiaque, minutes d&apos;exercice et fréquence respiratoire arrivent dans votre journée, chiffrés, depuis votre iPhone (et votre Apple Watch si vous en avez une). Aucune clé à copier.
+          Sommeil (avec ses phases profond, paradoxal et léger si vous avez une Apple Watch), pas, calories actives, fréquence cardiaque au repos, variabilité cardiaque, minutes d&apos;exercice et fréquence respiratoire arrivent dans votre journée, chiffrés, depuis votre iPhone (et votre Apple Watch si vous en avez une). Aucune clé à copier.
         </Typography>
 
         <Typography variant="subtitle1" sx={{ fontWeight: 700, mb: 1 }}>
@@ -131,7 +132,7 @@ export const IntegrationsClient = () => {
           2. Chaque soir : Récupérer mes données Santé
         </Typography>
         <Typography variant="body2" sx={{ mb: 1 }}>
-          Ouvrez la saisie du jour et touchez « Récupérer mes données Santé ». VaultedMind prépare un lien à usage unique valable 5 minutes, ouvre le raccourci, qui lit les données du jour dans Santé et les envoie, puis vous ramène dans l&apos;application. Les champs manquants (catégorie « Apple Santé ») sont créés automatiquement.
+          Ouvrez la saisie du jour et touchez « Récupérer mes données Santé ». VaultedMind prépare un lien à usage unique valable 5 minutes, ouvre le raccourci, qui lit les données du jour dans Santé et les envoie. Revenez ensuite dans VaultedMind avec le bouton en haut à gauche de l&apos;écran : la saisie se met à jour toute seule. Chaque donnée va dans le champ choisi plus bas ; à défaut, dans votre champ au nom correspondant, ou dans un champ créé automatiquement (catégorie « Apple Santé »).
         </Typography>
         <Typography variant="body2" color="text.secondary" sx={{ mb: 4 }}>
           Le sommeil est calculé à partir de la nuit qui se termine aujourd&apos;hui (de 18 h la veille à 18 h), en comptant une seule fois les périodes qui se chevauchent.
@@ -155,6 +156,8 @@ export const IntegrationsClient = () => {
           </pre>
         </Box>
       </Paper>
+
+      <HealthFieldMapping />
 
       <Paper sx={{ p: 4, borderRadius: 4, mb: 4 }}>
         <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", mb: 3 }}>

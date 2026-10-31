@@ -143,6 +143,15 @@ export enum AppleWatchMetric {
   RESTING_HEART_RATE = 'RESTING_HEART_RATE',
   WATER_CONSUMPTION = 'WATER_CONSUMPTION',
   MINDFULNESS_MINUTES = 'MINDFULNESS_MINUTES',
+  HEART_RATE_VARIABILITY = 'HEART_RATE_VARIABILITY',
+  EXERCISE_MINUTES = 'EXERCISE_MINUTES',
+  DAYLIGHT_MINUTES = 'DAYLIGHT_MINUTES',
+  RESPIRATORY_RATE = 'RESPIRATORY_RATE',
+  BEDTIME = 'BEDTIME',
+  SLEEP_DEEP = 'SLEEP_DEEP',
+  SLEEP_REM = 'SLEEP_REM',
+  SLEEP_CORE = 'SLEEP_CORE',
+  SLEEP_AWAKE = 'SLEEP_AWAKE',
 }
 
 export interface SubFieldDefinition {
@@ -206,7 +215,8 @@ export interface UpdateCustomFieldDto {
   rememberLastValue?: boolean;
   min?: number;
   max?: number;
-  appleWatchMetric?: AppleWatchMetric;
+  /** null retire le lien avec Apple Santé. */
+  appleWatchMetric?: AppleWatchMetric | null;
   goalTarget?: number | null;
   goalDirection?: "AT_LEAST" | "AT_MOST" | null;
   constructOverride?: string | null;

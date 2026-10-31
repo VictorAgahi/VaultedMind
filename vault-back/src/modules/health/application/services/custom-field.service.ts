@@ -1,4 +1,5 @@
 import {
+  BadRequestException,
   Injectable,
   NotFoundException,
   ForbiddenException,
@@ -6,10 +7,12 @@ import {
 } from '@nestjs/common';
 import { CustomFieldRepository } from '../../../../database/repositories/custom-field.repository.js';
 import type {
+  CustomFieldAppleWatchMetricUpdate,
   CustomFieldAutofillUpdate,
   CustomFieldConstructOverrideUpdate,
   CustomFieldGoalUpdate,
 } from '../../domain/entities/custom-field.entity.js';
+import { FieldType } from '../../domain/enums/field-type.enum.js';
 import { CustomField } from '../../domain/entities/custom-field.entity.js';
 
 @Injectable()
@@ -22,6 +25,13 @@ export class CustomFieldService {
     this.logger.log(
       `Creating custom field: ${field.name} for user: ${field.userId}`,
     );
+    if (field.appleWatchMetric) {
+      await this.customFieldRepository.clearAppleWatchMetric(
+        field.userId,
+        field.appleWatchMetric,
+        field.id,
+      );
+    }
     return this.customFieldRepository.saveDomain(field);
   }
 
@@ -56,15 +66,27 @@ export class CustomFieldService {
         | 'rememberLastValue'
         | 'min'
         | 'max'
-        | 'appleWatchMetric'
         | 'subFields'
       >
     > &
+      CustomFieldAppleWatchMetricUpdate &
       CustomFieldGoalUpdate &
       CustomFieldConstructOverrideUpdate &
       CustomFieldAutofillUpdate,
   ): Promise<CustomField> {
-    await this.findById(id, requestingUserId);
+    const current = await this.findById(id, requestingUserId);
+    if (updates.appleWatchMetric) {
+      if (current.fieldType !== FieldType.NUMBER) {
+        throw new BadRequestException(
+          'Only a number field can receive an Apple Health metric',
+        );
+      }
+      await this.customFieldRepository.clearAppleWatchMetric(
+        requestingUserId,
+        updates.appleWatchMetric,
+        id,
+      );
+    }
     return this.customFieldRepository.updateDomain(id, updates);
   }
 

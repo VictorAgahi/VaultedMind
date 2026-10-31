@@ -1,14 +1,18 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { Not, Repository } from 'typeorm';
 import { AbstractBaseRepository } from './base.repository.js';
 import { CustomFieldModel } from '../models/custom-field.model.js';
 import type {
+  CustomFieldAppleWatchMetricUpdate,
   CustomFieldAutofillUpdate,
   CustomFieldConstructOverrideUpdate,
   CustomFieldGoalUpdate,
 } from '../../modules/health/domain/entities/custom-field.entity.js';
-import { CustomField } from '../../modules/health/domain/entities/custom-field.entity.js';
+import {
+  AppleWatchMetric,
+  CustomField,
+} from '../../modules/health/domain/entities/custom-field.entity.js';
 import { CustomFieldMapper } from '../mappers/custom-field.mapper.js';
 
 @Injectable()
@@ -48,16 +52,28 @@ export class CustomFieldRepository extends AbstractBaseRepository<CustomFieldMod
         | 'rememberLastValue'
         | 'min'
         | 'max'
-        | 'appleWatchMetric'
         | 'subFields'
       >
     > &
+      CustomFieldAppleWatchMetricUpdate &
       CustomFieldGoalUpdate &
       CustomFieldConstructOverrideUpdate &
       CustomFieldAutofillUpdate,
   ): Promise<CustomField> {
     await this.repository.update(id, updates);
     return this.findDomainById(id);
+  }
+
+  /** Unlinks the metric from the user's other fields so a metric feeds a single field. */
+  async clearAppleWatchMetric(
+    userId: string,
+    metric: AppleWatchMetric,
+    exceptFieldId: string,
+  ): Promise<void> {
+    await this.repository.update(
+      { userId, appleWatchMetric: metric, id: Not(exceptFieldId) },
+      { appleWatchMetric: null },
+    );
   }
 
   /** Stores the automatic construct together with the hash of what it was computed from. */

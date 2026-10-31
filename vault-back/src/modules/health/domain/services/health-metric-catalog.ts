@@ -93,6 +93,34 @@ export const HEALTH_METRIC_CATALOG: Record<
     isClockTime: true,
     decimals: 2,
   },
+  [AppleWatchMetric.SLEEP_DEEP]: {
+    name: 'Sommeil profond',
+    min: 0,
+    max: 24,
+    isClockTime: false,
+    decimals: 2,
+  },
+  [AppleWatchMetric.SLEEP_REM]: {
+    name: 'Sommeil paradoxal',
+    min: 0,
+    max: 24,
+    isClockTime: false,
+    decimals: 2,
+  },
+  [AppleWatchMetric.SLEEP_CORE]: {
+    name: 'Sommeil léger',
+    min: 0,
+    max: 24,
+    isClockTime: false,
+    decimals: 2,
+  },
+  [AppleWatchMetric.SLEEP_AWAKE]: {
+    name: 'Temps éveillé la nuit',
+    min: 0,
+    max: 24,
+    isClockTime: false,
+    decimals: 2,
+  },
 };
 
 export function roundHealthValue(value: number, decimals: number): number {

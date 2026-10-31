@@ -121,7 +121,7 @@ export class UpdateCustomFieldDto {
 
   @IsOptional()
   @IsEnum(AppleWatchMetric)
-  appleWatchMetric?: AppleWatchMetric;
+  appleWatchMetric?: AppleWatchMetric | null;
 
   @IsOptional()
   @IsNumber()

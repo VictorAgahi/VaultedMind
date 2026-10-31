@@ -51,7 +51,7 @@ export class CustomFieldModel extends BaseModel {
     name: 'apple_watch_metric',
     nullable: true,
   })
-  appleWatchMetric?: AppleWatchMetric;
+  appleWatchMetric?: AppleWatchMetric | null;
 
   @Column({ name: 'goal_target', type: 'double precision', nullable: true })
   goalTarget?: number | null;

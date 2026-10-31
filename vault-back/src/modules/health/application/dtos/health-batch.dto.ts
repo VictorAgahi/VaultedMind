@@ -90,5 +90,9 @@ export interface HealthBatchResult {
   success: true;
   stored: Array<{ metric: AppleWatchMetric; value: number }>;
   createdFields: AppleWatchMetric[];
+  /** Metrics now stored in a field the user already had, matched by its name. */
+  linkedFields: AppleWatchMetric[];
+  /** Metrics for which several existing fields matched: nothing was guessed. */
+  ambiguousMetrics: AppleWatchMetric[];
   ignoredSleepLabels: string[];
 }

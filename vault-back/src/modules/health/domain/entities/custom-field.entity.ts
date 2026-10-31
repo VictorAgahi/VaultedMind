@@ -29,6 +29,11 @@ export interface CustomFieldConstructOverrideUpdate {
   constructOverride?: string | null;
 }
 
+/** The Apple Health metric accepts null on update to unlink the field. */
+export interface CustomFieldAppleWatchMetricUpdate {
+  appleWatchMetric?: AppleWatchMetric | null;
+}
+
 /** Whether the daily-story autofill may propose a value for the field. */
 export type AutofillMode = 'AUTO' | 'ON' | 'OFF';
 export const AUTOFILL_MODES: AutofillMode[] = ['AUTO', 'ON', 'OFF'];

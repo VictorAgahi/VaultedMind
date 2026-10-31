@@ -16,7 +16,7 @@ export class CustomFieldMapper {
       model.rememberLastValue,
       model.min,
       model.max,
-      model.appleWatchMetric,
+      model.appleWatchMetric ?? undefined,
       model.subFields,
       model.goalTarget ?? undefined,
       model.goalDirection ?? undefined,
@@ -41,7 +41,7 @@ export class CustomFieldMapper {
     model.rememberLastValue = entity.rememberLastValue;
     model.min = entity.min;
     model.max = entity.max;
-    model.appleWatchMetric = entity.appleWatchMetric;
+    model.appleWatchMetric = entity.appleWatchMetric ?? null;
     model.subFields = entity.subFields;
     model.goalTarget = entity.goalTarget ?? null;
     model.goalDirection = entity.goalDirection ?? null;

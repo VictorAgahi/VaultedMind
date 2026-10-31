@@ -5,8 +5,11 @@ manual building in the Shortcuts app:
 
 - `VaultedMind Sync`: reads the day's Health data, POSTs it to
   `/integrations/health/batch` with the single-use `X-Sync-Token` handed over by the app
-  (`shortcuts://run-shortcut?name=VaultedMind%20Sync&input=text&text=<token>`), then reopens
-  `https://vault-mind.cyrus-ag.com/dashboard?healthSync=1`.
+  (`shortcuts://run-shortcut?name=VaultedMind%20Sync&input=text&text=<token>`), then ends
+  with an alert asking to come back with the iOS back button (top left). There is no final
+  Open URL: it would open Safari or Chrome instead of the installed PWA, which refreshes
+  itself on `visibilitychange`/`pageshow` thanks to the pending marker saved before leaving
+  (`?healthSync=1` is still handled for older shortcuts).
 - `VaultedMind Sync Debug`: same reads, but shows the JSON body in "Show Result" instead of
   sending it.
 

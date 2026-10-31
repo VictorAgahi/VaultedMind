@@ -74,6 +74,10 @@ const APPLE_WATCH_CONSTRUCTS: Record<AppleWatchMetric, Construct> = {
   [AppleWatchMetric.DAYLIGHT_MINUTES]: 'outdoors',
   [AppleWatchMetric.RESPIRATORY_RATE]: 'physical_health',
   [AppleWatchMetric.BEDTIME]: 'sleep',
+  [AppleWatchMetric.SLEEP_DEEP]: 'sleep',
+  [AppleWatchMetric.SLEEP_REM]: 'sleep',
+  [AppleWatchMetric.SLEEP_CORE]: 'sleep',
+  [AppleWatchMetric.SLEEP_AWAKE]: 'sleep',
 };
 
 export function constructOfAppleWatchMetric(

@@ -1,5 +1,6 @@
 import {
   classifySleepLabel,
+  classifySleepStage,
   computeSleepNight,
   parseSleepInstant,
   parseSleepLines,
@@ -273,5 +274,81 @@ describe('parseSleepLines', () => {
         end: '2026-01-15T03:00:00+01:00',
       },
     ]);
+  });
+});
+
+describe('sleep stages', () => {
+  const paris = 'Europe/Paris';
+
+  it('should sum each stage with overlaps merged per stage', () => {
+    // Arrange
+    const samples = [
+      sample('Deep', '2026-01-15T01:00:00+01:00', '2026-01-15T02:00:00+01:00'),
+      sample('Deep', '2026-01-15T01:30:00+01:00', '2026-01-15T02:30:00+01:00'),
+      sample('REM', '2026-01-15T03:00:00+01:00', '2026-01-15T04:30:00+01:00'),
+      sample('Core', '2026-01-15T00:00:00+01:00', '2026-01-15T01:00:00+01:00'),
+      sample('Core', '2026-01-15T04:30:00+01:00', '2026-01-15T06:00:00+01:00'),
+      sample('Awake', '2026-01-15T02:30:00+01:00', '2026-01-15T02:45:00+01:00'),
+    ];
+
+    // Act
+    const { stages } = computeSleepNight(samples, '2026-01-15', paris);
+
+    // Assert
+    expect(stages.deep).toBeCloseTo(1.5, 5);
+    expect(stages.rem).toBeCloseTo(1.5, 5);
+    expect(stages.core).toBeCloseTo(2.5, 5);
+    expect(stages.awake).toBeCloseTo(0.25, 5);
+  });
+
+  it.each([
+    ['Profond', 'deep'],
+    ['Sommeil profond', 'deep'],
+    ['Paradoxal', 'rem'],
+    ['Asleep (REM)', 'rem'],
+    ['Léger', 'core'],
+    ['Essentiel', 'core'],
+    ['Central', 'core'],
+    ['Asleep (Core)', 'core'],
+    ['Éveillé', 'awake'],
+    ['Awake', 'awake'],
+  ])('should read the label %p as the stage %p', (label, expected) => {
+    // Arrange / Act
+    const stage = classifySleepStage(label);
+
+    // Assert
+    expect(stage).toBe(expected);
+  });
+
+  it('should return no stage for an iPhone without a Watch', () => {
+    // Arrange
+    const samples = [
+      sample(
+        'Asleep',
+        '2026-01-15T00:00:00+01:00',
+        '2026-01-15T07:00:00+01:00',
+      ),
+      sample('InBed', '2026-01-14T23:30:00+01:00', '2026-01-15T07:30:00+01:00'),
+    ];
+
+    // Act
+    const { stages, summary } = computeSleepNight(samples, '2026-01-15', paris);
+
+    // Assert
+    expect(stages).toEqual({});
+    expect(summary?.asleepHours).toBeCloseTo(7, 5);
+  });
+
+  it('should ignore stage samples outside the night window', () => {
+    // Arrange
+    const samples = [
+      sample('Deep', '2026-01-15T19:00:00+01:00', '2026-01-15T20:00:00+01:00'),
+    ];
+
+    // Act
+    const { stages } = computeSleepNight(samples, '2026-01-15', paris);
+
+    // Assert
+    expect(stages).toEqual({});
   });
 });

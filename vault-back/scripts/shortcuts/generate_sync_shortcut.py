@@ -14,9 +14,7 @@ PFX = "is.workflow.actions."
 OBJ = "￼"  # placeholder character for an inline variable inside a text
 
 API_BASE = "https://api-vault-mind.cyrus-ag.com"
-APP_BASE = "https://vault-mind.cyrus-ag.com"
 BATCH_URL = API_BASE + "/integrations/health/batch"
-RETURN_URL = APP_BASE + "/dashboard?healthSync=1"
 
 # (backend metric, Health type label, aggregate, group by day).
 # Type labels are the ones found in real shortcuts (reference/0baed2...json), except where noted.
@@ -286,7 +284,13 @@ def build_sync():
         output_ref(stored, "Dictionary Value"), "VaultedMind",
         ["La synchronisation a échoué. Retournez dans VaultedMind et réessayez (le lien expire après 5 minutes).\n\nRéponse du serveur : ",
          output_ref(response, "Contents of URL")])
-    builder.add("openurl", {"WFInput": RETURN_URL, "Show-WFInput": True})
+    # No Open URL: Safari or Chrome would open instead of the installed app. The app refreshes
+    # itself when it becomes visible again, through the pending marker it saved before leaving.
+    builder.add("alert", {
+        "WFAlertActionTitle": "VaultedMind",
+        "WFAlertActionMessage": "Données envoyées. Revenez dans VaultedMind avec le bouton en haut à gauche.",
+        "WFAlertActionCancelButtonShown": False,
+    })
     return builder.actions
 
 

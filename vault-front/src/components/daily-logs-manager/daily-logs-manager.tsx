@@ -42,6 +42,7 @@ import type { AutofillFieldInfo } from "./use-voice-entry";
 import type { AutofillProposal } from "./use-voice-entry";
 import { LogTable } from "./log-table";
 import { localDateStr } from "@/utils/local-date";
+import { formatHealthValue, HEALTH_METRICS } from "@/utils/health-metrics";
 import {
   clearHealthSyncPending,
   HealthSyncDraft,
@@ -946,7 +947,7 @@ export const DailyLogsManager: React.FC = () => {
   const router = useRouter();
   const { user } = useAuth();
   const [quickSaving, setQuickSaving] = React.useState(false);
-  // Retour du raccourci Apple Santé (?healthSync=1) : les valeurs sont déjà enregistrées, on recharge et on confirme.
+  // Retour du raccourci Apple Santé (bouton de retour d'iOS, ou ?healthSync=1 des anciens raccourcis) : les valeurs sont déjà enregistrées, on recharge et on confirme.
   const [healthSyncDone, setHealthSyncDone] = React.useState(false);
   const healthSyncHandledRef = React.useRef(false);
   const [healthSyncMessage, setHealthSyncMessage] = React.useState("Données Santé récupérées");
@@ -987,6 +988,18 @@ export const DailyLogsManager: React.FC = () => {
       values[field.id] = isHourly ? formatHourlyValue(fv.value) : fv.value;
     });
     return { logId: log?.id ?? null, values };
+  };
+
+  // Phrase de confirmation : les valeurs arrivées dans les champs liés à Apple Santé, ou un constat calme.
+  const describeHealthSync = (fields: CustomField[], values: Record<string, string>, changed: boolean): string => {
+    if (!changed) return "Aucune nouvelle donnée Santé reçue pour l'instant.";
+    const arrived = HEALTH_METRICS.flatMap(info => {
+      const field = fields.find(f => f.appleWatchMetric === info.metric);
+      const raw = field ? values[field.id] : undefined;
+      return field && raw !== undefined ? [`${field.name} ${formatHealthValue(info.metric, raw)}`] : [];
+    });
+    if (arrived.length > 0) return `Données Santé récupérées : ${arrived.join(", ")}`;
+    return Object.keys(values).length > 0 ? "Données Santé récupérées" : "Aucune nouvelle donnée Santé reçue pour l'instant.";
   };
 
   // Avant de quitter pour le raccourci : on garde la saisie en cours et on note qu'une synchronisation est attendue.
@@ -1033,11 +1046,12 @@ export const DailyLogsManager: React.FC = () => {
       saveOfflineSnapshot(result.fields, result.logs);
       if (draft && !stateRef.current.dialog.open) setStartStep(draft.step);
       dispatch({ type: "HEALTH_SYNC_RESULT", fields: result.fields, logs: result.logs, date, logId: result.logId, healthValues: result.values, draft });
-      setHealthSyncMessage(Object.keys(result.values).length > 0 ? "Données Santé récupérées" : "Aucune nouvelle donnée Santé reçue");
+      const changed = !marker || signature(result.values) !== signature(marker.baseline);
+      setHealthSyncMessage(describeHealthSync(result.fields, result.values, changed));
       setHealthSyncDone(true);
     } catch {
       if (aliveRef.current) {
-        setHealthSyncMessage("Aucune nouvelle donnée Santé reçue");
+        setHealthSyncMessage("Aucune nouvelle donnée Santé reçue pour l'instant.");
         setHealthSyncDone(true);
       }
     } finally {
@@ -1155,6 +1169,13 @@ export const DailyLogsManager: React.FC = () => {
       healthSyncHandledRef.current = true;
       void handleHealthReturn();
       router.replace("/dashboard", { scroll: false });
+    } else if (!healthSyncHandledRef.current) {
+      // iOS a pu recharger l'application pendant le raccourci : le marqueur suffit à reconnaître le retour.
+      const marker = readHealthSyncMarker();
+      if (marker && Date.now() - marker.startedAt > 1500) {
+        healthSyncHandledRef.current = true;
+        void handleHealthReturn();
+      }
     }
     const dateParam = new URLSearchParams(window.location.search).get("date");
     if (dateParam && /^\d{4}-\d{2}-\d{2}$/.test(dateParam)) {
