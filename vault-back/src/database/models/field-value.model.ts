@@ -1,5 +1,6 @@
 import { Entity, Column, ManyToOne, JoinColumn, Unique } from 'typeorm';
 import type { Relation } from 'typeorm';
+import type { FieldValueSource } from '../../modules/health/domain/entities/field-value.entity.js';
 import { BaseModel } from './base.model.js';
 import { DailyLogModel } from './daily-log.model.js';
 import { CustomFieldModel } from './custom-field.model.js';
@@ -12,6 +13,9 @@ export class FieldValueModel extends BaseModel {
 
   @Column({ name: 'sub_values', type: 'json', nullable: true })
   subValues?: Record<string, string> | null;
+
+  @Column({ type: 'varchar', length: 16, nullable: true })
+  source?: FieldValueSource | null;
 
   @Column({ name: 'daily_log_id', type: 'uuid' })
   dailyLogId!: string;

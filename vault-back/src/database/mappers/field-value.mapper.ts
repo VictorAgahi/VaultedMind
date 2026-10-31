@@ -11,6 +11,7 @@ export class FieldValueMapper {
       model.createdAt,
       model.updatedAt,
       model.subValues ?? undefined,
+      model.source ?? undefined,
     );
   }
 
@@ -21,6 +22,7 @@ export class FieldValueMapper {
     model.customFieldId = entity.customFieldId;
     model.value = entity.value;
     model.subValues = entity.subValues;
+    model.source = entity.source ?? null;
     model.createdAt = entity.createdAt;
     model.updatedAt = entity.updatedAt;
     return model;

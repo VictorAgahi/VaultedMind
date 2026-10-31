@@ -25,7 +25,7 @@ import ArrowUpwardIcon from "@mui/icons-material/ArrowUpward";
 import ArrowDownwardIcon from "@mui/icons-material/ArrowDownward";
 import SubdirectoryArrowRightIcon from "@mui/icons-material/SubdirectoryArrowRight";
 import AddCircleOutlineIcon from "@mui/icons-material/AddCircleOutlineOutlined";
-import { FieldType, AppleWatchMetric, SubFieldDefinition } from "@/types";
+import { FieldType, AppleWatchMetric, SubFieldDefinition, AutofillMode } from "@/types";
 import { CONSTRUCT_OPTIONS } from "./constructs";
 
 interface OptionItem {
@@ -48,6 +48,8 @@ export interface FieldFormData {
   goalDirection?: "AT_LEAST" | "AT_MOST";
   /** Ce que mesure le champ ; vide pour le classement automatique. */
   constructOverride?: string;
+  /** Remplissage depuis « Raconter ma journée ». */
+  autofillMode?: AutofillMode;
 }
 
 interface FieldDialogProps {
@@ -216,6 +218,18 @@ export const FieldDialog: React.FC<FieldDialogProps> = ({
               {CONSTRUCT_OPTIONS.map((option) => (
                 <MenuItem key={option.value} value={option.value}>{option.label}</MenuItem>
               ))}
+            </TextField>
+
+            <TextField
+              select
+              label="Remplir depuis ce que je raconte"
+              value={formData.autofillMode ?? "AUTO"}
+              onChange={(e) => setFormData((prev) => ({ ...prev, autofillMode: e.target.value as AutofillMode }))}
+              helperText="« Automatique » ne propose que des faits que vous énoncez (sommeil, café, sport), jamais un ressenti. Vous validez toujours."
+            >
+              <MenuItem value="AUTO">Automatique</MenuItem>
+              <MenuItem value="ON">Toujours</MenuItem>
+              <MenuItem value="OFF">Jamais</MenuItem>
             </TextField>
 
             {(formData.fieldType === FieldType.BOOLEAN || formData.fieldType === FieldType.NUMBER) && (

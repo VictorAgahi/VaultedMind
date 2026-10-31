@@ -63,7 +63,7 @@ const customFieldsReducer = (state: CustomFieldsState, action: CustomFieldsActio
     case "OPEN_DIALOG": return {
       ...state,
       dialog: { ...state.dialog, open: true, isEditing: action.isEditing, id: action.id || null },
-      formData: action.formData || { name: "", fieldType: FieldType.NUMBER, optionsOrder: [], subFields: [], isHourly: false, category: "", rememberLastValue: false, min: "", max: "", appleWatchMetric: "", goalTarget: "", goalDirection: "AT_LEAST", constructOverride: "" }
+      formData: action.formData || { name: "", fieldType: FieldType.NUMBER, optionsOrder: [], subFields: [], isHourly: false, category: "", rememberLastValue: false, min: "", max: "", appleWatchMetric: "", goalTarget: "", goalDirection: "AT_LEAST", constructOverride: "", autofillMode: "AUTO" }
     };
     case "CLOSE_DIALOG": return { ...state, dialog: { ...state.dialog, open: false } };
     case "SET_SUBMITTING": return { ...state, dialog: { ...state.dialog, submitting: action.submitting } };
@@ -89,7 +89,7 @@ export const CustomFieldsManager: React.FC = () => {
     loading: true,
     error: null,
     dialog: { open: false, isEditing: false, id: null, submitting: false },
-    formData: { name: "", fieldType: FieldType.NUMBER, optionsOrder: [], subFields: [], isHourly: false, category: "", rememberLastValue: false, min: "", max: "", appleWatchMetric: "", goalTarget: "", goalDirection: "AT_LEAST", constructOverride: "" }
+    formData: { name: "", fieldType: FieldType.NUMBER, optionsOrder: [], subFields: [], isHourly: false, category: "", rememberLastValue: false, min: "", max: "", appleWatchMetric: "", goalTarget: "", goalDirection: "AT_LEAST", constructOverride: "", autofillMode: "AUTO" }
   });
 
   const { fields, loading, error, dialog, formData } = state;
@@ -130,6 +130,7 @@ export const CustomFieldsManager: React.FC = () => {
           goalTarget: field.goalTarget ?? "",
           goalDirection: field.goalDirection ?? "AT_LEAST",
           constructOverride: field.constructOverride ?? "",
+          autofillMode: field.autofillMode ?? "AUTO",
         }
       });
     } else {
@@ -177,6 +178,7 @@ export const CustomFieldsManager: React.FC = () => {
           goalTarget: formData.goalTarget === "" || formData.goalTarget === undefined ? null : formData.goalTarget,
           goalDirection: formData.goalTarget === "" || formData.goalTarget === undefined ? null : formData.goalDirection ?? "AT_LEAST",
           constructOverride: formData.constructOverride || null,
+          autofillMode: formData.autofillMode ?? "AUTO",
         };
         await apiService.patch<CustomField, UpdateCustomFieldDto>(`/health/custom-fields/${dialog.id}`, updatePayload);
       } else {
@@ -193,6 +195,7 @@ export const CustomFieldsManager: React.FC = () => {
           goalTarget: formData.goalTarget === "" || formData.goalTarget === undefined ? null : formData.goalTarget,
           goalDirection: formData.goalTarget === "" || formData.goalTarget === undefined ? null : formData.goalDirection ?? "AT_LEAST",
           constructOverride: formData.constructOverride || undefined,
+          autofillMode: formData.autofillMode ?? "AUTO",
         };
         await apiService.post<CustomField, CreateCustomFieldDto>("/health/custom-fields", createPayload);
       }

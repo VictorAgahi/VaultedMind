@@ -23,6 +23,7 @@ export class CustomFieldMapper {
       model.construct ?? undefined,
       model.constructNameHash ?? undefined,
       model.constructOverride ?? undefined,
+      model.autofillMode,
     );
   }
 
@@ -47,6 +48,7 @@ export class CustomFieldMapper {
     model.construct = entity.construct ?? null;
     model.constructNameHash = entity.constructNameHash ?? null;
     model.constructOverride = entity.constructOverride ?? null;
+    model.autofillMode = entity.autofillMode;
     return model;
   }
 }

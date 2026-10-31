@@ -112,6 +112,7 @@ export interface AppError extends Error {
 export interface ApiError {
   message: string;
   statusCode: number;
+  code?: string;
   errors?: Record<string, string[]>;
 }
 
@@ -173,8 +174,12 @@ export interface CustomField {
   construct?: string;
   /** Choix de la personne, prioritaire sur le classement automatique. */
   constructOverride?: string;
+  /** Remplissage depuis le récit de la journée : automatique (champs factuels), toujours ou jamais. */
+  autofillMode?: AutofillMode;
   createdAt: string;
 }
+
+export type AutofillMode = "AUTO" | "ON" | "OFF";
 
 export interface CreateCustomFieldDto {
   name: string;
@@ -189,6 +194,7 @@ export interface CreateCustomFieldDto {
   goalTarget?: number | null;
   goalDirection?: "AT_LEAST" | "AT_MOST" | null;
   constructOverride?: string | null;
+  autofillMode?: AutofillMode;
 }
 
 export interface UpdateCustomFieldDto {
@@ -204,6 +210,7 @@ export interface UpdateCustomFieldDto {
   goalTarget?: number | null;
   goalDirection?: "AT_LEAST" | "AT_MOST" | null;
   constructOverride?: string | null;
+  autofillMode?: AutofillMode;
 }
 
 export interface FieldValue {
@@ -212,6 +219,8 @@ export interface FieldValue {
   customFieldId: string;
   value: string;
   subValues?: Record<string, string>;
+  /** « agent » quand la valeur vient d'une proposition acceptée, null quand elle est saisie à la main. */
+  source?: "agent" | null;
   createdAt: string;
 }
 

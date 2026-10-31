@@ -110,6 +110,7 @@ export class DailyLogRepository extends AbstractBaseRepository<DailyLogModel> {
             await values.update(current.id, {
               value: encryptedValue,
               subValues: item.subValues ?? null,
+              source: item.source ?? null,
             });
           } else {
             await values.save(
@@ -118,6 +119,7 @@ export class DailyLogRepository extends AbstractBaseRepository<DailyLogModel> {
                 customFieldId: item.customFieldId,
                 value: encryptedValue,
                 subValues: item.subValues,
+                source: item.source ?? null,
               }),
             );
           }

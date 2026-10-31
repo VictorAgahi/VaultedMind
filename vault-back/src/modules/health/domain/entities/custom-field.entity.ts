@@ -29,6 +29,15 @@ export interface CustomFieldConstructOverrideUpdate {
   constructOverride?: string | null;
 }
 
+/** Whether the daily-story autofill may propose a value for the field. */
+export type AutofillMode = 'AUTO' | 'ON' | 'OFF';
+export const AUTOFILL_MODES: AutofillMode[] = ['AUTO', 'ON', 'OFF'];
+
+/** The autofill mode accepts no null: omitting it keeps the stored one. */
+export interface CustomFieldAutofillUpdate {
+  autofillMode?: AutofillMode;
+}
+
 export class CustomField {
   constructor(
     public readonly id: string,
@@ -53,5 +62,6 @@ export class CustomField {
     public readonly constructNameHash?: string,
     /** Construct chosen by the user, which beats the automatic one. */
     public readonly constructOverride?: string,
+    public readonly autofillMode: AutofillMode = 'AUTO',
   ) {}
 }

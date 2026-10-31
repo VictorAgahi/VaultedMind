@@ -15,7 +15,9 @@ import { AppleWatchMetric } from '../../domain/enums/apple-watch-metric.enum.js'
 import type {
   SubFieldDefinition,
   GoalDirection,
+  AutofillMode,
 } from '../../domain/entities/custom-field.entity.js';
+import { AUTOFILL_MODES } from '../../domain/entities/custom-field.entity.js';
 
 import { CONSTRUCTS } from '../../../signals/domain/constructs.js';
 
@@ -73,6 +75,10 @@ export class CreateCustomFieldDto {
   @IsOptional()
   @IsIn(CONSTRUCTS)
   constructOverride?: string | null;
+
+  @IsOptional()
+  @IsIn(AUTOFILL_MODES)
+  autofillMode?: AutofillMode;
 }
 
 export class UpdateCustomFieldDto {
@@ -129,6 +135,10 @@ export class UpdateCustomFieldDto {
   @IsOptional()
   @IsIn(CONSTRUCTS)
   constructOverride?: string | null;
+
+  @IsOptional()
+  @IsIn(AUTOFILL_MODES)
+  autofillMode?: AutofillMode;
 }
 
 export class CustomFieldResponseDto {
@@ -147,5 +157,6 @@ export class CustomFieldResponseDto {
   goalDirection?: GoalDirection;
   construct?: string;
   constructOverride?: string;
+  autofillMode!: AutofillMode;
   createdAt!: Date;
 }

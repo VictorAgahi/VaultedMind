@@ -6,7 +6,7 @@ export interface DailyEntryPayload {
   logId?: string;
   logDate: string;
   notes?: string;
-  values: { customFieldId: string; value: string; subValues?: Record<string, string> }[];
+  values: { customFieldId: string; value: string; subValues?: Record<string, string>; source?: "agent" }[];
   clearedFieldIds: string[];
 }
 

@@ -90,6 +90,7 @@ export class FieldValueController {
       customFieldId: entity.customFieldId,
       value: entity.value,
       subValues: entity.subValues,
+      source: entity.source ?? null,
       createdAt: entity.createdAt,
     };
   }

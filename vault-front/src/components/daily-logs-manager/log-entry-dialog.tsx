@@ -30,6 +30,8 @@ import SearchIcon from "@mui/icons-material/Search";
 import CloseIcon from "@mui/icons-material/Close";
 import SubdirectoryArrowRightIcon from "@mui/icons-material/SubdirectoryArrowRight";
 import { CustomField, FieldType } from "@/types";
+import { VoiceEntryPanel } from "./voice-entry-panel";
+import type { AutofillProposal } from "./use-voice-entry";
 
 interface StringFieldGridModalProps {
   open: boolean;
@@ -159,6 +161,19 @@ interface LogEntryDialogProps {
   activeFields: CustomField[];
   historicalValues: Record<string, string[]>;
   error?: string | null;
+  /** Valeurs venues d'une proposition de l'assistant et pas encore modifiées à la main. */
+  agentSources: Record<string, AgentSource>;
+  onClearAgentValue: (fieldId: string) => void;
+  onApplyProposals: (proposals: AutofillProposal[]) => number;
+  /** Ouverture depuis le rappel du soir : prêt à enregistrer. */
+  voiceReady?: boolean;
+}
+
+export interface AgentSource {
+  /** Valeur proposée, telle qu'affichée dans le formulaire ; une modification à la main retire la proposition. */
+  value: string;
+  /** Mots exacts de la personne qui énoncent la valeur ; absent pour une valeur déjà enregistrée. */
+  quote?: string;
 }
 
 // Questions d'écriture en rotation quotidienne, pour ne pas affronter une page blanche.
@@ -188,6 +203,10 @@ export const LogEntryDialog: React.FC<LogEntryDialogProps> = ({
   activeFields,
   historicalValues,
   error,
+  agentSources,
+  onClearAgentValue,
+  onApplyProposals,
+  voiceReady,
 }) => {
   const [todayPrompt] = React.useState(() => WRITING_PROMPTS[Math.floor(Date.now() / 86_400_000) % WRITING_PROMPTS.length]);
   const theme = useTheme();
@@ -490,6 +509,25 @@ export const LogEntryDialog: React.FC<LogEntryDialogProps> = ({
     );
   };
 
+  // Sous un champ prérempli par l'assistant : ce qui a été retenu, avec les mots exacts, et de quoi l'effacer d'un toucher.
+  const renderAgentNote = (field: CustomField) => {
+    const source = agentSources[field.id];
+    if (!source) return null;
+    return (
+      <Box sx={{ mt: -1, mb: 2, pl: 1.5, borderLeft: 2, borderColor: "divider", display: "flex", alignItems: "center", gap: 1, flexWrap: "wrap" }}>
+        <Chip label="Proposé" size="small" variant="outlined" color="primary" />
+        {source.quote && (
+          <Typography variant="caption" color="text.secondary" sx={{ flex: 1, minWidth: 0, wordBreak: "break-word" }}>
+            « {source.quote} »
+          </Typography>
+        )}
+        <Button size="small" color="inherit" onClick={() => onClearAgentValue(field.id)} sx={{ minHeight: 32, px: 1, color: "text.secondary" }}>
+          Effacer
+        </Button>
+      </Box>
+    );
+  };
+
   return (
     <Dialog 
       open={open} 
@@ -529,6 +567,16 @@ export const LogEntryDialog: React.FC<LogEntryDialogProps> = ({
         </DialogTitle>
         <DialogContent sx={{ pt: "8px !important" }}>
           {error && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>}
+
+          {open && (
+            <VoiceEntryPanel
+              logDate={logDate}
+              notes={notes}
+              setNotes={setNotes}
+              onProposals={onApplyProposals}
+              voiceReady={voiceReady}
+            />
+          )}
           
           <Stepper activeStep={activeStep} alternativeLabel sx={{ mb: 4, display: { xs: 'none', sm: 'flex' } }}>
             {steps.map((label) => (
@@ -576,7 +624,12 @@ export const LogEntryDialog: React.FC<LogEntryDialogProps> = ({
                   </Alert>
                 ) : (
                   <Box sx={{ display: "flex", flexDirection: "column", gap: 3 }}>
-                    {groupedFields[categories[activeStep]]?.map(renderFieldInput)}
+                    {groupedFields[categories[activeStep]]?.map((field) => (
+                      <Box key={field.id}>
+                        {renderFieldInput(field)}
+                        {renderAgentNote(field)}
+                      </Box>
+                    ))}
                   </Box>
                 )}
               </Box>

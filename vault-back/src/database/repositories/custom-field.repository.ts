@@ -4,6 +4,7 @@ import { Repository } from 'typeorm';
 import { AbstractBaseRepository } from './base.repository.js';
 import { CustomFieldModel } from '../models/custom-field.model.js';
 import type {
+  CustomFieldAutofillUpdate,
   CustomFieldConstructOverrideUpdate,
   CustomFieldGoalUpdate,
 } from '../../modules/health/domain/entities/custom-field.entity.js';
@@ -52,7 +53,8 @@ export class CustomFieldRepository extends AbstractBaseRepository<CustomFieldMod
       >
     > &
       CustomFieldGoalUpdate &
-      CustomFieldConstructOverrideUpdate,
+      CustomFieldConstructOverrideUpdate &
+      CustomFieldAutofillUpdate,
   ): Promise<CustomField> {
     await this.repository.update(id, updates);
     return this.findDomainById(id);

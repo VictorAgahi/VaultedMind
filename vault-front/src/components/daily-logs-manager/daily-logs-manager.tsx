@@ -36,7 +36,8 @@ import {
   FieldType,
 } from "@/types";
 import { parseHourlyValue, formatHourlyValue } from "@/utils/time-converter";
-import { LogEntryDialog } from "./log-entry-dialog";
+import { LogEntryDialog, AgentSource } from "./log-entry-dialog";
+import type { AutofillProposal } from "./use-voice-entry";
 import { LogTable } from "./log-table";
 import { localDateStr } from "@/utils/local-date";
 import { DailyEntryPayload, flushOutbox, isNetworkFailure, OUTBOX_FLUSHED_EVENT, queueEntry, readOfflineSnapshot, saveOfflineSnapshot } from "@/utils/entry-outbox";
@@ -59,6 +60,10 @@ interface State {
     notes: string;
     fieldValues: Record<string, string>;
     subFieldValues: Record<string, Record<string, string>>;
+    /** Valeurs proposées par l'assistant et pas encore modifiées à la main. */
+    agentSources: Record<string, AgentSource>;
+    /** Champs dont la valeur est un préremplissage automatique (dernière valeur, heure par défaut), pas une saisie. */
+    defaultedFieldIds: string[];
   };
   filters: {
     selectedFields: string[];
@@ -76,7 +81,13 @@ type Action =
   | { type: "CLOSE_DIALOG" }
   | { type: "SET_SUBMITTING"; submitting: boolean }
   | { type: "UPDATE_FORM"; data: Partial<State["formData"]> }
+  | { type: "SET_FIELD_VALUE"; fieldId: string; value: string }
+  | { type: "CLEAR_AGENT_VALUE"; fieldId: string }
+  | { type: "APPLY_PROPOSALS"; values: Record<string, AgentSource> }
   | { type: "UPDATE_FILTERS"; data: Partial<State["filters"]> };
+
+const withoutKey = <T,>(record: Record<string, T>, key: string): Record<string, T> =>
+  Object.fromEntries(Object.entries(record).filter(([k]) => k !== key));
 
 const reducer = (state: State, action: Action): State => {
   switch (action.type) {
@@ -89,11 +100,44 @@ const reducer = (state: State, action: Action): State => {
       ...state,
       dialogError: null,
       dialog: { ...state.dialog, open: true, isEditing: action.isEditing, logId: action.logId || null },
-      formData: action.formData || { date: localDateStr(), notes: "", fieldValues: {}, subFieldValues: {} }
+      formData: action.formData || { date: localDateStr(), notes: "", fieldValues: {}, subFieldValues: {}, agentSources: {}, defaultedFieldIds: [] }
     };
     case "CLOSE_DIALOG": return { ...state, dialog: { ...state.dialog, open: false } };
     case "SET_SUBMITTING": return { ...state, dialog: { ...state.dialog, submitting: action.submitting } };
     case "UPDATE_FORM": return { ...state, formData: { ...state.formData, ...action.data } };
+    case "SET_FIELD_VALUE": {
+      if ((state.formData.fieldValues[action.fieldId] ?? "") === action.value) return state;
+      // Une modification à la main fait de la valeur une saisie : elle n'est plus marquée comme proposée.
+      return {
+        ...state,
+        formData: {
+          ...state.formData,
+          fieldValues: { ...state.formData.fieldValues, [action.fieldId]: action.value },
+          agentSources: withoutKey(state.formData.agentSources, action.fieldId),
+          defaultedFieldIds: state.formData.defaultedFieldIds.filter(id => id !== action.fieldId),
+        },
+      };
+    }
+    case "CLEAR_AGENT_VALUE": return {
+      ...state,
+      formData: {
+        ...state.formData,
+        fieldValues: { ...state.formData.fieldValues, [action.fieldId]: "" },
+        agentSources: withoutKey(state.formData.agentSources, action.fieldId),
+      },
+    };
+    case "APPLY_PROPOSALS": return {
+      ...state,
+      formData: {
+        ...state.formData,
+        fieldValues: {
+          ...state.formData.fieldValues,
+          ...Object.fromEntries(Object.entries(action.values).map(([fieldId, source]) => [fieldId, source.value])),
+        },
+        agentSources: { ...state.formData.agentSources, ...action.values },
+        defaultedFieldIds: state.formData.defaultedFieldIds.filter(id => !(id in action.values)),
+      },
+    };
     case "UPDATE_FILTERS": return { ...state, filters: { ...state.filters, ...action.data } };
     default: return state;
   }
@@ -412,6 +456,9 @@ interface UseDailyLogsReturn {
   selectedFieldsValue: CustomField[];
   handleOpen: (log?: DailyLog) => void;
   handleClose: () => void;
+  handleFieldValueChange: (fieldId: string, value: string) => void;
+  handleClearAgentValue: (fieldId: string) => void;
+  handleApplyProposals: (proposals: AutofillProposal[]) => number;
   handleSubmit: (e: React.FormEvent) => Promise<void>;
   handleDelete: (id: string) => Promise<void>;
   handleCalendarCellClick: (day: CalendarDayItem) => void;
@@ -430,7 +477,7 @@ const useDailyLogs = (): UseDailyLogsReturn => {
     notice: null,
     dialogError: null,
     dialog: { open: false, isEditing: false, logId: null, submitting: false },
-    formData: { date: localDateStr(), notes: "", fieldValues: {}, subFieldValues: {} },
+    formData: { date: localDateStr(), notes: "", fieldValues: {}, subFieldValues: {}, agentSources: {}, defaultedFieldIds: [] },
     filters: { selectedFields: [], sortOrder: "desc" }
   });
 
@@ -531,6 +578,7 @@ const useDailyLogs = (): UseDailyLogsReturn => {
     if (log) {
       const fvMap: Record<string, string> = {};
       const subFvMap: Record<string, Record<string, string>> = {};
+      const agentSources: Record<string, AgentSource> = {};
       log.fieldValues?.forEach(fv => {
         const field = fields.find(f => f.id === fv.customFieldId);
         if (field && field.fieldType === FieldType.NUMBER && (field.optionsOrder || []).includes("isHourly")) {
@@ -541,12 +589,15 @@ const useDailyLogs = (): UseDailyLogsReturn => {
         if (fv.subValues) {
           subFvMap[fv.customFieldId] = fv.subValues;
         }
+        if (fv.source === "agent") {
+          agentSources[fv.customFieldId] = { value: fvMap[fv.customFieldId] };
+        }
       });
       dispatch({
         type: "OPEN_DIALOG",
         isEditing: true,
         logId: log.id,
-        formData: { date: new Date(log.logDate).toISOString().split("T")[0], notes: log.notes || "", fieldValues: fvMap, subFieldValues: subFvMap }
+        formData: { date: new Date(log.logDate).toISOString().split("T")[0], notes: log.notes || "", fieldValues: fvMap, subFieldValues: subFvMap, agentSources, defaultedFieldIds: [] }
       });
     } else {
       const defaultFvMap: Record<string, string> = {};
@@ -567,12 +618,42 @@ const useDailyLogs = (): UseDailyLogsReturn => {
       dispatch({
         type: "OPEN_DIALOG",
         isEditing: false,
-        formData: { date: localDateStr(), notes: "", fieldValues: defaultFvMap, subFieldValues: {} }
+        formData: { date: localDateStr(), notes: "", fieldValues: defaultFvMap, subFieldValues: {}, agentSources: {}, defaultedFieldIds: Object.keys(defaultFvMap) }
       });
     }
   };
 
   const handleClose = () => dispatch({ type: "CLOSE_DIALOG" });
+
+  const handleFieldValueChange = (fieldId: string, value: string) => dispatch({ type: "SET_FIELD_VALUE", fieldId, value });
+  const handleClearAgentValue = (fieldId: string) => dispatch({ type: "CLEAR_AGENT_VALUE", fieldId });
+
+  // Les propositions ne remplissent que ce qui est vide (ou un préremplissage automatique, ou une proposition non modifiée) :
+  // une valeur déjà saisie n'est jamais écrasée. Renvoie le nombre de champs préremplis.
+  const formDataRef = React.useRef(formData);
+  const fieldsRef = React.useRef(fields);
+  useEffect(() => {
+    formDataRef.current = formData;
+    fieldsRef.current = fields;
+  });
+  const handleApplyProposals = (proposals: AutofillProposal[]): number => {
+    const current = formDataRef.current;
+    const accepted: Record<string, AgentSource> = {};
+    proposals.forEach(proposal => {
+      const field = fieldsRef.current.find(f => f.id === proposal.fieldId && f.isActive);
+      if (!field) return;
+      const existing = current.fieldValues[field.id]?.trim() ?? "";
+      const replaceable = existing === "" || current.defaultedFieldIds.includes(field.id) || !!current.agentSources[field.id];
+      if (!replaceable) return;
+      const isHourly = field.fieldType === FieldType.NUMBER && (field.optionsOrder || []).includes("isHourly");
+      accepted[field.id] = {
+        value: isHourly ? formatHourlyValue(proposal.value) : proposal.value,
+        quote: proposal.quote,
+      };
+    });
+    if (Object.keys(accepted).length > 0) dispatch({ type: "APPLY_PROPOSALS", values: accepted });
+    return Object.keys(accepted).length;
+  };
 
   // Construit la journée complète : valeurs renseignées, et valeurs effacées à supprimer côté serveur.
   const buildEntryPayload = (): DailyEntryPayload => {
@@ -587,7 +668,12 @@ const useDailyLogs = (): UseDailyLogsReturn => {
         if (sVal && sVal.trim()) acc[sId] = sVal.trim();
         return acc;
       }, {});
-      values.push({ customFieldId: fid, value, subValues: Object.keys(subValues).length ? subValues : undefined });
+      values.push({
+        customFieldId: fid,
+        value,
+        subValues: Object.keys(subValues).length ? subValues : undefined,
+        ...(formData.agentSources[fid] && { source: "agent" as const }),
+      });
     });
     const existingLog = dialog.isEditing ? logs.find(l => l.id === dialog.logId) : undefined;
     const clearedFieldIds = (existingLog?.fieldValues ?? [])
@@ -715,7 +801,7 @@ const useDailyLogs = (): UseDailyLogsReturn => {
       dispatch({
         type: "OPEN_DIALOG",
         isEditing: false,
-        formData: { date: day.dateStr, notes: "", fieldValues: defaultFvMap, subFieldValues: {} }
+        formData: { date: day.dateStr, notes: "", fieldValues: defaultFvMap, subFieldValues: {}, agentSources: {}, defaultedFieldIds: Object.keys(defaultFvMap) }
       });
     }
   };
@@ -759,6 +845,9 @@ const useDailyLogs = (): UseDailyLogsReturn => {
     selectedFieldsValue,
     handleOpen,
     handleClose,
+    handleFieldValueChange,
+    handleClearAgentValue,
+    handleApplyProposals,
     handleSubmit,
     handleDelete,
     handleCalendarCellClick,
@@ -797,6 +886,9 @@ export const DailyLogsManager: React.FC = () => {
     selectedFieldsValue,
     handleOpen,
     handleClose,
+    handleFieldValueChange,
+    handleClearAgentValue,
+    handleApplyProposals,
     handleSubmit,
     handleDelete,
     handleCalendarCellClick,
@@ -808,6 +900,12 @@ export const DailyLogsManager: React.FC = () => {
   const router = useRouter();
   const { user } = useAuth();
   const [quickSaving, setQuickSaving] = React.useState(false);
+  // Le rappel du soir ouvre la saisie du jour prête à enregistrer (?new=1&voice=1) ; le toucher reste nécessaire sur iOS.
+  const [voiceReady, setVoiceReady] = React.useState(false);
+  const closeDialog = () => {
+    setVoiceReady(false);
+    handleClose();
+  };
 
   // Champ du check-in express : celui choisi à l'onboarding, sinon un champ « Humeur » sur une échelle.
   const quickField = React.useMemo(() => {
@@ -891,6 +989,8 @@ export const DailyLogsManager: React.FC = () => {
       openTodayRef.current();
     }
     if (new URLSearchParams(window.location.search).get("new") === "1") {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      setVoiceReady(new URLSearchParams(window.location.search).get("voice") === "1");
       openTodayRef.current();
       router.replace("/dashboard", { scroll: false });
     }
@@ -980,14 +1080,14 @@ export const DailyLogsManager: React.FC = () => {
 
       <LogEntryDialog
         open={dialog.open}
-        onClose={handleClose}
+        onClose={closeDialog}
         isEditing={dialog.isEditing}
         logDate={formData.date}
         setLogDate={(v) => dispatch({ type: "UPDATE_FORM", data: { date: v } })}
         notes={formData.notes}
         setNotes={(v) => dispatch({ type: "UPDATE_FORM", data: { notes: v } })}
         fieldValuesMap={formData.fieldValues}
-        onFieldValueChange={(fid, v) => dispatch({ type: "UPDATE_FORM", data: { fieldValues: { ...formData.fieldValues, [fid]: v } } })}
+        onFieldValueChange={handleFieldValueChange}
         subFieldValuesMap={formData.subFieldValues}
         onSubFieldValueChange={(fid, subId, v) => {
           const currentSub = formData.subFieldValues?.[fid] || {};
@@ -1009,6 +1109,10 @@ export const DailyLogsManager: React.FC = () => {
         error={dialogError}
         activeFields={activeFields}
         historicalValues={historicalValues}
+        agentSources={formData.agentSources}
+        onClearAgentValue={handleClearAgentValue}
+        onApplyProposals={handleApplyProposals}
+        voiceReady={voiceReady}
       />
     </Paper>
     </Box>

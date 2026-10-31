@@ -13,6 +13,9 @@ import { NoteCleanupCronService } from './cron/note-cleanup-cron.service.js';
 import { NoteCleanupService } from '../application/services/note-cleanup.service.js';
 import { AIChatService } from '../application/services/ai-chat.service.js';
 import { AIChatController } from './controllers/ai-chat.controller.js';
+import { DailyLogAssistController } from './controllers/daily-log-assist.controller.js';
+import { VoiceTranscriptionService } from '../application/services/voice-transcription.service.js';
+import { AutofillDraftService } from '../application/services/autofill-draft.service.js';
 import { DatabaseModule } from '../../../database/database.module.js';
 
 @Module({
@@ -28,8 +31,14 @@ import { DatabaseModule } from '../../../database/database.module.js';
     NoteCleanupService,
     NoteCleanupCronService,
     AIChatService,
+    VoiceTranscriptionService,
+    AutofillDraftService,
   ],
-  controllers: [AIInsightController, AIChatController],
+  controllers: [
+    AIInsightController,
+    AIChatController,
+    DailyLogAssistController,
+  ],
   exports: [AIInsightService],
 })
 export class AIInsightsModule {}

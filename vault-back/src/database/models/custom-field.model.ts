@@ -1,6 +1,9 @@
 import { Entity, Column, ManyToOne, OneToMany, JoinColumn } from 'typeorm';
 import type { Relation } from 'typeorm';
-import type { GoalDirection } from '../../modules/health/domain/entities/custom-field.entity.js';
+import type {
+  AutofillMode,
+  GoalDirection,
+} from '../../modules/health/domain/entities/custom-field.entity.js';
 import { BaseModel } from './base.model.js';
 import { UserModel } from './user.model.js';
 import { FieldValueModel } from './field-value.model.js';
@@ -79,6 +82,14 @@ export class CustomFieldModel extends BaseModel {
     nullable: true,
   })
   constructOverride?: string | null;
+
+  @Column({
+    name: 'autofill_mode',
+    type: 'varchar',
+    length: 8,
+    default: 'AUTO',
+  })
+  autofillMode!: AutofillMode;
 
   @Column({ name: 'user_id', type: 'uuid' })
   userId!: string;

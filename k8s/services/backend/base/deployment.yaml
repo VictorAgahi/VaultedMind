@@ -126,6 +126,8 @@ spec:
           value: "gpt-4o-mini"
         - name: OPENAI_CHAT_MODEL
           value: "gpt-4o-mini"
+        - name: OPENAI_TRANSCRIBE_MODEL
+          value: "gpt-4o-mini-transcribe"
         - name: OPENAI_ANALYSIS_MODEL
           value: "gpt-4o-mini"
         - name: OPENAI_CORRELATION_MODEL

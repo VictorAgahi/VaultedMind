@@ -137,6 +137,7 @@ export class DailyLogController {
         customFieldId: fv.customFieldId,
         value: fv.value,
         subValues: fv.subValues,
+        source: fv.source ?? null,
         createdAt: fv.createdAt,
       })),
     };

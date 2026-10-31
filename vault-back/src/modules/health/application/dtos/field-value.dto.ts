@@ -6,6 +6,8 @@ import {
   MaxLength,
 } from 'class-validator';
 
+import type { FieldValueSource } from '../../domain/entities/field-value.entity.js';
+
 export class SaveFieldValueDto {
   @IsUUID()
   customFieldId!: string;
@@ -35,5 +37,7 @@ export class FieldValueResponseDto {
   customFieldId!: string;
   value!: string;
   subValues?: Record<string, string>;
+  /** 'agent' for an accepted autofill proposal, null for a manual entry. */
+  source!: FieldValueSource | null;
   createdAt!: Date;
 }

@@ -8,8 +8,11 @@ import {
   ArrayMaxSize,
   ValidateNested,
   IsObject,
+  IsIn,
 } from 'class-validator';
 import { Type } from 'class-transformer';
+import { FIELD_VALUE_SOURCES } from '../../domain/entities/field-value.entity.js';
+import type { FieldValueSource } from '../../domain/entities/field-value.entity.js';
 
 export class CreateDailyLogDto {
   @IsDateString()
@@ -43,6 +46,10 @@ export class DailyEntryValueDto {
   @IsOptional()
   @IsObject()
   subValues?: Record<string, string>;
+
+  @IsOptional()
+  @IsIn(FIELD_VALUE_SOURCES)
+  source?: FieldValueSource;
 }
 
 /**

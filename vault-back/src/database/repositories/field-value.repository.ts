@@ -86,7 +86,8 @@ export class FieldValueRepository extends AbstractBaseRepository<FieldValueModel
         encryptedUpdates.value,
       );
     }
-    await this.repository.update(id, encryptedUpdates);
+    // A value edited through this path is manual, whatever it was before
+    await this.repository.update(id, { ...encryptedUpdates, source: null });
     return this.findDomainById(id);
   }
 

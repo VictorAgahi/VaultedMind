@@ -14,8 +14,10 @@ class ApiService {
     const cleanEndpoint = endpoint.startsWith("/") ? endpoint : `/${endpoint}`;
     const url = `${baseUrl}${cleanEndpoint}`;
 
+    // Un envoi de fichier laisse le navigateur écrire l'en-tête multipart avec sa frontière.
+    const isForm = typeof FormData !== "undefined" && options.body instanceof FormData;
     const headers: HeadersInit = {
-      "Content-Type": "application/json",
+      ...(isForm ? {} : { "Content-Type": "application/json" }),
       ...options.headers,
     };
 
@@ -89,6 +91,10 @@ class ApiService {
       method: "POST",
       body: JSON.stringify(data),
     });
+  }
+
+  public postForm<T>(endpoint: string, form: FormData, options?: RequestInit): Promise<T> {
+    return this.request<T>(endpoint, { ...options, method: "POST", body: form });
   }
 
   public put<T, D = Record<string, unknown>>(endpoint: string, data?: D, options?: RequestInit): Promise<T> {

@@ -1,6 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import OpenAI from 'openai';
+import OpenAI, { toFile } from 'openai';
 
 export type ReasoningEffort = 'low' | 'medium' | 'high' | 'max';
 
@@ -9,6 +9,21 @@ export interface LLMRequestConfig {
   maxTokens?: number;
   reasoningEffort?: ReasoningEffort;
   proMode?: boolean;
+}
+
+export interface StructuredOutputConfig extends LLMRequestConfig {
+  /** Name of the JSON schema (letters, digits, underscores). */
+  schemaName: string;
+  /** Strict JSON schema the reply must follow. */
+  schema: object;
+}
+
+export interface AudioTranscriptionInput {
+  audio: Buffer;
+  /** File name with an extension the provider recognizes (m4a, webm, mp3, wav). */
+  fileName: string;
+  mimeType: string;
+  language: string;
 }
 
 @Injectable()
@@ -26,6 +41,7 @@ export class LLMService {
   private readonly predictionModel: string;
   private readonly qualityModel: string;
   private readonly synthesisModel: string;
+  private readonly transcribeModel: string;
 
   // ── Global defaults ───────────────────────────────────────────────────────
   private readonly defaultReasoningEffort: ReasoningEffort;
@@ -63,6 +79,9 @@ export class LLMService {
     this.synthesisModel =
       this.configService.get<string>('OPENAI_SYNTHESIS_MODEL')?.trim() ||
       flagshipFallback;
+    this.transcribeModel =
+      this.configService.get<string>('OPENAI_TRANSCRIBE_MODEL')?.trim() ||
+      'gpt-4o-mini-transcribe';
 
     const effortRaw = this.configService
       .get<string>('OPENAI_REASONING_EFFORT')
@@ -115,6 +134,10 @@ export class LLMService {
     return this.synthesisModel;
   }
 
+  getTranscribeModel(): string {
+    return this.transcribeModel;
+  }
+
   // ── Core generation methods ───────────────────────────────────────────────
 
   /**
@@ -162,22 +185,7 @@ export class LLMService {
         ],
       };
 
-      if (
-        targetModel.includes('gpt-5') ||
-        targetModel.startsWith('o1') ||
-        targetModel.startsWith('o3') ||
-        targetModel.startsWith('o4')
-      ) {
-        // GPT-5.x / o-series: use max_completion_tokens
-        body.max_completion_tokens = maxTokens;
-
-        if (targetModel.includes('gpt-5.6') || targetModel.startsWith('o')) {
-          body.reasoning_effort =
-            reasoningEffort === 'max' ? 'high' : reasoningEffort;
-        }
-      } else {
-        body.max_tokens = maxTokens;
-      }
+      this.applyTokenParameters(body, targetModel, maxTokens, reasoningEffort);
 
       const completion = await this.client.chat.completions.create(body);
 
@@ -196,7 +204,100 @@ export class LLMService {
     }
   }
 
+  /**
+   * Generation constrained by a strict JSON schema (structured outputs).
+   * Returns the raw JSON string; the caller parses and verifies it.
+   */
+  async generateStructured(
+    prompt: string,
+    config: StructuredOutputConfig,
+  ): Promise<string> {
+    const targetModel = config.model ?? this.defaultModel;
+    const reasoningEffort =
+      config.reasoningEffort ?? this.defaultReasoningEffort;
+    const maxTokens = config.maxTokens ?? 3000;
+
+    try {
+      const body: OpenAI.Chat.ChatCompletionCreateParamsNonStreaming = {
+        model: targetModel,
+        messages: [{ role: 'user', content: prompt }],
+        response_format: {
+          type: 'json_schema',
+          json_schema: {
+            name: config.schemaName,
+            strict: true,
+            schema: config.schema as Record<string, unknown>,
+          },
+        },
+      };
+      this.applyTokenParameters(body, targetModel, maxTokens, reasoningEffort);
+
+      const completion = await this.client.chat.completions.create(body);
+      if (completion.choices[0]?.message?.refusal) {
+        throw new Error('The model refused the structured request');
+      }
+      const content = completion.choices[0]?.message?.content;
+      if (!content) {
+        throw new Error('No content in OpenAI response');
+      }
+      return content;
+    } catch (error) {
+      this.logger.error(
+        `[LLM] Structured error — model=${targetModel}:`,
+        error instanceof Error ? error.message : String(error),
+      );
+      throw error;
+    }
+  }
+
+  /**
+   * Speech to text. The audio stays in memory and is never logged or stored here.
+   */
+  async transcribeAudio(input: AudioTranscriptionInput): Promise<string> {
+    try {
+      const file = await toFile(input.audio, input.fileName, {
+        type: input.mimeType,
+      });
+      const transcription = await this.client.audio.transcriptions.create({
+        file,
+        model: this.transcribeModel,
+        language: input.language,
+      });
+      return transcription.text;
+    } catch (error) {
+      this.logger.error(
+        `[LLM] Transcription error — model=${this.transcribeModel}:`,
+        error instanceof Error ? error.message : String(error),
+      );
+      throw error;
+    }
+  }
+
   // ── Internal helpers ──────────────────────────────────────────────────────
+
+  private applyTokenParameters(
+    body: OpenAI.Chat.ChatCompletionCreateParamsNonStreaming,
+    targetModel: string,
+    maxTokens: number,
+    reasoningEffort: ReasoningEffort,
+  ): void {
+    if (
+      targetModel.includes('gpt-5') ||
+      targetModel.startsWith('o1') ||
+      targetModel.startsWith('o3') ||
+      targetModel.startsWith('o4')
+    ) {
+      // GPT-5.x / o-series: use max_completion_tokens
+      body.max_completion_tokens = maxTokens;
+
+      if (targetModel.includes('gpt-5.6') || targetModel.startsWith('o')) {
+        body.reasoning_effort =
+          reasoningEffort === 'max' ? 'high' : reasoningEffort;
+      }
+    } else {
+      body.max_tokens = maxTokens;
+    }
+  }
 
   private parseReasoningEffort(
     raw: string | undefined,

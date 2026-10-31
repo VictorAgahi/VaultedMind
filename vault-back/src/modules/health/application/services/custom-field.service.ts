@@ -6,6 +6,7 @@ import {
 } from '@nestjs/common';
 import { CustomFieldRepository } from '../../../../database/repositories/custom-field.repository.js';
 import type {
+  CustomFieldAutofillUpdate,
   CustomFieldConstructOverrideUpdate,
   CustomFieldGoalUpdate,
 } from '../../domain/entities/custom-field.entity.js';
@@ -60,7 +61,8 @@ export class CustomFieldService {
       >
     > &
       CustomFieldGoalUpdate &
-      CustomFieldConstructOverrideUpdate,
+      CustomFieldConstructOverrideUpdate &
+      CustomFieldAutofillUpdate,
   ): Promise<CustomField> {
     await this.findById(id, requestingUserId);
     return this.customFieldRepository.updateDomain(id, updates);

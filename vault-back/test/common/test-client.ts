@@ -53,6 +53,20 @@ export class TestClient {
     return body ? req.send(body) : req;
   }
 
+  postFile(
+    url: string,
+    fieldName: string,
+    content: Buffer,
+    fileName: string,
+    contentType: string,
+  ): request.Test {
+    const req = request(this.app.getHttpServer()).post(url);
+    if (this.authCookie) {
+      req.set('Cookie', this.authCookie);
+    }
+    return req.attach(fieldName, content, { filename: fileName, contentType });
+  }
+
   get(url: string): request.Test {
     const req = request(this.app.getHttpServer()).get(url);
     if (this.authCookie) {

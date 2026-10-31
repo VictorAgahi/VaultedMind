@@ -85,8 +85,8 @@ self.addEventListener("notificationclick", (event) => {
   event.notification.close();
   event.waitUntil(
     clients.matchAll({ type: "window" }).then((clientList) => {
-      // Un rappel vers le tableau de bord ouvre directement la saisie du jour.
-      const target = event.notification.data === "/dashboard" ? "/dashboard?new=1" : event.notification.data || "/";
+      // Un rappel vers le tableau de bord ouvre directement la saisie du jour, prête à enregistrer la voix.
+      const target = event.notification.data === "/dashboard" ? "/dashboard?new=1&voice=1" : event.notification.data || "/";
       if (clientList.length > 0) {
         const client = clientList[0];
         return (client.navigate ? client.navigate(target) : Promise.resolve(client)).then((c) => (c || client).focus());

@@ -31,6 +31,10 @@ const POINTS = [
     text: "À OpenAI, notre sous-traitant pour l'IA, aux États-Unis. Les données transitent chiffrées et ne servent qu'à générer votre réponse.",
   },
   {
+    title: "Raconter ma journée",
+    text: "Si vous parlez à l'application, l'audio est envoyé à OpenAI pour être transcrit ; nous ne le conservons pas. Le texte est ensuite lu pour proposer des valeurs de champs, uniquement des faits que vous énoncez. Ce ne sont que des propositions : vous les validez avant d'enregistrer.",
+  },
+  {
     title: "Vos droits",
     text: "Vous pouvez désactiver l'IA à tout moment depuis cet espace : plus rien ne sera envoyé.",
   },

@@ -14,9 +14,14 @@ export interface AIChatUsageStatus {
 
 /**
  * Kinds of LLM usage tracked for quota purposes.
- * Each kind has its own budget per 12h window.
+ * Each kind has its own budget per window (12h, or 24h for the voice entry kinds).
  */
-export type AIUsageKind = 'chat' | 'insight' | 'optimize';
+export type AIUsageKind =
+  | 'chat'
+  | 'insight'
+  | 'optimize'
+  | 'voice'
+  | 'autofill';
 
 export interface AIUsageReservation {
   status: AIChatUsageStatus;
@@ -30,8 +35,18 @@ export class AIChatUsageRepository extends AbstractBaseRepository<AIChatUsageMod
     chat: 5,
     insight: 1,
     optimize: 3,
+    voice: 30,
+    autofill: 30,
   };
-  private static readonly WINDOW_DURATION_MS = 12 * 60 * 60 * 1000; // 12 hours
+  private static readonly DEFAULT_WINDOW_DURATION_MS = 12 * 60 * 60 * 1000; // 12 hours
+  private static readonly DAY_WINDOW_DURATION_MS = 24 * 60 * 60 * 1000; // 24 hours
+  private static readonly WINDOW_DURATION_MS: Record<AIUsageKind, number> = {
+    chat: AIChatUsageRepository.DEFAULT_WINDOW_DURATION_MS,
+    insight: AIChatUsageRepository.DEFAULT_WINDOW_DURATION_MS,
+    optimize: AIChatUsageRepository.DEFAULT_WINDOW_DURATION_MS,
+    voice: AIChatUsageRepository.DAY_WINDOW_DURATION_MS,
+    autofill: AIChatUsageRepository.DAY_WINDOW_DURATION_MS,
+  };
 
   // In-memory fallback in case DB table is not yet migrated
   private readonly inMemoryStore = new Map<string, number[]>();
@@ -121,9 +136,8 @@ export class AIChatUsageRepository extends AbstractBaseRepository<AIChatUsageMod
     kind: AIUsageKind,
   ): Promise<AIChatUsageStatus> {
     const maxAllowed = AIChatUsageRepository.MAX_USAGES_PER_WINDOW[kind];
-    const windowStart = new Date(
-      Date.now() - AIChatUsageRepository.WINDOW_DURATION_MS,
-    );
+    const windowDurationMs = AIChatUsageRepository.WINDOW_DURATION_MS[kind];
+    const windowStart = new Date(Date.now() - windowDurationMs);
 
     const recentUsages = await manager.find(AIChatUsageModel, {
       where: {
@@ -144,8 +158,7 @@ export class AIChatUsageRepository extends AbstractBaseRepository<AIChatUsageMod
       // The earliest usage expires 12 hours after it was created
       const oldestRecent = recentUsages[0];
       nextAvailableAt = new Date(
-        oldestRecent.createdAt.getTime() +
-          AIChatUsageRepository.WINDOW_DURATION_MS,
+        oldestRecent.createdAt.getTime() + windowDurationMs,
       );
       cooldownRemainingMs = Math.max(0, nextAvailableAt.getTime() - Date.now());
     }
@@ -166,7 +179,8 @@ export class AIChatUsageRepository extends AbstractBaseRepository<AIChatUsageMod
     const maxAllowed = AIChatUsageRepository.MAX_USAGES_PER_WINDOW[kind];
     const key = `${kind}:${userId}`;
     const now = Date.now();
-    const cutoff = now - AIChatUsageRepository.WINDOW_DURATION_MS;
+    const windowDurationMs = AIChatUsageRepository.WINDOW_DURATION_MS[kind];
+    const cutoff = now - windowDurationMs;
     const timestamps = (this.inMemoryStore.get(key) || []).filter(
       (ts) => ts > cutoff,
     );
@@ -179,9 +193,7 @@ export class AIChatUsageRepository extends AbstractBaseRepository<AIChatUsageMod
     let cooldownRemainingMs = 0;
 
     if (remaining === 0 && timestamps.length > 0) {
-      nextAvailableAt = new Date(
-        timestamps[0] + AIChatUsageRepository.WINDOW_DURATION_MS,
-      );
+      nextAvailableAt = new Date(timestamps[0] + windowDurationMs);
       cooldownRemainingMs = Math.max(0, nextAvailableAt.getTime() - now);
     }
 

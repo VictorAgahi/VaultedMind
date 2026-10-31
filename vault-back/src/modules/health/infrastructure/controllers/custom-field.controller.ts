@@ -52,6 +52,7 @@ export class CustomFieldController {
       undefined,
       undefined,
       dto.constructOverride ?? undefined,
+      dto.autofillMode ?? 'AUTO',
     );
 
     const saved = await this.customFieldService.createField(entity);
@@ -115,6 +116,7 @@ export class CustomFieldController {
       goalDirection: entity.goalDirection,
       construct: entity.construct,
       constructOverride: entity.constructOverride,
+      autofillMode: entity.autofillMode,
       createdAt: entity.createdAt,
     };
   }

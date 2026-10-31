@@ -16,7 +16,7 @@ import {
 const REMINDER_PAYLOAD = JSON.stringify({
   title: "Comment s'est passée votre journée ?",
   body: 'Une minute pour la noter, quand vous en avez envie.',
-  url: '/dashboard?new=1',
+  url: '/dashboard?new=1&voice=1',
 });
 
 interface PushSubscription {
