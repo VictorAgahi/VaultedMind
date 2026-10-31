@@ -210,7 +210,7 @@ class Builder:
         start_iso, end_iso, line = new_uuid(), new_uuid(), new_uuid()
         for uid, source, name in ((start_iso, start, "Start Date"), (end_iso, end, "End Date")):
             self.add("format.date", {
-                "UUID": uid, "WFDate": attachment(output_ref(source, name)),
+                "UUID": uid, "WFDate": token_string([output_ref(source, name)]),
                 "WFDateFormatStyle": "ISO 8601", "WFISO8601IncludeTime": True,
                 "WFTimeFormatStyle": "None",
             })
@@ -224,10 +224,10 @@ class Builder:
         return output_ref(results, "Repeat Results")
 
     def today(self):
-        now, today = new_uuid(), new_uuid()
-        self.add("date", {"UUID": now, "WFDateActionMode": "Current Date"})
+        today = new_uuid()
+        # Same shape as the real shortcuts: Format Date over a text holding the Current Date token
         self.add("format.date", {
-            "UUID": today, "WFDate": attachment(output_ref(now, "Date")),
+            "UUID": today, "WFDate": token_string([{"Type": "CurrentDate"}]),
             "WFDateFormatStyle": "Custom", "WFDateFormat": "yyyy-MM-dd", "WFTimeFormatStyle": "None",
         })
         return output_ref(today, "Formatted Date")

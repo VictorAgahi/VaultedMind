@@ -47,14 +47,19 @@ describe('HealthBatchDto', () => {
     expect(dto.quantities?.[0].value).toBe(8042.5);
   });
 
-  it.each([
-    '2026-13-01',
-    '2026-02-30',
-    '31/10/2026',
-    '2026-10-31T10:00:00Z',
-    '',
-  ])('should reject the date %p', async (date) => {
-    expect(await errorsFor({ date })).toContain('date');
+  it.each(['2026-13-01', '31/10/2026', '2026-10-31T10:00:00Z', ''])(
+    'should accept the lenient date %p (resolved by the service)',
+    async (date) => {
+      expect(await errorsFor({ date })).not.toContain('date');
+    },
+  );
+
+  it('should accept a payload without a date', async () => {
+    expect(await errorsFor({})).toEqual([]);
+  });
+
+  it('should reject a date that is too long', async () => {
+    expect(await errorsFor({ date: 'x'.repeat(65) })).toContain('date');
   });
 
   it('should reject an unknown metric', async () => {

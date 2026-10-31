@@ -21,6 +21,7 @@ import {
   HealthBatchResult,
   MAX_SLEEP_SAMPLES,
 } from '../dtos/health-batch.dto.js';
+import { resolveSyncDate } from '../../domain/services/sync-date.js';
 import { HealthSyncService } from './health-sync.service.js';
 
 const HOURLY_OPTION = 'isHourly';
@@ -37,6 +38,8 @@ export class HealthBatchSyncService {
   ) {}
 
   async sync(userId: string, dto: HealthBatchDto): Promise<HealthBatchResult> {
+    const user = await this.userRepository.findById(userId);
+    const date = resolveSyncDate(dto.date, user.timezone, new Date());
     const readings = new Map<AppleWatchMetric, number>();
     for (const quantity of dto.quantities ?? []) {
       const { value } = quantity;
@@ -50,9 +53,10 @@ export class HealthBatchSyncService {
       readings.set(quantity.metric, value);
     }
 
-    const ignoredSleepLabels = await this.addSleepReadings(
-      userId,
+    const ignoredSleepLabels = this.addSleepReadings(
       dto,
+      date,
+      user.timezone,
       readings,
     );
 
@@ -66,7 +70,7 @@ export class HealthBatchSyncService {
 
     const dailyLog = await this.healthSyncService.findOrCreateDailyLog(
       userId,
-      new Date(`${dto.date}T00:00:00Z`),
+      new Date(`${date}T00:00:00Z`),
     );
     for (const [metric, rawValue] of readings) {
       const { field, created } = await this.findOrCreateField(userId, metric);
@@ -85,11 +89,12 @@ export class HealthBatchSyncService {
     return result;
   }
 
-  private async addSleepReadings(
-    userId: string,
+  private addSleepReadings(
     dto: HealthBatchDto,
+    date: string,
+    timezone: string,
     readings: Map<AppleWatchMetric, number>,
-  ): Promise<string[]> {
+  ): string[] {
     const raw = [
       ...(dto.sleepSamples ?? []),
       ...parseSleepLines(dto.sleepLines ?? ''),
@@ -101,12 +106,11 @@ export class HealthBatchSyncService {
       );
     }
 
-    const user = await this.userRepository.findById(userId);
     const samples: SleepSample[] = [];
     let malformed = 0;
     for (const sample of raw) {
-      const start = parseSleepInstant(sample.start, user.timezone);
-      const end = parseSleepInstant(sample.end, user.timezone);
+      const start = parseSleepInstant(sample.start, timezone);
+      const end = parseSleepInstant(sample.end, timezone);
       if (start && end) {
         samples.push({ value: sample.value, start, end });
       } else {
@@ -118,7 +122,7 @@ export class HealthBatchSyncService {
     }
     if (samples.length === 0) return [];
 
-    const night = computeSleepNight(samples, dto.date, user.timezone);
+    const night = computeSleepNight(samples, date, timezone);
 
     if (night.unknownSampleCount > 0) {
       this.logger.warn(

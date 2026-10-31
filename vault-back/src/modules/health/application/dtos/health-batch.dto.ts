@@ -7,7 +7,6 @@ import {
   IsNumber,
   IsOptional,
   IsString,
-  Matches,
   Max,
   MaxLength,
   Min,
@@ -57,10 +56,14 @@ export class SleepSampleDto {
 }
 
 export class HealthBatchDto {
-  /** The user's local day (YYYY-MM-DD) the data belongs to. */
-  @Matches(/^\d{4}-\d{2}-\d{2}$/, { message: 'date must be YYYY-MM-DD' })
-  @IsISO8601({ strict: true })
-  date!: string;
+  /**
+   * The user's local day (YYYY-MM-DD) the data belongs to. Optional and lenient:
+   * an unreadable value falls back to the user's current day (see resolveSyncDate).
+   */
+  @IsOptional()
+  @IsString()
+  @MaxLength(64)
+  date?: string;
 
   @IsOptional()
   @IsArray()

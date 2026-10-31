@@ -286,8 +286,7 @@ describe('Apple Health batch sync (e2e)', () => {
 
   it('should reject an invalid payload with a 400', async (): Promise<void> => {
     const invalidBodies: object[] = [
-      {},
-      { date: '2026-02-30' },
+      { date: 'x'.repeat(65) },
       { date: '2026-01-17', quantities: [{ metric: 'NOPE', value: 1 }] },
       { date: '2026-01-17', quantities: [{ metric: 'STEPS', value: 'abc' }] },
       {
@@ -303,6 +302,20 @@ describe('Apple Health batch sync (e2e)', () => {
     for (const body of invalidBodies) {
       const res = await postBatch(await issueToken(), body);
       expect(res.status).toBe(400);
+    }
+  });
+
+  it('should fall back to the current day when the date is unreadable', async (): Promise<void> => {
+    // The shortcut's date formatting depends on the iOS locale settings
+    for (const date of ['31 oct. 2026', undefined]) {
+      const res = await postBatch(await issueToken(), {
+        date,
+        quantities: [{ metric: 'STEPS', value: 1234 }],
+      });
+      expect(res.status).toBe(201);
+      expect((res.body as StoredResult).stored).toEqual([
+        { metric: 'STEPS', value: 1234 },
+      ]);
     }
   });
 
