@@ -177,7 +177,7 @@ describe('sentences for value targets', () => {
         'Humeur : agressif',
       ),
     ).toContain(
-      'le lendemain des jours où la valeur de « Tension » lue dans ta note est parmi les plus hautes (le tiers le plus haut)',
+      'le lendemain des jours où « Tension » est au plus haut dans ta note',
     );
   });
 

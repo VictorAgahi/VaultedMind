@@ -33,7 +33,7 @@ export const writeFilterPreference = (value: LeversFilter): void => {
 
 const HELP_LINES = [
   "Chaque lien indique d'où vient ce qui est comparé : un de tes champs, Apple Santé, ce que l'IA repère dans tes notes, ta façon d'écrire ou la saisie.",
-  "« Plus élevé » veut dire : le tiers de tes jours où la valeur est la plus haute, comparé au tiers où elle est la plus basse.",
+  "« Au plus haut » : on compare le tiers de tes jours où la valeur est la plus haute au tiers où elle est la plus basse, et on donne l'écart moyen.",
   "« Solide » : le lien tient même en tenant compte du nombre de comparaisons. « Piste » : possible, à confirmer avec plus de jours.",
   "Un lien n'est pas une cause : deux choses vont ensemble dans tes données, sans qu'on sache laquelle influence l'autre. « Ce qui va avec » regroupe ce qui varie en même temps sans être un levier (humeur, thèmes, façon d'écrire).",
 ];

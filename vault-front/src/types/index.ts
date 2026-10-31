@@ -377,6 +377,8 @@ export interface PatternFinding {
   /** Jours du prédicteur qui illustrent le mieux le lien ("AAAA-MM-JJ"). */
   exampleDates: string[];
   summary: string;
+  /** Ligne secondaire : sur combien de jours repose la comparaison. Absente des anciens rapports. */
+  details?: string;
   /** Identité stable du lien, renvoyée pour enregistrer l'avis de la personne. Absent des anciens rapports. */
   findingKey?: string;
   /** Lien connu de tous. Absent des anciens rapports : traité comme non évident. */
@@ -397,6 +399,8 @@ export interface PatternBeforeItem {
   q: number;
   moreFrequentBefore: boolean;
   summary: string;
+  /** Ligne secondaire : la fenêtre de jours relevée. Absente des anciens rapports. */
+  details?: string;
 }
 
 export interface PatternChangePoint {

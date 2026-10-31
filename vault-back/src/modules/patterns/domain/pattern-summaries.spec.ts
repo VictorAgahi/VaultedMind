@@ -62,7 +62,7 @@ describe('pattern summaries', () => {
 
       // Assert
       expect(sentence).toBe(
-        'Les jours où « Sport » apparaît dans ta note, la valeur de « Humeur » est en moyenne plus haute de 1,3 point (comparé sur 60 jours, dont 14 avec et 30 sans).',
+        'Les jours où « Sport » apparaît dans ta note, « Humeur » : +1,3 point.',
       );
     });
 
@@ -79,7 +79,7 @@ describe('pattern summaries', () => {
 
       // Assert
       expect(sentence).toBe(
-        'Le lendemain des jours où « Sport » apparaît dans ta note, la valeur de « Humeur » est en moyenne plus basse de 0,8 point (comparé sur 60 jours, dont 14 avec et 30 sans).',
+        'Le lendemain des jours où « Sport » apparaît dans ta note, « Humeur » : -0,8 point.',
       );
     });
 
@@ -103,7 +103,7 @@ describe('pattern summaries', () => {
 
       // Assert
       expect(sentence).toBe(
-        'Les jours où la valeur de « Rumination » lue dans ta note est parmi les plus hautes (le tiers le plus haut), la valeur de « Humeur » est en moyenne plus basse de 2,0 points (comparé sur 60 jours ; tiers haut : 20 jours, tiers bas : 20 jours) que les jours où cette valeur est parmi les plus basses.',
+        'Les jours où « Rumination » est au plus haut dans ta note, « Humeur » : -2,0 points.',
       );
     });
 
@@ -119,11 +119,9 @@ describe('pattern summaries', () => {
       const sentence = summarizeFinding(finding, 'Humeur');
 
       // Assert
-      expect(
-        sentence.startsWith(
-          'Après un jour sans saisie, la valeur de « Humeur »',
-        ),
-      ).toBe(true);
+      expect(sentence.startsWith('Après un jour sans saisie, « Humeur »')).toBe(
+        true,
+      );
     });
 
     it('should append the unit of the target when known', () => {
@@ -131,7 +129,7 @@ describe('pattern summaries', () => {
       const sentence = summarizeFinding(buildFinding(), 'Sommeil', 'h');
 
       // Assert
-      expect(sentence).toContain('plus haute de 1,3 h');
+      expect(sentence).toContain('« Sommeil » : +1,3 h');
     });
 
     it('should fall back on the direction of the correlation without effect', () => {
@@ -142,7 +140,7 @@ describe('pattern summaries', () => {
       const sentence = summarizeFinding(finding, 'Humeur');
 
       // Assert
-      expect(sentence).toContain('a tendance à être plus bas');
+      expect(sentence).toContain('« Humeur » a tendance à baisser');
     });
 
     it('should stay calm for every variant', () => {
@@ -171,7 +169,7 @@ describe('pattern summaries', () => {
 
       // Assert
       expect(sentence).toBe(
-        '« Tension » est présent 6 fois sur 12 jours dans les 3 jours avant tes journées difficiles, contre 13 % des autres jours.',
+        '« Tension » : 6 fois sur 12 jours avant tes journées difficiles, contre 13 % des autres jours.',
       );
     });
 
@@ -190,7 +188,7 @@ describe('pattern summaries', () => {
 
       // Assert
       expect(sentence).toBe(
-        '« Sport » est présent 1 fois sur 12 jours dans les 3 jours avant tes journées difficiles, contre 40 % des autres jours.',
+        '« Sport » : 1 fois sur 12 jours avant tes journées difficiles, contre 40 % des autres jours.',
       );
     });
 

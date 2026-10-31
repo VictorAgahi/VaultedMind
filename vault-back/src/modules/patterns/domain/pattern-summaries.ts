@@ -76,7 +76,17 @@ function withUnit(value: number, unit: TargetUnit): string {
     !unit.factor &&
     Math.abs(value) < MAX_HOURS_WITH_MINUTES &&
     Math.round(Math.abs(value) * 60) > 0;
-  return showMinutes ? `${amount}, soit ${approximateMinutes(value)}` : amount;
+  return showMinutes ? `${amount} (${approximateMinutes(value)})` : amount;
+}
+
+/** Duration told on its own for the sentence "tu dors ... de plus": minutes below an hour. */
+function sleepAmount(value: number, unit: TargetUnit): string {
+  const belowAnHour =
+    unit.label === HOURS_UNIT &&
+    !unit.factor &&
+    Math.abs(value) < MAX_HOURS_WITH_MINUTES &&
+    Math.round(Math.abs(value) * 60) > 0;
+  return belowAnHour ? approximateMinutes(value) : withUnit(value, unit);
 }
 
 function daysLabel(count: number): string {
@@ -91,6 +101,8 @@ export interface FindingContext {
   targetUnit?: string | TargetUnit;
   predictorIsNight?: boolean;
   targetIsNight?: boolean;
+  /** The target is the Apple Health sleep duration, which a person can be told "tu dors". */
+  targetIsSleep?: boolean;
 }
 
 /** What makes the predictor "present" on a day, worded after where it was read. */
@@ -102,16 +114,15 @@ function presenceClause(
   const self = !subject || isSelfSubject(subject);
   const note = self ? 'ta note' : 'la note';
   const continuous = finding.effect?.kind === 'continuous';
-  const level = continuous ? ' (le tiers le plus haut)' : '';
   if (finding.category === 'theme') {
     const topic = themeTopic(finding.key, label, self);
     return continuous
-      ? `où ${note} parle beaucoup ${topic}${level}`
+      ? `où ${note} parle beaucoup ${topic}`
       : `où ${note} parle ${topic}`;
   }
   if (continuous) {
-    const where = isNotesCategory(finding.category) ? ` lue dans ${note}` : '';
-    return `où la valeur de « ${label} »${where} est parmi les plus hautes${level}`;
+    const where = isNotesCategory(finding.category) ? ` dans ${note}` : '';
+    return `où « ${label} » est au plus haut${where}`;
   }
   if (isNotesCategory(finding.category)) {
     return `où « ${label} » apparaît dans ${note}`;
@@ -177,23 +188,18 @@ function summarizeBinaryTargetFinding(
   return `« ${targetLabel} » est ${comparison} ${condition} (${shares}).`;
 }
 
-/** Direction of a difference, in forms that agree whatever the gender of the label. */
-function directionWord(difference: number, unit: TargetUnit): string {
-  if (unit.clock)
-    return difference > 0 ? 'décalée plus tard' : 'décalée plus tôt';
-  return difference > 0 ? 'plus haute' : 'plus basse';
-}
-
-/** How many days the comparison rests on; a group size is never told alone. */
-function sampleLabel(
-  finding: PatternFinding,
-  effect: NonNullable<PatternFinding['effect']>,
-): string {
-  const total = `comparé sur ${daysLabel(finding.n)}`;
+/**
+ * Secondary line of a card: how many days the comparison rests on; a group size is never
+ * told alone. Smaller text, so it stays out of the main sentence.
+ */
+export function describeFindingSample(finding: PatternFinding): string {
+  const total = `Comparé sur ${daysLabel(finding.n)}`;
+  const effect = finding.effect;
+  if (!effect) return total;
   if (effect.kind === 'continuous') {
-    return `${total} ; tiers haut : ${daysLabel(effect.countHigh)}, tiers bas : ${daysLabel(effect.countLow)}`;
+    return `${total} · tiers haut ${effect.countHigh} j · tiers bas ${effect.countLow} j`;
   }
-  return `${total}, dont ${effect.countHigh} avec et ${effect.countLow} sans`;
+  return `${total} · ${daysLabel(effect.countHigh)} avec, ${effect.countLow} sans`;
 }
 
 /**
@@ -218,29 +224,32 @@ export function summarizeFinding(
       context,
     );
   }
-  const value = `la valeur de « ${targetLabel} »`;
+  const label = `« ${targetLabel} »`;
   if (!effect) {
-    const tendency = finding.rho >= 0 ? 'plus haute' : 'plus basse';
-    return `${lead} ${value} a tendance à être ${tendency}.`;
+    const tendency = finding.rho >= 0 ? 'monter' : 'baisser';
+    return `${lead} ${label} a tendance à ${tendency}.`;
   }
   const measure = normalizeUnit(unit ?? context.targetUnit);
-  const amount = withUnit(effect.difference, measure);
-  const sample = sampleLabel(finding, effect);
   const scaled = effect.difference * (measure.factor ?? 1);
   const isZero = measure.factor
     ? Math.round(Math.abs(scaled)) === 0
     : formatFrenchNumber(effect.difference) === '0,0';
+  const sleeps = context.targetIsSleep && (!subject || isSelfSubject(subject));
   if (isZero) {
-    return `${lead} ${value} reste en moyenne presque identique (${sample}).`;
+    return sleeps
+      ? `${lead} tu dors à peu près autant.`
+      : `${lead} ${label} reste presque identique.`;
   }
-  const direction = directionWord(effect.difference, measure);
-  const comparison =
-    effect.kind === 'continuous'
-      ? context.predictorIsNight || context.targetIsNight
-        ? ' que lorsque cette valeur est parmi les plus basses'
-        : ' que les jours où cette valeur est parmi les plus basses'
-      : '';
-  return `${lead} ${value} est en moyenne ${direction} de ${amount} (${sample})${comparison}.`;
+  if (sleeps) {
+    const more = effect.difference > 0 ? 'de plus' : 'de moins';
+    return `${lead} tu dors ${sleepAmount(effect.difference, measure)} ${more}.`;
+  }
+  if (measure.clock) {
+    const when = effect.difference > 0 ? 'plus tard' : 'plus tôt';
+    return `${lead} ${label} : ${withUnit(effect.difference, measure)} ${when}.`;
+  }
+  const sign = effect.difference > 0 ? '+' : '-';
+  return `${lead} ${label} : ${sign}${withUnit(effect.difference, measure)}.`;
 }
 
 /** "tes journées difficiles" for the user, the subject's name for someone else. */
@@ -264,8 +273,12 @@ export function summarizeBeforeDifficultItem(
     ? `les jours où « ${target.label} » est ${target.direction === 'LOWER_IS_BETTER' ? 'présent' : 'absent'}`
     : difficultDaysPhrase(subject);
   const baseline = percentLabel(item.frequencyOther);
-  return `« ${item.label} » est présent ${item.countBefore} fois sur ${daysLabel(item.daysBefore)} dans les 3 jours avant ${days}, contre ${baseline} des autres jours.`;
+  return `« ${item.label} » : ${item.countBefore} fois sur ${daysLabel(item.daysBefore)} avant ${days}, contre ${baseline} des autres jours.`;
 }
+
+/** Secondary line of a before-difficult-days card: the window the count was read in. */
+export const BEFORE_DIFFICULT_WINDOW_DETAILS =
+  'Relevé dans les 3 jours qui précèdent';
 
 export function summarizeChangePoint(
   changePoint: ChangePointFinding,

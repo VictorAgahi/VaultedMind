@@ -6,7 +6,7 @@ import { Box, Button, FormControlLabel, Link as MuiLink, Paper, Switch, Typograp
 import { apiService } from "@/services/api.service";
 import { useAuth } from "@/context/auth-context";
 import { leversWording } from "@/utils/tracked-subject";
-import type { PatternChangePoint, PatternFinding, PatternReport, PatternSource, PatternTargetReport } from "@/types";
+import type { PatternBeforeItem, PatternChangePoint, PatternFinding, PatternReport, PatternSource, PatternTargetReport } from "@/types";
 import { DayLinks, InsightCard, SectionTitle, ShowMoreList, SourceChip, sourceOfFinding, StrengthChip } from "./levers-parts";
 import type { LeversFilter } from "./levers-help";
 
@@ -44,6 +44,9 @@ const FindingCard: React.FC<FindingCardProps> = ({ finding, tone, obvious, onVer
       <Typography variant="body2">{finding.summary}</Typography>
       <StrengthChip strength={finding.strength} />
     </Box>
+    {finding.details && (
+      <Typography variant="caption" color="text.secondary">{finding.details}</Typography>
+    )}
     <SourceChip source={sourceOfFinding(finding)} />
     <DayLinks dates={finding.exampleDates} />
     {finding.findingKey && (
@@ -157,6 +160,13 @@ const CompanionLinks: React.FC<{ id: string; findings: PatternFinding[]; onVerdi
   );
 };
 
+const BeforeItemCard: React.FC<{ item: PatternBeforeItem; tone: "help" | "neutral" }> = ({ item, tone }) => (
+  <InsightCard tone={tone}>
+    <Typography variant="body2">{item.summary}</Typography>
+    {item.details && <Typography variant="caption" color="text.secondary">{item.details}</Typography>}
+  </InsightCard>
+);
+
 const BeforeDifficultDays: React.FC<{ target: PatternTargetReport; idSuffix: string }> = ({ target, idSuffix }) => {
   const items = target.beforeDifficultDays?.items ?? [];
   if (items.length === 0) return null;
@@ -175,13 +185,13 @@ const BeforeDifficultDays: React.FC<{ target: PatternTargetReport; idSuffix: str
       {moreOften.length > 0 && (
         <Box sx={{ display: "grid", gap: 1 }}>
           <Typography variant="body2" sx={{ fontWeight: 700 }}>Revient plus souvent avant</Typography>
-          <ShowMoreList items={moreOften} render={(item) => <InsightCard key={item.key} tone="neutral"><Typography variant="body2">{item.summary}</Typography></InsightCard>} />
+          <ShowMoreList items={moreOften} render={(item) => <BeforeItemCard key={item.key} item={item} tone="neutral" />} />
         </Box>
       )}
       {rarer.length > 0 && (
         <Box sx={{ display: "grid", gap: 1 }}>
           <Typography variant="body2" sx={{ fontWeight: 700 }}>Plus rare avant</Typography>
-          <ShowMoreList items={rarer} render={(item) => <InsightCard key={item.key} tone="help"><Typography variant="body2">{item.summary}</Typography></InsightCard>} />
+          <ShowMoreList items={rarer} render={(item) => <BeforeItemCard key={item.key} item={item} tone="help" />} />
         </Box>
       )}
     </Box>

@@ -27,6 +27,8 @@ import {
   type PatternSource,
 } from './pattern-sources.js';
 import {
+  BEFORE_DIFFICULT_WINDOW_DETAILS,
+  describeFindingSample,
   isMoreFrequentBefore,
   summarizeBeforeDifficultItem,
   summarizeChangePoint,
@@ -40,6 +42,8 @@ export interface Summarized {
 
 export type PatternFindingView = PatternFinding &
   Summarized & {
+    /** Smaller line under the sentence: how many days the comparison rests on. */
+    details: string;
     /** Stable identity of the link, sent back to record the user's verdict. */
     findingKey: string;
     obvious: boolean;
@@ -50,7 +54,7 @@ export type PatternFindingView = PatternFinding &
     actionable: boolean;
   };
 export type BeforeDifficultDaysItemView = BeforeDifficultDaysItem &
-  Summarized & { moreFrequentBefore: boolean };
+  Summarized & { moreFrequentBefore: boolean; details: string };
 export type ChangePointView = ChangePointFinding & Summarized;
 export type ScoreTextGapView = ScoreTextGap & Summarized;
 
@@ -117,6 +121,7 @@ function viewFinding(
       subject,
       findingContext(finding, target, measures),
     ),
+    details: describeFindingSample(finding),
     findingKey,
     obvious: verdict.obvious,
     obviousSource: verdict.source,
@@ -152,6 +157,7 @@ function viewTarget(
         return {
           ...item,
           moreFrequentBefore: isMoreFrequentBefore(item),
+          details: BEFORE_DIFFICULT_WINDOW_DETAILS,
           summary: summarizeBeforeDifficultItem(item, target, subject),
         };
       }),

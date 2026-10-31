@@ -62,8 +62,8 @@ describe('renderPatternBrief', () => {
     expect(brief).toContain('force: solide');
     expect(brief).toContain('force: piste');
     expect(brief).toContain('décalage: le lendemain');
-    expect(brief).toContain('n=41 jours');
-    expect(brief).toContain('plus haute de 1,3');
+    expect(brief).toContain('Comparé sur 41 jours');
+    expect(brief).toContain('+1,3 point');
     expect(brief).toContain('Avant les journées difficiles');
     expect(brief).toContain('Depuis le 1er mars 2026');
   });

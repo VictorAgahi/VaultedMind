@@ -19,6 +19,8 @@ import {
   type PatternObviousOverrides,
 } from './pattern-obviousness.js';
 import {
+  BEFORE_DIFFICULT_WINDOW_DETAILS,
+  describeFindingSample,
   formatFrenchDate,
   formatFrenchNumber,
   summarizeBeforeDifficultItem,
@@ -71,11 +73,10 @@ function renderFindingLine(
   const details = [
     `force: ${finding.strength}`,
     `décalage: ${lagLabel(finding)}`,
-    `n=${finding.n} jours`,
     `rho=${formatFrenchNumber(finding.rho)}`,
     directionLabel(finding, target),
   ].join(', ');
-  return `- ${summarizeFinding(finding, target.label, undefined, subject, findingContext(finding, target, measures))} [${details}]`;
+  return `- ${summarizeFinding(finding, target.label, undefined, subject, findingContext(finding, target, measures))} [${describeFindingSample(finding)}, ${details}]`;
 }
 
 const GOAL_LABELS: Record<TargetReport['direction'], string> = {
@@ -124,7 +125,7 @@ function renderTarget(
     lines.push(
       ...items.map(
         (item) =>
-          `- ${summarizeBeforeDifficultItem(item, undefined, subject)} [q=${formatFrenchNumber(item.q)}]`,
+          `- ${summarizeBeforeDifficultItem(item, undefined, subject)} [${BEFORE_DIFFICULT_WINDOW_DETAILS.toLowerCase()}, q=${formatFrenchNumber(item.q)}]`,
       ),
     );
   }
@@ -155,6 +156,7 @@ export function renderPatternBrief(
 ): string {
   const lines = [
     `RÉSULTATS CALCULÉS (moteur statistique ${report.engineVersion}, calculés le ${formatFrenchDate(report.computedAt.slice(0, 10))}, ${report.daysLogged} jours saisis sur ${report.daysCovered}).`,
+    'Lecture : « au plus haut » désigne le tiers des jours où la valeur est la plus haute, comparé au tiers où elle est la plus basse ; l’écart donné est une moyenne.',
   ];
   const expected: string[] = [];
   for (const target of report.targets) {
@@ -202,7 +204,7 @@ export function renderSolidFindingsForChat(
         )
         .map(
           (finding) =>
-            `- ${summarizeFinding(finding, target.label, undefined, subject, findingContext(finding, target, measures))} [solide, n=${finding.n} jours, ${lagLabel(finding)}]`,
+            `- ${summarizeFinding(finding, target.label, undefined, subject, findingContext(finding, target, measures))} [solide, ${describeFindingSample(finding)}, ${lagLabel(finding)}]`,
         ),
     )
     .slice(0, limit);

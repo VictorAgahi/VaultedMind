@@ -17,6 +17,7 @@ import {
   sourceOfCategory,
 } from './pattern-sources.js';
 import {
+  describeFindingSample,
   summarizeBeforeDifficultItem,
   summarizeFinding,
 } from './pattern-summaries.js';
@@ -186,7 +187,7 @@ describe('sentences by source', () => {
 
     // Assert
     expect(sentence).toBe(
-      'Les jours où la valeur de « Sommeil » est parmi les plus hautes (le tiers le plus haut), la valeur de « Humeur » est en moyenne plus basse de 2,0 points (comparé sur 60 jours ; tiers haut : 20 jours, tiers bas : 20 jours) que les jours où cette valeur est parmi les plus basses.',
+      'Les jours où « Sommeil » est au plus haut, « Humeur » : -2,0 points.',
     );
   });
 
@@ -206,7 +207,7 @@ describe('sentences by source', () => {
     // Assert
     expect(
       sentence.startsWith(
-        'Le lendemain des jours où la valeur de « Longueur de ta note » est parmi les plus hautes (le tiers le plus haut),',
+        'Le lendemain des jours où « Longueur de ta note » est au plus haut,',
       ),
     ).toBe(true);
   });
@@ -221,7 +222,7 @@ describe('sentences by source', () => {
     // Assert
     expect(
       sentence.startsWith(
-        'Les jours où ta note parle du travail ou des études, la valeur de « Humeur »',
+        'Les jours où ta note parle du travail ou des études, « Humeur »',
       ),
     ).toBe(true);
   });
@@ -297,7 +298,7 @@ describe('night metrics and units', () => {
 
     // Assert
     expect(sentence).toBe(
-      "La nuit qui précède les jours où ta note parle beaucoup de l'avenir ou de l'incertitude (le tiers le plus haut), la valeur de « Temps de sommeil » est en moyenne plus basse de 0,7 h, soit environ 40 min (comparé sur 60 jours ; tiers haut : 24 jours, tiers bas : 20 jours) que lorsque cette valeur est parmi les plus basses.",
+      "La nuit qui précède les jours où ta note parle beaucoup de l'avenir ou de l'incertitude, « Temps de sommeil » : -0,7 h (environ 40 min).",
     );
     expect(sentence).not.toMatch(FORBIDDEN);
   });
@@ -344,22 +345,22 @@ describe('night metrics and units', () => {
     // Assert
     expect(
       sameDay.startsWith(
-        'Après les nuits où la valeur de « Temps de sommeil » est parmi les plus hautes (le tiers le plus haut),',
+        'Après les nuits où « Temps de sommeil » est au plus haut,',
       ),
     ).toBe(true);
     expect(
       nextDay.startsWith(
-        'Le lendemain des jours qui suivent les nuits où la valeur de « Temps de sommeil »',
+        'Le lendemain des jours qui suivent les nuits où « Temps de sommeil »',
       ),
     ).toBe(true);
   });
 
   it.each([
-    [{ label: 'bpm' }, 'plus basse de 2,0 bpm'],
-    [{ label: 'min' }, 'plus basse de 2,0 min'],
-    [{ label: 'pas' }, 'plus basse de 2,0 pas'],
-    [{ label: 'kcal' }, 'plus basse de 2,0 kcal'],
-    [{ label: 'ms' }, 'plus basse de 2,0 ms'],
+    [{ label: 'bpm' }, ': -2,0 bpm'],
+    [{ label: 'min' }, ': -2,0 min'],
+    [{ label: 'pas' }, ': -2,0 pas'],
+    [{ label: 'kcal' }, ': -2,0 kcal'],
+    [{ label: 'ms' }, ': -2,0 ms'],
   ])('should show the unit %j', (unit, expected) => {
     // Act
     const sentence = summarizeFinding(
@@ -384,9 +385,7 @@ describe('night metrics and units', () => {
     });
 
     // Assert
-    expect(sentence).toContain(
-      '« Coucher » est en moyenne décalée plus tôt de 30 min',
-    );
+    expect(sentence).toContain('« Coucher » : 30 min plus tôt');
   });
 
   it('should keep a custom field without unit unitless', () => {
@@ -397,9 +396,7 @@ describe('night metrics and units', () => {
     );
 
     // Assert
-    expect(sentence).toContain(
-      'plus basse de 2,0 points (comparé sur 60 jours',
-    );
+    expect(sentence).toContain('« Humeur » : -2,0 points');
   });
 
   it('should read the measures of linked fields in the report view', () => {
@@ -431,7 +428,7 @@ describe('night metrics and units', () => {
       "La nuit qui précède les jours où ta note parle beaucoup de l'avenir ou de l'incertitude",
     );
     expect(view.targets[0].findings[0].summary).toContain(
-      '0,7 h, soit environ 40 min',
+      'tu dors environ 40 min de moins',
     );
   });
 });
@@ -466,15 +463,14 @@ describe('night metrics in every combination', () => {
 
     // Assert
     expect(sentence.startsWith(start)).toBe(true);
-    expect(sentence).toContain('plus basse de 0,5 h, soit environ 30 min');
+    expect(sentence).toContain(
+      '« Temps de sommeil » : -0,5 h (environ 30 min)',
+    );
   });
 
   it.each([
-    [0, 'Après les nuits où la valeur de « Temps de sommeil »'],
-    [
-      1,
-      'Le lendemain des jours qui suivent les nuits où la valeur de « Temps de sommeil »',
-    ],
+    [0, 'Après les nuits où « Temps de sommeil »'],
+    [1, 'Le lendemain des jours qui suivent les nuits où « Temps de sommeil »'],
   ] as const)('should order a night predictor at lag %s', (lag, start) => {
     // Act
     const sentence = summarizeFinding(
@@ -623,7 +619,182 @@ describe('before the difficult days', () => {
 
     // Assert
     expect(sentence).toBe(
-      "« Crise d'angoisse » est présent 8 fois sur 70 jours dans les 3 jours avant tes journées difficiles, contre 5 % des autres jours.",
+      "« Crise d'angoisse » : 8 fois sur 70 jours avant tes journées difficiles, contre 5 % des autres jours.",
+    );
+  });
+});
+
+describe('short sentences for a phone', () => {
+  const MAX_WORDS = 25;
+  const wordCount = (sentence: string): number =>
+    sentence.split(/\s+/).filter((token) => /[\p{L}\p{N}]/u.test(token)).length;
+
+  const sleepTarget = {
+    targetUnit: { label: 'h' },
+    targetIsNight: true,
+    targetIsSleep: true,
+  };
+
+  it('should tell the sleep after a high-energy day in one short sentence', () => {
+    // Arrange
+    const energy = finding({
+      key: 'field:energy',
+      label: 'Énergie',
+      lag: 1,
+      category: 'field',
+      effect: {
+        ...continuousEffect,
+        difference: -0.5,
+        countHigh: 13,
+        countLow: 13,
+      },
+      n: 41,
+    });
+
+    // Act
+    const sentence = summarizeFinding(
+      energy,
+      'Temps de sommeil',
+      undefined,
+      undefined,
+      sleepTarget,
+    );
+
+    // Assert
+    expect(sentence).toBe(
+      'La nuit qui suit les jours où « Énergie » est au plus haut, tu dors environ 30 min de moins.',
+    );
+    expect(wordCount(sentence)).toBeLessThan(MAX_WORDS);
+    expect(describeFindingSample(energy)).toBe(
+      'Comparé sur 41 jours · tiers haut 13 j · tiers bas 13 j',
+    );
+  });
+
+  it('should tell the sleep before a day about the future in one short sentence', () => {
+    // Arrange
+    const future = finding({
+      key: 'future',
+      label: 'Avenir',
+      category: 'theme',
+      lag: 0,
+      effect: { ...continuousEffect, difference: -0.7 },
+    });
+
+    // Act
+    const sentence = summarizeFinding(
+      future,
+      'Temps de sommeil',
+      undefined,
+      undefined,
+      sleepTarget,
+    );
+
+    // Assert
+    expect(sentence).toBe(
+      "La nuit qui précède les jours où ta note parle beaucoup de l'avenir ou de l'incertitude, tu dors environ 40 min de moins.",
+    );
+    expect(wordCount(sentence)).toBeLessThan(MAX_WORDS);
+  });
+
+  it('should tell hours of sleep when the gap is over an hour', () => {
+    // Arrange
+    const gain = finding({
+      key: 'field:sport',
+      label: 'Sport',
+      category: 'field',
+      effect: { ...continuousEffect, difference: 1.2 },
+    });
+
+    // Act
+    const sentence = summarizeFinding(
+      gain,
+      'Temps de sommeil',
+      undefined,
+      undefined,
+      sleepTarget,
+    );
+
+    // Assert
+    expect(sentence).toBe(
+      'La nuit qui précède les jours où « Sport » est au plus haut, tu dors 1,2 h de plus.',
+    );
+  });
+
+  it('should not say "tu dors" for a tracked animal', () => {
+    // Act
+    const sentence = summarizeFinding(
+      finding({
+        key: 'field:play',
+        label: 'Jeu',
+        category: 'field',
+        effect: { ...continuousEffect, difference: -0.5 },
+      }),
+      'Temps de sommeil',
+      undefined,
+      mochi,
+      sleepTarget,
+    );
+
+    // Assert
+    expect(sentence).not.toMatch(SECOND_PERSON);
+    expect(sentence).toContain(
+      '« Temps de sommeil » : -0,5 h (environ 30 min)',
+    );
+  });
+
+  it('should tell an anxiety gap in one short sentence', () => {
+    // Arrange
+    const school = finding({
+      key: 'field:school',
+      label: 'École',
+      category: 'field',
+      effect: { ...continuousEffect, difference: 0.5 },
+    });
+
+    // Act
+    const sentence = summarizeFinding(school, 'Anxiété');
+
+    // Assert
+    expect(sentence).toBe(
+      'Les jours où « École » est au plus haut, « Anxiété » : +0,5 point.',
+    );
+    expect(wordCount(sentence)).toBeLessThan(MAX_WORDS);
+  });
+
+  it('should keep the before-difficult-days sentence short', () => {
+    // Act
+    const sentence = summarizeBeforeDifficultItem(
+      buildBeforeItem({
+        label: "Crise d'angoisse",
+        countBefore: 8,
+        daysBefore: 70,
+        frequencyOther: 0.06,
+      }),
+    );
+
+    // Assert
+    expect(sentence).toBe(
+      "« Crise d'angoisse » : 8 fois sur 70 jours avant tes journées difficiles, contre 6 % des autres jours.",
+    );
+    expect(wordCount(sentence)).toBeLessThan(MAX_WORDS);
+  });
+
+  it('should keep the sample out of the sentence and in the details', () => {
+    // Arrange
+    const yesNo = finding({ n: 44 });
+
+    // Act
+    const view = buildPatternReportView(
+      buildReport({ targets: [buildTarget({ findings: [yesNo] })] }),
+      new Set(),
+    );
+    const card = view.targets[0].findings[0];
+
+    // Assert
+    expect(card.summary).not.toMatch(/comparé|tiers|jours,/i);
+    expect(card.details).toBe('Comparé sur 44 jours · 14 jours avec, 30 sans');
+    expect(view.targets[0].beforeDifficultDays?.items[0].details).toBe(
+      'Relevé dans les 3 jours qui précèdent',
     );
   });
 });

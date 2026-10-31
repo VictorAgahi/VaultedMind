@@ -1,3 +1,4 @@
+import { AppleWatchMetric } from '../../health/domain/enums/apple-watch-metric.enum.js';
 import { fieldIdOfKey } from './daily-matrix.js';
 import {
   isActionablePredictor,
@@ -39,6 +40,7 @@ export function findingContext(
     targetUnit: unitOfLinkedField(targetMeasure),
     predictorIsNight: isNightMetric(predictor?.metric),
     targetIsNight: isNightMetric(targetMeasure?.metric),
+    targetIsSleep: targetMeasure?.metric === AppleWatchMetric.SLEEP,
   };
 }
 
