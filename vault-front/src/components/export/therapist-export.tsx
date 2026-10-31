@@ -142,8 +142,8 @@ export function TherapistExport() {
   return (
     <Container maxWidth="md" sx={{ py: { xs: 2, md: 4 }, px: { xs: 2, sm: 3 } }}>
       <Box className="no-print" sx={{ display: "grid", gap: 2, mb: 3 }}>
-        <Button component={Link} href="/profile" startIcon={<ArrowBackRoundedIcon />} color="inherit" sx={{ justifySelf: "start" }}>
-          Profil
+        <Button component={Link} href="/settings/donnees" startIcon={<ArrowBackRoundedIcon />} color="inherit" sx={{ justifySelf: "start" }}>
+          Mes données
         </Button>
         <Typography variant="h1" sx={{ fontSize: { xs: "1.75rem", md: "2.25rem" } }}>Exporter pour mon thérapeute</Typography>
         <Typography color="text.secondary">

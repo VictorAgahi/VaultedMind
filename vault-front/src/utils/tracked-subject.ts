@@ -33,7 +33,7 @@ export const leversWording = (subject?: TrackedSubject): LeversWording => {
       weighsSubtitle: "Des liens qui vont à l'inverse de ce que tu souhaites.",
       keepNoting: "Continue à noter tes journées, à ton rythme.",
       nothingYet: "Rien n'est encore disponible pour toi",
-      targetsIntro: "de ton profil",
+      targetsIntro: "de tes paramètres",
     };
   }
   const name = subjectName(subject);
@@ -45,6 +45,6 @@ export const leversWording = (subject?: TrackedSubject): LeversWording => {
     weighsSubtitle: "Des liens qui vont à l'inverse du sens souhaité.",
     keepNoting: "Continuez à noter les journées, à votre rythme.",
     nothingYet: "Rien n'est encore disponible",
-    targetsIntro: "du profil",
+    targetsIntro: "des paramètres",
   };
 };

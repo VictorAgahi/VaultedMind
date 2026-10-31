@@ -10,6 +10,7 @@ export default function robots(): MetadataRoute.Robots {
       disallow: [
         "/dashboard",
         "/profile",
+        "/settings",
         "/analytics",
         "/fields",
         "/import",

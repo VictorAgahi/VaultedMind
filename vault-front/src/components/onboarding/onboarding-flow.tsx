@@ -190,7 +190,7 @@ export function OnboardingFlow() {
               );
             })}
             <Typography variant="caption" color="text.secondary">
-              {fieldsToCreate.length} champ{fieldsToCreate.length > 1 ? "s" : ""} seront créés. Vous pourrez en ajouter d&apos;autres dans Profil, puis Mes champs.
+              {fieldsToCreate.length} champ{fieldsToCreate.length > 1 ? "s" : ""} seront créés. Vous pourrez en ajouter d&apos;autres dans Paramètres, puis Mes données.
             </Typography>
           </Box>
         )}
@@ -199,7 +199,7 @@ export function OnboardingFlow() {
           <Box sx={{ display: "grid", gap: 2 }}>
             <Typography variant="h2" component="h1">Un rappel le soir ?</Typography>
             <Typography color="text.secondary">
-              Un seul rappel par jour, seulement si vous n&apos;avez pas encore noté votre journée. Vous pourrez l&apos;activer dans votre profil.
+              Un seul rappel par jour, seulement si vous n&apos;avez pas encore noté votre journée. Vous pourrez l&apos;activer dans Paramètres, Rappels et notifications.
             </Typography>
             <TextField select label="Heure du rappel" value={reminderTime} onChange={(e) => setReminderTime(e.target.value)} margin="none">
               {REMINDER_SLOTS.map((slot) => (

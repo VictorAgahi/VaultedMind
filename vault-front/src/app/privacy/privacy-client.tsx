@@ -23,7 +23,7 @@ const SECTIONS: { title: string; paragraphs: React.ReactNode[] }[] = [
     title: "3. Base légale et consentements",
     paragraphs: [
       "Les données de bien-être sont des données de santé au sens de l'article 9 du RGPD. Nous les traitons sur la base de votre consentement explicite, recueilli séparément à l'inscription et horodaté.",
-      "L'assistant IA est désactivé par défaut. Son activation demande un second consentement, distinct, lui aussi horodaté. Vous pouvez retirer l'un ou l'autre à tout moment : désactiver l'IA depuis l'espace IA, ou supprimer votre compte depuis votre profil.",
+      "L'assistant IA est désactivé par défaut. Son activation demande un second consentement, distinct, lui aussi horodaté. Vous pouvez retirer l'un ou l'autre à tout moment : désactiver l'IA depuis l'espace IA ou les paramètres (Assistant IA), ou supprimer votre compte depuis votre profil.",
     ],
   },
   {
@@ -45,7 +45,7 @@ const SECTIONS: { title: string; paragraphs: React.ReactNode[] }[] = [
   {
     title: "6. Vos droits",
     paragraphs: [
-      "Vous disposez d'un droit d'accès, de rectification, d'effacement, de portabilité et d'opposition. Depuis votre profil, vous pouvez exporter toutes vos données dans un fichier JSON lisible et supprimer votre compte.",
+      "Vous disposez d'un droit d'accès, de rectification, d'effacement, de portabilité et d'opposition. Depuis les paramètres (Mes données), vous pouvez exporter toutes vos données dans un fichier JSON lisible ; depuis votre profil, supprimer votre compte.",
       <>
         Pour toute question, écrivez-nous via la page{" "}
         <MuiLink component={Link} href="/contact">Contact</MuiLink>. Vous pouvez aussi adresser une réclamation à la CNIL (cnil.fr).

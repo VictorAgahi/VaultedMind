@@ -188,7 +188,7 @@ const TargetSection: React.FC<TargetSectionProps> = ({ target, index, isObvious,
       {!target.targetStillValid ? (
         <Typography variant="body2" color="text.secondary" role="status">
           Ce champ n&apos;est plus actif ou n&apos;est plus un repère choisi. Mettez à jour{" "}
-          <MuiLink component={Link} href="/profile#insight-targets">Ce que je veux comprendre</MuiLink>.
+          <MuiLink component={Link} href="/settings/analyse#insight-targets">Ce que je veux comprendre</MuiLink>.
         </Typography>
       ) : (
         <>

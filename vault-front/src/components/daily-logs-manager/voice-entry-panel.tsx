@@ -98,6 +98,35 @@ export const VoiceEntryPanel: React.FC<VoiceEntryPanelProps> = ({ logDate, notes
             : "Raconter ma journée"}
       </Button>
       {busy && <LinearProgress aria-label="Traitement en cours" sx={{ borderRadius: 2 }} />}
+      {recording && autofillFields !== null && autofillFields.length > 0 && (
+        <Box
+          role="note"
+          aria-label="Champs à mentionner"
+          sx={{
+            display: "grid",
+            gap: 1,
+            p: 1.5,
+            borderRadius: 3,
+            border: 1,
+            borderColor: "primary.main",
+            bgcolor: "primary.light",
+          }}
+        >
+          <Typography variant="body2" sx={{ fontWeight: 700, color: "primary.main" }}>
+            Pense à mentionner :
+          </Typography>
+          <Box component="ul" sx={{ display: "flex", flexWrap: "wrap", gap: 0.75, m: 0, p: 0, listStyle: "none" }}>
+            {autofillFields.map((field) => (
+              <Box component="li" key={field.id}>
+                <Chip label={field.name} size="medium" color="primary" variant="outlined" sx={{ bgcolor: "background.paper", fontWeight: 700 }} />
+              </Box>
+            ))}
+          </Box>
+          <Typography variant="caption" color="text.secondary">
+            Ces champs seront remplis si tu en parles.
+          </Typography>
+        </Box>
+      )}
       {recording && (
         <Typography variant="caption" color="text.secondary">
           Parlez normalement, dix minutes au plus. Seuls les faits que vous énoncez seront proposés, jamais votre humeur.
@@ -106,7 +135,7 @@ export const VoiceEntryPanel: React.FC<VoiceEntryPanelProps> = ({ logDate, notes
       {!recording && !busy && autofillFields !== null && (
         autofillFields.length > 0 ? (
           <Box sx={{ display: "flex", alignItems: "center", flexWrap: "wrap", gap: 0.75 }}>
-            <Typography variant="caption" color="text.secondary">
+            <Typography variant="body2" color="text.secondary">
               Rempli automatiquement si tu en parles :
             </Typography>
             {autofillFields.map((field) => (

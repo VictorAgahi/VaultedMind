@@ -4,9 +4,10 @@ import { Box, Typography, Container, Divider, Link as MuiLink } from "@mui/mater
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { BrandWordmark } from "@/components/brand/brand-mark";
+import { SETTINGS_ROUTES } from "@/components/settings/settings-routes";
 
 // Dans l'espace connecté, le pied de page n'apparaît que sur grand écran : sur mobile, la barre du bas suffit.
-const appRoutes = ["/dashboard", "/import", "/fields", "/analytics", "/profile", "/ai", "/integrations"];
+const appRoutes = ["/dashboard", "/import", "/fields", "/analytics", "/profile", "/ai", "/integrations", ...SETTINGS_ROUTES];
 // Écrans plein écran : aucun pied de page.
 const immersiveRoutes = ["/ai/chat", "/onboarding"];
 

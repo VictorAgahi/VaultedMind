@@ -5,8 +5,9 @@ import Link from "next/link";
 import { Fab, Tooltip } from "@mui/material";
 import ChatBubbleOutlineRoundedIcon from "@mui/icons-material/ChatBubbleOutlineRounded";
 import { usePathname } from "next/navigation";
+import { SETTINGS_ROUTES } from "@/components/settings/settings-routes";
 
-const appRoutes = ["/dashboard", "/import", "/fields", "/analytics", "/profile", "/integrations"];
+const appRoutes = ["/dashboard", "/import", "/fields", "/analytics", "/profile", "/integrations", ...SETTINGS_ROUTES];
 
 // Raccourci vers l'assistant en plein écran, sur grand écran uniquement :
 // sur mobile, l'assistant est dans l'onglet IA de la barre du bas.

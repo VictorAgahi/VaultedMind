@@ -7,8 +7,9 @@ import LogoutIcon from "@mui/icons-material/Logout";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { BrandWordmark } from "@/components/brand/brand-mark";
+import { SETTINGS_ROUTES } from "@/components/settings/settings-routes";
 
-const authRoutes = ["/dashboard", "/import", "/fields", "/analytics", "/profile", "/ai", "/integrations"];
+const authRoutes = ["/dashboard", "/import", "/fields", "/analytics", "/profile", "/ai", "/integrations", ...SETTINGS_ROUTES];
 
 const desktopLinks = [
   { href: "/dashboard", label: "Accueil" },
@@ -17,6 +18,7 @@ const desktopLinks = [
   { href: "/fields", label: "Champs" },
   { href: "/import", label: "Importation" },
   { href: "/integrations", label: "Intégrations" },
+  { href: "/settings", label: "Paramètres" },
 ];
 
 // Mobile : barre compacte (marque + avatar), la navigation vit dans la barre du bas.
@@ -51,7 +53,7 @@ export const Navbar: React.FC = () => {
 
           <Box component="nav" aria-label="Navigation principale" sx={{ display: { xs: "none", md: "flex" }, gap: 0.5 }}>
             {desktopLinks.map((link) => {
-              const active = pathname === link.href;
+              const active = pathname === link.href || pathname.startsWith(`${link.href}/`);
               return (
                 <Button
                   key={link.href}

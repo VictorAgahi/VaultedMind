@@ -13,19 +13,20 @@ import PersonOutlineIcon from "@mui/icons-material/PersonOutlined";
 import PersonIcon from "@mui/icons-material/Person";
 import AddRoundedIcon from "@mui/icons-material/AddRounded";
 import { usePathname, useRouter } from "next/navigation";
+import { SETTINGS_ROUTES } from "@/components/settings/settings-routes";
 
 export const BOTTOM_NAV_HEIGHT = 72;
 
 // Événement écouté par le gestionnaire du journal pour ouvrir la saisie du jour.
 export const NEW_ENTRY_EVENT = "vault:new-entry";
 
-const authRoutes = ["/dashboard", "/import", "/fields", "/analytics", "/profile", "/ai", "/integrations"];
+const authRoutes = ["/dashboard", "/import", "/fields", "/analytics", "/profile", "/ai", "/integrations", ...SETTINGS_ROUTES];
 
 const tabs = [
   { href: "/dashboard", label: "Accueil", icon: HomeOutlinedIcon, activeIcon: HomeIcon, match: ["/dashboard"] },
   { href: "/analytics", label: "Analyses", icon: InsightsOutlinedIcon, activeIcon: InsightsIcon, match: ["/analytics"] },
   { href: "/ai", label: "IA", icon: AutoAwesomeOutlinedIcon, activeIcon: AutoAwesomeIcon, match: ["/ai"] },
-  { href: "/profile", label: "Profil", icon: PersonOutlineIcon, activeIcon: PersonIcon, match: ["/profile", "/fields", "/import", "/integrations"] },
+  { href: "/profile", label: "Profil", icon: PersonOutlineIcon, activeIcon: PersonIcon, match: ["/profile", "/fields", "/import", "/integrations", ...SETTINGS_ROUTES] },
 ];
 
 const NavItem: React.FC<{ tab: (typeof tabs)[number]; active: boolean }> = ({ tab, active }) => {
