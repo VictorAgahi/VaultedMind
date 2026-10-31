@@ -34,6 +34,9 @@ import {
 
 const NO_FIELD = "";
 
+const filledDaysMessage = (days: number) =>
+  `${days} ${days > 1 ? "jours remplis" : "jour rempli"} depuis vos données Santé`;
+
 interface HealthFieldMappingProps {
   /** Appelé après un changement qui modifie les propositions (donnée de nouveau suivie, champ supprimé). */
   onChanged?: () => void;
@@ -46,6 +49,7 @@ export const HealthFieldMapping: React.FC<HealthFieldMappingProps> = ({ onChange
   const [loading, setLoading] = useState(true);
   const [savingMetric, setSavingMetric] = useState<AppleWatchMetric | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [notice, setNotice] = useState<string | null>(null);
   const [toDelete, setToDelete] = useState<{ id: string; name: string } | null>(null);
   const [deleting, setDeleting] = useState(false);
 
@@ -72,6 +76,7 @@ export const HealthFieldMapping: React.FC<HealthFieldMappingProps> = ({ onChange
   const run = async (metric: AppleWatchMetric | null, action: () => Promise<unknown>, failure: string) => {
     setSavingMetric(metric);
     setError(null);
+    setNotice(null);
     try {
       await action();
       await fetchAll();
@@ -93,14 +98,18 @@ export const HealthFieldMapping: React.FC<HealthFieldMappingProps> = ({ onChange
           await apiService.patch<CustomField, UpdateCustomFieldDto>(`/health/custom-fields/${current.id}`, { appleWatchMetric: null });
         }
       } else {
-        await apiService.patch<CustomField, UpdateCustomFieldDto>(`/health/custom-fields/${fieldId}`, { appleWatchMetric: metric });
+        const updated = await apiService.patch<CustomField, UpdateCustomFieldDto>(`/health/custom-fields/${fieldId}`, { appleWatchMetric: metric });
+        if (updated.healthFilledDays) setNotice(filledDaysMessage(updated.healthFilledDays));
       }
     }, "Impossible d'enregistrer ce choix.");
   };
 
   const handleUnitChange = (metric: AppleWatchMetric, field: CustomField, unit: HealthFieldUnit) => {
     if (field.appleWatchUnit === unit) return;
-    void run(metric, () => apiService.patch<CustomField, UpdateCustomFieldDto>(`/health/custom-fields/${field.id}`, { appleWatchUnit: unit }), "Impossible de changer l'unité.");
+    void run(metric, async () => {
+      const updated = await apiService.patch<CustomField, UpdateCustomFieldDto>(`/health/custom-fields/${field.id}`, { appleWatchUnit: unit });
+      if (updated.healthFilledDays) setNotice(filledDaysMessage(updated.healthFilledDays));
+    }, "Impossible de changer l'unité.");
   };
 
   const handleUnignore = (metric: AppleWatchMetric) => {
@@ -128,6 +137,7 @@ export const HealthFieldMapping: React.FC<HealthFieldMappingProps> = ({ onChange
       </Typography>
 
       {error && <Alert severity="error" sx={{ mb: 2 }} onClose={() => setError(null)}>{error}</Alert>}
+      {notice && <Alert severity="success" sx={{ mb: 2 }} onClose={() => setNotice(null)}>{notice}</Alert>}
 
       {loading ? (
         <Box sx={{ display: "flex", justifyContent: "center", p: 2 }}>

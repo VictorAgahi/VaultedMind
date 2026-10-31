@@ -82,12 +82,16 @@ export class CustomFieldController {
     @Body() dto: UpdateCustomFieldDto,
     @Req() req: { user: AuthUser },
   ): Promise<CustomFieldResponseDto> {
-    const updated = await this.customFieldService.updateField(
-      id,
-      req.user.id,
-      dto,
-    );
-    return this.mapToResponse(updated);
+    const { field, healthFilledDays } =
+      await this.customFieldService.updateFieldAndBackfill(
+        id,
+        req.user.id,
+        dto,
+      );
+    return {
+      ...this.mapToResponse(field),
+      ...(healthFilledDays !== undefined && { healthFilledDays }),
+    };
   }
 
   @Delete(':id')

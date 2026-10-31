@@ -864,3 +864,215 @@ describe('Apple Health field linking and mapping (e2e)', () => {
       .expect(400);
   });
 });
+
+/** The night of NIGHT moved forward by `days` days. */
+function nightShifted(days: number): typeof NIGHT {
+  const shift = (instant: string): string => {
+    const moved = new Date(instant);
+    moved.setUTCDate(moved.getUTCDate() + days);
+    return moved.toISOString();
+  };
+  return NIGHT.map((sample) => ({
+    value: sample.value,
+    start: shift(sample.start),
+    end: shift(sample.end),
+  }));
+}
+
+describe('Apple Health legacy links and manual mapping (e2e)', () => {
+  let client: TestClient;
+  let userId: string;
+
+  beforeAll(async (): Promise<void> => {
+    client = await TestClient.create();
+    client.setAuthCookie(await registerAndLogin(client));
+    userId = await userIdOf(client);
+  });
+
+  afterAll(async (): Promise<void> => {
+    await client.close();
+  });
+
+  async function createNumberField(
+    name: string,
+    extra: object = {},
+  ): Promise<FieldView> {
+    const res = await client
+      .post('/health/custom-fields', { name, fieldType: 'NUMBER', ...extra })
+      .expect(201);
+    return res.body as FieldView;
+  }
+
+  async function allFields(): Promise<FieldView[]> {
+    const res = await client.get('/health/custom-fields').expect(200);
+    return res.body as FieldView[];
+  }
+
+  async function sync(body: object): Promise<StoredResult> {
+    const issued = await client
+      .post('/integrations/health/sync-token')
+      .expect(201);
+    const token = (issued.body as { token: string }).token;
+    const res = await request(client.getHttpServer())
+      .post('/integrations/health/batch')
+      .set('X-Sync-Token', token)
+      .send(body)
+      .expect(201);
+    return res.body as StoredResult;
+  }
+
+  /** Makes the stored decisions look like those of a user who never ran the current version. */
+  async function forgetAssistantVersion(): Promise<void> {
+    await withDatabase(async (db) => {
+      const [row] = await db.query<
+        Array<{ health_metric_decisions_encrypted: string | null }>
+      >('SELECT health_metric_decisions_encrypted FROM users WHERE id = $1', [
+        userId,
+      ]);
+      const stored = row.health_metric_decisions_encrypted;
+      const state = stored
+        ? (JSON.parse(encryption.decrypt(stored)) as Record<string, unknown>)
+        : { decisions: {}, skipped: [] };
+      delete state.version;
+      await db.query(
+        'UPDATE users SET health_metric_decisions_encrypted = $1 WHERE id = $2',
+        [encryption.encrypt(JSON.stringify(state)), userId],
+      );
+    });
+  }
+
+  it('should move a legacy "Sommeil profond" link to the field "TEMPS SOMMEIL PROFOND" and fill the past days', async (): Promise<void> => {
+    // Arrange: a field auto-created by an earlier version receives the deep sleep
+    const legacy = await createNumberField('Sommeil profond', {
+      category: 'Apple Santé',
+      appleWatchMetric: 'SLEEP_DEEP',
+    });
+    await sync({ date: '2026-01-15', sleepSamples: NIGHT });
+    await sync({ date: '2026-01-16', sleepSamples: nightShifted(1) });
+    const legacyBefore = await valuesOn(client, legacy.id);
+    const mine = await createNumberField('TEMPS SOMMEIL PROFOND');
+    await client
+      .post('/health/daily-logs/entry', {
+        logDate: '2026-01-16',
+        values: [{ customFieldId: mine.id, value: '7' }],
+      })
+      .expect(201);
+    await forgetAssistantVersion();
+
+    // Act
+    const result = await sync({
+      date: '2026-01-17',
+      sleepSamples: nightShifted(2),
+    });
+
+    // Assert
+    expect(legacyBefore.get('2026-01-15')).toEqual({
+      value: '2',
+      source: 'health',
+    });
+    expect(result.autoLinked).toEqual([
+      { metric: 'SLEEP_DEEP', fieldName: 'TEMPS SOMMEIL PROFOND' },
+    ]);
+    const fields = await allFields();
+    expect(fields.find((f) => f.id === mine.id)).toMatchObject({
+      appleWatchMetric: 'SLEEP_DEEP',
+      appleWatchUnit: 'hours',
+    });
+    expect(
+      fields.find((f) => f.id === legacy.id)?.appleWatchMetric ?? null,
+    ).toBeNull();
+    expect(
+      fields.filter((f) => f.appleWatchMetric === 'SLEEP_DEEP'),
+    ).toHaveLength(1);
+    const values = await valuesOn(client, mine.id);
+    expect(values.get('2026-01-15')).toEqual({ value: '2', source: 'health' });
+    expect(values.get('2026-01-16')?.value).toBe('7');
+    expect(values.get('2026-01-16')?.source ?? null).toBeNull();
+    expect(values.get('2026-01-17')).toEqual({ value: '2', source: 'health' });
+    const view = await proposalsOf(client);
+    expect(view.autoLinked).toEqual([
+      expect.objectContaining({
+        metric: 'SLEEP_DEEP',
+        fieldName: 'TEMPS SOMMEIL PROFOND',
+      }),
+    ]);
+    expect(view.legacyFields).toEqual([]);
+  });
+
+  it('should keep feeding the field of the user and not examine it again on the next sync', async (): Promise<void> => {
+    // Arrange / Act
+    const result = await sync({
+      date: '2026-01-18',
+      sleepSamples: nightShifted(3),
+    });
+
+    // Assert
+    expect(result.autoLinked).toEqual([]);
+    expect(result.stored).toEqual([{ metric: 'SLEEP_DEEP', value: 2 }]);
+  });
+
+  it('should fill the past days when the user links a metric by hand, without touching typed values', async (): Promise<void> => {
+    // Arrange
+    await sync({
+      date: '2026-01-15',
+      quantities: [{ metric: 'STEPS', value: 1000 }],
+    });
+    await sync({
+      date: '2026-01-16',
+      quantities: [{ metric: 'STEPS', value: 2000 }],
+    });
+    await sync({
+      date: '2026-01-17',
+      quantities: [{ metric: 'STEPS', value: 3000 }],
+    });
+    const counter = await createNumberField('Compteur');
+    await client
+      .post('/health/daily-logs/entry', {
+        logDate: '2026-01-16',
+        values: [{ customFieldId: counter.id, value: '555' }],
+      })
+      .expect(201);
+
+    // Act
+    const res = await client
+      .patch(`/health/custom-fields/${counter.id}`, {
+        appleWatchMetric: 'STEPS',
+      })
+      .expect(200);
+
+    // Assert
+    expect((res.body as { healthFilledDays?: number }).healthFilledDays).toBe(
+      2,
+    );
+    const values = await valuesOn(client, counter.id);
+    expect(values.get('2026-01-15')).toEqual({
+      value: '1000',
+      source: 'health',
+    });
+    expect(values.get('2026-01-16')?.value).toBe('555');
+    expect(values.get('2026-01-16')?.source ?? null).toBeNull();
+    expect(values.get('2026-01-17')).toEqual({
+      value: '3000',
+      source: 'health',
+    });
+    const view = await proposalsOf(client);
+    expect(view.proposals.find((p) => p.metric === 'STEPS')).toBeUndefined();
+  });
+
+  it('should not report a backfill for an update that leaves the link as it is', async (): Promise<void> => {
+    // Arrange
+    const counter = (await allFields()).find((f) => f.name === 'Compteur');
+
+    // Act
+    const res = await client
+      .patch(`/health/custom-fields/${counter!.id}`, {
+        name: 'Compteur de pas',
+      })
+      .expect(200);
+
+    // Assert
+    expect(
+      (res.body as { healthFilledDays?: number }).healthFilledDays,
+    ).toBeUndefined();
+  });
+});

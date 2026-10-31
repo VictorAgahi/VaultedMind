@@ -34,7 +34,7 @@ describe('buildFallbackSuggestions', () => {
       action: 'link',
       fieldId: 'deep',
       unit: 'hours',
-      confidence: 0.9,
+      confidence: 0.95,
       reason: 'Nom très proche',
     });
   });
@@ -98,6 +98,52 @@ describe('buildFallbackSuggestions', () => {
     expect(suggestions.get(AppleWatchMetric.ACTIVE_CALORIES)).toMatchObject({
       action: 'propose_new',
       relevance: 'low',
+    });
+  });
+
+  it('should link the user field "TEMPS SOMMEIL PROFOND" to the deep sleep with full auto confidence', () => {
+    // Arrange
+    const fields = [
+      candidate('deep', 'TEMPS SOMMEIL PROFOND'),
+      candidate('total', 'Sommeil'),
+    ];
+
+    // Act
+    const suggestions = buildFallbackSuggestions(
+      [AppleWatchMetric.SLEEP, AppleWatchMetric.SLEEP_DEEP],
+      fields,
+    );
+
+    // Assert
+    expect(suggestions.get(AppleWatchMetric.SLEEP_DEEP)).toMatchObject({
+      action: 'link',
+      fieldId: 'deep',
+      confidence: 0.95,
+    });
+    expect(suggestions.get(AppleWatchMetric.SLEEP)).toMatchObject({
+      action: 'link',
+      fieldId: 'total',
+      confidence: 1,
+    });
+  });
+
+  it('should not confuse "Sommeil" with "Sommeil profond"', () => {
+    // Arrange
+    const fields = [candidate('total', 'Sommeil')];
+
+    // Act
+    const suggestions = buildFallbackSuggestions(
+      [AppleWatchMetric.SLEEP, AppleWatchMetric.SLEEP_DEEP],
+      fields,
+    );
+
+    // Assert
+    expect(suggestions.get(AppleWatchMetric.SLEEP_DEEP)?.action).toBe(
+      'propose_new',
+    );
+    expect(suggestions.get(AppleWatchMetric.SLEEP)).toMatchObject({
+      action: 'link',
+      fieldId: 'total',
     });
   });
 });

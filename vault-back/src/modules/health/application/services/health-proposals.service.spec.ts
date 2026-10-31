@@ -274,4 +274,45 @@ describe('HealthProposalsService', () => {
     expect(savedState().decisions[AppleWatchMetric.STEPS]).toBeUndefined();
     expect(run).toHaveBeenCalledWith('user-1');
   });
+
+  it('should list the proposal to replace a legacy link and keep the legacy field to clean', async () => {
+    // Arrange
+    fields = [
+      numberField('legacy', 'Fréquence au repos', {
+        metric: AppleWatchMetric.RESTING_HEART_RATE,
+        category: 'Apple Santé',
+      }),
+      numberField('mine', 'FC repos'),
+    ];
+    state = {
+      decisions: {
+        [AppleWatchMetric.RESTING_HEART_RATE]: {
+          status: 'PENDING_LINK',
+          fieldId: 'mine',
+          unit: null,
+          confidence: 0.7,
+          decidedAt: AT,
+        },
+      },
+      skipped: [],
+    };
+
+    // Act
+    const view = await service.list('user-1');
+
+    // Assert
+    expect(view.proposals).toHaveLength(1);
+    expect(view.proposals[0]).toMatchObject({
+      metric: AppleWatchMetric.RESTING_HEART_RATE,
+      status: 'PENDING_LINK',
+      fieldId: 'mine',
+    });
+    expect(view.legacyFields).toEqual([
+      {
+        id: 'legacy',
+        name: 'Fréquence au repos',
+        metric: AppleWatchMetric.RESTING_HEART_RATE,
+      },
+    ]);
+  });
 });

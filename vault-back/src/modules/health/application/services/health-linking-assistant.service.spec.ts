@@ -5,6 +5,7 @@ import { FieldType } from '../../domain/enums/field-type.enum.js';
 import type { HealthDailyReading } from '../../../../database/repositories/health-daily-metric.repository.js';
 import {
   EMPTY_LINKING_STATE,
+  LINKING_STATE_VERSION,
   type HealthLinkingState,
 } from '../../domain/services/health-linking-decisions.js';
 import type { LinkingSuggestions } from '../../domain/services/health-linking-schema.js';
@@ -16,6 +17,7 @@ function numberField(
   id: string,
   name: string,
   appleWatchMetric?: AppleWatchMetric,
+  category?: string,
 ): CustomField {
   return new CustomField(
     id,
@@ -26,7 +28,7 @@ function numberField(
     new Date(),
     new Date(),
     undefined,
-    undefined,
+    category,
     false,
     undefined,
     undefined,
@@ -269,5 +271,169 @@ describe('HealthLinkingAssistantService', () => {
     // Assert
     expect(suggest).not.toHaveBeenCalled();
     expect(result).toEqual({ autoLinked: [], pendingCount: 1 });
+  });
+
+  describe('links to fields created by earlier versions', () => {
+    const deepSuggestion = (confidence: number): LinkingSuggestions =>
+      new Map([
+        [
+          AppleWatchMetric.SLEEP_DEEP,
+          {
+            action: 'link',
+            fieldId: 'mine',
+            unit: 'hours',
+            confidence,
+            reason: 'Nom très proche',
+          },
+        ],
+      ]);
+
+    beforeEach(() => {
+      fields = [
+        numberField(
+          'legacy',
+          'Sommeil profond',
+          AppleWatchMetric.SLEEP_DEEP,
+          'Apple Santé',
+        ),
+        numberField('mine', 'TEMPS SOMMEIL PROFOND'),
+      ];
+      link.mockImplementation((_userId, fieldId) =>
+        Promise.resolve({
+          field: numberField(fieldId, 'TEMPS SOMMEIL PROFOND'),
+          filledDays: 9,
+        }),
+      );
+    });
+
+    it('should move the link to the field of the user and report it', async () => {
+      // Arrange
+      suggestions = deepSuggestion(0.95);
+
+      // Act
+      const result = await service.run('user-1');
+
+      // Assert
+      expect(suggest).toHaveBeenCalledTimes(1);
+      expect(suggest.mock.calls[0]).toEqual([
+        {},
+        [{ metric: AppleWatchMetric.SLEEP_DEEP, exampleValue: 2 }],
+        expect.arrayContaining([
+          expect.objectContaining({ id: 'mine', appleWatchMetric: null }),
+        ]),
+      ]);
+      expect(link).toHaveBeenCalledWith(
+        'user-1',
+        'mine',
+        AppleWatchMetric.SLEEP_DEEP,
+        'hours',
+      );
+      expect(result.autoLinked).toEqual([
+        {
+          metric: AppleWatchMetric.SLEEP_DEEP,
+          fieldId: 'mine',
+          fieldName: 'TEMPS SOMMEIL PROFOND',
+          unit: 'hours',
+          filledDays: 9,
+        },
+      ]);
+      expect(savedState().decisions[AppleWatchMetric.SLEEP_DEEP]).toMatchObject(
+        { status: 'LINKED', fieldId: 'mine', auto: true },
+      );
+    });
+
+    it('should only propose the field of the user below the threshold and keep the legacy link', async () => {
+      // Arrange
+      suggestions = deepSuggestion(0.7);
+
+      // Act
+      const result = await service.run('user-1');
+
+      // Assert
+      expect(link).not.toHaveBeenCalled();
+      expect(result).toEqual({ autoLinked: [], pendingCount: 1 });
+      expect(savedState().decisions[AppleWatchMetric.SLEEP_DEEP]).toMatchObject(
+        { status: 'PENDING_LINK', fieldId: 'mine' },
+      );
+    });
+
+    it('should leave the legacy link alone when no field of the user matches', async () => {
+      // Arrange
+      suggestions = new Map([
+        [
+          AppleWatchMetric.SLEEP_DEEP,
+          {
+            action: 'propose_new',
+            suggestedName: 'Sommeil profond',
+            relevance: 'HIGH',
+            reason: '',
+          },
+        ],
+      ]);
+
+      // Act
+      const result = await service.run('user-1');
+
+      // Assert
+      expect(link).not.toHaveBeenCalled();
+      expect(result).toEqual({ autoLinked: [], pendingCount: 0 });
+      expect(
+        savedState().decisions[AppleWatchMetric.SLEEP_DEEP],
+      ).toBeUndefined();
+      expect(savedState().version).toBe(LINKING_STATE_VERSION);
+    });
+
+    it('should not examine a field the user accepted in that category', async () => {
+      // Arrange
+      state = {
+        decisions: {
+          [AppleWatchMetric.SLEEP_DEEP]: {
+            status: 'LINKED',
+            fieldId: 'legacy',
+            decidedAt: 'x',
+          },
+        },
+        skipped: [],
+        version: LINKING_STATE_VERSION - 1,
+      };
+
+      // Act
+      await service.run('user-1');
+
+      // Assert
+      expect(suggest).not.toHaveBeenCalled();
+      expect(link).not.toHaveBeenCalled();
+    });
+
+    it('should examine the legacy links once per version, not at every sync', async () => {
+      // Arrange
+      suggestions = deepSuggestion(0.7);
+
+      // Act
+      await service.run('user-1');
+      state = savedState();
+      suggest.mockClear();
+      await service.run('user-1');
+      const unchanged = suggest.mock.calls.length;
+      await service.run('user-1', true);
+
+      // Assert
+      expect(state.version).toBe(LINKING_STATE_VERSION);
+      expect(unchanged).toBe(0);
+      expect(suggest).toHaveBeenCalledTimes(1);
+    });
+
+    it('should stamp the version without calling the model when there is nothing to examine', async () => {
+      // Arrange
+      fields = [numberField('steps', 'Pas', AppleWatchMetric.STEPS)];
+      latest = readings([AppleWatchMetric.STEPS]);
+
+      // Act
+      await service.run('user-1');
+
+      // Assert
+      expect(suggest).not.toHaveBeenCalled();
+      expect(savedState().version).toBe(LINKING_STATE_VERSION);
+    });
   });
 });

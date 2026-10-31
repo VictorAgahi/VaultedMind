@@ -111,6 +111,7 @@ export class UserMapper {
       return {
         decisions: state.decisions ?? {},
         skipped: state.skipped ?? [],
+        version: state.version,
       };
     } catch {
       return EMPTY_LINKING_STATE;

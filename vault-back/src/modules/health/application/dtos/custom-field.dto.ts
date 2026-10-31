@@ -169,4 +169,6 @@ export class CustomFieldResponseDto {
   constructOverride?: string;
   autofillMode!: AutofillMode;
   createdAt!: Date;
+  /** Past days filled from the stored Apple Health data when the link was just made. */
+  healthFilledDays?: number;
 }

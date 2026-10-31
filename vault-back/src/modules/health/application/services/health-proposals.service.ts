@@ -13,6 +13,7 @@ import {
 } from '../../domain/services/health-metric-catalog.js';
 import {
   countPendingDecisions,
+  findLegacyLinkedFields,
   isPendingDecision,
   reconcileLinkingState,
   withDecision,
@@ -56,6 +57,8 @@ const REJECTION_MESSAGES: Record<LinkRejection, string> = {
 interface UserLinkingContext {
   fields: CustomField[];
   linkedMetrics: Set<AppleWatchMetric>;
+  /** Metrics linked to a field created by an earlier version. */
+  legacyMetrics: Set<AppleWatchMetric>;
   stored: HealthLinkingState;
   state: HealthLinkingState;
 }
@@ -72,7 +75,7 @@ export class HealthProposalsService {
   ) {}
 
   async list(userId: string): Promise<HealthProposalsView> {
-    const { fields, linkedMetrics, stored, state } =
+    const { fields, linkedMetrics, legacyMetrics, stored, state } =
       await this.loadContext(userId);
     await this.saveIfChanged(userId, stored, state);
     const latest = await this.dailyMetricRepository.findLatestPerMetric(userId);
@@ -85,7 +88,7 @@ export class HealthProposalsService {
     for (const metric of Object.values(AppleWatchMetric)) {
       const decision = state.decisions[metric];
       if (!decision || !isPendingDecision(decision)) continue;
-      if (linkedMetrics.has(metric)) continue;
+      if (linkedMetrics.has(metric) && !legacyMetrics.has(metric)) continue;
       const definition = HEALTH_METRIC_CATALOG[metric];
       const reading = latest.get(metric);
       const proposedField =
@@ -111,6 +114,8 @@ export class HealthProposalsService {
           ]),
           [proposedField],
         )[0].rejection === undefined;
+      // A legacy link is only replaced by a field of the user, never by a new field
+      if (legacyMetrics.has(metric) && !stillLinkable) continue;
       proposals.push({
         metric,
         label: definition.name,
@@ -160,18 +165,11 @@ export class HealthProposalsService {
           },
         ];
       }),
-      legacyFields: fields
-        .filter(
-          (field) =>
-            field.category?.trim() === APPLE_HEALTH_CATEGORY &&
-            field.appleWatchMetric !== undefined &&
-            state.decisions[field.appleWatchMetric]?.fieldId !== field.id,
-        )
-        .map((field) => ({
-          id: field.id,
-          name: field.name,
-          metric: field.appleWatchMetric as AppleWatchMetric,
-        })),
+      legacyFields: findLegacyLinkedFields(fields, state).map((field) => ({
+        id: field.id,
+        name: field.name,
+        metric: field.appleWatchMetric as AppleWatchMetric,
+      })),
     };
   }
 
@@ -282,8 +280,18 @@ export class HealthProposalsService {
       ),
     );
     const stored = await this.userRepository.findHealthLinkingState(userId);
-    const state = reconcileLinkingState(stored, linkedMetrics, new Date());
-    return { fields, linkedMetrics, stored, state };
+    const legacyMetrics = new Set(
+      findLegacyLinkedFields(fields, stored).flatMap((field) =>
+        field.appleWatchMetric ? [field.appleWatchMetric] : [],
+      ),
+    );
+    const state = reconcileLinkingState(
+      stored,
+      linkedMetrics,
+      new Date(),
+      legacyMetrics,
+    );
+    return { fields, linkedMetrics, legacyMetrics, stored, state };
   }
 
   private async saveIfChanged(

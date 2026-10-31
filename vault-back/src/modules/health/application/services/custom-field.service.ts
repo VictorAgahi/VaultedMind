@@ -17,6 +17,9 @@ import {
   AppleWatchMetric,
   CustomField,
 } from '../../domain/entities/custom-field.entity.js';
+import { UserRepository } from '../../../../database/repositories/user.repository.js';
+import { withDecision } from '../../domain/services/health-linking-decisions.js';
+import { HealthFieldLinkerService } from './health-field-linker.service.js';
 import {
   inferFieldUnit,
   isUnitCompatible,
@@ -50,11 +53,33 @@ function resolveMetricUnit(
   return inference.compatible ? inference.unit : null;
 }
 
+type FieldUpdates = Partial<
+  Pick<
+    CustomField,
+    | 'name'
+    | 'isActive'
+    | 'optionsOrder'
+    | 'category'
+    | 'rememberLastValue'
+    | 'min'
+    | 'max'
+    | 'subFields'
+  >
+> &
+  CustomFieldAppleWatchMetricUpdate &
+  CustomFieldGoalUpdate &
+  CustomFieldConstructOverrideUpdate &
+  CustomFieldAutofillUpdate;
+
 @Injectable()
 export class CustomFieldService {
   private readonly logger = new Logger(CustomFieldService.name);
 
-  constructor(private readonly customFieldRepository: CustomFieldRepository) {}
+  constructor(
+    private readonly customFieldRepository: CustomFieldRepository,
+    private readonly userRepository: UserRepository,
+    private readonly healthFieldLinker: HealthFieldLinkerService,
+  ) {}
 
   async createField(field: CustomField): Promise<CustomField> {
     this.logger.log(
@@ -97,26 +122,50 @@ export class CustomFieldService {
     }
   }
 
+  /**
+   * Updates the field and, when it now receives an Apple Health metric (newly linked, or
+   * with another unit), fills its past days from the stored health data and records the
+   * link as decided by the user.
+   */
+  async updateFieldAndBackfill(
+    id: string,
+    requestingUserId: string,
+    updates: FieldUpdates,
+  ): Promise<{ field: CustomField; healthFilledDays?: number }> {
+    const current = await this.findById(id, requestingUserId);
+    const field = await this.updateField(id, requestingUserId, updates);
+    const metric = field.appleWatchMetric;
+    const linkChanged =
+      !!metric &&
+      (metric !== current.appleWatchMetric ||
+        (field.appleWatchUnit ?? null) !== (current.appleWatchUnit ?? null));
+    if (!metric || !linkChanged) return { field };
+
+    const healthFilledDays = await this.healthFieldLinker.backfill(
+      requestingUserId,
+      field.id,
+      metric,
+      field.appleWatchUnit ?? null,
+    );
+    const state =
+      await this.userRepository.findHealthLinkingState(requestingUserId);
+    await this.userRepository.saveHealthLinkingState(
+      requestingUserId,
+      withDecision(state, metric, {
+        status: 'LINKED',
+        fieldId: field.id,
+        unit: field.appleWatchUnit ?? null,
+        auto: false,
+        decidedAt: new Date().toISOString(),
+      }),
+    );
+    return { field, healthFilledDays };
+  }
+
   async updateField(
     id: string,
     requestingUserId: string,
-    updates: Partial<
-      Pick<
-        CustomField,
-        | 'name'
-        | 'isActive'
-        | 'optionsOrder'
-        | 'category'
-        | 'rememberLastValue'
-        | 'min'
-        | 'max'
-        | 'subFields'
-      >
-    > &
-      CustomFieldAppleWatchMetricUpdate &
-      CustomFieldGoalUpdate &
-      CustomFieldConstructOverrideUpdate &
-      CustomFieldAutofillUpdate,
+    updates: FieldUpdates,
   ): Promise<CustomField> {
     const current = await this.findById(id, requestingUserId);
     if (updates.appleWatchMetric) {

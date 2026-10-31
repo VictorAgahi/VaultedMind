@@ -1,4 +1,5 @@
 import { AppleWatchMetric } from '../enums/apple-watch-metric.enum.js';
+import { APPLE_HEALTH_CATEGORY } from './health-metric-catalog.js';
 import type { HealthMetricRelevance } from './health-metric-catalog.js';
 import type { HealthFieldUnit } from './health-metric-units.js';
 
@@ -33,12 +34,47 @@ export interface HealthLinkingState {
   decisions: Partial<Record<AppleWatchMetric, HealthMetricDecision>>;
   /** Metrics the assistant chose to leave aside: examined again only with new metrics. */
   skipped: AppleWatchMetric[];
+  /** Version of the assistant that last examined the user's metrics; absent before 2. */
+  version?: number;
 }
 
 export const EMPTY_LINKING_STATE: HealthLinkingState = {
   decisions: {},
   skipped: [],
 };
+
+/**
+ * Raised each time the assistant must examine every user once more at the next sync (2:
+ * links to the fields created by earlier versions are re-examined).
+ */
+export const LINKING_STATE_VERSION = 2;
+
+export function isLinkingStateOutdated(state: HealthLinkingState): boolean {
+  return (state.version ?? 0) < LINKING_STATE_VERSION;
+}
+
+/** A field as the detection of the legacy links needs it. */
+export interface LegacyCandidateField {
+  id: string;
+  category?: string | null;
+  appleWatchMetric?: AppleWatchMetric | null;
+}
+
+/**
+ * Fields created automatically by earlier versions: in the "Apple Santé" category, linked to
+ * a metric and not the field a LINKED decision recorded (accepted or created by the user).
+ */
+export function findLegacyLinkedFields<T extends LegacyCandidateField>(
+  fields: T[],
+  state: HealthLinkingState,
+): T[] {
+  return fields.filter(
+    (field) =>
+      field.category?.trim() === APPLE_HEALTH_CATEGORY &&
+      !!field.appleWatchMetric &&
+      state.decisions[field.appleWatchMetric]?.fieldId !== field.id,
+  );
+}
 
 /** A link proposed with at least this confidence is applied without asking. */
 export const AUTO_LINK_CONFIDENCE = 0.8;
@@ -84,21 +120,26 @@ export function reconcileLinkingState(
   state: HealthLinkingState,
   linkedMetrics: ReadonlySet<AppleWatchMetric>,
   now: Date,
+  legacyMetrics: ReadonlySet<AppleWatchMetric> = new Set(),
 ): HealthLinkingState {
   const decisions: HealthLinkingState['decisions'] = {};
   for (const [metric, decision] of Object.entries(state.decisions) as Array<
     [AppleWatchMetric, HealthMetricDecision]
   >) {
     if (linkedMetrics.has(metric)) {
-      decisions[metric] =
-        decision.status === 'LINKED'
-          ? decision
-          : { status: 'LINKED', decidedAt: now.toISOString() };
+      // A proposal to replace the link to a legacy field stays a proposal
+      const keep =
+        decision.status === 'LINKED' ||
+        (legacyMetrics.has(metric) && decision.status === 'PENDING_LINK');
+      decisions[metric] = keep
+        ? decision
+        : { status: 'LINKED', decidedAt: now.toISOString() };
     } else if (decision.status !== 'LINKED') {
       decisions[metric] = decision;
     }
   }
   return {
+    ...state,
     decisions,
     skipped: state.skipped.filter((metric) => !linkedMetrics.has(metric)),
   };
@@ -110,6 +151,7 @@ export function withDecision(
   decision: HealthMetricDecision,
 ): HealthLinkingState {
   return {
+    ...state,
     decisions: { ...state.decisions, [metric]: decision },
     skipped: state.skipped.filter((skipped) => skipped !== metric),
   };
@@ -122,6 +164,7 @@ export function withoutDecision(
   const decisions = { ...state.decisions };
   delete decisions[metric];
   return {
+    ...state,
     decisions,
     skipped: state.skipped.filter((skipped) => skipped !== metric),
   };

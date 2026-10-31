@@ -178,6 +178,8 @@ export interface CustomField {
   appleWatchMetric?: AppleWatchMetric;
   /** Unité dans laquelle le champ reçoit une durée Santé ; absente : l'unité propre à la donnée. */
   appleWatchUnit?: HealthFieldUnit;
+  /** Réponse à une modification : jours passés remplis depuis les données Santé lors d'un nouveau lien. */
+  healthFilledDays?: number;
   /** Objectif hebdomadaire : nombre de jours (oui/non) ou moyenne (nombre). */
   goalTarget?: number;
   goalDirection?: "AT_LEAST" | "AT_MOST";

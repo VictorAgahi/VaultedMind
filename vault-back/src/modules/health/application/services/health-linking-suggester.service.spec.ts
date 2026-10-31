@@ -87,7 +87,7 @@ describe('HealthLinkingSuggesterService', () => {
     expect(result.suggestions.get(AppleWatchMetric.SLEEP_DEEP)).toMatchObject({
       action: 'link',
       fieldId: 'deep',
-      confidence: 0.9,
+      confidence: 0.95,
     });
   });
 

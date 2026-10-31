@@ -1,6 +1,9 @@
 import { AppleWatchMetric } from '../enums/apple-watch-metric.enum.js';
 import {
   aliasDistance,
+  haveSameTokens,
+  nameTokens,
+  TOKEN_MATCH_COST,
   damerauLevenshteinDistance,
   findFieldsMatchingMetric,
   LinkableField,
@@ -137,7 +140,7 @@ describe('damerauLevenshteinDistance', () => {
 describe('aliasDistance', () => {
   it('should tolerate up to two typos on a long name', () => {
     expect(
-      aliasDistance(AppleWatchMetric.SLEEP_DEEP, 'Temps de someil profond'),
+      aliasDistance(AppleWatchMetric.SLEEP_DEEP, 'Tmps de sommeil profond'),
     ).toBe(1);
     expect(
       aliasDistance(AppleWatchMetric.SLEEP_DEEP, 'Tmps de someil profond'),
@@ -173,7 +176,7 @@ describe('matchMetricsToFields', () => {
       matches.map((match) => [match.metric, match.field.id, match.distance]),
     ).toEqual([
       [AppleWatchMetric.SLEEP, 'total', 0],
-      [AppleWatchMetric.SLEEP_DEEP, 'deep', 1],
+      [AppleWatchMetric.SLEEP_DEEP, 'deep', TOKEN_MATCH_COST],
     ]);
   });
 
@@ -212,5 +215,76 @@ describe('matchMetricsToFields', () => {
 
     // Assert
     expect(matches).toEqual([]);
+  });
+});
+
+describe('nameTokens', () => {
+  it('should drop filler words, accents, case and punctuation', () => {
+    expect(nameTokens('TEMPS DE SOMMEIL PROFOND')).toEqual([
+      'sommeil',
+      'profond',
+    ]);
+    expect(nameTokens("Durée d'exercice (total)")).toEqual(['exercice']);
+    expect(nameTokens('Temps de')).toEqual([]);
+  });
+});
+
+describe('haveSameTokens', () => {
+  it('should ignore filler words and order', () => {
+    expect(haveSameTokens('TEMPS SOMMEIL PROFOND', 'sommeil profond')).toBe(
+      true,
+    );
+    expect(haveSameTokens('Profond sommeil', 'temps de sommeil profond')).toBe(
+      true,
+    );
+  });
+
+  it('should tolerate one typo per long word only', () => {
+    expect(haveSameTokens('Sommeil profnd', 'sommeil profond')).toBe(true);
+    expect(haveSameTokens('Somil profond', 'sommeil profond')).toBe(false);
+    expect(haveSameTokens('Pis', 'pas')).toBe(false);
+  });
+
+  it('should not confuse a name with a longer or shorter one', () => {
+    expect(haveSameTokens('Sommeil', 'Sommeil profond')).toBe(false);
+    expect(haveSameTokens('Sommeil profond', 'Sommeil')).toBe(false);
+    expect(haveSameTokens('Temps de', 'Temps')).toBe(false);
+  });
+});
+
+describe('token matching of real field names', () => {
+  function metricsMatching(name: string): AppleWatchMetric[] {
+    return matchMetricsToFields(Object.values(AppleWatchMetric), [
+      field('f', name),
+    ]).map((match) => match.metric);
+  }
+
+  it.each([
+    ['TEMPS SOMMEIL PROFOND', AppleWatchMetric.SLEEP_DEEP],
+    ['Temps sommeil paradoxal', AppleWatchMetric.SLEEP_REM],
+    ['Sommeil léger', AppleWatchMetric.SLEEP_CORE],
+    ['TEMPS SOMMEIL', AppleWatchMetric.SLEEP],
+    ['Temps de sommeil', AppleWatchMetric.SLEEP],
+    ['Sommeil', AppleWatchMetric.SLEEP],
+    ['Durée du sommeil', AppleWatchMetric.SLEEP],
+    ['Nombre de pas', AppleWatchMetric.STEPS],
+    ['Mon sommeil profond', AppleWatchMetric.SLEEP_DEEP],
+  ])('should link "%s" to its metric only', (name, expected) => {
+    expect(metricsMatching(name)).toEqual([expected]);
+  });
+
+  it('should never link a sleep stage name to the total sleep', () => {
+    expect(metricsMatching('Sommeil profond')).not.toContain(
+      AppleWatchMetric.SLEEP,
+    );
+    expect(metricsMatching('Temps sommeil léger')).not.toContain(
+      AppleWatchMetric.SLEEP,
+    );
+  });
+
+  it('should link nothing for an unrelated or partial name', () => {
+    expect(metricsMatching('Humeur')).toEqual([]);
+    expect(metricsMatching('Temps')).toEqual([]);
+    expect(metricsMatching('Qualité du sommeil')).toEqual([]);
   });
 });

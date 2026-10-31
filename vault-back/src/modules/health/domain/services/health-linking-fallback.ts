@@ -1,13 +1,21 @@
 import { AppleWatchMetric } from '../enums/apple-watch-metric.enum.js';
 import { FieldType } from '../enums/field-type.enum.js';
 import { HEALTH_METRIC_CATALOG } from './health-metric-catalog.js';
-import { matchMetricsToFields } from './health-field-matching.js';
+import {
+  matchMetricsToFields,
+  TOKEN_MATCH_COST,
+} from './health-field-matching.js';
 import { inferFieldUnit } from './health-metric-units.js';
 import type { LinkingSuggestions } from './health-linking-schema.js';
 import type { LinkingCandidateField } from './health-linking-validation.js';
 
 /** Confidence of a name match by number of typos: an exact alias is certain. */
-const CONFIDENCE_BY_DISTANCE = [1, 0.9, 0.8];
+const CONFIDENCE_BY_DISTANCE = new Map<number, number>([
+  [0, 1],
+  [TOKEN_MATCH_COST, 0.95],
+  [1, 0.9],
+  [2, 0.8],
+]);
 /** Several fields are as close: proposed to the user, never applied alone. */
 const AMBIGUOUS_CONFIDENCE = 0.5;
 
@@ -44,7 +52,8 @@ export function buildFallbackSuggestions(
         unit: inference.unit,
         confidence: match.ambiguous
           ? AMBIGUOUS_CONFIDENCE
-          : (CONFIDENCE_BY_DISTANCE[match.distance] ?? AMBIGUOUS_CONFIDENCE),
+          : (CONFIDENCE_BY_DISTANCE.get(match.distance) ??
+            AMBIGUOUS_CONFIDENCE),
         reason: match.distance === 0 ? 'Nom identique' : 'Nom très proche',
       });
       continue;

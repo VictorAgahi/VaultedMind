@@ -92,6 +92,66 @@ export function normalizeFieldName(name: string): string {
     .trim();
 }
 
+/** Words that do not tell metrics apart: "Temps de sommeil" and "Sommeil" are the same name. */
+const FILLER_WORDS: ReadonlySet<string> = new Set([
+  'temps',
+  'duree',
+  'nombre',
+  'nb',
+  'de',
+  'du',
+  'des',
+  'd',
+  'la',
+  'le',
+  'les',
+  'l',
+  'en',
+  'mon',
+  'ma',
+  'total',
+  'totale',
+  'time',
+  'of',
+  'the',
+]);
+
+/** Cost of a name sharing the alias' words: between an exact alias and one typo. */
+export const TOKEN_MATCH_COST = 0.5;
+/** Shortest words compared with a typo tolerance of one edit. */
+const MIN_TYPO_TOLERANT_TOKEN_LENGTH = 5;
+
+/** The meaningful words of a name: normalized, without filler words. */
+export function nameTokens(name: string): string[] {
+  return normalizeFieldName(name)
+    .split(' ')
+    .filter((token) => token !== '' && !FILLER_WORDS.has(token));
+}
+
+function tokensMatch(left: string, right: string): boolean {
+  if (left === right) return true;
+  return (
+    left.length >= MIN_TYPO_TOLERANT_TOKEN_LENGTH &&
+    right.length >= MIN_TYPO_TOLERANT_TOKEN_LENGTH &&
+    damerauLevenshteinDistance(left, right) <= 1
+  );
+}
+
+/** Same words in any order, each word equal to one of the other name (one typo for long words). */
+export function haveSameTokens(left: string, right: string): boolean {
+  const leftTokens = nameTokens(left);
+  const remaining = nameTokens(right);
+  if (leftTokens.length === 0 || leftTokens.length !== remaining.length) {
+    return false;
+  }
+  for (const token of leftTokens) {
+    const index = remaining.findIndex((other) => tokensMatch(token, other));
+    if (index === -1) return false;
+    remaining.splice(index, 1);
+  }
+  return true;
+}
+
 /**
  * Fields whose name is an alias of the metric. A clock-time field only suits a clock-time
  * metric and a duration or count metric never suits a clock-time field: the stored value
@@ -152,8 +212,10 @@ export function damerauLevenshteinDistance(
 }
 
 /**
- * Distance between a field name and the closest alias of a metric, or null when the name is
- * not close enough: exact for short names, at most MAX_TYPO_DISTANCE edits otherwise.
+ * Cost of matching a field name to the closest alias of a metric, or null when the name is
+ * not close enough: 0 for an alias, TOKEN_MATCH_COST when both names have the same
+ * meaningful words, else the number of edits (exact for short names, at most
+ * MAX_TYPO_DISTANCE otherwise).
  */
 export function aliasDistance(
   metric: AppleWatchMetric,
@@ -163,6 +225,7 @@ export function aliasDistance(
   let best: number | null = null;
   for (const alias of METRIC_FIELD_ALIASES[metric]) {
     if (alias === name) return 0;
+    if (haveSameTokens(name, alias)) best = TOKEN_MATCH_COST;
     if (
       name.length < MIN_TYPO_TOLERANT_LENGTH ||
       alias.length < MIN_TYPO_TOLERANT_LENGTH

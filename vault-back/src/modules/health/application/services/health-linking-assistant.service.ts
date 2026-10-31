@@ -8,6 +8,9 @@ import type { CustomField } from '../../domain/entities/custom-field.entity.js';
 import {
   AUTO_LINK_CONFIDENCE,
   countPendingDecisions,
+  findLegacyLinkedFields,
+  isLinkingStateOutdated,
+  LINKING_STATE_VERSION,
   metricsAwaitingDecision,
   reconcileLinkingState,
   shouldRunAssistant,
@@ -70,8 +73,10 @@ export class HealthLinkingAssistantService {
   ) {}
 
   /**
-   * Runs when a metric never examined has data; `force` examines again every metric
-   * without a decision, including those the assistant left aside.
+   * Runs when a metric never examined has data, when the assistant's version changed, or
+   * on `force`, which examines again every metric without a decision. The metrics linked to
+   * a field created by an earlier version are examined too: a field of the user that
+   * matches takes the link over.
    */
   async run(userId: string, force = false): Promise<LinkingRunResult> {
     const now = new Date();
@@ -83,37 +88,56 @@ export class HealthLinkingAssistantService {
     );
     const latest = await this.dailyMetricRepository.findLatestPerMetric(userId);
     const stored = await this.userRepository.findHealthLinkingState(userId);
-    let state = reconcileLinkingState(stored, linkedMetrics, now);
+    const legacyMetrics = new Set(
+      findLegacyLinkedFields(fields, stored).flatMap((field) =>
+        field.appleWatchMetric && latest.has(field.appleWatchMetric)
+          ? [field.appleWatchMetric]
+          : [],
+      ),
+    );
+    let state = reconcileLinkingState(
+      stored,
+      linkedMetrics,
+      now,
+      legacyMetrics,
+    );
     const awaiting = metricsAwaitingDecision(
       [...latest.keys()],
       linkedMetrics,
       state,
     );
 
-    if (
-      awaiting.length === 0 ||
-      (!force && !shouldRunAssistant(awaiting, state))
-    ) {
+    const outdated = isLinkingStateOutdated(state);
+    const examineAwaiting =
+      awaiting.length > 0 && (force || shouldRunAssistant(awaiting, state));
+    const examineLegacy =
+      legacyMetrics.size > 0 && (force || outdated || examineAwaiting);
+    if (!examineAwaiting && !examineLegacy) {
+      if (outdated) state = { ...state, version: LINKING_STATE_VERSION };
       if (JSON.stringify(state) !== JSON.stringify(stored)) {
         await this.userRepository.saveHealthLinkingState(userId, state);
       }
       return { autoLinked: [], pendingCount: countPendingDecisions(state) };
     }
 
+    const toExamine = [
+      ...(examineAwaiting ? awaiting : []),
+      ...(examineLegacy ? legacyMetrics : []),
+    ];
     const user = await this.userRepository.findUserById(userId);
     const numberFields = fields
       .filter((field) => field.isActive && field.fieldType === FieldType.NUMBER)
       .map(toLinkingField);
     const { suggestions } = await this.suggester.suggest(
       user,
-      awaiting.map((metric) => ({
+      toExamine.map((metric) => ({
         metric,
         exampleValue: latest.get(metric)?.value ?? 0,
       })),
       numberFields,
     );
     const validated = validateLinkingSuggestions(
-      awaiting,
+      toExamine,
       suggestions,
       numberFields,
     );
@@ -121,10 +145,13 @@ export class HealthLinkingAssistantService {
     const autoLinked: AutoLinkedMetric[] = [];
     const skipped: AppleWatchMetric[] = [];
     for (const { metric, outcome } of validated) {
+      const isLegacy = legacyMetrics.has(metric);
       if (outcome.kind === 'skip') {
-        skipped.push(metric);
+        if (!isLegacy) skipped.push(metric);
         continue;
       }
+      // Without a better field of the user, a legacy link stays as it is
+      if (isLegacy && outcome.kind !== 'link') continue;
       if (
         outcome.kind === 'link' &&
         outcome.confidence >= AUTO_LINK_CONFIDENCE
@@ -155,7 +182,11 @@ export class HealthLinkingAssistantService {
       }
       state = withDecision(state, metric, pendingDecision(outcome, now));
     }
-    state = { ...state, skipped };
+    state = {
+      ...state,
+      skipped: examineAwaiting ? skipped : state.skipped,
+      version: LINKING_STATE_VERSION,
+    };
     await this.userRepository.saveHealthLinkingState(userId, state);
     return { autoLinked, pendingCount: countPendingDecisions(state) };
   }
